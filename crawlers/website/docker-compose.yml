@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  warp-website-1:
+    image: caomingjun/warp
+    container_name: warp-website-1
+    ports:
+      - "40010:1080"
+    environment:
+      - WARP_SLEEP=2
+    privileged: true
+    restart: always
+
+  warp-website-2:
+    image: caomingjun/warp
+    container_name: warp-website-2
+    ports:
+      - "40011:1080"
+    environment:
+      - WARP_SLEEP=2
+    privileged: true
+    restart: always
+
+  warp-website-3:
+    image: caomingjun/warp
+    container_name: warp-website-3
+    ports:
+      - "40012:1080"
+    environment:
+      - WARP_SLEEP=2
+    privileged: true
+    restart: always
+
+  warp-website-4:
+    image: caomingjun/warp
+    container_name: warp-website-4
+    ports:
+      - "40013:1080"
+    environment:
+      - WARP_SLEEP=2
+    privileged: true
+    restart: always
+
+  warp-website-5:
+    image: caomingjun/warp
+    container_name: warp-website-5
+    ports:
+      - "40014:1080"
+    environment:
+      - WARP_SLEEP=2
+    privileged: true
+    restart: always

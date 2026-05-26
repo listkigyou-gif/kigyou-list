@@ -1,0 +1,51 @@
+--- Searching in table: companies ---
+Found 1 row(s)
+  corporate_number: 1010001000039
+  company_name: 朝日テック工業株式会社
+  postal_code: 1130034
+  prefecture_code: 13
+  prefecture_name: 東京都
+  city_name: 文京区
+  street_address: 湯島３丁目１３番５号
+  full_address: 東京都文京区湯島３丁目１３番５号
+  representative_position: 代表取締役
+  website_url: http://www.atk3.com
+  business_summary: طريقة الحصول على شدات مجانا ! | اولا ادخل اسمك فى اول خانة وبعدها اختار المنصة التي تقوم باللعب عليها من الاعلى وبعدها اضغط على كلمة ابدء الشحن الان سيتم تحويلك الى صفحة العروض يجب انهاء عرضين عن طريق ادخال رقم هاتفك وبعدها سوف يصلك كود ادخل هذا الكود وانتظر دقائق وسيتم ارسال الشدات الى حسابك انها خطوات مهمة ان لم يتم فعلها لن تصلك الشدات
+  status: 活動中
+  created_at: 2026-05-17 09:51:10
+  updated_at: 2026-05-23 15:23:36
+  jigyo_shumoku: 未分類 (AI確認済)
+  yahoo_last_crawled_at: 2026-05-23 15:23:23
+  website_last_crawled_at: 2026-05-23 09:52:32
+  website_crawl_status: SUCCESS
+  last_deep_tagged_at: 2026-05-23 10:39:14
+--- Searching in table: company_industries ---
+Found 1 row(s)
+  corporate_number: 1010001000039
+  industry_code: 95
+  created_at: 2026-05-23 02:59:09
+  industry_path: R.95
+--- Searching in table: business_signals ---
+Found 0 row(s)
+--- Searching in table: raw_yahoo ---
+Found 1 row(s)
+  id: 1057670
+  corporate_number: 1010001000039
+  company_name: 朝日テック工業株式会社
+  yahoo_name: 朝日テック工業株式会社Yahoo!マップ
+  yahoo_address: 東京都文京区湯島3丁目13番5号
+  website_url: http://www.atk3.com
+  scraped_at: 2026-05-23 15:23:23
+--- Searching in table: raw_website ---
+Found 1 row(s)
+  id: 19
+  corporate_number: 1010001000039
+  website_url: http://www.atk3.com
+  scraped_at: 2026-05-23 09:52:32
+  business_summary: طريقة الحصول على شدات مجانا ! | اولا ادخل اسمك فى اول خانة وبعدها اختار المنصة التي تقوم باللعب عليها من الاعلى وبعدها اضغط على كلمة ابدء الشحن الان سيتم تحويلك الى صفحة العروض يجب انهاء عرضين عن طريق ادخال رقم هاتفك وبعدها سوف يصلك كود ادخل هذا الكود وانتظر دقائق وسيتم ارسال الشدات الى حسابك انها خطوات مهمة ان لم يتم فعلها لن تصلك الشدات
+--- Searching in table: company_financials ---
+Found 0 row(s)
+--- Searching in table: raw_hellowork ---
+Found 0 row(s)
+--- Searching in table: financial_records ---
+Found 0 row(s)

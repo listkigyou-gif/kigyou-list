@@ -1,0 +1,122 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #1B4F8A;
+  --color-primary-hover: #143D6C;
+  --color-secondary: #00A896;
+  --color-secondary-hover: #008F7F;
+  --color-accent: #F2A30F;
+  --color-accent-hover: #D68F0C;
+  --color-bg-light: #F8FAFC;
+  --color-card-light: #FFFFFF;
+  
+  --font-sans: "Noto Sans JP", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Inter", "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+:root {
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --primary: #1B4F8A;
+  --secondary: #00A896;
+  --accent: #F2A30F;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0D1117;
+    --foreground: #F8FAFC;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-feature-settings: "palt"; /* Proportional alt metrics for beautiful JP typography */
+}
+
+/* Custom premium blur effect for hidden contact details */
+.blur-info {
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Modern skeleton pulse animation for loading states */
+@keyframes skeleton-pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.animate-skeleton {
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Custom scrollbar for desktop */
+@media (min-width: 1024px) {
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #CBD5E1;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #94A3B8;
+  }
+  
+  .dark ::-webkit-scrollbar-thumb {
+    background: #334155;
+  }
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+}
+
+/* Chrome input auto-zoom prevention for iOS */
+@media screen and (max-width: 767px) {
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Custom slim scrollbar for filter sidebar */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #E2E8F0;
+  border-radius: 9999px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #CBD5E1;
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb {
+  background: #334155;
+}
+.dark .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: #475569;
+}
+
+/* Mobile sliding drawer animation helper */
+.drawer-transition {
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+

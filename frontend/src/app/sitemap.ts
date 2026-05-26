@@ -1,0 +1,116 @@
+import { MetadataRoute } from 'next';
+import { getSitemapCompanies, getSitemapCompaniesCount, getActiveIndustryPrefecturePairs } from '@/lib/db';
+
+export const revalidate = 86400; // Cache sitemap for 24 hours, rebuild in background
+
+const SITEMAP_LIMIT = 50000;
+
+/**
+ * Generate IDs for all sitemaps
+ */
+export async function generateSitemaps() {
+  const totalCompanies = await getSitemapCompaniesCount();
+  const numSitemaps = Math.ceil(totalCompanies / SITEMAP_LIMIT);
+
+  // Return sitemap list: 'core' for general pages, numbers for company pages
+  const sitemaps = [{ id: 'core' }];
+  for (let i = 0; i < numSitemaps; i++) {
+    sitemaps.push({ id: String(i) });
+  }
+  return sitemaps;
+}
+
+/**
+ * Generate the individual sitemaps
+ */
+export default async function sitemap({ id }: { id: any }): Promise<MetadataRoute.Sitemap> {
+  const resolvedId = await id;
+  console.log('--- SITEMAP CALLED WITH RESOLVED ID:', resolvedId);
+  const baseUrl = 'https://kigyoulist.com';
+
+  if (resolvedId === 'core') {
+    // 1. Core Platform Pages
+    const corePages: MetadataRoute.Sitemap = [
+      {
+        url: baseUrl,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 1.0,
+      },
+      {
+        url: `${baseUrl}/search`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.9,
+      },
+      {
+        url: `${baseUrl}/directory`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.85,
+      },
+      {
+        url: `${baseUrl}/contact`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly',
+        priority: 0.5,
+      },
+      {
+        url: `${baseUrl}/terms`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly',
+        priority: 0.3,
+      },
+      {
+        url: `${baseUrl}/privacy`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly',
+        priority: 0.3,
+      },
+    ];
+
+    // 2. Category Matrix Pages (Prefecture × Industry JSIC) (pSEO)
+    const categoryPages: MetadataRoute.Sitemap = [];
+    try {
+      const pairs = await getActiveIndustryPrefecturePairs();
+      pairs.forEach(p => {
+        categoryPages.push({
+          url: `${baseUrl}/industry/${p.industry_code}/location/${p.prefecture_code}`,
+          lastModified: new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.6,
+        });
+      });
+    } catch (error) {
+      console.error('Error generating dynamic categories sitemap:', error);
+    }
+
+    return [...corePages, ...categoryPages];
+  }
+
+  // Otherwise, it is a numeric ID representing a company profile chunk
+  const chunkIndex = parseInt(resolvedId, 10);
+  if (isNaN(chunkIndex)) {
+    return [];
+  }
+
+  const offset = chunkIndex * SITEMAP_LIMIT;
+  const companyPages: MetadataRoute.Sitemap = [];
+  try {
+    const rows = await getSitemapCompanies(SITEMAP_LIMIT, offset);
+    if (rows) {
+      rows.forEach(r => {
+        companyPages.push({
+          url: `${baseUrl}/company/${r.corporate_number}`,
+          lastModified: r.updated_at ? new Date(r.updated_at) : new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.7,
+        });
+      });
+    }
+  } catch (error) {
+    console.error(`Error generating dynamic companies sitemap chunk ${resolvedId}:`, error);
+  }
+
+  return companyPages;
+}

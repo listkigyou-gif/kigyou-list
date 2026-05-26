@@ -1,0 +1,49 @@
+CREATE TABLE companies (
+    corporate_number TEXT PRIMARY KEY,
+    company_name TEXT NOT NULL,
+    company_name_kana TEXT NULL,
+    company_name_en TEXT NULL,
+    
+    -- Địa chỉ đăng ký
+    postal_code TEXT NULL,
+    prefecture_code TEXT NULL,
+    prefecture_name TEXT NULL,
+    city_name TEXT NULL,
+    street_address TEXT NULL,
+    full_address TEXT NULL,
+    
+    -- Đại diện & Pháp lý
+    representative_name TEXT NULL,
+    representative_position TEXT NULL,
+    establishment_date TEXT NULL, -- SQLite lưu dạng YYYY-MM-DD TEXT
+    
+    -- Quy mô
+    capital_amount INTEGER NULL,
+    employee_count INTEGER NULL,
+    sales_amount INTEGER NULL,
+    
+    -- Liên lạc
+    phone_number TEXT NULL,
+    fax_number TEXT NULL,
+    website_url TEXT NULL,
+    email_address TEXT NULL,
+    
+    -- Tóm tắt & Trạng thái
+    business_summary TEXT NULL,
+    status TEXT DEFAULT '活動中',
+    
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+, jigyo_shumoku TEXT NULL, branch_phone_numbers TEXT NULL, yahoo_last_crawled_at TEXT NULL, website_last_crawled_at TEXT NULL, website_crawl_status TEXT NULL, last_deep_tagged_at TEXT)
+
+CREATE TABLE raw_yahoo (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    corporate_number TEXT NULL,
+    company_name TEXT NULL,
+    yahoo_name TEXT NULL,
+    yahoo_address TEXT NULL,
+    phone_number TEXT NULL,
+    website_url TEXT NULL,
+    scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
+

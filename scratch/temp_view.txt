@@ -1,0 +1,160 @@
+901:     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+902:     
+903:     # Generate tables
+904:     yahoo_table = "| Cổng Proxy | Trạng thái Container | Số lượng cào được |\n| :--- | :--- | :--- |\n"
+905:     for port, status, count in yahoo_ports_status:
+906:         yahoo_table += f"| **Port {port}** | {status} | {count:,} |\n"
+907:  
+908:     hw_proxies_table = "| Container Proxy | Trạng thái |\n| :--- | :--- |\n"
+909:     for name, status in hw_proxies_status:
+910:         hw_proxies_table += f"| **{name}** | {status} |\n"
+911:  
+912:     web_proxies_table = "| Container Proxy | Trạng thái |\n| :--- | :--- |\n"
+913:     for name, status in web_proxies_status:
+914:         web_proxies_table += f"| **{name}** | {status} |\n"
+915:  
+916:     postgres_status = "🟢 Active" if "kigyou-postgres" in docker_status else "🔴 Stopped"
+917:     
+918:     content = f"""# Kigyou-List: Automated Enrichment Loop Dashboard
+919:  
+920: > [!NOTE]
+921: > Trang báo cáo này được cập nhật tự động mỗi **1 tiếng** bởi Thread giám sát chạy song song trong chu trình điều phối chính.
+922: > **Thời gian cập nhật cuối**: `{now_str}`
+923:  
+924: ---
+925:  
+926: ## 📊 Trạng thái Vòng lặp Tuần hoàn Hiện tại
+927: * **Chu kỳ hiện tại (Cycle)**: `Cycle {current_cycle}`
+928: * **Giai đoạn đang chạy**: `🎭 {current_stage}`
+929: * **Trạng thái Database (SQLite)**: {db_ok}
+930:  
+931: ### 📈 Lịch sử Tăng trưởng Dữ liệu Cào
+932: ````carousel
+933: ![Theo Giờ (24 Giờ qua)](file:///C:/Users/admin/.gemini/antigravity-ide/brain/86e1fa62-6c0f-49a5-8e98-33af04a92224/stats_history_24h.svg)
+934: <!-- slide -->
+935: ![Theo Ngày (30 Ngày qua)](file:///C:/Users/admin/.gemini/antigravity-ide/brain/86e1fa62-6c0f-49a5-8e98-33af04a92224/stats_history_30d.svg)
+936: <!-- slide -->
+937: ![Theo Tháng (12 Tháng qua)](file:///C:/Users/admin/.gemini/antigravity-ide/brain/86e1fa62-6c0f-49a5-8e98-33af04a92224/stats_history_12m.svg)
+938: <!-- slide -->
+939: ![Theo Năm (Lịch sử các năm)](file:///C:/Users/admin/.gemini/antigravity-ide/brain/86e1fa62-6c0f-49a5-8e98-33af04a92224/stats_history_years.svg)
+940: ````
+941:  
+942: ### ⏱️ Thống kê dữ liệu thực tế (SQLite Master)
+943: | Chỉ số dữ liệu | Số lượng bản ghi | Mô tả |
+944: | :--- | :--- | :--- |
+945: | **Tổng số doanh nghiệp (G-Biz)** | **{total_companies:,}** | Dữ liệu nền móng từ Registry chính phủ |
+946: | **Đã cào Yahoo Maps** | **{yahoo_crawled:,}** | Bổ sung số điện thoại và tọa độ |
+947: | **Đã cào HelloWork (Raw)** | **{hellowork_crawled:,}** | Dữ liệu tuyển dụng thô từ HelloWork |
+948: | **Đã cào Website** | **{website_crawled:,}** | Dữ liệu thô thu thập từ trang chủ doanh nghiệp |
+949: | **Phân loại ngành nghề (AI)** | **{ai_tagged_mappings:,}** | Số lượng mapping ngành nghề JSIC do AI phân tích |
+950: | **Tín hiệu kinh doanh (Signals)** | **{total_signals:,}** | Hojokin, Chotatsu, 特許, 表彰, 届出 |
+951: | **Báo cáo tài chính (Financials)** | **{total_financials:,}** | Doanh thu, lợi nhuận, tổng tài sản qua các năm |
+952:  
+953: ---
+954:  
+955: ## 🐋 Trạng thái Dịch vụ Docker Infrastructure
+956: * **PostgreSQL Production Container (`kigyou-postgres`)**: {postgres_status}
+957:  
+958: ---
+959:  
+960: ## 🎭 Chi tiết Hàng đợi & Proxy HelloWork
+961: * **Trạng thái Hàng đợi tuyển dụng (`hellowork.db`)**:
+962:   - **Đã hoàn thành (`completed`)**: **{hw_queue_stats['completed']:,}**
+963:   - **Đang chờ cào (`pending`)**: **{hw_queue_stats['pending']:,}**
+964:   - **Đang xử lý (`processing`)**: **{hw_queue_stats['processing']:,}**
+965:   - **Thất bại quá hạn (`failed`)**: **{hw_queue_stats['failed']:,}**
+966:  
+967: {hw_proxies_table}
+968:  
+969: ---
+970:  
+971: ## 🌐 Chi tiết Hàng đợi & Proxy Website Scraper
+972: * **Trạng thái cào trang chủ doanh nghiệp (`companies` table)**:
+973:   - **Cào thành công (`SUCCESS`)**: **{web_crawl_stats['SUCCESS']:,}**
+974:   - **Cào thành công nhưng rỗng (`SUCCESS_EMPTY`)**: **{web_crawl_stats['SUCCESS_EMPTY']:,}**
+975:   - **Lỗi Timeout (`ERR_TIMEOUT`)**: **{web_crawl_stats['ERR_TIMEOUT']:,}**
+976:   - **Lỗi DNS (`ERR_DNS`)**: **{web_crawl_stats['ERR_DNS']:,}**
+977:   - **Lỗi Connection Refused (`ERR_CONNECTION_REFUSED`)**: **{web_crawl_stats['ERR_CONNECTION_REFUSED']:,}**
+978:   - **Lỗi cào khác (`ERR_FAILED`)**: **{web_crawl_stats['ERR_FAILED']:,}**
+979:   - **Đang chờ cào (`Pending`)**: **{web_crawl_stats['Pending']:,}**
+980:  
+981: {web_proxies_table}
+982:  
+983: ---
+984:  
+985: ## 🗺️ Chi tiết 30 Luồng cào Yahoo Maps (Kết quả CSV)
+986: * **Tổng số doanh nghiệp đã cào trong đợt này (CSV)**: **{total_csv_records:,}**
+987:  
+988: {yahoo_table}
+989:  
+990: ---
+991:  
+992: ## 🛠️ Trạng thái Hệ thống & Logs gần nhất
+993: * Vui lòng kiểm tra log điều phối chi tiết tại: [task-5478.log](file:///C:/Users/admin/.gemini/antigravity-ide/brain/86e1fa62-6c0f-49a5-8e98-33af04a92224/.system_generated/tasks/task-5478.log)
+994: """
+995:     try:
+996:         os.makedirs(os.path.dirname(dashboard_path), exist_ok=True)
+997:         with open(dashboard_path, "w", encoding="utf-8") as f:
+998:             f.write(content)
+999:     except Exception:
+1000:         pass
+1001: 
+1002: 
+1003: def dashboard_monitor_worker(stop_event):
+1004:     while not stop_event.is_set():
+1005:         try:
+1006:             update_dashboard_file()
+1007:         except Exception:
+1008:             pass
+1009:         stop_event.wait(3600)
+1010: 
+1011: 
+1012: # Dashboard monitoring global variables
+1013: current_stage = "Khởi động hệ thống"
+1014: current_cycle = 1
+1015: 
+1016: 
+1017: def main():
+1018:     global current_stage, current_cycle
+1019:     parser = argparse.ArgumentParser(description="Kigyou-list Data Enrichment Loop")
+1020:     parser.add_argument("--limit", type=int, default=0, help="Limit record count for crawlers & imports (0 = no limit)")
+1021:     parser.add_argument("--api", action="store_true", help="Sync G-Biz via REST API instead of CSV in Step 1")
+1022:     parser.add_argument("--prefecture", type=str, default=None, help="Scope G-Biz sync to a specific prefecture code")
+1023:     parser.add_argument("--offline", action="store_true", help="Force rule-based AI tagging instead of Groq API")
+1024:     args = parser.parse_args()
+1025: 
+1026:     # Start dashboard monitoring thread
+1027:     stop_event = threading.Event()
+1028:     monitor_thread = threading.Thread(target=dashboard_monitor_worker, args=(stop_event,), daemon=True)
+1029:     monitor_thread.start()
+1030: 
+1031:     cycle_count = 1
+1032:     try:
+1033:         while True:
+1034:             current_cycle = cycle_count
+1035:             t_start = time.time()
+1036:             log_banner(f"AUTOMATED DATA ENRICHMENT LOOP - CYCLE {cycle_count} START")
+1037:             logger.info(f"Start Time:     {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+1038:             logger.info(f"Target Limit:   {args.limit}")
+1039:             logger.info(f"G-Biz API Mode: {args.api}")
+1040:             logger.info(f"Prefecture:     {args.prefecture or 'ALL'}")
+1041:             logger.info(f"Offline Tagging:{args.offline}")
+1042:             
+1043:             try:
+1044:                 # Step 0: Ensure Docker services are up
+1045:                 current_stage = "Kiểm tra hạ tầng Docker (Postgres, Proxies)"
+1046:                 if not ensure_docker_containers():
+1047:                     raise RuntimeError("Docker environment check failed.")
+1048:                     
+1049:                 # Step 1: HelloWork Crawler
+1050:                 log_banner("STAGE 1: HELLOWORK CRAWLER")
+1051:                 hw_dir = os.path.join(WORKSPACE_ROOT, "crawlers", "hellowork")
+1052:                 
+1053:                 # Check HelloWork maintenance before running
+1054:                 sys.path.insert(0, hw_dir)
+1055:                 try:
+1056:                     from maintenance import wait_if_maintenance
+1057:                     wait_if_maintenance("Enrichment Loop - HelloWork Stage")
+1058:                 except Exception as e:
+1059:                     logger.warning(f"[!] Could not run HelloWork maintenance check: {e}")
+1060:                 finally:

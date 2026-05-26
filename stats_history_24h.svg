@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" width="100%" height="360" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; font-family: system-ui, -apple-system, sans-serif;">
+<style>
+        .grid-line { stroke: #e2e8f0; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
+        .axis-line { stroke: #cbd5e1; stroke-width: 1.5; fill: none; }
+        .axis-text { fill: #64748b; font-size: 11px; }
+        .title { fill: #0f172a; font-size: 15px; font-weight: bold; }
+        .legend-text { fill: #334155; font-size: 11px; font-weight: 500; }
+        .line-yahoo { stroke: #3b82f6; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+        .line-hw { stroke: #f97316; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+        .line-web { stroke: #10b981; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+        .dot-yahoo { fill: #3b82f6; stroke: #ffffff; stroke-width: 1.5; }
+        .dot-hw { fill: #f97316; stroke: #ffffff; stroke-width: 1.5; }
+        .dot-web { fill: #10b981; stroke: #ffffff; stroke-width: 1.5; }
+        @media (prefers-color-scheme: dark) {
+            svg { background-color: #0f172a !important; border-color: #334155 !important; }
+            .grid-line { stroke: #334155; }
+            .axis-line { stroke: #475569; }
+            .axis-text { fill: #94a3b8; }
+            .title { fill: #f8fafc; }
+            .legend-text { fill: #cbd5e1; }
+            .dot-yahoo { stroke: #0f172a; }
+            .dot-hw { stroke: #0f172a; }
+            .dot-web { stroke: #0f172a; }
+        }
+    </style>
+<text x="20" y="30" class="title">Biểu đồ Tăng trưởng Dữ liệu Cào (24 Giờ qua - Theo giờ)</text>
+<line x1="65" y1="50.0" x2="735" y2="50.0" class="grid-line" />
+<line x1="65" y1="136.66666666666666" x2="735" y2="136.66666666666666" class="grid-line" />
+<line x1="65" y1="223.33333333333331" x2="735" y2="223.33333333333331" class="grid-line" />
+<line x1="65" y1="310.0" x2="735" y2="310.0" class="grid-line" />
+<line x1="65.0" y1="50" x2="65.0" y2="310" class="grid-line" />
+<text x="65.0" y="330" text-anchor="middle" class="axis-text">11:00</text>
+<line x1="192.6190476190476" y1="50" x2="192.6190476190476" y2="310" class="grid-line" />
+<text x="192.6190476190476" y="330" text-anchor="middle" class="axis-text">15:00</text>
+<line x1="320.2380952380952" y1="50" x2="320.2380952380952" y2="310" class="grid-line" />
+<text x="320.2380952380952" y="330" text-anchor="middle" class="axis-text">20:00</text>
+<line x1="447.85714285714283" y1="50" x2="447.85714285714283" y2="310" class="grid-line" />
+<text x="447.85714285714283" y="330" text-anchor="middle" class="axis-text">00:00</text>
+<line x1="575.4761904761904" y1="50" x2="575.4761904761904" y2="310" class="grid-line" />
+<text x="575.4761904761904" y="330" text-anchor="middle" class="axis-text">04:00</text>
+<line x1="735.0" y1="50" x2="735.0" y2="310" class="grid-line" />
+<text x="735.0" y="330" text-anchor="middle" class="axis-text">09:00</text>
+<line x1="65" y1="50" x2="65" y2="310" class="axis-line" />
+<line x1="65" y1="310" x2="735" y2="310" class="axis-line" />
+<path d="M 65.0 310.0 L 96.9 310.0 L 128.8 310.0 L 160.7 310.0 L 192.6 263.7 L 224.5 230.7 L 256.4 224.2 L 288.3 216.9 L 320.2 208.0 L 352.1 199.1 L 384.0 190.1 L 416.0 180.8 L 447.9 170.9 L 479.8 162.0 L 511.7 148.4 L 543.6 133.7 L 575.5 118.9 L 607.4 104.0 L 639.3 96.6 L 671.2 79.8 L 703.1 64.9 L 735.0 50.0" class="line-yahoo" />
+<circle cx="65.0" cy="310.0" r="4" class="dot-yahoo" />
+<circle cx="416.0" cy="180.8" r="4" class="dot-yahoo" />
+<circle cx="735.0" cy="50.0" r="4" class="dot-yahoo" />
+<path d="M 65.0 310.0 L 96.9 310.0 L 128.8 310.0 L 160.7 310.0 L 192.6 310.0 L 224.5 310.0 L 256.4 89.6 L 288.3 89.6 L 320.2 50.0 L 352.1 50.0 L 384.0 50.0 L 416.0 50.0 L 447.9 50.0 L 479.8 50.0 L 511.7 50.0 L 543.6 50.0 L 575.5 50.0 L 607.4 50.0 L 639.3 50.0 L 671.2 50.0 L 703.1 50.0 L 735.0 50.0" class="line-hw" />
+<circle cx="65.0" cy="310.0" r="4" class="dot-hw" />
+<circle cx="416.0" cy="50.0" r="4" class="dot-hw" />
+<circle cx="735.0" cy="50.0" r="4" class="dot-hw" />
+<path d="M 65.0 309.8 L 96.9 309.8 L 128.8 309.8 L 160.7 309.8 L 192.6 309.9 L 224.5 310.0 L 256.4 276.5 L 288.3 276.8 L 320.2 236.0 L 352.1 190.8 L 384.0 170.1 L 416.0 170.3 L 447.9 171.6 L 479.8 172.3 L 511.7 172.3 L 543.6 172.3 L 575.5 130.1 L 607.4 76.9 L 639.3 69.4 L 671.2 69.4 L 703.1 69.4 L 735.0 50.0" class="line-web" />
+<circle cx="65.0" cy="309.8" r="4" class="dot-web" />
+<circle cx="416.0" cy="170.3" r="4" class="dot-web" />
+<circle cx="735.0" cy="50.0" r="4" class="dot-web" />
+<rect x="535" y="7" width="12" height="12" rx="3" fill="#3b82f6" />
+<text x="553" y="16" class="legend-text">Yahoo Maps: 648 → 190,085</text>
+<rect x="535" y="22" width="12" height="12" rx="3" fill="#f97316" />
+<text x="553" y="31" class="legend-text">HelloWork: 431,302 → 460,972</text>
+<rect x="535" y="37" width="12" height="12" rx="3" fill="#10b981" />
+<text x="553" y="46" class="legend-text">Website: 96 → 10,836</text>
+</svg>

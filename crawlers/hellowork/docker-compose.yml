@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  warp:
+    image: caomingjun/warp
+    container_name: warp-proxy
+    restart: always
+    ports:
+      - "40000:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-2:
+    image: caomingjun/warp
+    container_name: warp-proxy-2
+    restart: always
+    ports:
+      - "40006:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-3:
+    image: caomingjun/warp
+    container_name: warp-proxy-3
+    restart: always
+    ports:
+      - "40007:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-harvester:
+    image: caomingjun/warp
+    container_name: warp-harvester
+    restart: always
+    ports:
+      - "40008:1080" # Cổng riêng cho Giai đoạn 1
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2

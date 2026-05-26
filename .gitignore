@@ -1,0 +1,15 @@
+*.db
+*.db-shm
+*.db-wal
+*.csv
+*.log
+crawlers/yahoo/data/
+crawlers/yahoo/logs/
+
+# Development artifacts
+node_modules/
+.next/
+out/
+.env*
+.DS_Store
+importdata/

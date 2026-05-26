@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 360" width="100%" height="360" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; font-family: system-ui, -apple-system, sans-serif;">
+<style>
+        .grid-line { stroke: #e2e8f0; stroke-width: 1; stroke-dasharray: 4 4; fill: none; }
+        .axis-line { stroke: #cbd5e1; stroke-width: 1.5; fill: none; }
+        .axis-text { fill: #64748b; font-size: 11px; }
+        .title { fill: #0f172a; font-size: 15px; font-weight: bold; }
+        .legend-text { fill: #334155; font-size: 11px; font-weight: 500; }
+        .line-yahoo { stroke: #3b82f6; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+        .line-hw { stroke: #f97316; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+        .line-web { stroke: #10b981; stroke-width: 2.5; fill: none; stroke-linecap: round; }
+        .dot-yahoo { fill: #3b82f6; stroke: #ffffff; stroke-width: 1.5; }
+        .dot-hw { fill: #f97316; stroke: #ffffff; stroke-width: 1.5; }
+        .dot-web { fill: #10b981; stroke: #ffffff; stroke-width: 1.5; }
+        @media (prefers-color-scheme: dark) {
+            svg { background-color: #0f172a !important; border-color: #334155 !important; }
+            .grid-line { stroke: #334155; }
+            .axis-line { stroke: #475569; }
+            .axis-text { fill: #94a3b8; }
+            .title { fill: #f8fafc; }
+            .legend-text { fill: #cbd5e1; }
+            .dot-yahoo { stroke: #0f172a; }
+            .dot-hw { stroke: #0f172a; }
+            .dot-web { stroke: #0f172a; }
+        }
+    </style>
+<text x="20" y="30" class="title">Biểu đồ Tăng trưởng Dữ liệu Cào (12 Tháng qua - Theo tháng)</text>
+<line x1="65" y1="50.0" x2="735" y2="50.0" class="grid-line" />
+<line x1="65" y1="136.66666666666666" x2="735" y2="136.66666666666666" class="grid-line" />
+<line x1="65" y1="223.33333333333331" x2="735" y2="223.33333333333331" class="grid-line" />
+<line x1="65" y1="310.0" x2="735" y2="310.0" class="grid-line" />
+<line x1="65.0" y1="50" x2="65.0" y2="310" class="grid-line" />
+<text x="65.0" y="330" text-anchor="middle" class="axis-text">06/25</text>
+<line x1="186.8181818181818" y1="50" x2="186.8181818181818" y2="310" class="grid-line" />
+<text x="186.8181818181818" y="330" text-anchor="middle" class="axis-text">08/25</text>
+<line x1="308.6363636363636" y1="50" x2="308.6363636363636" y2="310" class="grid-line" />
+<text x="308.6363636363636" y="330" text-anchor="middle" class="axis-text">10/25</text>
+<line x1="430.45454545454544" y1="50" x2="430.45454545454544" y2="310" class="grid-line" />
+<text x="430.45454545454544" y="330" text-anchor="middle" class="axis-text">12/25</text>
+<line x1="552.2727272727273" y1="50" x2="552.2727272727273" y2="310" class="grid-line" />
+<text x="552.2727272727273" y="330" text-anchor="middle" class="axis-text">02/26</text>
+<line x1="735.0" y1="50" x2="735.0" y2="310" class="grid-line" />
+<text x="735.0" y="330" text-anchor="middle" class="axis-text">05/26</text>
+<line x1="65" y1="50" x2="65" y2="310" class="axis-line" />
+<line x1="65" y1="310" x2="735" y2="310" class="axis-line" />
+<path d="M 65.0 310.0 L 125.9 286.4 L 186.8 262.7 L 247.7 239.1 L 308.6 215.5 L 369.5 191.8 L 430.5 168.2 L 491.4 144.5 L 552.3 120.9 L 613.2 97.3 L 674.1 73.6 L 735.0 50.0" class="line-yahoo" />
+<circle cx="65.0" cy="310.0" r="4" class="dot-yahoo" />
+<circle cx="430.5" cy="168.2" r="4" class="dot-yahoo" />
+<circle cx="735.0" cy="50.0" r="4" class="dot-yahoo" />
+<path d="M 65.0 310.0 L 125.9 286.4 L 186.8 262.7 L 247.7 239.1 L 308.6 215.5 L 369.5 191.8 L 430.5 168.2 L 491.4 144.5 L 552.3 120.9 L 613.2 97.3 L 674.1 73.6 L 735.0 50.0" class="line-hw" />
+<circle cx="65.0" cy="310.0" r="4" class="dot-hw" />
+<circle cx="430.5" cy="168.2" r="4" class="dot-hw" />
+<circle cx="735.0" cy="50.0" r="4" class="dot-hw" />
+<path d="M 65.0 310.0 L 125.9 286.4 L 186.8 262.7 L 247.7 239.1 L 308.6 215.5 L 369.5 191.8 L 430.5 168.2 L 491.4 144.5 L 552.3 120.9 L 613.2 97.3 L 674.1 73.6 L 735.0 50.0" class="line-web" />
+<circle cx="65.0" cy="310.0" r="4" class="dot-web" />
+<circle cx="430.5" cy="168.2" r="4" class="dot-web" />
+<circle cx="735.0" cy="50.0" r="4" class="dot-web" />
+<rect x="535" y="7" width="12" height="12" rx="3" fill="#3b82f6" />
+<text x="553" y="16" class="legend-text">Yahoo Maps: 157,085 → 190,085</text>
+<rect x="535" y="22" width="12" height="12" rx="3" fill="#f97316" />
+<text x="553" y="31" class="legend-text">HelloWork: 295,972 → 460,972</text>
+<rect x="535" y="37" width="12" height="12" rx="3" fill="#10b981" />
+<text x="553" y="46" class="legend-text">Website: 2,036 → 10,836</text>
+</svg>

@@ -1,0 +1,811 @@
+"use client";
+
+import React from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Filter, Lock } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
+
+interface PrefectureOption {
+  code: string;
+  name: string;
+  count: number;
+}
+
+interface MediumIndustry {
+  code: string;
+  name: string;
+  count: number;
+}
+
+interface MajorIndustry {
+  code: string;
+  name: string;
+  totalCount: number;
+  children: MediumIndustry[];
+}
+
+interface SearchSidebarProps {
+  prefectures: PrefectureOption[];
+  industries: MajorIndustry[];
+  // current active filter values (from URL params)
+  prefCode?: string;
+  city?: string;
+  cities?: { cityName: string; count: number }[];
+  indCode?: string;
+  minEmp?: number;
+  maxEmp?: number;
+  minCap?: number;
+  maxCap?: number;
+  hasHiring: boolean;
+  hasSubsidy: boolean;
+  hasBidding: boolean;
+  minEstYear?: number;
+  maxEstYear?: number;
+  hasAward: boolean;
+  hasCertification: boolean;
+  hasPatent: boolean;
+  minSales?: number;
+  maxSales?: number;
+  hasEmail: boolean;
+  hasPhone: boolean;
+  hasWebsite: boolean;
+  hasFax: boolean;
+  companyStatus?: string;
+  minOpIncome?: number;
+  maxOpIncome?: number;
+  minOrdIncome?: number;
+  maxOrdIncome?: number;
+  minNetIncome?: number;
+  maxNetIncome?: number;
+  onFilterChange?: (updates: Record<string, any>) => void;
+  className?: string;
+  onCloseMobile?: () => void;
+}
+
+export const SearchSidebar: React.FC<SearchSidebarProps> = ({
+  prefectures,
+  industries,
+  prefCode,
+  city,
+  cities,
+  indCode,
+  minEmp,
+  maxEmp,
+  minCap,
+  maxCap,
+  hasHiring,
+  hasSubsidy,
+  hasBidding,
+  minEstYear,
+  maxEstYear,
+  hasAward,
+  hasCertification,
+  hasPatent,
+  minSales,
+  maxSales,
+  hasEmail,
+  hasPhone,
+  hasWebsite,
+  hasFax,
+  companyStatus,
+  minOpIncome,
+  maxOpIncome,
+  minOrdIncome,
+  maxOrdIncome,
+  minNetIncome,
+  maxNetIncome,
+  onFilterChange,
+  className,
+  onCloseMobile,
+}) => {
+  const router = useRouter();
+  const { isLoggedIn, user, setAuthModalOpen } = useAuth();
+  const isProOrHigher = user && (user.role === 'pro' || user.role === 'business' || user.role === 'enterprise');
+
+  // Build a new query string merging current params with overrides
+  const buildUrl = (overrides: Record<string, string | null | undefined>) => {
+    const params = new URLSearchParams();
+
+    // Start from current URL filter values (as strings)
+    const current: Record<string, string | null | undefined> = {
+      prefecture: prefCode,
+      city: city,
+      industry: indCode,
+      min_employees: minEmp != null ? String(minEmp) : undefined,
+      max_employees: maxEmp != null ? String(maxEmp) : undefined,
+      min_capital: minCap != null ? String(minCap) : undefined,
+      max_capital: maxCap != null ? String(maxCap) : undefined,
+      hiring: hasHiring ? "true" : undefined,
+      subsidy: hasSubsidy ? "true" : undefined,
+      bidding: hasBidding ? "true" : undefined,
+      min_establishment_year: minEstYear != null ? String(minEstYear) : undefined,
+      max_establishment_year: maxEstYear != null ? String(maxEstYear) : undefined,
+      award: hasAward ? "true" : undefined,
+      certification: hasCertification ? "true" : undefined,
+      patent: hasPatent ? "true" : undefined,
+      min_sales: minSales != null ? String(minSales) : undefined,
+      max_sales: maxSales != null ? String(maxSales) : undefined,
+      email: hasEmail ? "true" : undefined,
+      phone: hasPhone ? "true" : undefined,
+      website: hasWebsite ? "true" : undefined,
+      fax: hasFax ? "true" : undefined,
+      status: companyStatus,
+      min_operating_income: minOpIncome != null ? String(minOpIncome) : undefined,
+      max_operating_income: maxOpIncome != null ? String(maxOpIncome) : undefined,
+      min_ordinary_income: minOrdIncome != null ? String(minOrdIncome) : undefined,
+      max_ordinary_income: maxOrdIncome != null ? String(maxOrdIncome) : undefined,
+      min_net_income: minNetIncome != null ? String(minNetIncome) : undefined,
+      max_net_income: maxNetIncome != null ? String(maxNetIncome) : undefined,
+    };
+
+    const merged: Record<string, string | null | undefined> = {
+      ...current,
+      ...overrides,
+      page: "1",
+    };
+
+    Object.entries(merged).forEach(([k, v]) => {
+      if (v != null && v !== "" && v !== "false") {
+        params.set(k, v);
+      }
+    });
+
+    return `/search?${params.toString()}`;
+  };
+
+  const navigate = (overrides: Record<string, string | null | undefined>) => {
+    if (onFilterChange) {
+      const updates: Record<string, any> = {};
+      Object.entries(overrides).forEach(([key, val]) => {
+        if (key === "prefecture") updates.prefecture = val;
+        else if (key === "city") updates.city = val;
+        else if (key === "industry") updates.industry = val;
+        else if (key === "min_employees") updates.min_employees = val;
+        else if (key === "max_employees") updates.max_employees = val;
+        else if (key === "min_capital") updates.min_capital = val;
+        else if (key === "max_capital") updates.max_capital = val;
+        else if (key === "hiring") updates.hiring = val === "true";
+        else if (key === "subsidy") updates.subsidy = val === "true";
+        else if (key === "bidding") updates.bidding = val === "true";
+        else if (key === "min_establishment_year") updates.min_establishment_year = val;
+        else if (key === "max_establishment_year") updates.max_establishment_year = val;
+        else if (key === "award") updates.award = val === "true";
+        else if (key === "certification") updates.certification = val === "true";
+        else if (key === "patent") updates.patent = val === "true";
+        else if (key === "min_sales") updates.min_sales = val;
+        else if (key === "max_sales") updates.max_sales = val;
+        else if (key === "email") updates.email = val === "true";
+        else if (key === "phone") updates.phone = val === "true";
+        else if (key === "website") updates.website = val === "true";
+        else if (key === "fax") updates.fax = val === "true";
+        else if (key === "status") updates.status = val;
+        else if (key === "min_operating_income") updates.min_operating_income = val;
+        else if (key === "max_operating_income") updates.max_operating_income = val;
+        else if (key === "min_ordinary_income") updates.min_ordinary_income = val;
+        else if (key === "max_ordinary_income") updates.max_ordinary_income = val;
+        else if (key === "min_net_income") updates.min_net_income = val;
+        else if (key === "max_net_income") updates.max_net_income = val;
+      });
+      onFilterChange(updates);
+      if (onCloseMobile) {
+        onCloseMobile();
+      }
+    } else {
+      router.push(buildUrl(overrides));
+    }
+  };
+
+  return (
+    <aside className={className || "hidden lg:block w-76 shrink-0 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-6 sticky top-20 max-h-[calc(100vh-7rem)] overflow-y-auto scrollbar-thin"}>
+      <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+        <h2 className="font-bold flex items-center gap-2 text-slate-800 dark:text-white">
+          <Filter className="w-4 h-4 text-primary" />
+          絞り込み条件
+        </h2>
+        {onFilterChange ? (
+          <button
+            type="button"
+            onClick={() => onFilterChange({
+              prefecture: null,
+              city: null,
+              industry: null,
+              min_employees: null,
+              max_employees: null,
+              min_capital: null,
+              max_capital: null,
+              hiring: false,
+              subsidy: false,
+              bidding: false,
+              min_establishment_year: null,
+              max_establishment_year: null,
+              award: false,
+              certification: false,
+              patent: false,
+              min_sales: null,
+              max_sales: null,
+              email: false,
+              phone: false,
+              website: false,
+              fax: false,
+              status: null,
+              min_operating_income: null,
+              max_operating_income: null,
+              min_ordinary_income: null,
+              max_ordinary_income: null,
+              min_net_income: null,
+              max_net_income: null,
+            })}
+            className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+          >
+            クリア
+          </button>
+        ) : (
+          <Link
+            href="/search"
+            className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+          >
+            クリア
+          </Link>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-6">
+        {/* Filter by Prefecture */}
+        <div>
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            都道府県
+          </label>
+          <select
+            value={prefCode || ""}
+            onChange={(e) => navigate({ prefecture: e.target.value || null, city: null })}
+            className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:border-slate-700"
+          >
+            <option value="">すべて（日本全国）</option>
+            {prefectures.map((pref) => (
+              <option key={pref.code} value={pref.code}>
+                {pref.name} ({pref.count})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Filter by City (市区町村) - Lọc phân cấp dưới Tỉnh */}
+        {prefCode && cities && cities.length > 0 && (
+          <div>
+            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+              市区町村
+            </label>
+            <select
+              value={city || ""}
+              onChange={(e) => navigate({ city: e.target.value || null })}
+              className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:border-slate-700"
+            >
+              <option value="">すべての市区町村</option>
+              {cities.map((c) => (
+                <option key={c.cityName} value={c.cityName}>
+                  {c.cityName} ({c.count.toLocaleString()}社)
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Filter by Industry */}
+        <div>
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            JSIC 産業分類
+          </label>
+          <select
+            value={indCode || ""}
+            onChange={(e) => navigate({ industry: e.target.value || null })}
+            className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:border-slate-700 font-sans"
+          >
+            <option value="">すべての業界</option>
+            {industries.map((major) => (
+              <React.Fragment key={major.code}>
+                <option value={major.code} className="font-extrabold text-slate-900 dark:text-white">
+                  {major.code} {major.name} (計 {major.totalCount.toLocaleString()}社)
+                </option>
+                {major.children.map((medium) => (
+                  <option key={medium.code} value={medium.code} className="text-slate-700 dark:text-slate-300">
+                    {"\u00A0\u00A0"}{medium.code} {medium.name} ({medium.count.toLocaleString()}社)
+                  </option>
+                ))}
+              </React.Fragment>
+            ))}
+          </select>
+        </div>
+
+        {/* Filter by Employee Count */}
+        <div>
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            従業員数
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="number"
+              placeholder="下限 (名)"
+              defaultValue={minEmp || ""}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const val = (e.target as HTMLInputElement).value;
+                  navigate({ min_employees: val || null });
+                }
+              }}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val !== (minEmp != null ? String(minEmp) : "")) {
+                  navigate({ min_employees: val || null });
+                }
+              }}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+            />
+            <input
+              type="number"
+              placeholder="上限 (名)"
+              defaultValue={maxEmp || ""}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const val = (e.target as HTMLInputElement).value;
+                  navigate({ max_employees: val || null });
+                }
+              }}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val !== (maxEmp != null ? String(maxEmp) : "")) {
+                  navigate({ max_employees: val || null });
+                }
+              }}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+            />
+          </div>
+        </div>
+
+        {/* Filter by Capital */}
+        <div>
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            資本金
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="number"
+              placeholder="下限 (万円)"
+              defaultValue={minCap || ""}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const val = (e.target as HTMLInputElement).value;
+                  navigate({ min_capital: val || null });
+                }
+              }}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val !== (minCap != null ? String(minCap) : "")) {
+                  navigate({ min_capital: val || null });
+                }
+              }}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+            />
+            <input
+              type="number"
+              placeholder="上限 (万円)"
+              defaultValue={maxCap || ""}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const val = (e.target as HTMLInputElement).value;
+                  navigate({ max_capital: val || null });
+                }
+              }}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val !== (maxCap != null ? String(maxCap) : "")) {
+                  navigate({ max_capital: val || null });
+                }
+              }}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+            />
+          </div>
+        </div>
+
+        {/* Filter by Sales */}
+        <div>
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            売上高
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="number"
+              placeholder="下限 (億円)"
+              defaultValue={minSales || ""}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const val = (e.target as HTMLInputElement).value;
+                  navigate({ min_sales: val || null });
+                }
+              }}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val !== (minSales != null ? String(minSales) : "")) {
+                  navigate({ min_sales: val || null });
+                }
+              }}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+            />
+            <input
+              type="number"
+              placeholder="上限 (億円)"
+              defaultValue={maxSales || ""}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const val = (e.target as HTMLInputElement).value;
+                  navigate({ max_sales: val || null });
+                }
+              }}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val !== (maxSales != null ? String(maxSales) : "")) {
+                  navigate({ max_sales: val || null });
+                }
+              }}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+            />
+          </div>
+        </div>
+
+        {/* Growth & Financial Indicators */}
+        <div className="border-t border-slate-100 dark:border-slate-800/60 pt-4">
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+            財務指標 (決算)
+          </label>
+          <div className="flex flex-col gap-4">
+
+
+            {/* Operating Income */}
+            <div>
+              <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                営業利益
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  placeholder="下限 (億円)"
+                  defaultValue={minOpIncome || ""}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value;
+                      navigate({ min_operating_income: val || null });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    if (val !== (minOpIncome != null ? String(minOpIncome) : "")) {
+                      navigate({ min_operating_income: val || null });
+                    }
+                  }}
+                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                />
+                <input
+                  type="number"
+                  placeholder="上限 (億円)"
+                  defaultValue={maxOpIncome || ""}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value;
+                      navigate({ max_operating_income: val || null });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    if (val !== (maxOpIncome != null ? String(maxOpIncome) : "")) {
+                      navigate({ max_operating_income: val || null });
+                    }
+                  }}
+                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                />
+              </div>
+            </div>
+
+            {/* Ordinary Income */}
+            <div>
+              <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                経常利益
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  placeholder="下限 (億円)"
+                  defaultValue={minOrdIncome || ""}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value;
+                      navigate({ min_ordinary_income: val || null });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    if (val !== (minOrdIncome != null ? String(minOrdIncome) : "")) {
+                      navigate({ min_ordinary_income: val || null });
+                    }
+                  }}
+                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                />
+                <input
+                  type="number"
+                  placeholder="上限 (億円)"
+                  defaultValue={maxOrdIncome || ""}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value;
+                      navigate({ max_ordinary_income: val || null });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    if (val !== (maxOrdIncome != null ? String(maxOrdIncome) : "")) {
+                      navigate({ max_ordinary_income: val || null });
+                    }
+                  }}
+                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                />
+              </div>
+            </div>
+
+            {/* Net Income */}
+            <div>
+              <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+                当期純利益
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                <input
+                  type="number"
+                  placeholder="下限 (億円)"
+                  defaultValue={minNetIncome || ""}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value;
+                      navigate({ min_net_income: val || null });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    if (val !== (minNetIncome != null ? String(minNetIncome) : "")) {
+                      navigate({ min_net_income: val || null });
+                    }
+                  }}
+                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                />
+                <input
+                  type="number"
+                  placeholder="上限 (億円)"
+                  defaultValue={maxNetIncome || ""}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value;
+                      navigate({ max_net_income: val || null });
+                    }
+                  }}
+                  onBlur={(e) => {
+                    const val = e.target.value;
+                    if (val !== (maxNetIncome != null ? String(maxNetIncome) : "")) {
+                      navigate({ max_net_income: val || null });
+                    }
+                  }}
+                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter by Establishment Year */}
+        <div>
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            設立年度
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="number"
+              placeholder="下限 (年)"
+              defaultValue={minEstYear || ""}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const val = (e.target as HTMLInputElement).value;
+                  navigate({ min_establishment_year: val || null });
+                }
+              }}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val !== (minEstYear != null ? String(minEstYear) : "")) {
+                  navigate({ min_establishment_year: val || null });
+                }
+              }}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+            />
+            <input
+              type="number"
+              placeholder="上限 (年)"
+              defaultValue={maxEstYear || ""}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  const val = (e.target as HTMLInputElement).value;
+                  navigate({ max_establishment_year: val || null });
+                }
+              }}
+              onBlur={(e) => {
+                const val = e.target.value;
+                if (val !== (maxEstYear != null ? String(maxEstYear) : "")) {
+                  navigate({ max_establishment_year: val || null });
+                }
+              }}
+              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+            />
+          </div>
+        </div>
+
+        {/* Filter by Status */}
+        <div>
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            企業ステータス
+          </label>
+          <select
+            value={companyStatus || ""}
+            onChange={(e) => navigate({ status: e.target.value || null })}
+            className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:border-slate-700"
+          >
+            <option value="">すべてのステータス</option>
+            <option value="活動中">活動中</option>
+            <option value="閉鎖">閉鎖</option>
+          </select>
+        </div>
+
+        {/* Intent Signal Filters */}
+        <div className="relative">
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+            営業活動シグナル 🔑
+          </label>
+          <div className={`${!isLoggedIn ? "blur-[2.5px] pointer-events-none select-none opacity-60" : ""} flex flex-col gap-2.5`}>
+            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasHiring}
+                disabled={!isLoggedIn}
+                onChange={(e) => navigate({ hiring: e.target.checked ? "true" : null })}
+                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+              />
+              <span>求人活動あり</span>
+            </label>
+            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasSubsidy}
+                disabled={!isLoggedIn}
+                onChange={(e) => navigate({ subsidy: e.target.checked ? "true" : null })}
+                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+              />
+              <span>国の補助金受給履歴あり</span>
+            </label>
+            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasBidding}
+                disabled={!isLoggedIn}
+                onChange={(e) => navigate({ bidding: e.target.checked ? "true" : null })}
+                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+              />
+              <span>公共機関の入札落札実績あり</span>
+            </label>
+            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasAward}
+                disabled={!isLoggedIn}
+                onChange={(e) => navigate({ award: e.target.checked ? "true" : null })}
+                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+              />
+              <span className="flex items-center gap-1">表彰受賞実績あり</span>
+            </label>
+            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasCertification}
+                disabled={!isLoggedIn}
+                onChange={(e) => navigate({ certification: e.target.checked ? "true" : null })}
+                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+              />
+              <span className="flex items-center gap-1">行政の届出認定あり</span>
+            </label>
+            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasPatent}
+                disabled={!isLoggedIn}
+                onChange={(e) => navigate({ patent: e.target.checked ? "true" : null })}
+                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+              />
+              <span className="flex items-center gap-1">特許・商標の保有あり</span>
+            </label>
+          </div>
+          {!isLoggedIn && (
+            <div 
+              onClick={() => setAuthModalOpen(true)}
+              className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-transparent z-10"
+              title="クリックして無料会員登録"
+            >
+              <div className="bg-amber-100/90 dark:bg-amber-950/90 border border-amber-250/50 dark:border-amber-900/50 rounded-xl px-2.5 py-1.5 flex items-center gap-1 shadow-sm text-[10px] font-black text-amber-800 dark:text-amber-300 hover:scale-105 transition-transform duration-200">
+                <Lock className="w-3.5 h-3.5" />
+                無料登録で利用可能
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Contact Presence Filters */}
+        <div className="relative">
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+            連絡先情報の有無 🔑
+          </label>
+          <div className={`${!isProOrHigher ? "blur-[2.5px] pointer-events-none select-none opacity-60" : ""} flex flex-col gap-2.5`}>
+            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasEmail}
+                disabled={!isProOrHigher}
+                onChange={(e) => navigate({ email: e.target.checked ? "true" : null })}
+                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+              />
+              <span>Emailあり</span>
+            </label>
+            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasPhone}
+                disabled={!isProOrHigher}
+                onChange={(e) => navigate({ phone: e.target.checked ? "true" : null })}
+                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+              />
+              <span>電話番号あり</span>
+            </label>
+            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasWebsite}
+                disabled={!isProOrHigher}
+                onChange={(e) => navigate({ website: e.target.checked ? "true" : null })}
+                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+              />
+              <span>Websiteあり</span>
+            </label>
+            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasFax}
+                disabled={!isProOrHigher}
+                onChange={(e) => navigate({ fax: e.target.checked ? "true" : null })}
+                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+              />
+              <span>FAXあり</span>
+            </label>
+          </div>
+          {!isProOrHigher && (
+            <div 
+              onClick={() => {
+                if (!isLoggedIn) {
+                  setAuthModalOpen(true);
+                } else {
+                  router.push("/pricing");
+                }
+              }}
+              className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-transparent z-10"
+              title={isLoggedIn ? "クリックしてProにアップグレード" : "クリックして会員登録"}
+            >
+              <div className="bg-amber-100/90 dark:bg-amber-950/90 border border-amber-250/50 dark:border-amber-900/50 rounded-xl px-2.5 py-1.5 flex items-center gap-1 shadow-sm text-[10px] font-black text-amber-800 dark:text-amber-300 hover:scale-105 transition-transform duration-200">
+                <Lock className="w-3.5 h-3.5" />
+                Proプランで利用可能
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </aside>
+  );
+};

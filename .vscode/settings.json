@@ -1,0 +1,29 @@
+{
+  "files.exclude": {
+    "**/*.db": true,
+    "**/*.db-shm": true,
+    "**/*.db-wal": true,
+    "**/*.csv": true,
+    "**/*.log": true,
+    "crawlers/yahoo/data/": true,
+    "crawlers/yahoo/logs/": true
+  },
+  "search.exclude": {
+    "**/*.db": true,
+    "**/*.db-shm": true,
+    "**/*.db-wal": true,
+    "**/*.csv": true,
+    "**/*.log": true,
+    "crawlers/yahoo/data/": true,
+    "crawlers/yahoo/logs/": true
+  },
+  "files.watcherExclude": {
+    "**/*.db": true,
+    "**/*.db-shm": true,
+    "**/*.db-wal": true,
+    "**/*.csv": true,
+    "**/*.log": true,
+    "crawlers/yahoo/data/**": true,
+    "crawlers/yahoo/logs/**": true
+  }
+}
