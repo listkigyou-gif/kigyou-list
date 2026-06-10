@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Exact Logo Vector Paths scaled to fit 512x512 with proper padding, colored in primary brand color (#1B4F8A) -->
+  <g transform="translate(64, 64) scale(16)" fill="none" stroke="#1B4F8A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Left corporate block -->
+    <rect x="3" y="9" width="5" height="11" rx="1" />
+    <!-- Middle main corporate block -->
+    <rect x="9" y="5" width="5" height="15" rx="1" />
+    <!-- Right side search magnifier -->
+    <circle cx="17.5" cy="10.5" r="2.5" />
+    <path d="M19.5 12.5l2 2" />
+    <!-- Bottom list marker line -->
+    <path d="M16 18.5h5.5" />
+  </g>
+</svg>

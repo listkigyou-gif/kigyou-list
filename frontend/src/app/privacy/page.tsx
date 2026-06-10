@@ -1,5 +1,6 @@
 import React from "react";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { ShieldCheck, ChevronRight } from "lucide-react";
 
 export const metadata = {
@@ -15,6 +16,7 @@ export default function PrivacyPage() {
     { id: "sec4", title: "4. 安全管理措置" },
     { id: "sec5", title: "5. オプトアウト申請" },
     { id: "sec6", title: "6. お問い合わせ窓口" },
+    { id: "sec7", title: "7. Cookieの使用について" },
   ];
 
   return (
@@ -52,41 +54,46 @@ export default function PrivacyPage() {
                 プライバシーポリシー
               </h1>
               <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                最終改訂日: 2026年5月20日
+                最終改訂日: 2026年5月28日
               </span>
             </div>
           </div>
 
           <p className="text-xs text-slate-500">
-            Kigyou-list（以下，「当サービス」といいます。）は，本ウェブサイト上で提供するサービス（以下,「本サービス」といいます。）における，ユーザーの個人情報の取扱いについて，以下のとおりプライバシーポリシー（以下，「本ポリシー」といいます。）を定めます。当サービスは個人情報の保護に関する法律（以下「個人情報保護法」といいます）を遵守します。
+            TQC株式会社（以下，「当社」といいます。）は，本ウェブサイト上で提供するサービス「Kigyou-list」（以下,「本サービス」といいます。）における，ユーザーの個人情報の取扱いについて，以下のとおりプライバシーポリシー（以下，「本ポリシー」といいます。）を定めます。当社は個人情報の保護に関する法律（以下「個人情報保護法」といいます）を遵守します。
           </p>
 
           <div id="sec1" className="flex flex-col gap-2 pt-4 border-t border-slate-100/50 dark:border-slate-800/30">
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">1. 個人情報の取得</h3>
             <p className="text-xs">
-              当サービスは、本サービスの利用登録時において、ユーザーの氏名、メールアドレス等の個人情報を適法かつ適切な手段によって取得いたします。
+              当社は、本サービスの利用登録時において、ユーザーの氏名、メールアドレス等の個人情報を適法かつ適切な手段によって取得いたします。
             </p>
             <p className="text-xs">
-              また、本サービスが提供するデータベース内の企業情報は、Webクローリング等の技術を使用し、一般に公表されているウェブサイトおよび登記情報、公的公開データから収集しており、個人のプライバシー情報を不当に侵害する取得は行いません。
+              また、本サービスでは、サイトの利便性の向上や利用状況の統計的分析のために、閲覧履歴や行動データに関するCookie（クッキー）情報（行動クッキー）を取得する場合があります。
+            </p>
+            <p className="text-xs">
+              なお、本サービスが提供するデータベース内の企業情報は、Webクローリング等の技術を使用し、一般に公表されているウェブサイトおよび登記情報、公的公開データから収集しており、個人のプライバシー情報を不当に侵害する取得は行いません。
             </p>
           </div>
 
           <div id="sec2" className="flex flex-col gap-2 pt-4 border-t border-slate-100/50 dark:border-slate-800/30">
-            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">2. 個人情報の利用目的</h3>
+            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">2. 利用目的</h3>
             <p className="text-xs">
-              取得したユーザー情報は、以下の目的のためにのみ利用いたします。
+              取得したユーザー情報およびCookie情報は、以下の目的のためにのみ利用いたします。
             </p>
             <ul className="list-disc pl-5 text-xs flex flex-col gap-1 text-slate-500 dark:text-slate-400">
-              <li>本サービスの維持・管理および本人確認・不正アクセスの防止。</li>
+              <li>本サービスの維持・管理および本人確認・不正アクセス防止。</li>
+              <li>ユーザーの関心に合わせた最適な企業情報の提案やレコメンデーション機能の提供。</li>
+              <li>アクセス解析を使用したトラフィック分析や利用状況の統計的分析を通じたサービス改善。</li>
               <li>PROプラン（有料版）のご案内、請求処理、および決済処理。</li>
               <li>重要なお知らせやメンテナンス情報の配信、お問い合わせ対応。</li>
             </ul>
           </div>
 
           <div id="sec3" className="flex flex-col gap-2 pt-4 border-t border-slate-100/50 dark:border-slate-800/30">
-            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">3. 個人情報の第三者提供の制限</h3>
+            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">3. 第三者提供の制限</h3>
             <p className="text-xs">
-              当サービスは，次に掲げる場合を除いて，あらかじめユーザーの同意を得ることなく，第三者に個人情報を提供することはありません。
+              当社は，次に掲げる場合を除いて，あらかじめユーザーの同意を得ることなく，第三者に個人情報を提供することはありません。また、当社は、取得した個人情報を違法に販売、貸与、または譲渡することは一切いたしません。
             </p>
             <ul className="list-disc pl-5 text-xs flex flex-col gap-1 text-slate-500 dark:text-slate-400">
               <li>人の生命，身体または財産の保護のために必要がある場合であって，本人の同意を得ることが困難であるとき。</li>
@@ -98,14 +105,14 @@ export default function PrivacyPage() {
           <div id="sec4" className="flex flex-col gap-2 pt-4 border-t border-slate-100/50 dark:border-slate-800/30">
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">4. 安全管理措置</h3>
             <p className="text-xs">
-              当サービスは，個人情報への不正アクセス，紛失，破壊，改ざんおよび漏洩を防止するため，パスワードのハッシュ化、SSL通信によるデータの暗号化、セキュリティパッチの適用など、適切な安全対策を講じます。
+              当社は，個人情報への不正アクセス，紛失，破壊，改ざんおよび漏洩を防止するため，パスワードのハッシュ化、SSL通信によるデータの暗号化、セキュリティパッチの適用など、適切な安全対策を講じます。
             </p>
           </div>
 
           <div id="sec5" className="flex flex-col gap-2 pt-4 border-t border-slate-100/50 dark:border-slate-800/30">
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">5. 企業データのオプトアウト申請（情報掲載の停止手続き）</h3>
             <p className="text-xs">
-              当サービスの企業データベースは、一般公開情報に基づいてクローリングを行っております。掲載されている企業情報の削除またはオプトアウトを希望される企業オーナー様は、当サービスのお問い合わせフォームより申請していただくことができます。
+              当社の企業データベースは、一般公開情報に基づいてクローリングを行っております。掲載されている企業情報の削除またはオプトアウトを希望される企業オーナー様は、当社のお問い合わせフォームより申請していただくことができます。
             </p>
             <p className="text-xs">
               申請受領後、ご本人様（代表者または情報管理責任者）であることを確認の上、速やかに掲載の削除または非公開化の処理を実行いたします。
@@ -115,11 +122,31 @@ export default function PrivacyPage() {
           <div id="sec6" className="flex flex-col gap-2 pt-4 border-t border-slate-100/50 dark:border-slate-800/30">
             <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">6. 個人情報に関するお問い合わせ窓口</h3>
             <p className="text-xs">
-              個人情報の取扱いに関するご質問、苦情の申し立て、またはデータの開示・訂正・オプトアウトの申請は、当サービスのお問い合わせページよりご連絡いただきますようお願いいたします。
+              個人情報の取扱いに関するご質問、苦情の申し立て、またはデータの開示・訂正・オプトアウトの申請は、当社のお問い合わせページよりご連絡いただきますようお願いいたします。
             </p>
+          </div>
+
+          <div id="sec7" className="flex flex-col gap-2 pt-4 border-t border-slate-100/50 dark:border-slate-800/30">
+            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">7. Cookieの使用について</h3>
+            <p className="text-xs">
+              当社は、本サービスにおいてCookie（クッキー）を使用しています。Cookieは、ウェブサイトがユーザーのブラウザに保存する小さなテキストファイルです。
+            </p>
+            <p className="text-xs">
+              Cookieを使用することで、ログイン状態の維持や各種パーソナライズ機能の提供、さらにはアクセス解析ツールを利用したサイト利用状況の測定が可能となります。ユーザーはブラウザの設定によってCookieの受け入れを無効にできますが、その場合、本サービスの一部の機能が正常に動作しない場合があります。
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 pt-4 border-t border-slate-100/50 dark:border-slate-800/30 text-xs">
+            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white">個人情報取扱事業者に関する表示</h3>
+            <p className="font-semibold text-slate-800 dark:text-slate-200">会社名：TQC株式会社 (TQC Corporation)</p>
+            <p>所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F</p>
+            <p>代表連絡先：(03) 6907-1219 / FAX (03) 6701-2399</p>
+            <p>メールアドレス：info@kigyoulist.com</p>
           </div>
         </section>
       </main>
+      
+      <Footer />
     </div>
   );
 }

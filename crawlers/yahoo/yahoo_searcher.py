@@ -69,85 +69,115 @@ def clean_company_name(name: str) -> str:
     return cleaned.strip()
 
 async def get_current_ip(port: int):
-    """Lấy IP hiện tại thông qua Proxy bằng curl."""
+    """Lấy IP hiện tại thông qua Proxy bằng curl với các dịch vụ dự phòng (Sử dụng thread pool)."""
     import subprocess
     import sys
-    try:
-        # Sử dụng curl --proxy socks5h://... để lấy IP qua proxy
-        cmd = ["curl", "-s", "--proxy", f"socks5h://127.0.0.1:{port}", "https://api.ipify.org"]
-        result = subprocess.run(
-            cmd,
-            capture_output=True,
-            text=True,
-            timeout=10,
-            creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
-        )
-        return result.stdout.strip() or "Unknown"
-    except:
-        return "Unknown"
-
-async def rotate_proxy(port: int):
-    """Xoay IP bằng cách khởi động lại container Docker warp-{port} tương ứng. Thử lại tối đa 3 lần nếu IP không đổi."""
-    global rotation_lock
-    async with rotation_lock:
-        container_name = f"warp-{port}"
-        
-        # 1. Lấy IP cũ
-        old_ip = await get_current_ip(port)
-        log.info(f"🔄 [ROTATION] Bắt đầu xoay IP cho {container_name} | IP hiện tại: {old_ip}")
-        
-        # 2. Thử lại tối đa 3 lần để lấy IP thực sự khác biệt
-        max_retries = 3
-        for attempt in range(max_retries):
-            log.info(f"⏳ [ROTATION] Khởi động lại container {container_name} (Lần thử {attempt + 1}/{max_retries})...")
+    
+    # Danh sách các dịch vụ lấy IP công cộng để fallback
+    ip_services = [
+        "https://api.ipify.org",
+        "https://icanhazip.com",
+        "https://ifconfig.me",
+        "https://ipinfo.io/ip"
+    ]
+    
+    def _run_curl():
+        for service in ip_services:
             try:
-                import subprocess
-                import sys
-                # Khởi động lại container bằng docker restart
+                cmd = ["curl", "-s", "--proxy", f"socks5h://127.0.0.1:{port}", service]
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    text=True,
+                    timeout=8,
+                    creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+                )
+                ip = result.stdout.strip()
+                if ip and not any(x in ip.lower() for x in ["error", "rate limit", "too many", "blocked", "html", "doctype"]):
+                    # Remove any whitespace/newlines
+                    clean_ip = re.sub(r'\s+', '', ip)
+                    if clean_ip:
+                        return clean_ip
+            except Exception:
+                continue
+        return "Unknown"
+            
+    return await asyncio.to_thread(_run_curl)
+
+async def _rotate_proxy_internal(port: int):
+    """Xoay IP bằng cách khởi động lại container Docker warp-{port} tương ứng. Thử lại tối đa 3 lần nếu IP không đổi (Không sử dụng lock nội bộ và không block event loop)."""
+    container_name = f"warp-{port}"
+    
+    # 1. Lấy IP cũ
+    old_ip = await get_current_ip(port)
+    log.info(f"🔄 [ROTATION] Bắt đầu xoay IP cho {container_name} | IP hiện tại: {old_ip}")
+    
+    # 2. Thử lại tối đa 3 lần để lấy IP thực sự khác biệt
+    max_retries = 3
+    for attempt in range(max_retries):
+        log.info(f"⏳ [ROTATION] Khởi động lại container {container_name} (Lần thử {attempt + 1}/{max_retries})...")
+        try:
+            import subprocess
+            import sys
+            
+            def _run_docker_restart():
                 subprocess.run(
                     ["docker", "restart", container_name],
                     capture_output=True,
                     timeout=20,
                     creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
                 )
-                
-                # Chờ cho đến khi cổng thực sự trực tuyến (chờ tối đa 20 giây, kiểm tra mỗi 2 giây)
-                log.info(f"⏳ [ROTATION] Đang chờ cổng {port} trực tuyến trở lại...")
-                
-                port_ready = False
-                t_end = time.time() + 20
-                while time.time() < t_end:
-                    import socket
-                    try:
-                        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-                            s.settimeout(1.0)
-                            s.connect(('127.0.0.1', port))
-                        port_ready = True
-                        break
-                    except (socket.error, ConnectionRefusedError):
-                        await asyncio.sleep(2.0)
-                
-                if not port_ready:
-                    log.warning(f"⚠️ [ROTATION] Cổng {port} chưa sẵn sàng kết nối sau 20s.")
-                
-                # Chờ 2 giây để kết nối định tuyến định hình hoàn toàn
-                await asyncio.sleep(2.0)
-                
-                # Lấy IP mới
-                new_ip = await get_current_ip(port)
-                
-                if new_ip != "Unknown" and new_ip != old_ip:
-                    log.info(f"✅ [ROTATION] Thành công! {container_name} | {old_ip} -> {new_ip}")
+            
+            await asyncio.to_thread(_run_docker_restart)
+            
+            # Chờ cho đến khi cổng thực sự trực tuyến (chờ tối đa 20 giây, kiểm tra mỗi 2 giây)
+            log.info(f"⏳ [ROTATION] Đang chờ cổng {port} trực tuyến trở lại...")
+            
+            def _check_port():
+                import socket
+                try:
+                    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                        s.settimeout(1.0)
+                        s.connect(('127.0.0.1', port))
                     return True
-                else:
-                    log.warning(f"⚠️ [ROTATION] Lần thử {attempt + 1} thất bại. IP mới ({new_ip}) vẫn trùng với IP cũ hoặc không lấy được IP. Chờ thêm 12s và thử lại...")
-                    await asyncio.sleep(12)
-            except Exception as e:
-                log.error(f"❌ [ROTATION] Lỗi khi xoay container {container_name} ở lần thử {attempt + 1}: {e}")
+                except (socket.error, ConnectionRefusedError):
+                    return False
+            
+            port_ready = False
+            t_end = time.time() + 20
+            while time.time() < t_end:
+                if await asyncio.to_thread(_check_port):
+                    port_ready = True
+                    break
+                await asyncio.sleep(2.0)
+            
+            if not port_ready:
+                log.warning(f"⚠️ [ROTATION] Cổng {port} chưa sẵn sàng kết nối sau 20s.")
+            
+            # Chờ 2 giây để kết nối định tuyến định hình hoàn toàn
+            await asyncio.sleep(2.0)
+            
+            # Lấy IP mới
+            new_ip = await get_current_ip(port)
+            
+            if new_ip != "Unknown" and new_ip != old_ip:
+                log.info(f"✅ [ROTATION] Thành công! {container_name} | {old_ip} -> {new_ip}")
+                return True
+            else:
+                log.warning(f"⚠️ [ROTATION] Lần thử {attempt + 1} thất bại. IP mới ({new_ip}) vẫn trùng với IP cũ hoặc không lấy được IP. Chờ thêm 12s và thử lại...")
                 await asyncio.sleep(12)
-                
-        log.error(f"💀 [ROTATION] Thất bại trong việc xoay IP khác biệt cho {container_name} sau {max_retries} lần thử.")
-        return False
+        except Exception as e:
+            log.error(f"❌ [ROTATION] Lỗi khi xoay container {container_name} ở lần thử {attempt + 1}: {e}")
+            await asyncio.sleep(12)
+            
+    log.error(f"💀 [ROTATION] Thất bại trong việc xoay IP khác biệt cho {container_name} sau {max_retries} lần thử.")
+    return False
+
+async def rotate_proxy(port: int):
+    """Xoay IP bằng cách khởi động lại container Docker warp-{port} tương ứng (Sử dụng lock bảo vệ ngoài)."""
+    global rotation_lock
+    async with rotation_lock:
+        return await _rotate_proxy_internal(port)
 
 
 
@@ -317,20 +347,32 @@ async def run(input_file: str, output_file: str, limit: int, headless: bool, pro
     # Query companies recently crawled on Yahoo from main database to avoid recrawling within 360 days
     crawled_recently = set()
     db_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "kigyou-list.db"))
-    if os.path.exists(db_path):
+    if os.path.exists(db_path) and companies:
         try:
             import sqlite3
             conn = sqlite3.connect(db_path, timeout=30)
             cursor = conn.cursor()
-            cursor.execute("""
-                SELECT corporate_number 
-                FROM companies 
-                WHERE yahoo_last_crawled_at IS NOT NULL 
-                  AND datetime(yahoo_last_crawled_at) >= datetime('now', '-360 days')
-            """)
-            crawled_recently = {row[0] for row in cursor.fetchall() if row[0]}
+            
+            # Extract corporate numbers from current batch
+            corp_nums = [row.get("corp_num") for row in companies if row.get("corp_num")]
+            if corp_nums:
+                # Chunk to avoid SQLite parameter limit (default 999)
+                chunk_size = 500
+                for i in range(0, len(corp_nums), chunk_size):
+                    chunk = corp_nums[i:i + chunk_size]
+                    placeholders = ",".join(["?"] * len(chunk))
+                    cursor.execute(f"""
+                        SELECT corporate_number 
+                        FROM companies 
+                        WHERE corporate_number IN ({placeholders})
+                          AND yahoo_last_crawled_at IS NOT NULL 
+                          AND datetime(yahoo_last_crawled_at) >= datetime('now', '-360 days')
+                    """, chunk)
+                    for r in cursor.fetchall():
+                        if r[0]:
+                            crawled_recently.add(r[0])
             conn.close()
-            log.info(f"Loaded {len(crawled_recently)} companies recently crawled on Yahoo from database.")
+            log.info(f"Loaded {len(crawled_recently)} companies recently crawled on Yahoo from database (batch filtered).")
         except Exception as e:
             log.error(f"Error querying crawled companies from main DB: {e}")
 
@@ -359,8 +401,8 @@ async def run(input_file: str, output_file: str, limit: int, headless: bool, pro
     
     write_header = not os.path.exists(output_file)
     request_counter = 0
-    # Ngưỡng xoay IP ngẫu nhiên từ 200-500
-    current_rotate_threshold = random.randint(200, 500)
+    # Ngưỡng xoay IP ngẫu nhiên từ 40-80
+    current_rotate_threshold = random.randint(40, 80)
     log.info(f"🔄 [INIT] Ngưỡng xoay IP chủ động cho luồng này: {current_rotate_threshold} requests.")
 
     sem = asyncio.Semaphore(CONCURRENT)
@@ -378,55 +420,123 @@ async def run(input_file: str, output_file: str, limit: int, headless: bool, pro
             ],
         )
 
+        shared_context = None
+
+        async def create_new_context():
+            nonlocal shared_context
+            if shared_context:
+                try:
+                    await shared_context.close()
+                except Exception:
+                    pass
+            
+            ua = random.choice(USER_AGENTS)
+            vw = {"width": random.randint(1280, 1920), "height": random.randint(800, 1080)}
+            device_mem = random.choice([4, 8, 16])
+            cpu_cores = random.choice([4, 8, 12, 16])
+            platform = random.choice(["Win32", "MacIntel"])
+            
+            ctx = await browser.new_context(
+                user_agent=ua,
+                viewport=vw,
+                proxy={"server": proxy_url} if proxy_url else None,
+                locale="ja-JP",
+                timezone_id="Asia/Tokyo",
+                extra_http_headers={
+                    "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+                    "Referer": "https://www.yahoo.co.jp/"
+                }
+            )
+            await ctx.add_init_script(f"""
+                Object.defineProperty(navigator, 'webdriver', {{get: () => undefined}});
+                Object.defineProperty(navigator, 'deviceMemory', {{get: () => {device_mem}}});
+                Object.defineProperty(navigator, 'hardwareConcurrency', {{get: () => {cpu_cores}}});
+                Object.defineProperty(navigator, 'platform', {{get: () => '{platform}'}});
+            """)
+            
+            # --- WARM UP SESSION ---
+            log.info("⏳ Warming up session on Yahoo home page...")
+            try:
+                page = await ctx.new_page()
+                # Chặn tải image/media để tăng tốc
+                async def block_resources(route):
+                    if route.request.resource_type in ["image", "media"]:
+                        await route.abort()
+                    else:
+                        await route.continue_()
+                await page.route("**/*", block_resources)
+                
+                await page.goto("https://www.yahoo.co.jp/", timeout=20000, wait_until="domcontentloaded")
+                await asyncio.sleep(random.uniform(2.0, 4.0))
+                await page.close()
+                log.info("✅ Session warmed up successfully.")
+            except Exception as e:
+                log.warning(f"⚠️ Failed to warm up session: {e}")
+            
+            shared_context = ctx
+            log.info(f"🆕 [CONTEXT] Created new shared BrowserContext (UA: {ua[:40]}...)")
+            return ctx
+
+        async def rotate_proxy_and_recreate_context(caller_context):
+            nonlocal request_counter, current_rotate_threshold, shared_context
+            async with rotation_lock:
+                if caller_context != shared_context:
+                    log.info("ℹ️ Context has already been rotated by another task. Reusing new context.")
+                    return shared_context
+                
+                if not shared_context:
+                    ctx = await create_new_context()
+                    return ctx
+                
+                log.info(f"🕒 [ROTATION] Triggered rotation. Closing old context and restarting proxy container...")
+                try:
+                    await shared_context.close()
+                except Exception:
+                    pass
+                shared_context = None
+                    
+                await _rotate_proxy_internal(proxy_port)
+                ctx = await create_new_context()
+                
+                request_counter = 0
+                current_rotate_threshold = random.randint(40, 80)
+                log.info(f"🆕 [NEW THRESHOLD] Ngưỡng xoay tiếp theo: {current_rotate_threshold} requests.")
+                return ctx
+
         async def process(company):
             nonlocal request_counter, current_rotate_threshold
             async with sem:
-                # 0. Nghỉ ngẫu nhiên dài hơn (15-30s) để cực kỳ an toàn
-                delay = random.uniform(15.0, 30.0)
+                # 0. Nghỉ ngẫu nhiên dài hơn (6-20s) để an toàn và tăng tốc độ cào
+                delay = random.uniform(6.0, 20.0)
                 await asyncio.sleep(delay)
 
                 # 1. Kiểm tra xoay IP chủ động
                 request_counter += 1
                 if request_counter >= current_rotate_threshold:
                     log.info(f"🕒 [PROACTIVE] Đã đạt {request_counter}/{current_rotate_threshold} requests. Đang xoay IP chủ động...")
-                    await rotate_proxy(proxy_port)
-                    # Reset bộ đếm và tạo ngưỡng ngẫu nhiên mới
-                    request_counter = 0
-                    current_rotate_threshold = random.randint(200, 500)
-                    log.info(f"🆕 [NEW THRESHOLD] Ngưỡng xoay tiếp theo: {current_rotate_threshold} requests.")
+                    ctx = await rotate_proxy_and_recreate_context(shared_context)
+                else:
+                    if not shared_context:
+                        async with rotation_lock:
+                            if not shared_context:
+                                await create_new_context()
+                    ctx = shared_context
 
                 # 2. Logic thử lại (Retry) khi bị chặn hoặc lỗi
                 max_retries = 3
                 for attempt in range(max_retries):
-                    # Ngẫu nhiên hóa User-Agent và Viewport
-                    ua = random.choice(USER_AGENTS)
-                    vw = {"width": random.randint(1280, 1920), "height": random.randint(800, 1080)}
-                    
-                    # Fake fingerprint properties ngẫu nhiên để chống bot chuyên sâu
-                    device_mem = random.choice([4, 8, 16])
-                    cpu_cores = random.choice([4, 8, 12, 16])
-                    platform = random.choice(["Win32", "MacIntel"])
-                    
-                    context = await browser.new_context(
-                        user_agent=ua,
-                        viewport=vw,
-                        proxy={"server": proxy_url} if proxy_url else None,
-                        locale="ja-JP",
-                        timezone_id="Asia/Tokyo",
-                        extra_http_headers={
-                            "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
-                            "Referer": "https://www.yahoo.co.jp/"
-                        }
-                    )
-                    # Stealth script để ẩn danh Playwright và fake dấu vân tay trình duyệt ngẫu nhiên
-                    await context.add_init_script(f"""
-                        Object.defineProperty(navigator, 'webdriver', {{get: () => undefined}});
-                        Object.defineProperty(navigator, 'deviceMemory', {{get: () => {device_mem}}});
-                        Object.defineProperty(navigator, 'hardwareConcurrency', {{get: () => {cpu_cores}}});
-                        Object.defineProperty(navigator, 'platform', {{get: () => '{platform}'}});
-                    """)
-                    
-                    page = await context.new_page()
+                    try:
+                        page = await ctx.new_page()
+                    except Exception as e:
+                        log.warning(f"⚠️ Context was closed, fetching current active context: {e}")
+                        ctx = shared_context
+                        if not ctx:
+                            async with rotation_lock:
+                                if not shared_context:
+                                    await create_new_context()
+                                ctx = shared_context
+                        page = await ctx.new_page()
+
                     # Chặn tải hình ảnh và media để tiết kiệm RAM/CPU, cho phép tải CSS và Font để tránh bị Yahoo phát hiện bot
                     async def block_resources(route):
                         if route.request.resource_type in ["image", "media"]:
@@ -438,13 +548,9 @@ async def run(input_file: str, output_file: str, limit: int, headless: bool, pro
                         result = await search_and_extract(page, company)
                         if result.get("is_blocked"):
                             log.warning(f"⚠️ [BLOCK_429] Luồng {proxy_port} bị Yahoo từ chối. Đang xoay IP ngay lập tức...")
-                            await rotate_proxy(proxy_port)
-                            request_counter = 0
-                            current_rotate_threshold = random.randint(200, 500)
+                            ctx = await rotate_proxy_and_recreate_context(ctx)
                             continue
                         
-                        # Thành công -> Xóa cookies trước khi đóng
-                        await context.clear_cookies()
                         return result
                     except Exception as e:
                         err_msg = str(e)
@@ -456,24 +562,25 @@ async def run(input_file: str, output_file: str, limit: int, headless: bool, pro
                         else:
                             # Chỉ xoay IP đối với các lỗi khác (ví dụ: Timeout, lỗi trang, v.v.)
                             log.info(f"🔄 Đang xoay IP cho luồng {proxy_port}...")
-                            await rotate_proxy(proxy_port)
-                            # Reset bộ đếm khi xoay IP khẩn cấp
-                            request_counter = 0
-                            current_rotate_threshold = random.randint(200, 500)
+                            ctx = await rotate_proxy_and_recreate_context(ctx)
                         continue
                     finally:
                         try:
-                            await context.close()
+                            await page.close()
                         except Exception:
                             pass
                 
-                raise RuntimeError(
-                    f"💀 [FATAL] Luồng {proxy_port} liên tục thất bại {max_retries} lần trên keyword '{company['name']}'. "
-                    f"Dừng luồng để tự động reset proxy."
+                log.error(
+                    f"💀 [SKIP] Luồng {proxy_port} liên tục thất bại {max_retries} lần trên keyword '{company['name']}'. "
+                    f"Bỏ qua công ty này để tránh lặp vô hạn."
                 )
+                empty_res = company.copy()
+                empty_res.update({"gid": "", "y_name": "", "y_address": "", "phone": "", "website": ""})
+                return empty_res
 
         tasks = [process(c) for c in companies_todo]
 
+        log.info(f"Opening CSV output file: {output_file} (Absolute path: {os.path.abspath(output_file)})")
         with open(output_file, "a", newline="", encoding="utf-8-sig") as f:
             writer = csv.DictWriter(f, fieldnames=fieldnames)
             if write_header:
@@ -482,6 +589,7 @@ async def run(input_file: str, output_file: str, limit: int, headless: bool, pro
             for coro in asyncio.as_completed(tasks):
                 result = await coro
                 if result:
+                    log.info(f"Writing to CSV: {result.get('name')} | corp_num: {result.get('corp_num')}")
                     # Xóa cờ nội bộ trước khi ghi CSV
                     result.pop("is_blocked", None)
                     writer.writerow(result)

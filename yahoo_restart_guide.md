@@ -49,8 +49,11 @@ Get-CimInstance Win32_Process -Filter "name LIKE 'python%'" | Where-Object {
 ### Bước 3: Khởi chạy Daemon cào dữ liệu Yahoo Maps
 Mở một cửa sổ PowerShell mới tại thư mục gốc dự án và chạy:
 ```powershell
-# Chạy daemon chính với 30 luồng cào song song
-python scripts/run_yahoo_daemon.py --max-workers 30
+# Chạy daemon chính với 15 luồng cào song song (Phù hợp mạng chậm)
+python scripts/run_yahoo_daemon.py --max-workers 15
+
+# Khi mạng tốt, tăng lại lên 50 luồng:
+# python scripts/run_yahoo_daemon.py --max-workers 50
 ```
 *(Tiến trình này sẽ tự động khởi động dịch vụ tự phục hồi `yahoo_watchdog.py` đi kèm).*
 
@@ -71,13 +74,13 @@ Sau khi chạy xong, hãy xác minh hệ thống hoạt động bình thường 
    ```powershell
    (Get-Process -Name python -ErrorAction SilentlyContinue).Count
    ```
-   *Số lượng tiến trình chạy bình thường sẽ vào khoảng **33** (1 Daemon + 1 Watchdog + 1 Monitor + 30 Crawler Workers).*
+   *Số lượng tiến trình chạy bình thường sẽ vào khoảng **18** (1 Daemon + 1 Watchdog + 1 Monitor + 15 Crawler Workers). Khi chạy 50 luồng sẽ là ~53.*
 
 2. **Kiểm tra danh sách Docker container**:
    ```powershell
    docker ps
    ```
-   *Phải hiển thị `kigyou-postgres` và **30** container `warp-40001` đến `warp-40060` ở trạng thái Up (Healthy).*
+   *Phải hiển thị `kigyou-postgres` và **15** container `warp-40001` đến `warp-40060` ở trạng thái Up (Healthy). (Tăng lên **50** khi có mạng tốt).*
 
 3. **Xem Báo cáo Tiến trình**:
    Mở file [yahoo_status_report.md](file:///c:/TUHOCLAPTRINH/kigyou-list/yahoo_status_report.md) để kiểm tra thời gian cập nhật gần nhất và các chỉ số cào (SĐT, Website) có đang tăng lên hay không.

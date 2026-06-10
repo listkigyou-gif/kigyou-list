@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  warp:
+  warp-1:
     image: caomingjun/warp
-    container_name: warp-proxy
+    container_name: warp-proxy-1
     restart: always
     ports:
-      - "40000:1080"
+      - "40001:1080"
     cap_add:
       - NET_ADMIN
     devices:
@@ -19,7 +19,7 @@ services:
     container_name: warp-proxy-2
     restart: always
     ports:
-      - "40006:1080"
+      - "40002:1080"
     cap_add:
       - NET_ADMIN
     devices:
@@ -32,7 +32,579 @@ services:
     container_name: warp-proxy-3
     restart: always
     ports:
+      - "40003:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-4:
+    image: caomingjun/warp
+    container_name: warp-proxy-4
+    restart: always
+    ports:
+      - "40004:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-5:
+    image: caomingjun/warp
+    container_name: warp-proxy-5
+    restart: always
+    ports:
+      - "40005:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-6:
+    image: caomingjun/warp
+    container_name: warp-proxy-6
+    restart: always
+    ports:
+      - "40006:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-7:
+    image: caomingjun/warp
+    container_name: warp-proxy-7
+    restart: always
+    ports:
       - "40007:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-8:
+    image: caomingjun/warp
+    container_name: warp-proxy-8
+    restart: always
+    ports:
+      - "40008:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-9:
+    image: caomingjun/warp
+    container_name: warp-proxy-9
+    restart: always
+    ports:
+      - "40009:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-10:
+    image: caomingjun/warp
+    container_name: warp-proxy-10
+    restart: always
+    ports:
+      - "40010:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-11:
+    image: caomingjun/warp
+    container_name: warp-proxy-11
+    restart: always
+    ports:
+      - "40011:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-12:
+    image: caomingjun/warp
+    container_name: warp-proxy-12
+    restart: always
+    ports:
+      - "40012:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-13:
+    image: caomingjun/warp
+    container_name: warp-proxy-13
+    restart: always
+    ports:
+      - "40013:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-14:
+    image: caomingjun/warp
+    container_name: warp-proxy-14
+    restart: always
+    ports:
+      - "40014:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-15:
+    image: caomingjun/warp
+    container_name: warp-proxy-15
+    restart: always
+    ports:
+      - "40015:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-16:
+    image: caomingjun/warp
+    container_name: warp-proxy-16
+    restart: always
+    ports:
+      - "40016:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-17:
+    image: caomingjun/warp
+    container_name: warp-proxy-17
+    restart: always
+    ports:
+      - "40017:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-18:
+    image: caomingjun/warp
+    container_name: warp-proxy-18
+    restart: always
+    ports:
+      - "40018:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-19:
+    image: caomingjun/warp
+    container_name: warp-proxy-19
+    restart: always
+    ports:
+      - "40019:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-20:
+    image: caomingjun/warp
+    container_name: warp-proxy-20
+    restart: always
+    ports:
+      - "40020:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-21:
+    image: caomingjun/warp
+    container_name: warp-proxy-21
+    restart: always
+    ports:
+      - "40021:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-22:
+    image: caomingjun/warp
+    container_name: warp-proxy-22
+    restart: always
+    ports:
+      - "40022:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-23:
+    image: caomingjun/warp
+    container_name: warp-proxy-23
+    restart: always
+    ports:
+      - "40023:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-24:
+    image: caomingjun/warp
+    container_name: warp-proxy-24
+    restart: always
+    ports:
+      - "40024:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-25:
+    image: caomingjun/warp
+    container_name: warp-proxy-25
+    restart: always
+    ports:
+      - "40025:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-26:
+    image: caomingjun/warp
+    container_name: warp-proxy-26
+    restart: always
+    ports:
+      - "40026:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-27:
+    image: caomingjun/warp
+    container_name: warp-proxy-27
+    restart: always
+    ports:
+      - "40027:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-28:
+    image: caomingjun/warp
+    container_name: warp-proxy-28
+    restart: always
+    ports:
+      - "40028:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-29:
+    image: caomingjun/warp
+    container_name: warp-proxy-29
+    restart: always
+    ports:
+      - "40029:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-30:
+    image: caomingjun/warp
+    container_name: warp-proxy-30
+    restart: always
+    ports:
+      - "40030:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-31:
+    image: caomingjun/warp
+    container_name: warp-proxy-31
+    restart: always
+    ports:
+      - "40031:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-32:
+    image: caomingjun/warp
+    container_name: warp-proxy-32
+    restart: always
+    ports:
+      - "40032:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-33:
+    image: caomingjun/warp
+    container_name: warp-proxy-33
+    restart: always
+    ports:
+      - "40033:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-34:
+    image: caomingjun/warp
+    container_name: warp-proxy-34
+    restart: always
+    ports:
+      - "40034:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-35:
+    image: caomingjun/warp
+    container_name: warp-proxy-35
+    restart: always
+    ports:
+      - "40035:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-36:
+    image: caomingjun/warp
+    container_name: warp-proxy-36
+    restart: always
+    ports:
+      - "40036:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-37:
+    image: caomingjun/warp
+    container_name: warp-proxy-37
+    restart: always
+    ports:
+      - "40037:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-38:
+    image: caomingjun/warp
+    container_name: warp-proxy-38
+    restart: always
+    ports:
+      - "40038:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-39:
+    image: caomingjun/warp
+    container_name: warp-proxy-39
+    restart: always
+    ports:
+      - "40039:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-40:
+    image: caomingjun/warp
+    container_name: warp-proxy-40
+    restart: always
+    ports:
+      - "40040:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-41:
+    image: caomingjun/warp
+    container_name: warp-proxy-41
+    restart: always
+    ports:
+      - "40041:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-42:
+    image: caomingjun/warp
+    container_name: warp-proxy-42
+    restart: always
+    ports:
+      - "40042:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-43:
+    image: caomingjun/warp
+    container_name: warp-proxy-43
+    restart: always
+    ports:
+      - "40043:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-44:
+    image: caomingjun/warp
+    container_name: warp-proxy-44
+    restart: always
+    ports:
+      - "40044:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-45:
+    image: caomingjun/warp
+    container_name: warp-proxy-45
+    restart: always
+    ports:
+      - "40045:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-46:
+    image: caomingjun/warp
+    container_name: warp-proxy-46
+    restart: always
+    ports:
+      - "40046:1080"
+    cap_add:
+      - NET_ADMIN
+    devices:
+      - /dev/net/tun
+    environment:
+      - WARP_SLEEP=2
+
+  warp-47:
+    image: caomingjun/warp
+    container_name: warp-proxy-47
+    restart: always
+    ports:
+      - "40047:1080"
     cap_add:
       - NET_ADMIN
     devices:
@@ -45,7 +617,7 @@ services:
     container_name: warp-harvester
     restart: always
     ports:
-      - "40008:1080" # Cổng riêng cho Giai đoạn 1
+      - "40048:1080"
     cap_add:
       - NET_ADMIN
     devices:

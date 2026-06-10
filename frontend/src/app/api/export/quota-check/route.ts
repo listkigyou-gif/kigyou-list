@@ -24,7 +24,8 @@ export async function GET(request: Request) {
     }
 
     const quota = await getUserQuota(email);
-    const remaining = (quota.monthly_base_allowance - quota.monthly_base_used) + quota.purchased_add_on_balance;
+    const isFreePlan = (quota.plan === 'free');
+    const remaining = (quota.monthly_base_allowance - quota.monthly_base_used) + (isFreePlan ? 0 : quota.purchased_add_on_balance);
     
     const history = await getExportJobs(email);
 

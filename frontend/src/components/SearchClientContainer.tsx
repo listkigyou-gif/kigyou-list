@@ -3,13 +3,13 @@
 import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { 
-  Building2, Search, MapPin, X, Phone, Globe, Mail, Printer, Clock,
-  ChevronLeft, ChevronRight, SlidersHorizontal
+  Building2, Search, MapPin, X, Phone, Globe, Clock,
+  ChevronLeft, ChevronRight, SlidersHorizontal, Lock, ExternalLink
 } from "lucide-react";
 import { formatShortDate } from "@/lib/dateUtils";
 import { SearchSidebar } from "@/components/SearchSidebar";
 import { ExportCSVButton } from "@/components/ExportCSVButton";
-import { UnlockCard } from "@/components/UnlockCard";
+import { useAuth } from "@/context/AuthContext";
 
 interface Company {
   corporate_number: string;
@@ -130,6 +130,37 @@ const SearchSkeletonCard: React.FC = () => {
         <div className="w-28 h-7 bg-slate-250 dark:bg-slate-700 rounded-xl" />
       </div>
     </div>
+  );
+};
+
+// ContactTeaserBadge — replaces inline FAX/Email on list cards to prevent bulk copying
+const ContactTeaserBadge: React.FC<{ corporateNumber: string }> = ({ corporateNumber }) => {
+  const { isLoggedIn, setAuthModalOpen } = useAuth();
+
+  if (!isLoggedIn) {
+    return (
+      <button
+        type="button"
+        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAuthModalOpen(true); }}
+        className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/50 text-amber-700 dark:text-amber-400 text-[10px] font-bold hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:border-amber-300 transition-all duration-200 cursor-pointer select-none"
+        title="無料会員登録でFAX・メールアドレスを閲覧できます"
+      >
+        <Lock className="w-3 h-3 shrink-0 group-hover:rotate-6 transition-transform duration-200" />
+        連絡先 (FAX・メール) を見る
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      href={`/company/${corporateNumber}#contact`}
+      className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-teal-200 bg-teal-50 dark:bg-teal-950/30 dark:border-teal-900/50 text-teal-700 dark:text-teal-400 text-[10px] font-bold hover:bg-teal-100 dark:hover:bg-teal-900/40 hover:border-teal-300 transition-all duration-200"
+      title="詳細ページで連絡先情報 (FAX・メール) を確認できます"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <ExternalLink className="w-3 h-3 shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
+      連絡先 (FAX・メール) を確認 →
+    </Link>
   );
 };
 
@@ -810,7 +841,20 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                 has_certification: hasCertification,
                 has_patent: hasPatent,
                 min_establishment_year: minEstYear,
-                max_establishment_year: maxEstYear
+                max_establishment_year: maxEstYear,
+                min_sales: minSales,
+                max_sales: maxSales,
+                has_email: hasEmail,
+                has_phone: hasPhone,
+                has_website: hasWebsite,
+                has_fax: hasFax,
+                company_status: companyStatus,
+                min_operating_income: minOpIncome,
+                max_operating_income: maxOpIncome,
+                min_ordinary_income: minOrdIncome,
+                max_ordinary_income: maxOrdIncome,
+                min_net_income: minNetIncome,
+                max_net_income: maxNetIncome
               }}
             />
             <span className="hidden sm:inline border-l border-slate-200 dark:border-slate-800 h-4" />
@@ -937,26 +981,9 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                         Website: なし
                       </span>
                     )}
-                    
-                    <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400 mr-5">
-                      <Printer className="w-3.5 h-3.5 shrink-0" />
-                      <span className="text-[11px] font-medium shrink-0">FAX:</span>
-                      <UnlockCard type="inline" fallbackText="03-3456-7890 (サンプル)">
-                        <span className="font-mono text-slate-800 dark:text-slate-200 font-semibold bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                          {company.fax_number || '未登録'}
-                        </span>
-                      </UnlockCard>
-                    </span>
 
-                    <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400 mr-5">
-                      <Mail className="w-3.5 h-3.5 shrink-0" />
-                      <span className="text-[11px] font-medium shrink-0">Email:</span>
-                      <UnlockCard type="inline" requiredPlan="pro" fallbackText="contact@company.co.jp (サンプル)">
-                        <span className="font-mono text-slate-800 dark:text-slate-200 font-semibold bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
-                          {company.email_address || '未登録'}
-                        </span>
-                      </UnlockCard>
-                    </span>
+                    {/* Contact Teaser — FAX/Email only shown on detail page */}
+                    <ContactTeaserBadge corporateNumber={company.corporate_number} />
                   </div>
 
                   <Link 

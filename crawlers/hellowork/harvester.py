@@ -18,6 +18,7 @@ from maintenance import is_hellowork_maintenance, async_wait_if_maintenance
 # Cấu hình logging
 logger = logging.getLogger('harvester')
 logger.setLevel(logging.INFO)
+logger.propagate = False
 formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 
 # Rotating File Handler (10MB per file, max 5 backups)
@@ -34,10 +35,13 @@ DB_PATH = "data/hellowork.db"
 SCHEMA_PATH = "schema.sql"
 
 class HelloworkHarvester:
-    def __init__(self, incremental_mode=False):
+    def __init__(self, incremental_mode=False, prefecture=None, proxy=None, container=None):
         self.base_url = "https://www.hellowork.mhlw.go.jp"
         self.search_url = f"{self.base_url}/kensaku/GECA110010.do?action=initDisp&screenId=GECA110010"
         self.incremental_mode = incremental_mode
+        self.prefecture = prefecture
+        self.fixed_proxy = proxy
+        self.fixed_container = container
         self.conn = None
         self.processed_pages = 0
         self.rotation_threshold = random.randint(500, 1000)
@@ -58,16 +62,32 @@ class HelloworkHarvester:
         if not self.conn:
             self.conn = sqlite3.connect(DB_PATH)
         cursor = self.conn.cursor()
+        
+        # Nếu chỉ cào 1 tỉnh cụ thể, giới hạn danh sách all_prefs
+        if self.prefecture:
+            pref_code = f"{int(self.prefecture):02d}"
+            all_prefs = {pref_code: all_prefs.get(pref_code, f"Prefecture {pref_code}")}
+            
         for code, name in all_prefs.items():
             cursor.execute("INSERT OR IGNORE INTO search_tasks (prefecture_code, prefecture_name) VALUES (?, ?)", (code, name))
         
         # Nếu ở chế độ incremental, reset trạng thái để quét lại từ đầu trang 1
         if self.incremental_mode:
-            logger.info("Incremental Mode: Resetting search tasks to scan all prefectures for new jobs.")
-            cursor.execute("UPDATE search_tasks SET is_completed = 0, last_page_processed = 0")
+            logger.info("Incremental Mode: Resetting search tasks to scan prefectures for new jobs.")
+            if self.prefecture:
+                pref_code = f"{int(self.prefecture):02d}"
+                cursor.execute("UPDATE search_tasks SET is_completed = 0, last_page_processed = 0 WHERE prefecture_code = ?", (pref_code,))
+            else:
+                cursor.execute("UPDATE search_tasks SET is_completed = 0, last_page_processed = 0")
         
         self.conn.commit()
-        cursor.execute("SELECT prefecture_code FROM search_tasks WHERE is_completed = 0 ORDER BY prefecture_code")
+        
+        if self.prefecture:
+            pref_code = f"{int(self.prefecture):02d}"
+            cursor.execute("SELECT prefecture_code FROM search_tasks WHERE prefecture_code = ? AND is_completed = 0", (pref_code,))
+        else:
+            cursor.execute("SELECT prefecture_code FROM search_tasks WHERE is_completed = 0 ORDER BY prefecture_code")
+            
         pending = [row[0] for row in cursor.fetchall()]
         return pending
 
@@ -122,8 +142,9 @@ class HelloworkHarvester:
         return False
 
     def _check_warp_lock(self):
-        """Kiểm tra xem có tiến trình nào đang xoay IP không."""
-        lock_file = ".warp.lock"
+        """Kiểm tra xem có tiến trình nào đang xoay IP cho container này không."""
+        container_to_restart = self.fixed_container if self.fixed_container else "warp-harvester"
+        lock_file = f".warp_{container_to_restart}.lock"
         if not os.path.exists(lock_file):
             return False
         try:
@@ -162,7 +183,7 @@ class HelloworkHarvester:
                 pass
         
         # Nếu PID không còn chạy, xóa lock file và tiếp tục
-        logger.info(f"Harvester: Phát hiện lock file cũ từ tiến trình đã chết (PID: {pid}). Đang dọn dẹp...")
+        logger.info(f"Harvester: Phát hiện lock file cũ của container {container_to_restart} từ tiến trình đã chết (PID: {pid}). Đang dọn dẹp...")
         try:
             os.remove(lock_file)
         except Exception:
@@ -181,37 +202,39 @@ class HelloworkHarvester:
 
     async def rotate_ip(self):
         """Xoay IP bằng cách restart Docker container."""
-        lock_file = ".warp.lock"
+        container_to_restart = self.fixed_container if self.fixed_container else "warp-harvester"
+        lock_file = f".warp_{container_to_restart}.lock"
         if self._check_warp_lock():
-            logger.info("Harvester: Đang có tiến trình khác xoay IP, chờ đợi...")
+            logger.info(f"Harvester ({container_to_restart}): Đang có tiến trình khác xoay IP, chờ đợi...")
             return False
 
         async with self.rotation_lock:
             try:
+                proxy_url = self.fixed_proxy if self.fixed_proxy else "socks5://127.0.0.1:40008"
                 # Lấy IP cũ
-                old_ip = await self.get_proxy_ip("socks5://127.0.0.1:40008")
+                old_ip = await self.get_proxy_ip(proxy_url)
                 
                 # Tạo file lock để báo hiệu cho các tiến trình khác
                 with open(lock_file, "w") as f: f.write(str(os.getpid()))
                 
-                logger.info(f"Harvester: Bắt đầu xoay IP (IP cũ: {old_ip})...")
-                # Restart container warp dành riêng cho harvester
-                process = await asyncio.create_subprocess_exec("docker", "restart", "warp-harvester", stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                logger.info(f"Harvester: Bắt đầu xoay IP cho container {container_to_restart} (IP cũ: {old_ip})...")
+                # Restart container warp
+                process = await asyncio.create_subprocess_exec("docker", "restart", container_to_restart, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 await process.communicate()
                 
                 # Chờ container khởi động lại và kết nối (thường mất 15s)
-                logger.info("Harvester: Đang đợi Warp container khởi động lại...")
+                logger.info(f"Harvester: Đang đợi Warp container {container_to_restart} khởi động lại...")
                 await asyncio.sleep(15)
 
                 # Lấy IP mới
-                new_ip = await self.get_proxy_ip("socks5://127.0.0.1:40008")
+                new_ip = await self.get_proxy_ip(proxy_url)
                 status = "THÀNH CÔNG" if old_ip != new_ip else "KHÔNG ĐỔI"
-                logger.info(f"Harvester: Xoay IP xong. {old_ip} -> {new_ip} [{status}]")
+                logger.info(f"Harvester: Xoay IP xong cho {container_to_restart}. {old_ip} -> {new_ip} [{status}]")
                 
                 if os.path.exists(lock_file): os.remove(lock_file)
                 return True
             except Exception as e:
-                logger.error(f"Harvester: Lỗi khi xoay IP qua Docker: {str(e)}")
+                logger.error(f"Harvester: Lỗi khi xoay IP {container_to_restart} qua Docker: {str(e)}")
                 if os.path.exists(lock_file): os.remove(lock_file)
                 return False
 
@@ -383,25 +406,41 @@ class HelloworkHarvester:
         await self.init_db()
         pending_prefs = self.get_pending_prefectures()
         
+        if not pending_prefs:
+            logger.info("No pending prefectures to harvest.")
+            if self.conn:
+                self.conn.close()
+            return
+
+        proxy_url = self.fixed_proxy if self.fixed_proxy else "socks5://127.0.0.1:40008"
+        logger.info(f"Harvester starting with proxy: {proxy_url}")
+
         async with async_playwright() as p:
             # Mở trình duyệt với Warp Proxy dành riêng cho Harvester
             browser = await p.chromium.launch(
                 headless=True,
-                proxy={"server": "socks5://127.0.0.1:40008"}
+                proxy={"server": proxy_url}
             )
             
-            # Tăng tốc: Chạy 5 tỉnh song song
-            semaphore = asyncio.Semaphore(5)
-            
-            async def task_wrapper(pref):
-                async with semaphore:
-                    try:
-                        await self.harvest_prefecture(browser, pref)
-                    except Exception as e:
-                        logger.error(f"Error in {pref}: {str(e)}")
-                        await asyncio.sleep(5)
+            # Nếu chạy cào 1 tỉnh cụ thể, không cần chạy song song
+            if self.prefecture:
+                try:
+                    await self.harvest_prefecture(browser, pending_prefs[0])
+                except Exception as e:
+                    logger.error(f"Error in {pending_prefs[0]}: {str(e)}")
+            else:
+                # Tăng tốc: Chạy 5 tỉnh song song
+                semaphore = asyncio.Semaphore(5)
+                
+                async def task_wrapper(pref):
+                    async with semaphore:
+                        try:
+                            await self.harvest_prefecture(browser, pref)
+                        except Exception as e:
+                            logger.error(f"Error in {pref}: {str(e)}")
+                            await asyncio.sleep(5)
 
-            await asyncio.gather(*[task_wrapper(pref) for pref in pending_prefs])
+                await asyncio.gather(*[task_wrapper(pref) for pref in pending_prefs])
             
             if self.conn:
                 self.conn.close()

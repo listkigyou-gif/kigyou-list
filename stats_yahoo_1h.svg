@@ -23,41 +23,46 @@
             .dot-web { stroke: #0f172a; }
         }
     </style>
-<text x="20" y="30" class="title">Biểu đồ Tăng trưởng Thực tế (24 Giờ qua - Cập nhật 1 tiếng)</text>
-<line x1="65" y1="50.0" x2="735" y2="50.0" class="grid-line" />
-<line x1="65" y1="123.33333333333333" x2="735" y2="123.33333333333333" class="grid-line" />
-<line x1="65" y1="196.66666666666666" x2="735" y2="196.66666666666666" class="grid-line" />
-<line x1="65" y1="270.0" x2="735" y2="270.0" class="grid-line" />
-<line x1="65.0" y1="50" x2="65.0" y2="270" class="grid-line" />
-<text x="65.0" y="290" text-anchor="middle" class="axis-text">25/05 17:00</text>
-<line x1="181.52173913043478" y1="50" x2="181.52173913043478" y2="270" class="grid-line" />
-<text x="181.52173913043478" y="290" text-anchor="middle" class="axis-text">25/05 21:00</text>
-<line x1="327.17391304347825" y1="50" x2="327.17391304347825" y2="270" class="grid-line" />
-<text x="327.17391304347825" y="290" text-anchor="middle" class="axis-text">26/05 02:00</text>
-<line x1="443.695652173913" y1="50" x2="443.695652173913" y2="270" class="grid-line" />
-<text x="443.695652173913" y="290" text-anchor="middle" class="axis-text">26/05 06:00</text>
-<line x1="589.3478260869565" y1="50" x2="589.3478260869565" y2="270" class="grid-line" />
-<text x="589.3478260869565" y="290" text-anchor="middle" class="axis-text">26/05 11:00</text>
+<text x="20" y="30" class="title">Tốc độ Cào Thực tế (24 Giờ qua - Cập nhật 1 tiếng)</text>
+<text x="20" y="55" class="axis-text" font-weight="bold">Tốc độ (dòng/phút)</text>
+<line x1="75" y1="50.0" x2="735" y2="50.0" class="grid-line" />
+<text x="65" y="54.0" text-anchor="end" class="axis-text">2036.7</text>
+<line x1="75" y1="123.33333333333333" x2="735" y2="123.33333333333333" class="grid-line" />
+<text x="65" y="127.33333333333333" text-anchor="end" class="axis-text">1357.8</text>
+<line x1="75" y1="196.66666666666666" x2="735" y2="196.66666666666666" class="grid-line" />
+<text x="65" y="200.66666666666666" text-anchor="end" class="axis-text">678.9</text>
+<line x1="75" y1="270.0" x2="735" y2="270.0" class="grid-line" />
+<text x="65" y="274.0" text-anchor="end" class="axis-text">0.0</text>
+<line x1="75.0" y1="50" x2="75.0" y2="270" class="grid-line" />
+<text x="75.0" y="290" text-anchor="middle" class="axis-text">09/06 09:00</text>
+<line x1="189.7826086956522" y1="50" x2="189.7826086956522" y2="270" class="grid-line" />
+<text x="189.7826086956522" y="290" text-anchor="middle" class="axis-text">09/06 13:00</text>
+<line x1="333.2608695652174" y1="50" x2="333.2608695652174" y2="270" class="grid-line" />
+<text x="333.2608695652174" y="290" text-anchor="middle" class="axis-text">09/06 19:00</text>
+<line x1="448.04347826086956" y1="50" x2="448.04347826086956" y2="270" class="grid-line" />
+<text x="448.04347826086956" y="290" text-anchor="middle" class="axis-text">09/06 23:00</text>
+<line x1="591.5217391304348" y1="50" x2="591.5217391304348" y2="270" class="grid-line" />
+<text x="591.5217391304348" y="290" text-anchor="middle" class="axis-text">10/06 04:00</text>
 <line x1="735.0" y1="50" x2="735.0" y2="270" class="grid-line" />
-<text x="735.0" y="290" text-anchor="middle" class="axis-text">26/05 16:00</text>
-<line x1="65" y1="50" x2="65" y2="270" class="axis-line" />
-<line x1="65" y1="270" x2="735" y2="270" class="axis-line" />
-<path d="M 65.0 55.0 L 94.1 50.0 L 123.3 50.0 L 152.4 270.0 L 181.5 264.1 L 210.7 258.3 L 239.8 253.5 L 268.9 248.3 L 298.0 243.1 L 327.2 238.6 L 356.3 235.6 L 385.4 231.1 L 414.6 226.3 L 443.7 221.0 L 472.8 216.0 L 502.0 209.5 L 531.1 203.9 L 560.2 200.9 L 589.3 194.2 L 618.5 190.3 L 647.6 184.3 L 676.7 178.3 L 705.9 173.4 L 735.0 168.9" class="line-total" />
-<circle cx="65.0" cy="55.0" r="4.5" class="dot-total" />
-<circle cx="414.6" cy="226.3" r="4.5" class="dot-total" />
-<circle cx="735.0" cy="168.9" r="4.5" class="dot-total" />
-<path d="M 65.0 270.0 L 94.1 270.0 L 123.3 270.0 L 152.4 265.2 L 181.5 258.7 L 210.7 252.3 L 239.8 247.9 L 268.9 243.4 L 298.0 238.4 L 327.2 233.4 L 356.3 229.7 L 385.4 218.2 L 414.6 206.3 L 443.7 193.0 L 472.8 180.1 L 502.0 162.7 L 531.1 145.2 L 560.2 135.8 L 589.3 115.6 L 618.5 104.5 L 647.6 87.0 L 676.7 71.5 L 705.9 60.0 L 735.0 50.0" class="line-phone" />
-<circle cx="65.0" cy="270.0" r="4.5" class="dot-phone" />
-<circle cx="414.6" cy="206.3" r="4.5" class="dot-phone" />
-<circle cx="735.0" cy="50.0" r="4.5" class="dot-phone" />
-<path d="M 65.0 270.0 L 94.1 270.0 L 123.3 270.0 L 152.4 264.1 L 181.5 255.4 L 210.7 246.7 L 239.8 240.5 L 268.9 233.7 L 298.0 227.0 L 327.2 220.6 L 356.3 216.2 L 385.4 206.9 L 414.6 196.1 L 443.7 182.8 L 472.8 170.9 L 502.0 153.2 L 531.1 136.9 L 560.2 127.3 L 589.3 109.9 L 618.5 99.5 L 647.6 83.2 L 676.7 69.8 L 705.9 59.6 L 735.0 50.0" class="line-web" />
-<circle cx="65.0" cy="270.0" r="4.5" class="dot-web" />
-<circle cx="414.6" cy="196.1" r="4.5" class="dot-web" />
-<circle cx="735.0" cy="50.0" r="4.5" class="dot-web" />
-<rect x="535" y="15" width="12" height="12" rx="3" fill="#3b82f6" />
-<text x="553" y="24" class="legend-text">Tổng cào: 181,609 → 481,217</text>
-<rect x="535" y="30" width="12" height="12" rx="3" fill="#f97316" />
-<text x="553" y="39" class="legend-text">Điện thoại: 114,427 → 137,754</text>
-<rect x="535" y="45" width="12" height="12" rx="3" fill="#10b981" />
-<text x="553" y="54" class="legend-text">Website: 27,623 → 33,173</text>
+<text x="735.0" y="290" text-anchor="middle" class="axis-text">10/06 09:00</text>
+<line x1="75" y1="50" x2="75" y2="270" class="axis-line" />
+<line x1="75" y1="270" x2="735" y2="270" class="axis-line" />
+<path d="M 75.0 263.5 L 103.7 245.8 L 132.4 96.1 L 161.1 245.9 L 189.8 267.3 L 218.5 70.0 L 247.2 245.8 L 275.9 218.8 L 304.6 241.9 L 333.3 268.2 L 362.0 242.0 L 390.7 163.3 L 419.3 109.4 L 448.0 258.7 L 476.7 207.6 L 505.4 173.5 L 534.1 227.7 L 562.8 189.8 L 591.5 136.9 L 620.2 206.6 L 648.9 174.3 L 677.6 238.9 L 706.3 221.0 L 735.0 174.2" class="line-total" />
+<circle cx="75.0" cy="263.5" r="4.5" class="dot-total" />
+<circle cx="419.3" cy="109.4" r="4.5" class="dot-total" />
+<circle cx="735.0" cy="174.2" r="4.5" class="dot-total" />
+<path d="M 75.0 268.4 L 103.7 264.2 L 132.4 220.8 L 161.1 264.2 L 189.8 270.0 L 218.5 217.7 L 247.2 264.6 L 275.9 256.9 L 304.6 262.7 L 333.3 269.5 L 362.0 261.7 L 390.7 239.5 L 419.3 223.7 L 448.0 266.5 L 476.7 251.9 L 505.4 242.1 L 534.1 253.3 L 562.8 239.5 L 591.5 220.0 L 620.2 247.0 L 648.9 236.0 L 677.6 259.2 L 706.3 252.7 L 735.0 235.6" class="line-phone" />
+<circle cx="75.0" cy="268.4" r="4.5" class="dot-phone" />
+<circle cx="419.3" cy="223.7" r="4.5" class="dot-phone" />
+<circle cx="735.0" cy="235.6" r="4.5" class="dot-phone" />
+<path d="M 75.0 269.5 L 103.7 268.2 L 132.4 256.0 L 161.1 268.0 L 189.8 270.0 L 218.5 255.7 L 247.2 268.7 L 275.9 266.9 L 304.6 267.9 L 333.3 269.9 L 362.0 268.0 L 390.7 262.3 L 419.3 258.3 L 448.0 269.7 L 476.7 266.8 L 505.4 265.0 L 534.1 266.8 L 562.8 264.0 L 591.5 260.1 L 620.2 264.3 L 648.9 261.7 L 677.6 267.4 L 706.3 265.9 L 735.0 262.0" class="line-web" />
+<circle cx="75.0" cy="269.5" r="4.5" class="dot-web" />
+<circle cx="419.3" cy="258.3" r="4.5" class="dot-web" />
+<circle cx="735.0" cy="262.0" r="4.5" class="dot-web" />
+<rect x="495" y="15" width="12" height="12" rx="3" fill="#3b82f6" />
+<text x="513" y="24" class="legend-text">Tổng cào (tb: 614.4 cty/phút)</text>
+<rect x="495" y="30" width="12" height="12" rx="3" fill="#f97316" />
+<text x="513" y="39" class="legend-text">Điện thoại (tb: 189.9 SĐT/phút)</text>
+<rect x="495" y="45" width="12" height="12" rx="3" fill="#10b981" />
+<text x="513" y="54" class="legend-text">Website (tb: 45.1 web/phút)</text>
 </svg>

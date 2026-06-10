@@ -163,15 +163,12 @@ export default async function DirectoryPage() {
 
               <div className="flex flex-col gap-3">
                 {activeHierarchy.map((major) => (
-                  <div
+                  <details
                     key={major.code}
-                    className="rounded-2xl border border-slate-150 dark:border-slate-800/80 overflow-hidden"
+                    className="group rounded-2xl border border-slate-150 dark:border-slate-800/80 overflow-hidden [&_summary::-webkit-details-marker]:hidden"
                   >
-                    {/* 大分類 header — links to all companies in this major category */}
-                    <Link
-                      href={`/search?industry=${major.code}`}
-                      className="flex items-center justify-between gap-2 px-3.5 py-3 bg-primary/5 hover:bg-primary/10 dark:bg-slate-800/50 dark:hover:bg-slate-800 transition-colors group"
-                    >
+                    {/* 大分類 summary — toggles details dropdown */}
+                    <summary className="flex items-center justify-between gap-2 px-3.5 py-3 bg-primary/5 hover:bg-primary/10 dark:bg-slate-800/50 dark:hover:bg-slate-800 transition-colors cursor-pointer select-none list-none group-open:bg-primary/10 dark:group-open:bg-slate-800">
                       <div className="flex items-center gap-2.5 min-w-0">
                         {/* 大分類 code badge */}
                         <div className="w-7 h-7 rounded-lg bg-primary text-white shrink-0 flex items-center justify-center shadow-sm">
@@ -186,12 +183,23 @@ export default async function DirectoryPage() {
                           </span>
                         </div>
                       </div>
-                      <ChevronRight className="w-3.5 h-3.5 text-primary/60 shrink-0 group-hover:translate-x-0.5 transition-transform" />
-                    </Link>
+                      <ChevronRight className="w-3.5 h-3.5 text-primary/60 shrink-0 transition-transform duration-200 group-open:rotate-90" />
+                    </summary>
 
                     {/* 中分類 children — only show those with companies */}
                     {major.children.filter((c) => c.count > 0).length > 0 && (
                       <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/60 bg-white dark:bg-[#151B22]">
+                        {/* Link to all companies in this major category */}
+                        <Link
+                          href={`/search?industry=${major.code}`}
+                          className="flex items-center justify-between gap-2 pl-9 pr-3.5 py-2.5 bg-slate-50/50 dark:bg-slate-800/20 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors group"
+                        >
+                          <span className="text-[11px] font-bold text-primary dark:text-secondary">
+                            {major.name} の企業をすべて見る
+                          </span>
+                          <ChevronRight className="w-3 h-3 text-primary/60 shrink-0" />
+                        </Link>
+
                         {major.children
                           .filter((child) => child.count > 0)
                           .map((child) => (
@@ -216,7 +224,7 @@ export default async function DirectoryPage() {
                           ))}
                       </div>
                     )}
-                  </div>
+                  </details>
                 ))}
               </div>
             </section>

@@ -19,17 +19,41 @@ async def main():
                         help="Giai đoạn: 'harvest' (Lấy ID), 'extract' (Lấy chi tiết), hoặc 'both' (Cả hai)")
     parser.add_argument("--limit", type=int, default=0,
                         help="Giới hạn số lượng tin tuyển dụng cần cào (0 = không giới hạn)")
+    parser.add_argument("--prefecture", type=str, default=None,
+                        help="Mã tỉnh cần cào (ví dụ: '13' cho Tokyo, '01' cho Hokkaido)")
+    parser.add_argument("--concurrency", type=int, default=0,
+                        help="Số luồng cào song song (chỉ áp dụng cho Extractor)")
+    parser.add_argument("--proxy", type=str, default=None,
+                        help="SOCKS5 proxy cố định cho luồng này (ví dụ: socks5://127.0.0.1:40000)")
+    parser.add_argument("--container", type=str, default=None,
+                        help="Tên container docker của proxy này để restart khi xoay IP")
     
     args = parser.parse_args()
 
     print("="*50)
     print(f"HELLOWORK SCRAPER STARTING (Mode: {args.mode.upper()}, Limit: {args.limit})")
+    if args.prefecture:
+        print(f"Prefecture: {args.prefecture}")
+    if args.proxy:
+        print(f"Fixed Proxy: {args.proxy}")
+    if args.container:
+        print(f"Docker Container: {args.container}")
     print("="*50)
 
     # Khởi tạo các module
     is_incremental = (args.mode == "update")
-    harvester = HelloworkHarvester(incremental_mode=is_incremental)
-    extractor = HelloworkExtractor()
+    harvester = HelloworkHarvester(
+        incremental_mode=is_incremental, 
+        prefecture=args.prefecture,
+        proxy=args.proxy,
+        container=args.container
+    )
+    extractor = HelloworkExtractor(
+        prefecture=args.prefecture,
+        concurrency=args.concurrency,
+        proxy=args.proxy,
+        container=args.container
+    )
 
     # Giai đoạn 1: Harvest IDs
     if args.stage in ["harvest", "both"]:

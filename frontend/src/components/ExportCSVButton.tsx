@@ -36,6 +36,7 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
   const [showBuyModal, setShowBuyModal] = useState(false);
   const [stripeLoading, setStripeLoading] = useState<string | null>(null);
   const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
+  const [agreeBuyTerms, setAgreeBuyTerms] = useState(false);
 
   // Fetch quota data
   const fetchQuotaData = useCallback(async () => {
@@ -170,35 +171,32 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
         throw new Error(errData.error || "Export failed");
       }
 
-      // Check if it was processed as Background Task (Mechanism B)
+      // Check if it was processed as Background Task (Mechanism B) or Synchronous Zip download (Mechanism A)
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const result = await response.json();
         setLoading(false);
-        setStatusMessage("バックグラウンド処理を開始...");
         
-        // Show success modal or toast for background jobs
-        alert(`エクスポート件数が 5,000 件を超えているため、バックグラウンド処理を開始しました。\n完了後、ページ下部の「ダウンロード履歴」から取得できます。（ジョブID: ${result.jobId}）`);
-        fetchQuotaData();
-        setStatusMessage(null);
+        if (result.isAsync) {
+          setStatusMessage("バックグラウンド処理を開始...");
+          // Show success modal or toast for background jobs
+          alert(`エクスポート件数が 5,000 件を超えているため、バックグラウンド処理を開始しました。\n完了後、ページ下部の「ダウンロード履歴」から取得できます。（ジョブID: ${result.jobId}）`);
+          fetchQuotaData();
+          setStatusMessage(null);
+        } else {
+          setStatusMessage("ダウンロード中...");
+          const a = document.createElement("a");
+          a.href = result.downloadUrl;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+
+          setStatusMessage("エクスポートが完了しました！");
+          fetchQuotaData();
+          setTimeout(() => setStatusMessage(null), 4000);
+        }
         return;
       }
-
-      // Mechanism A: Synchronous streaming CSV file download
-      const blob = await response.blob();
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `kigyou_list_export_${Date.now()}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-
-      setLoading(false);
-      setStatusMessage("エクスポートが完了しました！");
-      fetchQuotaData();
-      setTimeout(() => setStatusMessage(null), 4000);
 
     } catch (e: any) {
       console.error("Export failed", e);
@@ -353,20 +351,7 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
               <X className="w-4 h-4" />
             </button>
 
-            {/* Header info */}
-            <div className="mb-6">
-              <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200/50 dark:border-amber-900/30 flex items-center justify-center mb-3">
-                <AlertTriangle className="w-5.5 h-5.5 text-amber-500" />
-              </div>
-              <h4 className="font-black text-slate-900 dark:text-white text-base">
-                エクスポート容量が不足しています
-              </h4>
-              <p className="text-xs text-slate-500 mt-1">
-                今回エクスポートには <strong className="text-slate-700 dark:text-slate-300 font-extrabold">{totalCount.toLocaleString()} 行</strong> 必要ですが、現在の残り容量は <strong className="text-amber-600 dark:text-amber-400 font-extrabold">{quota ? quota.remaining.toLocaleString() : 0} 行</strong> です。
-              </p>
-            </div>
-
-            {/* Premium Package Options */}
+            {/* Heade            {/* Premium Package Options */}
             {user?.role === "free" || user?.role === "trial" ? (
               <div className="flex flex-col gap-4 text-center my-6">
                 <div className="p-4 rounded-2xl bg-amber-50 border border-amber-250/50 text-amber-800 dark:bg-[#201515]/20 dark:border-rose-900/30 dark:text-rose-400 text-xs leading-relaxed text-left font-medium">
@@ -383,6 +368,23 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
               </div>
             ) : (
               <div className="flex flex-col gap-3.5 mb-6">
+                
+                {/* Terms agreement checkbox */}
+                <div className="flex items-start gap-2 bg-slate-50 dark:bg-slate-800/10 p-3 rounded-2xl border border-slate-100 dark:border-slate-850">
+                  <input
+                    type="checkbox"
+                    id="agree-buy-terms"
+                    checked={agreeBuyTerms}
+                    onChange={(e) => setAgreeBuyTerms(e.target.checked)}
+                    className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 mt-0.5 cursor-pointer"
+                  />
+                  <label htmlFor="agree-buy-terms" className="text-[10px] text-slate-500 leading-normal cursor-pointer selection:bg-transparent">
+                    <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-450 hover:underline font-bold">利用規約</a>
+                    および
+                    <a href="/tokushoho" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold">特定商取引法に基づく表記</a>
+                    に同意します。
+                  </label>
+                </div>
                 
                 {/* Option 1: 10k Pack */}
                 <div className="border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all bg-slate-50/50 dark:bg-slate-800/10">
@@ -401,8 +403,8 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                     <div className="font-black text-slate-900 dark:text-white text-sm">14,800円</div>
                     <button
                       onClick={() => handlePurchasePack("10k")}
-                      disabled={!!stripeLoading}
-                      className="mt-1.5 px-3 py-1 font-bold text-[10px] text-emerald-600 bg-white border border-slate-200 hover:border-emerald-300 rounded-lg transition-all flex items-center gap-1 active:scale-[0.97]"
+                      disabled={!!stripeLoading || !agreeBuyTerms}
+                      className="mt-1.5 px-3 py-1 font-bold text-[10px] text-emerald-600 bg-white border border-slate-200 hover:border-emerald-300 rounded-lg transition-all flex items-center gap-1 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {stripeLoading === "10k" ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -415,7 +417,7 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                     </button>
                   </div>
                 </div>
-
+ 
                 {/* Option 2: 50k Pack (RECOMMENDED BEST VALUE) */}
                 <div className="border-2 border-emerald-500/80 dark:border-emerald-600/80 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all bg-emerald-500/[0.03] dark:bg-emerald-500/[0.02] relative shadow-md shadow-emerald-500/5">
                   <div className="absolute -top-2.5 right-4 px-2 py-0.5 rounded-full bg-emerald-500 text-[8px] font-black text-white uppercase tracking-wider shadow">
@@ -437,8 +439,8 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                     <div className="font-black text-slate-900 dark:text-white text-sm">49,800円</div>
                     <button
                       onClick={() => handlePurchasePack("50k")}
-                      disabled={!!stripeLoading}
-                      className="mt-1.5 px-3 py-1 font-black text-[10px] text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 rounded-lg shadow-sm transition-all flex items-center gap-1 active:scale-[0.97]"
+                      disabled={!!stripeLoading || !agreeBuyTerms}
+                      className="mt-1.5 px-3 py-1 font-black text-[10px] text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 rounded-lg shadow-sm transition-all flex items-center gap-1 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {stripeLoading === "50k" ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -451,7 +453,7 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                     </button>
                   </div>
                 </div>
-
+ 
                 {/* Option 3: 100k Pack */}
                 <div className="border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all bg-slate-50/50 dark:bg-slate-800/10">
                   <div className="flex items-center gap-3">
@@ -469,8 +471,8 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                     <div className="font-black text-slate-900 dark:text-white text-sm">79,800円</div>
                     <button
                       onClick={() => handlePurchasePack("100k")}
-                      disabled={!!stripeLoading}
-                      className="mt-1.5 px-3 py-1 font-bold text-[10px] text-emerald-600 bg-white border border-slate-200 hover:border-emerald-300 rounded-lg transition-all flex items-center gap-1 active:scale-[0.97]"
+                      disabled={!!stripeLoading || !agreeBuyTerms}
+                      className="mt-1.5 px-3 py-1 font-bold text-[10px] text-emerald-600 bg-white border border-slate-200 hover:border-emerald-300 rounded-lg transition-all flex items-center gap-1 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {stripeLoading === "100k" ? (
                         <Loader2 className="w-3 h-3 animate-spin" />

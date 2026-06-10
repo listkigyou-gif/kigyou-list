@@ -128,6 +128,7 @@ export default function PricingPage() {
         "毎月 10,000 件の CSV ダウンロード枠",
         "Mechanism B バックグラウンド一括ダウンロード",
         "10,000件超の大量データダウンロード対応",
+        "API連携 (API Key 発行・外部データ連携)",
         "優先カスタマーサポート"
       ],
       recommended: true
@@ -144,6 +145,7 @@ export default function PricingPage() {
       recommended: false,
       features: [
         "毎月 40,000 件の CSV ダウンロード枠",
+        "API連携 (API Key 発行・外部データ連携)",
         "専用インテグレーション・エンジニアサポート",
         "専任アカウントマネージャー配属"
       ]
@@ -591,7 +593,7 @@ export default function PricingPage() {
           </div>
 
           {/* Guidelines / Notices */}
-          <div className="bg-slate-50 border border-slate-200 dark:bg-slate-800/10 dark:border-slate-800 rounded-3xl p-5 md:p-6 flex flex-col gap-2 text-xs text-slate-500 dark:text-slate-450 mt-2 max-w-4xl mx-auto w-full">
+          <div className="bg-slate-50 border border-slate-200 dark:bg-slate-800/10 dark:border-slate-800 rounded-3xl p-5 md:p-6 flex flex-col gap-2 text-xs text-slate-500 dark:text-slate-450 mt-2 max-w-7xl mx-auto w-full">
             <h5 className="font-extrabold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mb-1 text-[11px]">
               <Info className="w-4 h-4 text-emerald-500 shrink-0" />
               追加パッケージ（買い切り）に関する重要事項
@@ -605,7 +607,7 @@ export default function PricingPage() {
         </section>
 
         {/* Competitors Price Comparison Table (The "No Dumping" Proof) */}
-        <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm max-w-4xl mx-auto w-full flex flex-col gap-6 relative overflow-hidden">
+        <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm max-w-7xl mx-auto w-full flex flex-col gap-6 relative overflow-hidden">
           <div className="absolute top-0 left-0 w-64 h-64 bg-secondary/3 rounded-full blur-3xl pointer-events-none" />
           
           <div className="text-center md:text-left relative flex flex-col gap-1.5">
@@ -674,7 +676,7 @@ export default function PricingPage() {
         </section>
 
         {/* FAQs */}
-        <section className="max-w-4xl mx-auto w-full flex flex-col gap-6">
+        <section className="max-w-7xl mx-auto w-full flex flex-col gap-6">
           <div className="text-center">
             <HelpCircle className="w-8 h-8 text-primary dark:text-secondary mx-auto mb-2" />
             <h3 className="text-lg font-black text-slate-900 dark:text-white">よくあるご質問 (FAQ)</h3>
@@ -704,10 +706,30 @@ export default function PricingPage() {
             <div className="p-5 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl flex flex-col gap-2">
               <h5 className="font-extrabold text-xs text-slate-850 dark:text-white flex items-center gap-1.5">
                 <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
-                月の途中でプランをアップグレードした場合は？
+                月の途中でプランをアップグレード・変更した場合は？
               </h5>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                プランアップグレードは即時反映されます。例えばPROからBUSINESSにアップグレードされた場合、即時に10,000行の枠が解放されます。必要に応じて自由にプランを切り替えてお使いいただけます。
+                プランの変更（アップグレード・ダウングレード・再契約）は即時に反映され、その日から新プランの1ヶ月間の利用期間が新しくスタートします。変更後は、当月のダウンロード使用数がリセットされ、新しいご利用期間（契約サイクル）の開始日が本日の日付に再設定されます。これにより、新しいプランの月間枠（例：BUSINESSプランなら10,000行）が即座にご利用可能になります。
+              </p>
+            </div>
+
+            <div className="p-5 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl flex flex-col gap-2">
+              <h5 className="font-extrabold text-xs text-slate-850 dark:text-white flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                プランを変更した際、旧プランの使い切れなかった残りの枠はどうなりますか？
+              </h5>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                旧プランで使い切れなかった残りのダウンロード枠は消滅しません。残りの枠は、無期限でご利用いただける「追加容量枠」へと自動的に引き継がれ、蓄積されます。新しいプランの月間枠と並行して、無駄なくすべてご利用いただけます。（※有料プランから無料（FREE）プランへ移行または解約された場合は、この追加容量枠は一時的にロック（凍結）されご利用いただけなくなりますが、再びいずれかの有料プランをご契約いただいた時点で自動的にロックが解除され、再度ご利用いただけるようになります）
+              </p>
+            </div>
+
+            <div className="p-5 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl flex flex-col gap-2">
+              <h5 className="font-extrabold text-xs text-slate-850 dark:text-white flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                使わなかった月間枠は翌月に繰り越し（自動的に追加容量枠に合算）されますか？
+              </h5>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                いいえ。毎月の自動更新時（定期的な請求タイミング）には、使い切れなかった当月の基本枠は翌月へ繰り越しされず、リセットされます。月間基本枠は期間内に計画的にご利用いただきますようお願いいたします。繰り越し（追加容量枠への移行・蓄積）が行われるのは、お客様が能動的にプランを変更（アップグレード・ダウングレード・再契約）されたタイミングのみとなります。
               </p>
             </div>
 
@@ -718,6 +740,26 @@ export default function PricingPage() {
               </h5>
               <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
                 無料会員登録は完全無料です。有料プランへの移行は登録後のマイページから行えます。決済にはクレジットカードをご用意ください。なお、キャンペーン価格は登録いただいた月から即時適用されます。
+              </p>
+            </div>
+
+            <div className="p-5 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl flex flex-col gap-2">
+              <h5 className="font-extrabold text-xs text-slate-850 dark:text-white flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                API連携機能はどのプランで利用できますか？また追加料金は発生しますか？
+              </h5>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                API連携機能は「BUSINESSプラン」および「ENTERPRISEプラン」をご契約中のお客様であれば、追加料金なし（月額料金内）でご利用いただけます。FREEプラン、PROプランのお客様はご利用いただけません。
+              </p>
+            </div>
+
+            <div className="p-5 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl flex flex-col gap-2">
+              <h5 className="font-extrabold text-xs text-slate-850 dark:text-white flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
+                API経由でのデータ取得時、ダウンロード枠（クォータ）はどのように消費されますか？
+              </h5>
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                APIから取得（レスポンスとして返却）された企業情報またはシグナルのデータ件数1件につき、1ダウンロード枠がリアルタイムに消費されます。検索結果が0件だった場合、枠は消費されません。
               </p>
             </div>
           </div>
@@ -774,6 +816,21 @@ export default function PricingPage() {
                   disabled={isLoggedIn && !!user?.email}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200/80 focus:outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                 />
+              </div>
+
+              <div className="flex items-start gap-2 mt-1 mb-2 bg-slate-50/50 dark:bg-slate-800/10 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850">
+                <input
+                  type="checkbox"
+                  id="agree-subscribe-terms"
+                  required
+                  className="rounded border-slate-300 text-primary focus:ring-primary h-3.5 w-3.5 mt-0.5 cursor-pointer"
+                />
+                <label htmlFor="agree-subscribe-terms" className="text-[10px] text-slate-500 leading-normal cursor-pointer selection:bg-transparent">
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">利用規約</a>
+                  および
+                  <a href="/tokushoho" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">特定商取引法に基づく表記</a>
+                  に同意します。
+                </label>
               </div>
 
               <div className="mt-2 flex flex-col gap-2">
@@ -857,6 +914,21 @@ export default function PricingPage() {
                   disabled={isLoggedIn && !!user?.email}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-slate-50 border border-slate-200/80 focus:outline-none dark:bg-slate-800 dark:border-slate-700 dark:text-white"
                 />
+              </div>
+
+              <div className="flex items-start gap-2 mt-1 mb-2 bg-slate-50/50 dark:bg-slate-800/10 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850">
+                <input
+                  type="checkbox"
+                  id="agree-pack-terms"
+                  required
+                  className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500 h-3.5 w-3.5 mt-0.5 cursor-pointer"
+                />
+                <label htmlFor="agree-pack-terms" className="text-[10px] text-slate-500 leading-normal cursor-pointer selection:bg-transparent">
+                  <a href="/terms" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold">利用規約</a>
+                  および
+                  <a href="/tokushoho" target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold">特定商取引法に基づく表記</a>
+                  に同意します。
+                </label>
               </div>
 
               <div className="mt-2 flex flex-col gap-2">

@@ -11,6 +11,10 @@ export async function POST(request: Request) {
     }
     const email = session.user.email;
     const { planId, packId, couponCode, couponDiscount } = await request.json();
+    
+    // Extract IP and UA for logging in payment history
+    const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "127.0.0.1";
+    const userAgent = request.headers.get("user-agent") || "";
 
     if (!planId && !packId) {
       return NextResponse.json({ error: "Plan ID or Pack ID is required" }, { status: 400 });
@@ -150,6 +154,9 @@ export async function POST(request: Request) {
 
       const sessionData: any = {
         payment_method_types: ["card"],
+        consent_collection: {
+          terms_of_service: "required",
+        },
         line_items: [
           {
             price_data: {
@@ -170,6 +177,8 @@ export async function POST(request: Request) {
         metadata: {
           email,
           allowance: String(allowance),
+          ip_address: ipAddress,
+          user_agent: userAgent.slice(0, 480)
         },
         success_url: `${appUrl}/dashboard?stripe_success=true&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: isSubscription 

@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
-import { Building2, LogOut, LayoutDashboard, Menu, X, User } from "lucide-react";
+import { LogOut, LayoutDashboard, Menu, X, User } from "lucide-react";
+import { LogoIcon } from "./LogoIcon";
 
 export const Header: React.FC = () => {
   const { isLoggedIn, user, logout, setAuthModalOpen } = useAuth();
@@ -56,7 +57,7 @@ export const Header: React.FC = () => {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 active:scale-98 transition-transform">
           <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
-            <Building2 className="w-5 h-5 text-white" />
+            <LogoIcon className="w-5 h-5 text-white" />
           </div>
           <span className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
             Kigyou<span className="text-secondary">-list</span>
@@ -67,6 +68,9 @@ export const Header: React.FC = () => {
         <nav className="hidden md:flex items-center gap-8 text-xs font-bold">
           <Link href="/search" className="text-slate-600 hover:text-primary dark:text-slate-350 dark:hover:text-secondary transition-colors">
             企業検索
+          </Link>
+          <Link href="/directory" className="text-slate-600 hover:text-primary dark:text-slate-350 dark:hover:text-secondary transition-colors">
+            企業データ一覧
           </Link>
           <Link href="/pricing" className="text-slate-600 hover:text-primary dark:text-slate-350 dark:hover:text-secondary transition-colors">
             料金プラン
@@ -166,6 +170,13 @@ export const Header: React.FC = () => {
             className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1"
           >
             企業検索
+          </Link>
+          <Link 
+            href="/directory" 
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1"
+          >
+            企業データ一覧
           </Link>
           <Link 
             href="/pricing" 

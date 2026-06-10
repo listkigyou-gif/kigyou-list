@@ -26,6 +26,10 @@ export async function POST(request: Request) {
     }
     const email = session.user.email;
     const { keyword = "", filters = {}, totalCount } = await request.json();
+    
+    // Extract Client IP and User Agent for audit logging/dispute proof
+    const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "127.0.0.1";
+    const userAgent = request.headers.get("user-agent") || "";
 
     if (totalCount === undefined || typeof totalCount !== "number" || totalCount <= 0) {
       return NextResponse.json({ error: "Invalid totalCount parameter" }, { status: 400 });
@@ -131,7 +135,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "rate_limit_exceeded" }, { status: 429 });
     }
 
-    const remaining = (quota.monthly_base_allowance - quota.monthly_base_used) + quota.purchased_add_on_balance;
+    const isFreePlan = (quota.plan === 'free');
+    const remaining = (quota.monthly_base_allowance - quota.monthly_base_used) + (isFreePlan ? 0 : quota.purchased_add_on_balance);
 
     if (remaining < totalCount) {
       return NextResponse.json({ 
@@ -198,8 +203,8 @@ export async function POST(request: Request) {
       const zipKey = `exports/${jobId}.zip`;
       const filePath = await uploadFileToR2(zipKey, zipBuffer, "application/zip");
 
-      // Save job record to db as completed
-      await createExportJob(jobId, email, JSON.stringify({ ...sanitizedFilters, keyword }), totalCount);
+      // Save job record to db as completed with IP/UA evidence
+      await createExportJob(jobId, email, JSON.stringify({ ...sanitizedFilters, keyword }), totalCount, ipAddress, userAgent);
       await updateExportJobStatus(jobId, "completed", filePath, null);
 
       return NextResponse.json({
@@ -214,7 +219,8 @@ export async function POST(request: Request) {
     // =============================================================
     // MECHANISM B: Asynchronous Background Scheduler (>= 5,000 records)
     // =============================================================
-    await createExportJob(jobId, email, JSON.stringify({ ...sanitizedFilters, keyword }), totalCount);
+    // Save job record to db as pending with IP/UA evidence
+    await createExportJob(jobId, email, JSON.stringify({ ...sanitizedFilters, keyword }), totalCount, ipAddress, userAgent);
 
     // Self-invoking async function inside Node context (does not block HTTP response thread)
     (async () => {

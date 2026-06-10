@@ -270,7 +270,7 @@ def resolve_entities(conn):
     
     # For raw_yahoo
     cursor.execute("""
-        UPDATE raw_yahoo
+        UPDATE OR REPLACE raw_yahoo
         SET corporate_number = (
             SELECT c.corporate_number 
             FROM companies c 
@@ -361,7 +361,7 @@ def resolve_entities(conn):
                         best_corp = c_corp
                         
                 if best_corp:
-                    cursor.execute("UPDATE raw_yahoo SET corporate_number = ? WHERE id = ?;", (best_corp, row_id))
+                    cursor.execute("UPDATE OR REPLACE raw_yahoo SET corporate_number = ? WHERE id = ?;", (best_corp, row_id))
                     resolved_yahoo_fuzzy += 1
                     
         conn.commit()

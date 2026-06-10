@@ -151,7 +151,7 @@ def prepare_and_spawn_yahoo_crawlers(limit):
     log_banner("STAGE 2: YAHOO MAPS CRAWLER (SPAWNING BACKGROUND WORKERS)")
     yahoo_dir = os.path.join(WORKSPACE_ROOT, "crawlers", "yahoo")
     yahoo_data_dir = os.path.join(yahoo_dir, "data")
-    ports = [40001, 40002, 40003, 40004, 40005] + list(range(40030, 40040)) + [40041, 40043, 40045, 40047, 40049] + [p for p in range(40050, 40060) if p != 40056] + [40060]
+    ports = [40002, 40003, 40004, 40005] + list(range(40030, 40040)) + [40041, 40043, 40045, 40047, 40049] + [p for p in range(40050, 40060) if p != 40056] + [40060]
 
     # 1. Read already-done companies from existing results files
     done_companies = set()
@@ -199,7 +199,7 @@ def prepare_and_spawn_yahoo_crawlers(limit):
                 SELECT corporate_number, company_name, full_address, prefecture_name, city_name
                 FROM companies
                 WHERE (yahoo_last_crawled_at IS NULL
-                   OR datetime(yahoo_last_crawled_at) < datetime('now', '-360 days'))
+                   OR yahoo_last_crawled_at < datetime('now', '-360 days'))
                 LIMIT ?
             """, (query_limit + len(done_companies),))
             
@@ -362,16 +362,37 @@ def merge_yahoo_results(yahoo_dir, ports):
         "corp_num", "name", "address", "prefecture", "city", "corp_type", "corp_type_name",
         "gid", "y_name", "y_address", "phone", "website"
     ]
+    temp_csv = basic_csv + ".tmp"
     try:
-        with open(basic_csv, "w", newline="", encoding="utf-8-sig") as f:
+        with open(temp_csv, "w", newline="", encoding="utf-8-sig") as f:
             writer = csv.DictWriter(f, fieldnames=out_fields)
             writer.writeheader()
             for r in merged_rows:
                 writer.writerow({k: r.get(k, "") for k in out_fields})
+        
+        # Atomic replace with retry for Windows locks
+        for attempt in range(5):
+            try:
+                import time
+                if os.path.exists(basic_csv):
+                    os.replace(temp_csv, basic_csv)
+                else:
+                    os.rename(temp_csv, basic_csv)
+                break
+            except PermissionError:
+                if attempt < 4:
+                    time.sleep(0.5)
+                else:
+                    raise
         logger.info(f"[+] Saved merged Yahoo results to {basic_csv}")
         return True
     except Exception as e:
         logger.error(f"[-] Failed to write companies_basic.csv: {e}")
+        if os.path.exists(temp_csv):
+            try:
+                os.remove(temp_csv)
+            except Exception:
+                pass
         return False
 
 
@@ -910,7 +931,7 @@ def update_dashboard_file():
     except Exception:
         pass
 
-    ports = [40001, 40002, 40003, 40004, 40005] + list(range(40030, 40040)) + [40041, 40043, 40045, 40047, 40049] + [p for p in range(40050, 40060) if p != 40056] + [40060]
+    ports = [40002, 40003, 40004, 40005] + list(range(40030, 40040)) + [40041, 40043, 40045, 40047, 40049] + [p for p in range(40050, 40060) if p != 40056] + [40060]
     yahoo_ports_status = []
     total_csv_records = 0
     

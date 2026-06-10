@@ -17,6 +17,7 @@ import os
 import sys
 import csv
 import time
+import re
 import sqlite3
 import subprocess
 import threading
@@ -37,7 +38,7 @@ YAHOO_LOGS_DIR = os.path.join(YAHOO_DIR, "logs")
 REPORT_PATH = os.path.join(WORKSPACE_ROOT, "yahoo_status_report.md")
 
 # Available proxy ports
-PORTS = [40001, 40002, 40003, 40004, 40005] + list(range(40030, 40040)) + [40041, 40043, 40045, 40047, 40049] + [p for p in range(40050, 40060) if p != 40056] + [40060] + list(range(40061, 40081))
+PORTS = [40002, 40003, 40004, 40005] + list(range(40009, 40013)) + list(range(40030, 40040)) + [40041, 40043, 40045, 40047, 40049] + [p for p in range(40050, 40060) if p != 40056] + [40060] + list(range(40061, 40081))
 
 def run_cmd(args):
     try:
@@ -101,11 +102,22 @@ def analyze_port_data(port):
     # 2. Count recent block warnings from log (last 200 lines to avoid high IO)
     if os.path.exists(log_file):
         try:
+            now_dt = datetime.now()
             with open(log_file, "r", encoding="utf-8", errors="ignore") as lf:
                 lines = lf.readlines()[-200:]
                 for line in lines:
                     if "🚫 [BLOCKED]" in line or "BLOCK_429" in line:
-                        blocks += 1
+                        # Only count blocks within the last 15 minutes to avoid stale alerts
+                        match = re.match(r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})", line)
+                        if match:
+                            try:
+                                log_time = datetime.strptime(match.group(1), "%Y-%m-%d %H:%M:%S")
+                                if (now_dt - log_time).total_seconds() < 900:
+                                    blocks += 1
+                            except Exception:
+                                blocks += 1
+                        else:
+                            blocks += 1
         except Exception:
             pass
             
@@ -115,12 +127,42 @@ def generate_svg_chart(history_data, title, out_path, resolution_label):
     if len(history_data) < 2:
         return False
         
-    timestamps = [row[0] for row in history_data]
-    total_pts = [row[1] for row in history_data]
-    phone_pts = [row[2] for row in history_data]
-    web_pts = [row[3] for row in history_data]
+    # Convert history_data to speed rates (items per minute)
+    rates_data = []
+    for i in range(1, len(history_data)):
+        prev = history_data[i-1]
+        latest = history_data[i]
+        
+        try:
+            dt_latest = datetime.strptime(latest[0], "%Y-%m-%d %H:%M:%S")
+            dt_prev = datetime.strptime(prev[0], "%Y-%m-%d %H:%M:%S")
+            dur_min = (dt_latest - dt_prev).total_seconds() / 60.0
+        except Exception:
+            dur_min = 15.0 if resolution_label == "15m" else 60.0
+            
+        if dur_min <= 0:
+            dur_min = 1.0
+            
+        dc = latest[1] - prev[1]
+        dp = latest[2] - prev[2]
+        dw = latest[3] - prev[3]
+        
+        # Clip negative delta to 0 (transient alignment during csv merge)
+        rate_c = max(0.0, dc / dur_min)
+        rate_p = max(0.0, dp / dur_min)
+        rate_w = max(0.0, dw / dur_min)
+        
+        rates_data.append((latest[0], rate_c, rate_p, rate_w))
+        
+    if len(rates_data) < 2:
+        return False
+        
+    timestamps = [row[0] for row in rates_data]
+    total_pts = [row[1] for row in rates_data]
+    phone_pts = [row[2] for row in rates_data]
+    web_pts = [row[3] for row in rates_data]
     
-    n_points = len(history_data)
+    n_points = len(rates_data)
     
     # Format X labels
     labels = []
@@ -136,27 +178,34 @@ def generate_svg_chart(history_data, title, out_path, resolution_label):
             
     # Dimensions
     w, h = 800, 320
-    margin_l, margin_r = 65, 65
+    margin_l, margin_r = 75, 65
     margin_t, margin_b = 50, 50
     plot_w = w - margin_l - margin_r
     plot_h = h - margin_t - margin_b
     
+    # Unified scale from 0 to max_val
+    max_val = max(total_pts + phone_pts + web_pts)
+    if max_val <= 0:
+        max_val = 1.0
+    # Add 10% padding to top
+    max_val *= 1.1
+    
     def get_coords(data):
-        min_v = min(data)
-        max_v = max(data)
-        rng = max_v - min_v
-        if rng == 0:
-            rng = 1
         coords = []
         for i, val in enumerate(data):
-            x = margin_l + (i / (n_points - 1)) * plot_w
-            y = margin_t + plot_h - ((val - min_v) / rng) * plot_h
+            x = margin_l + (i / (n_points - 1)) * plot_w if n_points > 1 else margin_l
+            y = margin_t + plot_h - (val / max_val) * plot_h
             coords.append((x, y))
-        return coords, min_v, max_v
+        return coords
         
-    total_coords, t_min, t_max = get_coords(total_pts)
-    phone_coords, p_min, p_max = get_coords(phone_pts)
-    web_coords, w_min, w_max = get_coords(web_pts)
+    total_coords = get_coords(total_pts)
+    phone_coords = get_coords(phone_pts)
+    web_coords = get_coords(web_pts)
+    
+    # Calculate Averages for legend
+    t_avg = sum(total_pts) / len(total_pts)
+    p_avg = sum(phone_pts) / len(phone_pts)
+    w_avg = sum(web_pts) / len(web_pts)
     
     svg = []
     svg.append(f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" width="100%" height="{h}" style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; font-family: system-ui, -apple-system, sans-serif;">')
@@ -189,10 +238,15 @@ def generate_svg_chart(history_data, title, out_path, resolution_label):
     
     svg.append(f'<text x="20" y="30" class="title">{title}</text>')
     
-    # 4 horizontal grid lines
+    # Y-Axis Unit Label
+    svg.append(f'<text x="20" y="55" class="axis-text" font-weight="bold">Tốc độ (dòng/phút)</text>')
+    
+    # 4 horizontal grid lines and Y-axis labels
     for i in range(4):
         y = margin_t + (i / 3) * plot_h
+        val = (1 - i / 3) * max_val
         svg.append(f'<line x1="{margin_l}" y1="{y}" x2="{w - margin_r}" y2="{y}" class="grid-line" />')
+        svg.append(f'<text x="{margin_l - 10}" y="{y + 4}" text-anchor="end" class="axis-text">{val:.1f}</text>')
         
     # X Axis Labels
     tick_count = min(6, n_points)
@@ -200,7 +254,7 @@ def generate_svg_chart(history_data, title, out_path, resolution_label):
     
     for idx in sorted(list(set(tick_indices))):
         if idx < n_points:
-            x = margin_l + (idx / (n_points - 1)) * plot_w
+            x = margin_l + (idx / (n_points - 1)) * plot_w if n_points > 1 else margin_l
             label = labels[idx]
             svg.append(f'<line x1="{x}" y1="{margin_t}" x2="{x}" y2="{margin_t + plot_h}" class="grid-line" />')
             svg.append(f'<text x="{x}" y="{margin_t + plot_h + 20}" text-anchor="middle" class="axis-text">{label}</text>')
@@ -228,15 +282,15 @@ def generate_svg_chart(history_data, title, out_path, resolution_label):
     draw_line(web_coords, "line-web", "dot-web")
     
     # Legends
-    leg_x = w - margin_r - 200
+    leg_x = w - margin_r - 240
     svg.append(f'<rect x="{leg_x}" y="15" width="12" height="12" rx="3" fill="#3b82f6" />')
-    svg.append(f'<text x="{leg_x + 18}" y="24" class="legend-text">Tổng cào: {t_min:,} → {t_max:,}</text>')
+    svg.append(f'<text x="{leg_x + 18}" y="24" class="legend-text">Tổng cào (tb: {t_avg:.1f} cty/phút)</text>')
     
     svg.append(f'<rect x="{leg_x}" y="30" width="12" height="12" rx="3" fill="#f97316" />')
-    svg.append(f'<text x="{leg_x + 18}" y="39" class="legend-text">Điện thoại: {p_min:,} → {p_max:,}</text>')
+    svg.append(f'<text x="{leg_x + 18}" y="39" class="legend-text">Điện thoại (tb: {p_avg:.1f} SĐT/phút)</text>')
     
     svg.append(f'<rect x="{leg_x}" y="45" width="12" height="12" rx="3" fill="#10b981" />')
-    svg.append(f'<text x="{leg_x + 18}" y="54" class="legend-text">Website: {w_min:,} → {w_max:,}</text>')
+    svg.append(f'<text x="{leg_x + 18}" y="54" class="legend-text">Website (tb: {w_avg:.1f} web/phút)</text>')
     
     svg.append("</svg>")
     
@@ -275,15 +329,15 @@ def fetch_history(resolution="15m"):
         conn = sqlite3.connect(DB_PATH, timeout=30)
         cur = conn.cursor()
         if resolution == "15m":
-            # Select every record in the last 6 hours (24 samples of 15m)
+            # Select 25 records to calculate 24 delta intervals
             cur.execute("""
                 SELECT timestamp, total_crawled, total_phones, total_websites
                 FROM yahoo_stats_history
                 ORDER BY timestamp DESC
-                LIMIT 24;
+                LIMIT 25;
             """)
         else: # 1 hour resolution
-            # Group by hour key
+            # Group by hour key, select 25 records
             cur.execute("""
                 SELECT timestamp, total_crawled, total_phones, total_websites
                 FROM yahoo_stats_history
@@ -293,7 +347,7 @@ def fetch_history(resolution="15m"):
                     GROUP BY strftime('%Y-%m-%d %H', timestamp)
                 )
                 ORDER BY timestamp DESC
-                LIMIT 24;
+                LIMIT 25;
             """)
         history = cur.fetchall()
         conn.close()
@@ -371,22 +425,41 @@ def build_report():
     master_websites = 0
     basic_csv = os.path.join(YAHOO_DATA_DIR, "companies_basic.csv")
     if os.path.exists(basic_csv):
-        try:
-            with open(basic_csv, "r", encoding="utf-8-sig") as f:
-                reader = csv.DictReader(f)
-                for r in reader:
-                    master_crawled += 1
-                    if r.get("phone"):
-                        master_phones += 1
-                    if r.get("website"):
-                        master_websites += 1
-        except Exception:
-            pass
+        for attempt in range(3):
+            try:
+                with open(basic_csv, "r", encoding="utf-8-sig") as f:
+                    reader = csv.reader(f)
+                    next(reader, None)
+                    for row in reader:
+                        if len(row) >= 12:
+                            master_crawled += 1
+                            if row[10]: # phone
+                                master_phones += 1
+                            if row[11]: # website
+                                master_websites += 1
+                break
+            except Exception:
+                if attempt < 2:
+                    time.sleep(1.0)
+                else:
+                    # Fallback to SQLite DB master count if CSV is locked
+                    if os.path.exists(DB_PATH):
+                        try:
+                            conn = sqlite3.connect(DB_PATH, timeout=10)
+                            cur = conn.cursor()
+                            cur.execute("SELECT COUNT(*), COUNT(phone_number), COUNT(website_url) FROM companies WHERE yahoo_last_crawled_at IS NOT NULL;")
+                            db_row = cur.fetchone()
+                            master_crawled = db_row[0] or 0
+                            master_phones = db_row[1] or 0
+                            master_websites = db_row[2] or 0
+                            conn.close()
+                        except Exception:
+                            pass
 
-    # Save globally for chart fallbacks - Prioritize real-time sums from partition files for live updates
-    total_c = total_crawled_all if total_crawled_all > 0 else master_crawled
-    total_p = total_phones_all if total_phones_all > 0 else master_phones
-    total_w = total_websites_all if total_websites_all > 0 else master_websites
+    # Save globally for chart fallbacks - Sum merged master CSV and active partitions for accurate cumulative tracking
+    total_c = master_crawled + total_crawled_all
+    total_p = master_phones + total_phones_all
+    total_w = master_websites + total_websites_all
 
     # Query SQLite Master for ETL stats
     etl_staging_count = 0
@@ -417,8 +490,8 @@ def build_report():
     svg_15m_path = os.path.join(WORKSPACE_ROOT, "stats_yahoo_15m.svg")
     svg_1h_path = os.path.join(WORKSPACE_ROOT, "stats_yahoo_1h.svg")
     
-    generate_svg_chart(history_15m, "Biểu đồ Tăng trưởng Thực tế (6 Giờ qua - Cập nhật 15 phút)", svg_15m_path, "15m")
-    generate_svg_chart(history_1h, "Biểu đồ Tăng trưởng Thực tế (24 Giờ qua - Cập nhật 1 tiếng)", svg_1h_path, "1h")
+    generate_svg_chart(history_15m, "Tốc độ Cào Thực tế (6 Giờ qua - Cập nhật 15 phút)", svg_15m_path, "15m")
+    generate_svg_chart(history_1h, "Tốc độ Cào Thực tế (24 Giờ qua - Cập nhật 1 tiếng)", svg_1h_path, "1h")
 
     # 5. Build Markdown Content
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -426,27 +499,27 @@ def build_report():
     # Alerts and warnings
     alert_section = ""
     offline_ports = [p["port"] for p in port_details if "Stopped" in p["status"]]
-    blocked_ports = [p["port"] for p in port_details if p["blocks"] > 15]
+    blocked_ports = [p["port"] for p in port_details if p["blocks"] >= 15]
 
     if offline_ports:
-        alert_section += f"> [!WARNING]\n> **CẢNH BÁO CỔNG PROXY**: Phát hiện {len(offline_ports)} cổng proxy đang offline (container Docker bị dừng): `{", ".join(map(str, offline_ports[:5]))}`...\n> * Hãy khởi chạy lại daemon cào hoặc tự động khắc phục bằng Watchdog.\n\n"
+        alert_section += f"> [!WARNING]\n> **CẢNH BÁO CỔNG PROXY**: Phát hiện {len(offline_ports)} cổng proxy đang offline (container Docker bị dừng): `{', '.join(map(str, offline_ports[:5]))}`...\n> * Hãy khởi chạy lại daemon cào hoặc tự động khắc phục bằng Watchdog.\n\n"
 
     if blocked_ports:
-        alert_section += f"> [!CAUTION]\n> **PHÁT HIỆN CHẶN CẬP NHẬT (429)**: Các cổng `{", ".join(map(str, blocked_ports[:5]))}` phát hiện tần suất bị chặn cao (lỗi Block > 15 lần gần đây).\n> * Daemon sẽ tự động restart và xoay IP chủ động cho các cổng này. Nếu bị chặn hàng loạt, vui lòng kiểm tra gói dữ liệu proxy hoặc mạng máy tính.\n\n"
+        alert_section += f"> [!CAUTION]\n> **PHÁT HIỆN CHẶN CẬP NHẬT (429)**: Các cổng `{', '.join(map(str, blocked_ports[:5]))}` phát hiện tần suất bị chặn cao (lỗi Block >= 15 lần gần đây).\n> * Daemon sẽ tự động restart và xoay IP chủ động cho các cổng này. Nếu bị chặn hàng loạt, vui lòng kiểm tra gói dữ liệu proxy hoặc mạng máy tính.\n\n"
 
     if not alert_section:
         alert_section = "> [!NOTE]\n> **HỆ THỐNG KHỎE MẠNH**: Tất cả 50 cổng proxy đang hoạt động tốt với tỷ lệ thành công ổn định.\n\n"
     # Build Port Table
     table_content = "| Cổng Proxy | Trạng thái | Đã cào (Dòng CSV) | Số Điện Thoại | Website | Lỗi Chặn (Gần đây) | Tỷ lệ SĐT (%) |\n| :--- | :--- | :--- | :--- | :--- | :--- | :--- |\n"
     for p in port_details:
-        warning_icon = " ⚠️" if p["blocks"] > 15 else ""
+        warning_icon = " ⚠️" if p["blocks"] >= 15 else ""
         table_content += f"| **Port {p['port']}** | {p['status']} | {p['crawled']:,} | {p['phones']:,} | {p['websites']:,} | {p['blocks']}{warning_icon} | {p['rate']:.1f}% |\n"
 
     # Save report
     report_md = f"""# Báo cáo Giám sát Chi tiết Yahoo Maps Crawler
 
 * **Thời gian cập nhật báo cáo**: `{now_str}`
-* **Số cổng proxy hoạt động**: `🟢 {active_ports} / 50`
+* **Số cổng proxy hoạt động**: `🟢 {active_ports} / {len(PORTS)}`
 
 ---
 
@@ -468,7 +541,7 @@ def build_report():
 
 ## ⚙️ Thống kê Tiến trình ETL (Đồng bộ Master & Postgres)
 > [!NOTE]
-> **Quy luật kích hoạt ETL**: Tiến trình ETL tự động chạy khi tổng số lượng dữ liệu cào mới **cộng gộp từ tất cả các cổng** đạt **2,000 records**, hoặc định kỳ sau mỗi **2 tiếng** (tùy điều kiện nào đến trước).
+> **Quy luật kích hoạt ETL**: Tiến trình ETL tự động chạy khi tổng số lượng dữ liệu cào mới **cộng gộp từ tất cả các cổng** đạt **20,000 records**, hoặc định kỳ sau mỗi **2 tiếng** (tùy điều kiện nào đến trước).
 
 | Phân lớp dữ liệu | Số lượng bản ghi | Mô tả trạng thái |
 | :--- | :--- | :--- |
@@ -477,13 +550,13 @@ def build_report():
 
 ---
 
-## 📊 Biểu đồ Tăng trưởng Dữ liệu Cào Yahoo
+## 📊 Biểu đồ Tốc độ Cào Yahoo (Lượng tăng thêm/phút)
 
-* **Biểu đồ Cập nhật 15 phút (6 Giờ qua):**
-![Biểu đồ Cập nhật 15 phút](stats_yahoo_15m.svg)
+* **Biểu đồ Tốc độ cào 15 phút (6 Giờ qua):**
+![Biểu đồ Tốc độ cào 15 phút](stats_yahoo_15m.svg)
 
-* **Biểu đồ Cập nhật 1 Tiếng (24 Giờ qua):**
-![Biểu đồ Cập nhật 1 Tiếng](stats_yahoo_1h.svg)
+* **Biểu đồ Tốc độ cào 1 Tiếng (24 Giờ qua):**
+![Biểu đồ Tốc độ cào 1 Tiếng](stats_yahoo_1h.svg)
 
 ---
 

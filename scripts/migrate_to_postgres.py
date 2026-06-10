@@ -40,7 +40,13 @@ def main():
 
     print("Connecting to PostgreSQL...", flush=True)
     try:
-        pg_conn = psycopg2.connect(pg_url)
+        pg_conn = psycopg2.connect(
+            pg_url,
+            keepalives=1,
+            keepalives_idle=30,
+            keepalives_interval=10,
+            keepalives_count=5
+        )
         pg_cur = pg_conn.cursor()
     except Exception as e:
         print(f"Failed to connect to PostgreSQL: {e}", flush=True)

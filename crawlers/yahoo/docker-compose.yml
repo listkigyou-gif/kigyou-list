@@ -501,3 +501,46 @@ services:
     privileged: true
     restart: always
 
+
+
+  warp-40009:
+    image: caomingjun/warp
+    container_name: warp-40009
+    ports:
+      - "40009:1080"
+    environment:
+      - WARP_SLEEP=2
+    privileged: true
+    restart: always
+
+  warp-40010:
+    image: caomingjun/warp
+    container_name: warp-40010
+    ports:
+      - "40010:1080"
+    environment:
+      - WARP_SLEEP=2
+    privileged: true
+    restart: always
+
+  warp-40011:
+    image: caomingjun/warp
+    container_name: warp-40011
+    ports:
+      - "40011:1080"
+    environment:
+      - WARP_SLEEP=2
+    privileged: true
+    restart: always
+
+  warp-40012:
+    image: caomingjun/warp
+    container_name: warp-40012
+    ports:
+      - "40012:1080"
+    environment:
+      - WARP_SLEEP=2
+    privileged: true
+    restart: always
+
+

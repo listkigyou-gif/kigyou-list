@@ -6,11 +6,12 @@ import {
   getUserQuotaBySubscriptionId, 
   resetUserQuotaUsage, 
   cancelUserSubscriptionBySubId,
-  suspendUserQuotaInDb
+  suspendUserQuotaInDb,
+  getUserBillingInfo
 } from "@/lib/db";
 import { uploadFileToR2 } from "@/lib/r2";
 
-function generateInvoiceHtml(params: {
+export function generateInvoiceHtml(params: {
   email: string;
   paymentId: string;
   formattedDate: string;
@@ -19,12 +20,17 @@ function generateInvoiceHtml(params: {
   linesAdded: number;
   taxExclusivePrice: number;
   taxAmount: number;
+  billingName?: string;
+  billingAddress?: string;
+  billingTaxId?: string;
+  billingPhone?: string;
 }) {
   return `<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="utf-8">
   <title>領収書 / インボイス</title>
+  <link rel="icon" href="/icon.svg" type="image/svg+xml" />
   <style>
     body {
       font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
@@ -192,18 +198,22 @@ function generateInvoiceHtml(params: {
         <p style="margin: 5px 0 0 0; color: #666; font-size: 14px;">適格請求書（インボイス）</p>
       </div>
       <div class="company-details">
-        <strong>kigyou-list.jp (キギョウリスト)</strong><br>
-        〒100-0005 東京都千代田区丸の内一丁目<br>
-        登録番号: T1234567890123<br>
-        お問い合わせ: support@kigyou-list.jp
+        <strong>Kigiyou-List (TQC株式会社)</strong><br>
+        〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F<br>
+        TEL / FAX: (03) 6907-1219 / (03) 6701-2399<br>
+        登録番号: T4013301048678<br>
+        EMAIL: info@kigyoulist.com<br>
+        website: kigyoulist.com
       </div>
     </div>
 
     <div class="meta-grid">
       <div class="meta-box">
         <h3>宛先</h3>
-        <p><strong>${params.email} 様</strong></p>
-        <p>※ご登録のメールアドレス</p>
+        <p><strong>${params.billingName ? params.billingName : `${params.email} 様`}</strong></p>
+        ${params.billingAddress ? `<p style="margin: 4px 0 0 0; font-size: 13px; color: #555;">${params.billingAddress}</p>` : '<p>※ご登録のメールアドレス</p>'}
+        ${params.billingPhone ? `<p style="margin: 4px 0 0 0; font-size: 13px; color: #555;">TEL: ${params.billingPhone}</p>` : ''}
+        ${params.billingTaxId ? `<p style="margin: 4px 0 0 0; font-size: 13px; color: #555;">登録番号: ${params.billingTaxId}</p>` : ''}
       </div>
       <div class="meta-box" style="text-align: right;">
         <h3>詳細</h3>
@@ -254,7 +264,7 @@ function generateInvoiceHtml(params: {
 
     <div class="footer-note">
       <p>上記の通り領収いたしました。ご利用ありがとうございます。</p>
-      <p style="margin-top: 10px; color: #999;">kigyou-list.jp - Easy B2B Leads Extraction Tool</p>
+      <p style="margin-top: 10px; color: #999;">Kigiyou-List - Easy B2B Leads Extraction Tool</p>
     </div>
   </div>
 </body>
@@ -265,6 +275,10 @@ export async function POST(request: Request) {
   try {
     const stripeSecret = process.env.STRIPE_SECRET_KEY;
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    
+    // Extract IP and UA for simulated checkout webhook calls
+    const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "127.0.0.1";
+    const userAgent = request.headers.get("user-agent") || "";
 
     // Detect if this is a Simulated Mock Credit request from frontend checkout simulation
     let bodyText = "";
@@ -328,6 +342,7 @@ export async function POST(request: Request) {
         const taxExclusivePrice = Math.round(amountJpy / 1.1);
         const taxAmount = amountJpy - taxExclusivePrice;
         const priceName = `${plan.toUpperCase()}プラン (月額サブスクリプション - シミュレーション)`;
+        const billing = await getUserBillingInfo(email);
 
         const htmlInvoice = generateInvoiceHtml({
           email,
@@ -337,13 +352,17 @@ export async function POST(request: Request) {
           priceName,
           linesAdded: allowance,
           taxExclusivePrice,
-          taxAmount
+          taxAmount,
+          billingName: billing?.billing_name || undefined,
+          billingAddress: billing?.billing_address || undefined,
+          billingTaxId: billing?.billing_tax_id || undefined,
+          billingPhone: billing?.billing_phone || undefined
         });
 
         const invoiceKey = `invoices/inv_${paymentId}.html`;
         const invoiceUrl = await uploadFileToR2(invoiceKey, htmlInvoice, "text/html");
 
-        await createPaymentRecord(paymentId, email, plan, amountJpy, allowance, 'completed', invoiceUrl);
+        await createPaymentRecord(paymentId, email, plan, amountJpy, allowance, 'completed', invoiceUrl, ipAddress, userAgent);
 
         return NextResponse.json({
           success: true,
@@ -383,6 +402,7 @@ export async function POST(request: Request) {
         const formattedDate = new Intl.DateTimeFormat('ja-JP', { dateStyle: 'long' }).format(new Date());
         const taxExclusivePrice = Math.round(priceJpy / 1.1);
         const taxAmount = priceJpy - taxExclusivePrice;
+        const billing = await getUserBillingInfo(email);
 
         const htmlInvoice = generateInvoiceHtml({
           email,
@@ -392,13 +412,17 @@ export async function POST(request: Request) {
           priceName,
           linesAdded: amount,
           taxExclusivePrice,
-          taxAmount
+          taxAmount,
+          billingName: billing?.billing_name || undefined,
+          billingAddress: billing?.billing_address || undefined,
+          billingTaxId: billing?.billing_tax_id || undefined,
+          billingPhone: billing?.billing_phone || undefined
         });
 
         const invoiceKey = `invoices/inv_${paymentId}.html`;
         const invoiceUrl = await uploadFileToR2(invoiceKey, htmlInvoice, "text/html");
 
-        await createPaymentRecord(paymentId, email, packId, priceJpy, amount, 'completed', invoiceUrl);
+        await createPaymentRecord(paymentId, email, packId, priceJpy, amount, 'completed', invoiceUrl, ipAddress, userAgent);
         
         return NextResponse.json({ 
           success: true, 
@@ -441,6 +465,8 @@ export async function POST(request: Request) {
         const userEmail = metadata.email;
         const paymentId = session.id;
         const priceJpy = session.amount_total || 0;
+        const sessionIp = metadata.ip_address || null;
+        const sessionUa = metadata.user_agent || null;
 
         if (session.mode === "subscription") {
           const planId = metadata.planId;
@@ -463,6 +489,7 @@ export async function POST(request: Request) {
           const taxExclusivePrice = Math.round(priceJpy / 1.1);
           const taxAmount = priceJpy - taxExclusivePrice;
           const priceName = `${planId.toUpperCase()}プラン (月額サブスクリプション)`;
+          const billing = await getUserBillingInfo(userEmail);
 
           const htmlInvoice = generateInvoiceHtml({
             email: userEmail,
@@ -472,13 +499,17 @@ export async function POST(request: Request) {
             priceName,
             linesAdded: allowance,
             taxExclusivePrice,
-            taxAmount
+            taxAmount,
+            billingName: billing?.billing_name || undefined,
+            billingAddress: billing?.billing_address || undefined,
+            billingTaxId: billing?.billing_tax_id || undefined,
+            billingPhone: billing?.billing_phone || undefined
           });
 
           const invoiceKey = `invoices/inv_${paymentId}.html`;
           const invoiceUrl = await uploadFileToR2(invoiceKey, htmlInvoice, "text/html");
 
-          await createPaymentRecord(paymentId, userEmail, planId, priceJpy, allowance, 'completed', invoiceUrl);
+          await createPaymentRecord(paymentId, userEmail, planId, priceJpy, allowance, 'completed', invoiceUrl, sessionIp, sessionUa);
         } else if (metadata.amount) {
           const addOnLines = Number(metadata.amount);
           const packId = metadata.packId || "custom";
@@ -495,6 +526,7 @@ export async function POST(request: Request) {
           const formattedDate = new Intl.DateTimeFormat('ja-JP', { dateStyle: 'long' }).format(new Date());
           const taxExclusivePrice = Math.round(priceJpy / 1.1);
           const taxAmount = priceJpy - taxExclusivePrice;
+          const billing = await getUserBillingInfo(userEmail);
 
           const htmlInvoice = generateInvoiceHtml({
             email: userEmail,
@@ -504,13 +536,17 @@ export async function POST(request: Request) {
             priceName,
             linesAdded: addOnLines,
             taxExclusivePrice,
-            taxAmount
+            taxAmount,
+            billingName: billing?.billing_name || undefined,
+            billingAddress: billing?.billing_address || undefined,
+            billingTaxId: billing?.billing_tax_id || undefined,
+            billingPhone: billing?.billing_phone || undefined
           });
 
           const invoiceKey = `invoices/inv_${paymentId}.html`;
           const invoiceUrl = await uploadFileToR2(invoiceKey, htmlInvoice, "text/html");
 
-          await createPaymentRecord(paymentId, userEmail, packId, priceJpy, addOnLines, 'completed', invoiceUrl);
+          await createPaymentRecord(paymentId, userEmail, packId, priceJpy, addOnLines, 'completed', invoiceUrl, sessionIp, sessionUa);
         }
       }
     } 
@@ -596,6 +632,7 @@ export async function POST(request: Request) {
           const taxExclusivePrice = Math.round(priceJpy / 1.1);
           const taxAmount = priceJpy - taxExclusivePrice;
           const priceName = `${planId.toUpperCase()}プラン (月額サブスクリプション更新)`;
+          const billing = await getUserBillingInfo(userEmail);
 
           const htmlInvoice = generateInvoiceHtml({
             email: userEmail,
@@ -605,7 +642,11 @@ export async function POST(request: Request) {
             priceName,
             linesAdded: allowance,
             taxExclusivePrice,
-            taxAmount
+            taxAmount,
+            billingName: billing?.billing_name || undefined,
+            billingAddress: billing?.billing_address || undefined,
+            billingTaxId: billing?.billing_tax_id || undefined,
+            billingPhone: billing?.billing_phone || undefined
           });
 
           const invoiceKey = `invoices/inv_${paymentId}.html`;

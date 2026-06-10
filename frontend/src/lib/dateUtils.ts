@@ -72,3 +72,29 @@ export function toISOStringLocal(dateStr: string | null | undefined): string {
   if (isNaN(date.getTime())) return new Date().toISOString();
   return date.toISOString();
 }
+
+/**
+ * parseUTCDate
+ * Safely parses a date string or timestamp in UTC and returns a Date object.
+ * Replaces spaces with 'T' and appends 'Z' for raw SQLite datetimes to ensure
+ * they are interpreted as UTC, not local time.
+ */
+export function parseUTCDate(dateStr: string | Date | number | null | undefined): Date {
+  if (!dateStr) return new Date();
+  if (dateStr instanceof Date) return dateStr;
+  if (typeof dateStr === 'number') return new Date(dateStr);
+  
+  let cleaned = String(dateStr).trim();
+  
+  // If it's raw SQLite format "YYYY-MM-DD HH:MM:SS"
+  if (cleaned.includes(' ') && !cleaned.includes('Z') && !cleaned.includes('+') && !cleaned.includes('-' /* timezone offset */)) {
+    // E.g. "2026-05-27 03:11:20" -> "2026-05-27T03:11:20Z"
+    cleaned = cleaned.replace(' ', 'T') + 'Z';
+  } else if (!cleaned.includes('Z') && !cleaned.includes('+') && cleaned.includes('T')) {
+    // E.g. "2026-05-27T03:11:20" -> "2026-05-27T03:11:20Z"
+    cleaned = cleaned + 'Z';
+  }
+  
+  return new Date(cleaned);
+}
+

@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { X, Lock, CheckCircle2, ShieldCheck } from "lucide-react";
+import Link from "next/link";
 
 export const AuthModal: React.FC = () => {
   const { authModalOpen, setAuthModalOpen, isLoggedIn, loginWithGoogle } = useAuth();
@@ -76,6 +77,15 @@ export const AuthModal: React.FC = () => {
               </svg>
               <span>Googleでログイン / 登録</span>
             </button>
+
+            {/* Legal Consent Notice */}
+            <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center leading-relaxed -mt-2">
+              「Googleでログイン / 登録」ボタンを押すことで、当サービスの
+              <Link href="/terms" className="text-primary hover:underline dark:text-secondary font-bold mx-0.5">利用規約</Link>
+              および
+              <Link href="/privacy" className="text-primary hover:underline dark:text-secondary font-bold mx-0.5">プライバシーポリシー</Link>
+              に同意したものとみなされます。
+            </p>
 
             {/* Value Propositions */}
             <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3">

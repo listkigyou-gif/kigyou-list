@@ -103,8 +103,12 @@ if ($LASTEXITCODE -eq 0) {
 Write-Host "[5/5] Đang khởi chạy Daemon và Monitor trong các cửa sổ Terminal mới..." -ForegroundColor Yellow
 
 # Chạy run_yahoo_daemon.py
-Start-Process -FilePath "C:\Users\admin\AppData\Local\Programs\Python\Python313\python.exe" -WorkingDirectory $ProjectRoot -ArgumentList "scripts/run_yahoo_daemon.py --max-workers 50" -WindowStyle Hidden
-Write-Host "[+] Đã khởi chạy Daemon cào dữ liệu chạy ngầm (50 Docker workers)." -ForegroundColor Green
+# ⚡ ĐIỀU CHỈNH SỐ LUỒNG TẠI ĐÂY:
+#   - Mạng chậm / bình thường: --max-workers 15
+#   - Mạng tốc độ cao:          --max-workers 50  (đổi lại khi mạng tốt)
+$maxWorkers = 50
+Start-Process -FilePath "C:\Users\admin\AppData\Local\Programs\Python\Python313\python.exe" -WorkingDirectory $ProjectRoot -ArgumentList "scripts/run_yahoo_daemon.py --max-workers $maxWorkers --thread-batch-size 1000" -WindowStyle Hidden
+Write-Host "[+] Đã khởi chạy Daemon cào dữ liệu chạy ngầm ($maxWorkers workers)." -ForegroundColor Green
 
 # Chạy monitor_yahoo.py
 Start-Process -FilePath "C:\Users\admin\AppData\Local\Programs\Python\Python313\python.exe" -WorkingDirectory $ProjectRoot -ArgumentList "-u scripts/monitor_yahoo.py" -WindowStyle Hidden

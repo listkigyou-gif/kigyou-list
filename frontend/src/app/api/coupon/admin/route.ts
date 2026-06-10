@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCoupons, createCoupon } from "@/lib/db";
+import { getCoupons, createCoupon, logAdminAction } from "@/lib/db";
 import { isAdmin } from "@/lib/adminAuth";
 
 export async function GET(request: Request) {
@@ -34,6 +34,24 @@ export async function POST(request: Request) {
     const success = await createCoupon(cleanCode, discountPercent, maxUses, daysValid);
     
     if (success) {
+      // Log admin action
+      const adminEmail = request.headers.get("x-admin-email") || "unknown_admin@gmail.com";
+      const ipAddress = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || null;
+      const userAgent = request.headers.get("user-agent") || null;
+
+      await logAdminAction(
+        adminEmail,
+        "CREATE_COUPON",
+        cleanCode,
+        {
+          discountPercent,
+          maxUses,
+          daysValid
+        },
+        ipAddress,
+        userAgent
+      );
+
       return NextResponse.json({ success: true, message: "クーポンコードの作成が完了しました。" });
     } else {
       return NextResponse.json({ error: "このクーポンコードは既に存在するか、エラーが発生しました。" }, { status: 400 });

@@ -1,13 +1,23 @@
 import Link from 'next/link';
 import { Search, Building2, Briefcase, Award, TrendingUp, Sparkles, Lightbulb } from 'lucide-react';
-import { getDatabaseStats } from '@/lib/db';
+import { getDatabaseStats, getFeaturedPartners, getMockPartners } from '@/lib/db';
 import { Header } from '@/components/Header';
+import { Footer } from '@/components/Footer';
 
 export const revalidate = 3600; // Cache for 1 hour for high performance
 
 export default async function Home() {
   // Fetch real database counts dynamically
   const stats = await getDatabaseStats();
+  const realPartners = await getFeaturedPartners();
+  const mockPartners = await getMockPartners();
+  // Gộp đối tác thật lên trước, sau đó tới 50 đối tác mẫu để danh sách luôn phong phú
+  const partners = [...realPartners, ...mockPartners];
+
+  // Split into 2 rows for a richer layout
+  const halfLength = Math.ceil(partners.length / 2);
+  const row1Partners = partners.slice(0, halfLength);
+  const row2Partners = partners.slice(halfLength);
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100">
@@ -19,7 +29,7 @@ export default async function Home() {
         <section className="relative overflow-hidden pt-20 pb-24 lg:pt-28 lg:pb-32 bg-gradient-to-b from-white to-slate-50 dark:from-[#0D1117] dark:to-[#0F172A] border-b border-slate-200/50 dark:border-slate-800/30">
           <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(0,168,150,0.06),transparent_50%)]" />
           <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-96 h-96 bg-primary/3 rounded-full blur-3xl" />
-          
+
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
             {/* Tagline */}
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-100 text-slate-800 dark:bg-slate-800/50 dark:text-slate-300 text-xs font-semibold mb-6 border border-slate-200/50 dark:border-slate-700/50">
@@ -34,7 +44,7 @@ export default async function Home() {
                 今すぐ無料で検索
               </span>
             </h1>
-            
+
             <p className="text-base sm:text-lg text-slate-500 dark:text-slate-400 max-w-2xl mx-auto mb-10 leading-relaxed">
               高精度なJSIC業界分類、47都道府県別の検索に加え、<br className="hidden sm:inline" />
               最新の求人・助成金受給・公共入札などの「営業活動シグナル」でアプローチ。
@@ -124,6 +134,77 @@ export default async function Home() {
           </div>
         </section>
 
+        {/* Dynamic Partner Marquee Slider */}
+        {partners && partners.length > 0 && (
+          <section className="py-12 bg-white dark:bg-[#0D1117] transition-colors border-b border-slate-200/50 dark:border-slate-800/30 overflow-hidden relative">
+            <div className="max-w-3xl mx-auto mb-12 text-center animate-in fade-in duration-300">
+              <h2 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight mb-2">
+                多くの成長企業にご活用いただいています
+              </h2>
+              <p className="text-slate-500 dark:text-slate-400 text-sm font-medium">
+                +10,000社以上の企業に導入・信頼されています
+              </p>
+            </div>
+
+            {/* Infinite Marquee Container */}
+            <div className="relative w-full flex flex-col gap-6 overflow-hidden py-4">
+              {/* Gradient masks for fading edges */}
+              <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-white to-transparent dark:from-[#0D1117] z-10 pointer-events-none" />
+              <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-white to-transparent dark:from-[#0D1117] z-10 pointer-events-none" />
+
+              {/* Row 1: Right to Left */}
+              <div className="flex gap-16 custom-marquee-scroll whitespace-nowrap">
+                {[...row1Partners, ...row1Partners].map((partner, index) => (
+                  <div
+                    key={`${partner.user_email}-row1-${index}`}
+                    className="inline-flex items-center select-none hover:-translate-y-0.5 hover:scale-105 transition-all duration-300 group shrink-0"
+                  >
+                    {(!partner.user_email.startsWith("mock_") && partner.logo_url && !partner.logo_url.startsWith("MOCK_SVG_")) ? (
+                      <div className="h-8 max-w-[140px] flex items-center justify-center">
+                        <img
+                          src={partner.logo_url}
+                          alt={partner.billing_name || "Partner Logo"}
+                          className="max-h-full max-w-full object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300 dark:brightness-200 dark:group-hover:brightness-100"
+                        />
+                      </div>
+                    ) : (
+                      <span className="text-sm sm:text-base font-black text-slate-450 dark:text-slate-500 group-hover:text-primary dark:group-hover:text-secondary transition-colors tracking-wide">
+                        {partner.billing_name}
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              {/* Row 2: Left to Right */}
+              {row2Partners.length > 0 && (
+                <div className="flex gap-16 custom-marquee-scroll-reverse whitespace-nowrap">
+                  {[...row2Partners, ...row2Partners].map((partner, index) => (
+                    <div
+                      key={`${partner.user_email}-row2-${index}`}
+                      className="inline-flex items-center select-none hover:-translate-y-0.5 hover:scale-105 transition-all duration-300 group shrink-0"
+                    >
+                      {(!partner.user_email.startsWith("mock_") && partner.logo_url && !partner.logo_url.startsWith("MOCK_SVG_")) ? (
+                        <div className="h-8 max-w-[140px] flex items-center justify-center">
+                          <img
+                            src={partner.logo_url}
+                            alt={partner.billing_name || "Partner Logo"}
+                            className="max-h-full max-w-full object-contain grayscale opacity-60 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-300 dark:brightness-200 dark:group-hover:brightness-100"
+                          />
+                        </div>
+                      ) : (
+                        <span className="text-sm sm:text-base font-black text-slate-450 dark:text-slate-500 group-hover:text-primary dark:group-hover:text-secondary transition-colors tracking-wide">
+                          {partner.billing_name}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* Feature Grid */}
         <section id="features" className="py-20 bg-slate-50 dark:bg-[#0F172A] transition-colors">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -182,28 +263,7 @@ export default async function Home() {
         </section>
       </main>
 
-      {/* Elegant B2B Footer */}
-      <footer className="bg-white border-t border-slate-200 dark:bg-[#0D1117] dark:border-slate-800 py-12 transition-colors">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-slate-500">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Building2 className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-slate-900 dark:text-white">Kigyou-list</span>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-8">
-            <Link href="/directory" className="hover:text-primary dark:hover:text-secondary transition-colors">企業データ一覧</Link>
-            <Link href="/terms" className="hover:text-primary dark:hover:text-secondary transition-colors">利用規約</Link>
-            <Link href="/privacy" className="hover:text-primary dark:hover:text-secondary transition-colors">プライバシーポリシー</Link>
-            <Link href="/contact" className="hover:text-primary dark:hover:text-secondary transition-colors">お問い合わせ</Link>
-          </div>
-
-          <div>
-            &copy; {new Date().getFullYear()} Kigyou-list. All rights reserved.
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

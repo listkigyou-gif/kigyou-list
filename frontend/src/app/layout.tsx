@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { AuthModal } from "@/components/AuthModal";
+import { CookieBanner } from "@/components/CookieBanner";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
 
@@ -27,6 +28,7 @@ export default async function RootLayout({
           <AuthProvider>
             {children}
             <AuthModal />
+            <CookieBanner />
           </AuthProvider>
         </SessionProvider>
       </body>

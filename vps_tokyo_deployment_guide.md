@@ -177,33 +177,47 @@ Vì VPS có RAM 2GB, chúng ta cần cấu hình PostgreSQL tối ưu hóa bộ 
     # Phần Default region name nhập: us-east-1
     # Phần Default output format nhập: json
     ```
-3.  Tạo script sao lưu:
+3.  Tạo script sao lưu (bạn có thể copy trực tiếp tệp `scripts/db_backup.sh` có sẵn trong mã nguồn hoặc tạo mới):
     ```bash
     mkdir -p /home/ubuntu/scripts
     nano /home/ubuntu/scripts/db_backup.sh
     ```
-    Dán nội dung script sau:
+    Dán nội dung script tối ưu hóa phân tách dữ liệu sau (loại trừ các bảng doanh nghiệp tĩnh khổng lồ để tiết kiệm dung lượng R2 xuống <100KB):
     ```bash
     #!/bin/bash
     
     # 1. Định nghĩa các biến cấu hình
     DB_NAME="kigyou_list"
     BACKUP_DIR="/home/ubuntu/backups"
-    FILE_NAME="db_backup_$(date +%Y%m%d_%H%M%S).sql.gz"
+    FILE_NAME="db_user_backup_$(date +%Y%m%d_%H%M%S).sql.gz"
     R2_BUCKET="s3://kigyou-list-exports/backups" # Thay tên bucket của bạn
     R2_ENDPOINT_URL="https://[ACCOUNT_ID].r2.cloudflarestorage.com" # Thay Account ID của bạn
     
     mkdir -p $BACKUP_DIR
     
-    # 2. Thực hiện Backup PostgreSQL và nén gzip
-    echo "[$(date)] Starting Database Backup..."
-    pg_dump -h localhost -U postgres -d $DB_NAME | gzip > $BACKUP_DIR/$FILE_NAME
+    # 2. Thực hiện Backup PostgreSQL loại trừ các bảng tĩnh lớn
+    echo "[$(date)] Starting Database Backup (User & Payment Data only)..."
+    pg_dump -h localhost -U postgres -d $DB_NAME \
+      --exclude-table="companies*" \
+      --exclude-table="business_signals*" \
+      --exclude-table="company_industries*" \
+      --exclude-table="financial_records*" \
+      --exclude-table="m_industries*" \
+      --exclude-table="sitemap_companies*" \
+      --exclude-table="prefecture_counts*" \
+      --exclude-table="industry_counts*" \
+      --exclude-table="city_counts*" \
+      --exclude-table="database_stats*" \
+      --exclude-table="database_stats_history*" \
+      --exclude-table="yahoo_stats_history*" \
+      --exclude-table="raw_*" \
+      | gzip > $BACKUP_DIR/$FILE_NAME
     
     # 3. Upload lên Cloudflare R2
     echo "[$(date)] Uploading backup file to Cloudflare R2..."
     aws s3 cp $BACKUP_DIR/$FILE_NAME $R2_BUCKET/$FILE_NAME --endpoint-url $R2_ENDPOINT_URL
     
-    # 4. Dọn dẹp file cục bộ trên VPS để tiết kiệm SSD (chỉ giữ file lưu trữ trên R2)
+    # 4. Dọn dẹp file cục bộ trên VPS để tiết kiệm SSD
     rm -f $BACKUP_DIR/$FILE_NAME
     echo "[$(date)] Backup completed successfully!"
     ```
@@ -218,6 +232,36 @@ Vì VPS có RAM 2GB, chúng ta cần cấu hình PostgreSQL tối ưu hóa bộ 
     ```cron
     0 2 * * * /bin/bash /home/ubuntu/scripts/db_backup.sh >> /home/ubuntu/scripts/backup.log 2>&1
     ```
+
+---
+
+## 🚑 HƯỚNG DẪN KHÔI PHỤC KHI CÓ SỰ CỐ (DISASTER RECOVERY)
+
+Nếu máy chủ VPS bị lỗi hoặc bạn cần chuyển sang một máy chủ mới, hãy làm theo các bước sau để khôi phục lại toàn bộ hệ thống bằng bản backup từ Cloudflare R2:
+
+1.  **Thiết lập máy chủ mới**: Thực hiện lại từ **Bước 1 đến Bước 5** của tài liệu này để cài đặt môi trường, Next.js, Nginx, SSL và cơ sở dữ liệu PostgreSQL trống.
+2.  **Cấu hình kết nối AWS CLI**: Cài đặt và cấu hình thông tin xác thực AWS CLI với Cloudflare R2 như hướng dẫn ở **Bước 6 (Mục 1 & 2)**.
+3.  **Tải bản backup từ Cloudflare R2**:
+    *   Liệt kê các bản backup có sẵn trên R2 để tìm file mới nhất:
+        ```bash
+        aws s3 ls s3://kigyou-list-exports/backups/ --endpoint-url https://[ACCOUNT_ID].r2.cloudflarestorage.com
+        ```
+    *   Tải bản backup mới nhất về VPS (thay thế tên file tương ứng):
+        ```bash
+        aws s3 cp s3://kigyou-list-exports/backups/db_user_backup_YYYYMMDD_HHMMSS.sql.gz /home/ubuntu/backups/ --endpoint-url https://[ACCOUNT_ID].r2.cloudflarestorage.com
+        ```
+4.  **Khôi phục thông tin khách hàng & giao dịch (Dữ liệu động)**:
+    Giải nén và nạp trực tiếp file SQL vào cơ sở dữ liệu trên VPS mới:
+    ```bash
+    gunzip -c /home/ubuntu/backups/db_user_backup_YYYYMMDD_HHMMSS.sql.gz | psql -h localhost -U postgres -d kigyou_list
+    ```
+5.  **Đồng bộ lại danh sách doanh nghiệp (Dữ liệu tĩnh)**:
+    Từ máy tính local của bạn (nơi đang chạy dự án và chứa tệp SQLite `kigyou-list.db`), thực hiện chạy tập lệnh di trú dữ liệu vàng để đẩy lại 5 triệu dòng doanh nghiệp lên VPS mới:
+    ```bash
+    python scripts/migrate_to_postgres.py
+    ```
+
+*Sau khi thực hiện xong 5 bước trên, toàn bộ hệ thống sẽ được khôi phục nguyên vẹn trạng thái hoạt động với đầy đủ tài khoản người dùng và dữ liệu doanh nghiệp.*
 
 ---
 

@@ -1,6 +1,7 @@
 import { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import path from 'path';
+import crypto from 'crypto';
 import { deleteFileFromR2 } from './r2';
 
 // Connection parameters
@@ -1104,6 +1105,8 @@ export interface ExportJob {
   records_count: number;
   file_path: string | null;
   error_message: string | null;
+  ip_address?: string | null;
+  user_agent?: string | null;
   created_at: string;
 }
 
@@ -1115,6 +1118,8 @@ export interface DepositRecord {
   lines_added: number;
   status: string;
   invoice_url: string | null;
+  ip_address?: string | null;
+  user_agent?: string | null;
   created_at: string;
 }
 
@@ -1175,6 +1180,13 @@ async function initQuotaTables(): Promise<void> {
         );
       `);
 
+      try {
+        await client.query(`ALTER TABLE export_jobs ADD COLUMN ip_address VARCHAR(50);`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE export_jobs ADD COLUMN user_agent TEXT;`);
+      } catch {}
+
       await client.query(`
         CREATE TABLE IF NOT EXISTS deposit_history (
           id VARCHAR(100) PRIMARY KEY,
@@ -1184,9 +1196,64 @@ async function initQuotaTables(): Promise<void> {
           lines_added INTEGER NOT NULL,
           status VARCHAR(50) NOT NULL,
           invoice_url TEXT,
+          ip_address VARCHAR(50),
+          user_agent TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
+
+      try {
+        await client.query(`ALTER TABLE deposit_history ADD COLUMN ip_address VARCHAR(50);`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE deposit_history ADD COLUMN user_agent TEXT;`);
+      } catch {}
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS user_billing_info (
+          user_email VARCHAR(255) PRIMARY KEY,
+          billing_name VARCHAR(255),
+          billing_address TEXT,
+          billing_tax_id VARCHAR(50),
+          billing_phone VARCHAR(50),
+          logo_url TEXT,
+          is_featured_partner BOOLEAN DEFAULT false,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      try {
+        await client.query(`ALTER TABLE user_billing_info ADD COLUMN billing_phone VARCHAR(50);`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE user_billing_info ADD COLUMN logo_url TEXT;`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE user_billing_info ADD COLUMN is_featured_partner BOOLEAN DEFAULT false;`);
+      } catch {}
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS user_api_keys (
+          id VARCHAR(100) PRIMARY KEY,
+          user_email VARCHAR(255) NOT NULL,
+          api_key_hash VARCHAR(255) NOT NULL UNIQUE,
+          api_key_preview VARCHAR(50) NOT NULL,
+          status VARCHAR(50) DEFAULT 'active',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          last_used_at TIMESTAMP,
+          last_ip VARCHAR(50),
+          last_user_agent TEXT
+        );
+      `);
+      try {
+        await client.query(`ALTER TABLE user_api_keys ADD COLUMN revoked_reason TEXT;`);
+      } catch {}
+      try {
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON user_api_keys(api_key_hash);`);
+      } catch {}
+      try {
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_email ON user_api_keys(user_email);`);
+      } catch {}
+
     } catch (e) {
       console.error('Error initializing PG quota tables:', e);
     } finally {
@@ -1239,6 +1306,13 @@ async function initQuotaTables(): Promise<void> {
         );
       `);
 
+      try {
+        db.exec(`ALTER TABLE export_jobs ADD COLUMN ip_address TEXT;`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE export_jobs ADD COLUMN user_agent TEXT;`);
+      } catch {}
+
       db.exec(`
         CREATE TABLE IF NOT EXISTS deposit_history (
           id TEXT PRIMARY KEY,
@@ -1248,9 +1322,64 @@ async function initQuotaTables(): Promise<void> {
           lines_added INTEGER NOT NULL,
           status TEXT NOT NULL,
           invoice_url TEXT,
+          ip_address TEXT,
+          user_agent TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
+
+      try {
+        db.exec(`ALTER TABLE deposit_history ADD COLUMN ip_address TEXT;`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE deposit_history ADD COLUMN user_agent TEXT;`);
+      } catch {}
+
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS user_billing_info (
+          user_email TEXT PRIMARY KEY,
+          billing_name TEXT,
+          billing_address TEXT,
+          billing_tax_id TEXT,
+          billing_phone TEXT,
+          logo_url TEXT,
+          is_featured_partner INTEGER DEFAULT 0,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      try {
+        db.exec(`ALTER TABLE user_billing_info ADD COLUMN billing_phone TEXT;`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE user_billing_info ADD COLUMN logo_url TEXT;`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE user_billing_info ADD COLUMN is_featured_partner INTEGER DEFAULT 0;`);
+      } catch {}
+
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS user_api_keys (
+          id TEXT PRIMARY KEY,
+          user_email TEXT NOT NULL,
+          api_key_hash TEXT NOT NULL UNIQUE,
+          api_key_preview TEXT NOT NULL,
+          status TEXT DEFAULT 'active',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          last_used_at TIMESTAMP,
+          last_ip TEXT,
+          last_user_agent TEXT
+        );
+      `);
+      try {
+        db.exec(`ALTER TABLE user_api_keys ADD COLUMN revoked_reason TEXT;`);
+      } catch {}
+      try {
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON user_api_keys(api_key_hash);`);
+      } catch {}
+      try {
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_email ON user_api_keys(user_email);`);
+      } catch {}
+
     } catch (e) {
       console.error('Error initializing SQLite quota tables:', e);
     }
@@ -1383,7 +1512,8 @@ export async function deductUserQuota(email: string, amount: number): Promise<bo
   try {
     const quota = await getUserQuota(email);
     const baseRemaining = quota.monthly_base_allowance - quota.monthly_base_used;
-    const addOnBalance = quota.purchased_add_on_balance;
+    const isFreePlan = (quota.plan === 'free');
+    const addOnBalance = isFreePlan ? 0 : quota.purchased_add_on_balance;
     const totalAvailable = baseRemaining + addOnBalance;
     
     if (totalAvailable < amount) {
@@ -1463,21 +1593,30 @@ export async function createExportJob(
   id: string, 
   email: string, 
   filtersJson: string | null, 
-  recordsCount: number
+  recordsCount: number,
+  ipAddress?: string | null,
+  userAgent?: string | null
 ): Promise<void> {
   await initQuotaTables();
   try {
     const insertSql = `
-      INSERT INTO export_jobs (id, user_email, status, filters_json, records_count)
-      VALUES (?, ?, 'pending', ?, ?)
+      INSERT INTO export_jobs (id, user_email, status, filters_json, records_count, ip_address, user_agent)
+      VALUES (?, ?, 'pending', ?, ?, ?, ?)
     `;
     if (DATABASE_URL) {
       const pool = getPGPool();
-      await pool.query(convertSqlForPG(insertSql), [id, email, filtersJson, recordsCount]);
+      await pool.query(convertSqlForPG(insertSql), [
+        id, 
+        email, 
+        filtersJson, 
+        recordsCount, 
+        ipAddress || null, 
+        userAgent || null
+      ]);
     } else {
       const db = getSQLiteDB();
       const stmt = db.prepare(insertSql);
-      stmt.run(id, email, filtersJson, recordsCount);
+      stmt.run(id, email, filtersJson, recordsCount, ipAddress || null, userAgent || null);
     }
   } catch (error) {
     console.error(`Error in createExportJob(${id}):`, error);
@@ -1531,6 +1670,8 @@ export async function getExportJobs(email: string): Promise<ExportJob[]> {
       records_count: Number(r.records_count),
       file_path: r.file_path,
       error_message: r.error_message,
+      ip_address: r.ip_address || null,
+      user_agent: r.user_agent || null,
       created_at: String(r.created_at)
     }));
   } catch (error) {
@@ -1582,6 +1723,8 @@ export async function getExportJobById(id: string): Promise<ExportJob | null> {
       records_count: Number(r.records_count),
       file_path: r.file_path,
       error_message: r.error_message,
+      ip_address: r.ip_address || null,
+      user_agent: r.user_agent || null,
       created_at: String(r.created_at)
     };
   } catch (error) {
@@ -1637,21 +1780,23 @@ export async function createPaymentRecord(
   amountJpy: number,
   linesAdded: number,
   status: string,
-  invoiceUrl: string | null
+  invoiceUrl: string | null,
+  ipAddress?: string | null,
+  userAgent?: string | null
 ): Promise<void> {
   await initQuotaTables();
   try {
     const insertSql = `
-      INSERT INTO deposit_history (id, user_email, pack_id, amount_jpy, lines_added, status, invoice_url)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO deposit_history (id, user_email, pack_id, amount_jpy, lines_added, status, invoice_url, ip_address, user_agent)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     if (DATABASE_URL) {
       const pool = getPGPool();
-      await pool.query(convertSqlForPG(insertSql), [id, email, packId, amountJpy, linesAdded, status, invoiceUrl]);
+      await pool.query(convertSqlForPG(insertSql), [id, email, packId, amountJpy, linesAdded, status, invoiceUrl, ipAddress || null, userAgent || null]);
     } else {
       const db = getSQLiteDB();
       const stmt = db.prepare(insertSql);
-      stmt.run(id, email, packId, amountJpy, linesAdded, status, invoiceUrl);
+      stmt.run(id, email, packId, amountJpy, linesAdded, status, invoiceUrl, ipAddress || null, userAgent || null);
     }
   } catch (error) {
     console.error(`Error in createPaymentRecord(${id}):`, error);
@@ -1674,6 +1819,8 @@ export async function getPaymentHistory(email: string): Promise<DepositRecord[]>
       lines_added: Number(r.lines_added),
       status: r.status,
       invoice_url: r.invoice_url,
+      ip_address: r.ip_address || null,
+      user_agent: r.user_agent || null,
       created_at: String(r.created_at)
     })) : [];
   } catch (error) {
@@ -1698,6 +1845,8 @@ export async function getAllPayments(): Promise<DepositRecord[]> {
       lines_added: Number(r.lines_added),
       status: r.status,
       invoice_url: r.invoice_url,
+      ip_address: r.ip_address || null,
+      user_agent: r.user_agent || null,
       created_at: String(r.created_at)
     })) : [];
   } catch (error) {
@@ -1724,6 +1873,8 @@ export async function adminGetAllExportJobs(): Promise<ExportJob[]> {
       records_count: Number(r.records_count),
       file_path: r.file_path,
       error_message: r.error_message,
+      ip_address: r.ip_address || null,
+      user_agent: r.user_agent || null,
       created_at: String(r.created_at)
     }));
   } catch (error) {
@@ -1749,6 +1900,8 @@ export async function getPaymentRecordById(id: string): Promise<DepositRecord | 
       lines_added: Number(r.lines_added),
       status: r.status,
       invoice_url: r.invoice_url,
+      ip_address: r.ip_address || null,
+      user_agent: r.user_agent || null,
       created_at: String(r.created_at)
     };
   } catch (error) {
@@ -1800,15 +1953,16 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
 export async function updateUserPlanQuota(email: string, allowance: number, plan: string): Promise<boolean> {
   await initQuotaTables();
   try {
+    const status = plan === 'free' ? 'inactive' : 'active';
     if (DATABASE_URL) {
       // PostgreSQL: Use native UPSERT with ON CONFLICT
       const pool = getPGPool();
       await pool.query(
-        `INSERT INTO user_export_quotas (user_email, monthly_base_allowance, monthly_base_used, purchased_add_on_balance, plan, updated_at)
-         VALUES ($1, $2, 0, 0, $3, CURRENT_TIMESTAMP)
+        `INSERT INTO user_export_quotas (user_email, monthly_base_allowance, monthly_base_used, purchased_add_on_balance, plan, subscription_status, updated_at)
+         VALUES ($1, $2, 0, 0, $3, $4, CURRENT_TIMESTAMP)
          ON CONFLICT (user_email)
-         DO UPDATE SET monthly_base_allowance = $2, monthly_base_used = 0, plan = $3, updated_at = CURRENT_TIMESTAMP`,
-        [email, allowance, plan]
+         DO UPDATE SET monthly_base_allowance = $2, monthly_base_used = 0, plan = $3, subscription_status = $4, updated_at = CURRENT_TIMESTAMP`,
+        [email, allowance, plan, status]
       );
     } else {
       // SQLite: INSERT OR REPLACE to handle both new and existing users
@@ -1818,14 +1972,14 @@ export async function updateUserPlanQuota(email: string, allowance: number, plan
       if (existing) {
         db.prepare(
           `UPDATE user_export_quotas
-           SET monthly_base_allowance = ?, monthly_base_used = 0, plan = ?, updated_at = CURRENT_TIMESTAMP
+           SET monthly_base_allowance = ?, monthly_base_used = 0, plan = ?, subscription_status = ?, updated_at = CURRENT_TIMESTAMP
            WHERE user_email = ?`
-        ).run(allowance, plan, email);
+        ).run(allowance, plan, status, email);
       } else {
         db.prepare(
-          `INSERT INTO user_export_quotas (user_email, monthly_base_allowance, monthly_base_used, purchased_add_on_balance, plan)
-           VALUES (?, ?, 0, 0, ?)`
-        ).run(email, allowance, plan);
+          `INSERT INTO user_export_quotas (user_email, monthly_base_allowance, monthly_base_used, purchased_add_on_balance, plan, subscription_status)
+           VALUES (?, ?, 0, 0, ?, ?)`
+        ).run(email, allowance, plan, status);
       }
     }
     return true;
@@ -1881,6 +2035,23 @@ export async function updateUserSubscription(
     const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' });
     const currentJstDate = formatter.format(new Date()); // YYYY-MM-DD
 
+    // Fetch existing quota to compute roll-over / carry-over of unused quota
+    const selectSql = 'SELECT monthly_base_allowance, monthly_base_used, purchased_add_on_balance FROM user_export_quotas WHERE user_email = ?';
+    const row = await runGetQuery(selectSql, [email]);
+
+    let unusedQuota = 0;
+    let currentAddOn = 0;
+
+    if (row) {
+      const oldAllowance = Number(row.monthly_base_allowance || 0);
+      const oldUsed = Number(row.monthly_base_used || 0);
+      currentAddOn = Number(row.purchased_add_on_balance || 0);
+      // Only roll over positive remaining allowance
+      unusedQuota = Math.max(0, oldAllowance - oldUsed);
+    }
+
+    const newAddOn = currentAddOn + unusedQuota;
+
     const updateSql = `
       UPDATE user_export_quotas
       SET stripe_customer_id = ?,
@@ -1888,6 +2059,7 @@ export async function updateUserSubscription(
           plan = ?,
           monthly_base_allowance = ?,
           monthly_base_used = 0,
+          purchased_add_on_balance = ?,
           subscription_status = ?,
           last_reset_date = ?,
           updated_at = CURRENT_TIMESTAMP
@@ -1895,10 +2067,28 @@ export async function updateUserSubscription(
     `;
     if (DATABASE_URL) {
       const pool = getPGPool();
-      await pool.query(convertSqlForPG(updateSql), [stripeCustomerId, stripeSubscriptionId, plan, allowance, status, currentJstDate, email]);
+      await pool.query(convertSqlForPG(updateSql), [
+        stripeCustomerId, 
+        stripeSubscriptionId, 
+        plan, 
+        allowance, 
+        newAddOn,
+        status, 
+        currentJstDate, 
+        email
+      ]);
     } else {
       const db = getSQLiteDB();
-      db.prepare(updateSql).run(stripeCustomerId, stripeSubscriptionId, plan, allowance, status, currentJstDate, email);
+      db.prepare(updateSql).run(
+        stripeCustomerId, 
+        stripeSubscriptionId, 
+        plan, 
+        allowance, 
+        newAddOn,
+        status, 
+        currentJstDate, 
+        email
+      );
     }
     return true;
   } catch (error) {
@@ -1989,6 +2179,54 @@ export async function cancelUserSubscriptionBySubId(subscriptionId: string): Pro
   } catch (error) {
     console.error(`Error in cancelUserSubscriptionBySubId(${subscriptionId}):`, error);
     return false;
+  }
+}
+
+/**
+ * Sweeps and deletes export ZIP files older than 7 days from R2 and marks them NULL in DB.
+ */
+export async function runCleanupCron(): Promise<{ success: boolean; affectedRows: number }> {
+  await initQuotaTables();
+  try {
+    let rows: { id: string; file_path: string }[] = [];
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      const res = await pool.query(
+        "SELECT id, file_path FROM export_jobs WHERE file_path IS NOT NULL AND created_at < NOW() - INTERVAL '7 days'"
+      );
+      rows = res.rows;
+    } else {
+      const db = getSQLiteDB();
+      rows = db.prepare(
+        "SELECT id, file_path FROM export_jobs WHERE file_path IS NOT NULL AND created_at < datetime('now', '-7 days')"
+      ).all() as any[];
+    }
+
+    let affectedRows = 0;
+    for (const r of rows) {
+      if (r.file_path) {
+        const key = r.file_path.replace(/^(r2:\/\/|local:\/\/)/, "");
+        // Delete from R2 storage
+        await deleteFileFromR2(key).catch(err => console.error(`[Cron Cleanup] R2 deletion error for job ${r.id}:`, err));
+      }
+      
+      // Update database record to NULL
+      const updateSql = "UPDATE export_jobs SET file_path = NULL WHERE id = ?";
+      if (DATABASE_URL) {
+        const pool = getPGPool();
+        await pool.query(convertSqlForPG(updateSql), [r.id]);
+      } else {
+        const db = getSQLiteDB();
+        db.prepare(updateSql).run(r.id);
+      }
+      affectedRows++;
+    }
+
+    console.log(`[Cron Cleanup] Cleaned up ${affectedRows} expired jobs.`);
+    return { success: true, affectedRows };
+  } catch (error) {
+    console.error("[Cron Cleanup] Error during DB cleanup execution:", error);
+    return { success: false, affectedRows: 0 };
   }
 }
 
@@ -2255,13 +2493,13 @@ export interface Inquiry {
   status: string; // 'pending', 'resolved'
   created_at: string;
 }
-
 export interface UserAdminView {
   user_email: string;
   monthly_base_allowance: number;
   monthly_base_used: number;
   purchased_add_on_balance: number;
   plan: string;
+  subscription_status: string;
   updated_at: string;
 }
 
@@ -2354,6 +2592,7 @@ export async function getAllUsers(): Promise<UserAdminView[]> {
       monthly_base_used: Number(r.monthly_base_used),
       purchased_add_on_balance: Number(r.purchased_add_on_balance),
       plan: r.plan ? String(r.plan) : 'free',
+      subscription_status: r.subscription_status ? String(r.subscription_status) : 'inactive',
       updated_at: String(r.updated_at)
     })) : [];
   } catch (error) {
@@ -2558,6 +2797,31 @@ export async function suspendUserQuotaInDb(email: string): Promise<boolean> {
   }
 }
 
+export async function unsuspendUserQuotaInDb(email: string, allowance: number, plan: string): Promise<boolean> {
+  await initQuotaTables();
+  try {
+    const status = plan === 'free' ? 'inactive' : 'active';
+    const updateSql = `
+      UPDATE user_export_quotas
+      SET subscription_status = ?,
+          monthly_base_allowance = ?,
+          updated_at = CURRENT_TIMESTAMP
+      WHERE user_email = ?
+    `;
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      await pool.query(convertSqlForPG(updateSql), [status, allowance, email]);
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(updateSql).run(status, allowance, email);
+    }
+    return true;
+  } catch (error) {
+    console.error(`Error in unsuspendUserQuotaInDb(${email}):`, error);
+    return false;
+  }
+}
+
 /**
  * Fetch user's export jobs within the last X minutes
  */
@@ -2600,3 +2864,590 @@ export async function getRecentExportJobs(email: string, minutes: number): Promi
     return [];
   }
 }
+
+export interface UserBillingInfo {
+  user_email: string;
+  billing_name: string | null;
+  billing_address: string | null;
+  billing_tax_id: string | null;
+  billing_phone: string | null;
+  logo_url?: string | null;
+  is_featured_partner?: boolean | null;
+}
+
+export async function getUserBillingInfo(email: string): Promise<UserBillingInfo | null> {
+  await initQuotaTables();
+  try {
+    const sql = 'SELECT * FROM user_billing_info WHERE user_email = ?';
+    const row = await runGetQuery(sql, [email]);
+    if (!row) return null;
+    return {
+      user_email: row.user_email,
+      billing_name: row.billing_name || null,
+      billing_address: row.billing_address || null,
+      billing_tax_id: row.billing_tax_id || null,
+      billing_phone: row.billing_phone || null,
+      logo_url: row.logo_url || null,
+      is_featured_partner: row.is_featured_partner === 1 || row.is_featured_partner === true || row.is_featured_partner === 'true' || false,
+    };
+  } catch (error) {
+    console.error(`Error in getUserBillingInfo(${email}):`, error);
+    return null;
+  }
+}
+
+export async function saveUserBillingInfo(info: UserBillingInfo): Promise<boolean> {
+  await initQuotaTables();
+  try {
+    const exists = await runGetQuery('SELECT 1 FROM user_billing_info WHERE user_email = ?', [info.user_email]);
+    const isFeaturedVal = info.is_featured_partner ? (DATABASE_URL ? true : 1) : (DATABASE_URL ? false : 0);
+    
+    if (exists) {
+      const updateSql = 'UPDATE user_billing_info SET billing_name = ?, billing_address = ?, billing_tax_id = ?, billing_phone = ?, logo_url = ?, is_featured_partner = ?, updated_at = CURRENT_TIMESTAMP WHERE user_email = ?';
+      if (DATABASE_URL) {
+        const pool = getPGPool();
+        await pool.query(convertSqlForPG(updateSql), [info.billing_name, info.billing_address, info.billing_tax_id, info.billing_phone, info.logo_url || null, isFeaturedVal, info.user_email]);
+      } else {
+        const db = getSQLiteDB();
+        db.prepare(updateSql).run(info.billing_name, info.billing_address, info.billing_tax_id, info.billing_phone, info.logo_url || null, isFeaturedVal, info.user_email);
+      }
+    } else {
+      const insertSql = 'INSERT INTO user_billing_info (user_email, billing_name, billing_address, billing_tax_id, billing_phone, logo_url, is_featured_partner) VALUES (?, ?, ?, ?, ?, ?, ?)';
+      if (DATABASE_URL) {
+        const pool = getPGPool();
+        await pool.query(convertSqlForPG(insertSql), [info.user_email, info.billing_name, info.billing_address, info.billing_tax_id, info.billing_phone, info.logo_url || null, isFeaturedVal]);
+      } else {
+        const db = getSQLiteDB();
+        db.prepare(insertSql).run(info.user_email, info.billing_name, info.billing_address, info.billing_tax_id, info.billing_phone, info.logo_url || null, isFeaturedVal);
+      }
+    }
+    return true;
+  } catch (error) {
+    console.error(`Error in saveUserBillingInfo(${info.user_email}):`, error);
+    return false;
+  }
+}
+
+/**
+ * Lấy danh sách đối tác nổi bật hiển thị trên trang chủ
+ */
+export async function getFeaturedPartners(): Promise<UserBillingInfo[]> {
+  await initQuotaTables();
+  try {
+    const isPG = !!DATABASE_URL;
+    let sql = "";
+    if (isPG) {
+      sql = "SELECT * FROM user_billing_info WHERE is_featured_partner = true AND logo_url IS NOT NULL ORDER BY updated_at DESC";
+    } else {
+      sql = "SELECT * FROM user_billing_info WHERE is_featured_partner = 1 AND logo_url IS NOT NULL ORDER BY updated_at DESC";
+    }
+    const rows = await runQuery(sql);
+    if (!rows) return [];
+    return rows.map((row: any) => ({
+      user_email: row.user_email,
+      billing_name: row.billing_name || null,
+      billing_address: row.billing_address || null,
+      billing_tax_id: row.billing_tax_id || null,
+      billing_phone: row.billing_phone || null,
+      logo_url: row.logo_url || null,
+      is_featured_partner: true,
+    }));
+  } catch (error) {
+    console.error("Error in getFeaturedPartners:", error);
+    return [];
+  }
+}
+
+/**
+ * Lấy tất cả thông tin thanh toán có chứa Logo phục vụ kiểm duyệt trong Admin
+ */
+export async function getAllPartnersForAdmin(): Promise<UserBillingInfo[]> {
+  await initQuotaTables();
+  try {
+    const sql = "SELECT * FROM user_billing_info WHERE logo_url IS NOT NULL ORDER BY updated_at DESC";
+    const rows = await runQuery(sql);
+    if (!rows) return [];
+    return rows.map((row: any) => ({
+      user_email: row.user_email,
+      billing_name: row.billing_name || null,
+      billing_address: row.billing_address || null,
+      billing_tax_id: row.billing_tax_id || null,
+      billing_phone: row.billing_phone || null,
+      logo_url: row.logo_url || null,
+      is_featured_partner: row.is_featured_partner === 1 || row.is_featured_partner === true || row.is_featured_partner === 'true' || false,
+    }));
+  } catch (error) {
+    console.error("Error in getAllPartnersForAdmin:", error);
+    return [];
+  }
+}
+
+/**
+ * Admin duyệt/hủy duyệt đối tác hiển thị trên trang chủ
+ */
+export async function updatePartnerFeaturedStatus(email: string, isFeatured: boolean): Promise<boolean> {
+  await initQuotaTables();
+  try {
+    const isPG = !!DATABASE_URL;
+    const sql = "UPDATE user_billing_info SET is_featured_partner = ?, updated_at = CURRENT_TIMESTAMP WHERE user_email = ?";
+    const isFeaturedVal = isPG ? isFeatured : (isFeatured ? 1 : 0);
+    
+    if (isPG) {
+      const pool = getPGPool();
+      await pool.query(convertSqlForPG(sql), [isFeaturedVal, email]);
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(sql).run(isFeaturedVal, email);
+    }
+    return true;
+  } catch (error) {
+    console.error(`Error in updatePartnerFeaturedStatus(${email}):`, error);
+    return false;
+  }
+}
+
+/**
+ * Lấy danh sách 200 đối tác mẫu từ danh bạ doanh nghiệp đóng cửa (status = '閉鎖')
+ */
+export async function getMockPartners(): Promise<UserBillingInfo[]> {
+  await initQuotaTables();
+  try {
+    const sql = "SELECT company_name, corporate_number FROM companies WHERE status = '閉鎖' LIMIT 200";
+    const rows = await runQuery(sql);
+    if (!rows) return [];
+    return rows.map((row: any, index: number) => ({
+      user_email: `mock_${row.corporate_number || index}@mock-partner.com`,
+      billing_name: row.company_name,
+      billing_address: null,
+      billing_tax_id: null,
+      billing_phone: null,
+      logo_url: `MOCK_SVG_${index}`,
+      is_featured_partner: true,
+    }));
+  } catch (error) {
+    console.error("Error in getMockPartners:", error);
+    return [];
+  }
+}
+
+
+let adminLogTableInitialized = false;
+
+export async function initAdminLogTable(): Promise<void> {
+  if (adminLogTableInitialized) return;
+  const isPG = !!DATABASE_URL;
+  if (isPG) {
+    const pool = getPGPool();
+    const client = await pool.connect();
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS admin_action_logs (
+          id VARCHAR(50) PRIMARY KEY,
+          admin_email VARCHAR(255) NOT NULL,
+          action_type VARCHAR(100) NOT NULL,
+          target_identifier VARCHAR(255) NOT NULL,
+          details_json TEXT,
+          ip_address VARCHAR(50),
+          user_agent TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    } catch (e) {
+      console.error('Error initializing PG admin log table:', e);
+    } finally {
+      client.release();
+    }
+  } else {
+    try {
+      const db = getSQLiteDB();
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS admin_action_logs (
+          id TEXT PRIMARY KEY,
+          admin_email TEXT NOT NULL,
+          action_type TEXT NOT NULL,
+          target_identifier TEXT NOT NULL,
+          details_json TEXT,
+          ip_address TEXT,
+          user_agent TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    } catch (e) {
+      console.error('Error initializing SQLite admin log table:', e);
+    }
+  }
+  adminLogTableInitialized = true;
+}
+
+export interface AdminActionLog {
+  id: string;
+  admin_email: string;
+  action_type: string;
+  target_identifier: string;
+  details_json: string | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  created_at: string;
+}
+
+export async function logAdminAction(
+  adminEmail: string,
+  actionType: string,
+  targetIdentifier: string,
+  detailsObj: any,
+  ipAddress?: string | null,
+  userAgent?: string | null
+): Promise<boolean> {
+  await initAdminLogTable();
+  try {
+    const id = `log_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const detailsJson = detailsObj ? JSON.stringify(detailsObj) : null;
+    const sql = `
+      INSERT INTO admin_action_logs (id, admin_email, action_type, target_identifier, details_json, ip_address, user_agent)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      await pool.query(convertSqlForPG(sql), [
+        id,
+        adminEmail,
+        actionType,
+        targetIdentifier,
+        detailsJson,
+        ipAddress || null,
+        userAgent || null
+      ]);
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(sql).run(
+        id,
+        adminEmail,
+        actionType,
+        targetIdentifier,
+        detailsJson,
+        ipAddress || null,
+        userAgent || null
+      );
+    }
+    return true;
+  } catch (error) {
+    console.error("Error in logAdminAction:", error);
+    return false;
+  }
+}
+
+export async function getAdminActionLogs(): Promise<AdminActionLog[]> {
+  await initAdminLogTable();
+  try {
+    const sql = "SELECT * FROM admin_action_logs ORDER BY created_at DESC LIMIT 500";
+    const rows = await runQuery(sql);
+    if (!rows) return [];
+    return rows.map((r: any) => ({
+      id: r.id,
+      admin_email: r.admin_email,
+      action_type: r.action_type,
+      target_identifier: r.target_identifier,
+      details_json: r.details_json,
+      ip_address: r.ip_address || null,
+      user_agent: r.user_agent || null,
+      created_at: String(r.created_at)
+    }));
+  } catch (error) {
+    console.error("Error in getAdminActionLogs:", error);
+    return [];
+  }
+}
+
+// ==========================================
+// PHASE 6: API KEY & EXTERNAL DEVELOPER API
+// ==========================================
+
+export interface UserApiKey {
+  id: string;
+  user_email: string;
+  api_key_hash: string;
+  api_key_preview: string;
+  status: 'active' | 'revoked';
+  created_at: string;
+  last_used_at: string | null;
+  last_ip: string | null;
+  last_user_agent: string | null;
+  revoked_reason?: string | null;
+}
+
+/**
+ * Gets all API keys for a specific user email.
+ */
+export async function getUserApiKeys(email: string): Promise<UserApiKey[]> {
+  await initQuotaTables();
+  try {
+    const sql = "SELECT * FROM user_api_keys WHERE user_email = ? ORDER BY created_at DESC";
+    const rows = await runQuery(sql, [email]);
+    if (!rows) return [];
+    return rows.map((r: any) => ({
+      id: r.id,
+      user_email: r.user_email,
+      api_key_hash: r.api_key_hash,
+      api_key_preview: r.api_key_preview,
+      status: r.status as any,
+      created_at: String(r.created_at),
+      last_used_at: r.last_used_at ? String(r.last_used_at) : null,
+      last_ip: r.last_ip || null,
+      last_user_agent: r.last_user_agent || null,
+      revoked_reason: r.revoked_reason || null
+    }));
+  } catch (error) {
+    console.error(`Error in getUserApiKeys(${email}):`, error);
+    return [];
+  }
+}
+
+/**
+ * Creates a new API key for a user. Generates a cryptographically secure random token,
+ * hashes it using SHA-256 for DB storage, and returns the raw key to be displayed once.
+ */
+export async function createUserApiKey(email: string): Promise<{ rawKey: string; keyInfo: UserApiKey } | null> {
+  await initQuotaTables();
+  try {
+    const id = `apikey_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const rawKey = `kigyou_live_${crypto.randomBytes(24).toString('hex')}`;
+    const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
+    const keyPreview = `...${rawKey.slice(-4)}`;
+
+    const insertSql = `
+      INSERT INTO user_api_keys (id, user_email, api_key_hash, api_key_preview, status)
+      VALUES (?, ?, ?, ?, 'active')
+    `;
+
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      await pool.query(convertSqlForPG(insertSql), [id, email, keyHash, keyPreview]);
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(insertSql).run(id, email, keyHash, keyPreview);
+    }
+
+    const keyInfo: UserApiKey = {
+      id,
+      user_email: email,
+      api_key_hash: keyHash,
+      api_key_preview: keyPreview,
+      status: 'active',
+      created_at: new Date().toISOString(),
+      last_used_at: null,
+      last_ip: null,
+      last_user_agent: null
+    };
+
+    return { rawKey, keyInfo };
+  } catch (error) {
+    console.error(`Error in createUserApiKey(${email}):`, error);
+    return null;
+  }
+}
+
+/**
+ * Revokes a user's API Key.
+ */
+export async function revokeUserApiKey(email: string, keyId: string): Promise<boolean> {
+  await initQuotaTables();
+  try {
+    const sql = "UPDATE user_api_keys SET status = 'revoked' WHERE id = ? AND user_email = ?";
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      const res = await pool.query(convertSqlForPG(sql), [keyId, email]);
+      return (res.rowCount ?? 0) > 0;
+    } else {
+      const db = getSQLiteDB();
+      const info = db.prepare(sql).run(keyId, email);
+      return info.changes > 0;
+    }
+  } catch (error) {
+    console.error(`Error in revokeUserApiKey(${keyId}):`, error);
+    return false;
+  }
+}
+
+/**
+ * Verifies an API Key by hashing it and checking if it's active.
+ * Returns the key owner details and quota info.
+ */
+export async function verifyApiKey(rawKey: string): Promise<{ keyInfo: UserApiKey; plan: string; subscription_status: string } | null> {
+  await initQuotaTables();
+  try {
+    const keyHash = crypto.createHash('sha256').update(rawKey).digest('hex');
+    const sql = `
+      SELECT k.*, q.plan, q.subscription_status
+      FROM user_api_keys k
+      JOIN user_export_quotas q ON k.user_email = q.user_email
+      WHERE k.api_key_hash = ? AND k.status = 'active'
+      LIMIT 1
+    `;
+    const row = await runGetQuery(sql, [keyHash]);
+    if (!row) return null;
+
+    return {
+      keyInfo: {
+        id: row.id,
+        user_email: row.user_email,
+        api_key_hash: row.api_key_hash,
+        api_key_preview: row.api_key_preview,
+        status: row.status as any,
+        created_at: String(row.created_at),
+        last_used_at: row.last_used_at ? String(row.last_used_at) : null,
+        last_ip: row.last_ip || null,
+        last_user_agent: row.last_user_agent || null
+      },
+      plan: row.plan || 'free',
+      subscription_status: row.subscription_status || 'inactive'
+    };
+  } catch (error) {
+    console.error('Error in verifyApiKey:', error);
+    return null;
+  }
+}
+
+/**
+ * Updates the usage metadata of an API key.
+ */
+export async function updateApiKeyUsage(keyId: string, ip: string, ua: string): Promise<void> {
+  try {
+    const sql = `
+      UPDATE user_api_keys 
+      SET last_used_at = CURRENT_TIMESTAMP, last_ip = ?, last_user_agent = ?
+      WHERE id = ?
+    `;
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      await pool.query(convertSqlForPG(sql), [ip, ua, keyId]);
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(sql).run(ip, ua, keyId);
+    }
+  } catch (error) {
+    console.error(`Error in updateApiKeyUsage(${keyId}):`, error);
+  }
+}
+
+/**
+ * Admin: Get all API Keys in the system.
+ */
+export async function getAllApiKeysAdmin(): Promise<(UserApiKey & { plan: string })[]> {
+  await initQuotaTables();
+  try {
+    const sql = `
+      SELECT k.*, q.plan
+      FROM user_api_keys k
+      JOIN user_export_quotas q ON k.user_email = q.user_email
+      ORDER BY k.created_at DESC
+    `;
+    const rows = await runQuery(sql);
+    if (!rows) return [];
+    return rows.map((r: any) => ({
+      id: r.id,
+      user_email: r.user_email,
+      api_key_hash: r.api_key_hash,
+      api_key_preview: r.api_key_preview,
+      status: r.status as any,
+      created_at: String(r.created_at),
+      last_used_at: r.last_used_at ? String(r.last_used_at) : null,
+      last_ip: r.last_ip || null,
+      last_user_agent: r.last_user_agent || null,
+      plan: r.plan || 'free',
+      revoked_reason: r.revoked_reason || null
+    }));
+  } catch (error) {
+    console.error('Error in getAllApiKeysAdmin:', error);
+    return [];
+  }
+}
+
+/**
+ * Admin: Update API key status (revoke or activate).
+ */
+export async function adminUpdateApiKeyStatus(keyId: string, status: 'active' | 'revoked', reason?: string): Promise<boolean> {
+  await initQuotaTables();
+  try {
+    const sql = "UPDATE user_api_keys SET status = ?, revoked_reason = ? WHERE id = ?";
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      const res = await pool.query(convertSqlForPG(sql), [status, reason || null, keyId]);
+      return (res.rowCount ?? 0) > 0;
+    } else {
+      const db = getSQLiteDB();
+      const info = db.prepare(sql).run(status, reason || null, keyId);
+      return info.changes > 0;
+    }
+  } catch (error) {
+    console.error(`Error in adminUpdateApiKeyStatus(${keyId}, ${status}):`, error);
+    return false;
+  }
+}
+
+/**
+ * Fetch business signals globally with optional filters, sorted by signal_date DESC.
+ */
+export async function getBusinessSignalsGlobal(
+  filters: { corporate_number?: string; signal_type?: string },
+  limit = 20,
+  offset = 0
+): Promise<{ signals: any[]; totalCount: number }> {
+  await initQuotaTables();
+  try {
+    const params: any[] = [];
+    let whereClause = "";
+    const conditions: string[] = [];
+
+    if (filters.corporate_number) {
+      conditions.push("bs.corporate_number = ?");
+      params.push(filters.corporate_number);
+    }
+    if (filters.signal_type) {
+      conditions.push("bs.signal_type = ?");
+      params.push(filters.signal_type);
+    }
+
+    if (conditions.length > 0) {
+      whereClause = "WHERE " + conditions.join(" AND ");
+    }
+
+    const countSql = `SELECT COUNT(*) as count FROM business_signals bs ${whereClause}`;
+    const countResult = await runGetQuery(countSql, params);
+    const totalCount = countResult ? Number(countResult.count) : 0;
+
+    let sql = `
+      SELECT bs.*, c.company_name
+      FROM business_signals bs
+      JOIN companies c ON bs.corporate_number = c.corporate_number
+      ${whereClause}
+      ORDER BY bs.signal_date DESC, bs.id DESC
+    `;
+    
+    sql += " LIMIT ? OFFSET ?";
+    params.push(limit, offset);
+
+    const rows = await runQuery(sql, params);
+    return {
+      signals: rows ? rows.map(r => ({
+        id: r.id,
+        corporate_number: r.corporate_number,
+        company_name: r.company_name,
+        signal_type: r.signal_type,
+        signal_title: r.signal_title,
+        signal_date: r.signal_date,
+        amount: r.amount,
+        government_departments: r.government_departments,
+        source_url: r.source_url,
+        details: r.details,
+        created_at: String(r.created_at)
+      })) : [],
+      totalCount
+    };
+  } catch (error) {
+    console.error('Error in getBusinessSignalsGlobal:', error);
+    return { signals: [], totalCount: 0 };
+  }
+}
+
+
