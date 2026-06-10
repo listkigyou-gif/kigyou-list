@@ -1,15 +1,15 @@
 # HelloWork Crawl Status & Monitoring Report
-*Last Updated: 2026-06-10 21:15:05*
+*Last Updated: 2026-06-10 23:06:39*
 
 ## 🖥️ System Status Dashboard
-- **Orchestrator Status:** 🟢 Running (PID: 40772)
-- **Active Prefecture Workers:** 1 / 47
-- **Overall Progress:** 99.48% (623,655 / 626,936 completed)
-- **Queue Status:** ⏳ Pending: 2,816 | ⚙️ Processing: 1 | ❌ Failed: 464
-- **Estimated Time to Completion (ETC):** 0h 11m (at 4.0 jobs/sec)
+- **Orchestrator Status:** 🔴 Stopped (Paused by User)
+- **Active Prefecture Workers:** 0 / 47
+- **Overall Progress:** 99.70% (625,004 / 626,883 completed)
+- **Queue Status:** ⏳ Pending: 1,415 | ⚙️ Processing: 0 | ❌ Failed: 464
+- **Estimated Time to Completion (ETC):** Paused (at 4.0 jobs/sec)
 
 ## 🤖 AI Self-Healing & Recovery Actions
-- No issues detected. System is running healthy.
+- ⏸️ Crawl process paused by user.
 
 ## ⚠️ Recent Error Logs
 - No errors found in recent log lines.
@@ -43,7 +43,7 @@
 | 24 | Mie | ✅ Finished | 0 | 6,209 | 2 | 100.0% |
 | 25 | Shiga | ✅ Finished | 0 | 4,521 | 3 | 99.9% |
 | 26 | Kyoto | ✅ Finished | 0 | 9,589 | 4 | 100.0% |
-| 27 | Osaka | 🟢 Active | 2,816 | 17,868 | 21 | 86.3% |
+| 27 | Osaka | 🟢 Active | 1,414 | 19,217 | 21 | 93.0% |
 | 28 | Hyogo | ✅ Finished | 0 | 6,676 | 6 | 99.9% |
 | 29 | Nara | ✅ Finished | 0 | 5,098 | 4 | 99.9% |
 | 30 | Wakayama | ✅ Finished | 0 | 2,956 | 3 | 99.9% |
