@@ -9,8 +9,18 @@
 DB_NAME="kigyou_list"
 BACKUP_DIR="/home/ubuntu/backups"
 FILE_NAME="db_user_backup_$(date +%Y%m%d_%H%M%S).sql.gz"
-R2_BUCKET="s3://kigyou-list-exports/backups" # Replace with your bucket name
-R2_ENDPOINT_URL="https://[ACCOUNT_ID].r2.cloudflarestorage.com" # Replace with your Cloudflare Account ID
+
+# Attempt to load Cloudflare R2 configurations dynamically from Next.js environment file
+ENV_FILE="/var/www/kigyou-list/frontend/.env.local"
+if [ -f "$ENV_FILE" ]; then
+  R2_ENDPOINT_URL=$(grep "^R2_ENDPOINT=" "$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
+  R2_BUCKET_NAME=$(grep "^R2_BUCKET_NAME=" "$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
+  R2_BUCKET="s3://$R2_BUCKET_NAME/backups"
+else
+  # Local development fallbacks
+  R2_BUCKET="s3://kigyou-list-storage/backups"
+  R2_ENDPOINT_URL="https://baafa3ec333eb25d4b1f26d03dce1c14.r2.cloudflarestorage.com"
+fi
 
 mkdir -p $BACKUP_DIR
 
