@@ -33,7 +33,7 @@ echo "[$(date)] Starting PostgreSQL Backup (User & Payment Data only)..."
 
 # 2. pg_dump executing with table exclusion filters
 # Wildcards are used to catch all partitions of companies (e.g. companies_p01, etc.)
-pg_dump -h localhost -U postgres -d $DB_NAME \
+sudo -u postgres pg_dump -d $DB_NAME \
   --exclude-table="companies*" \
   --exclude-table="business_signals*" \
   --exclude-table="company_industries*" \
