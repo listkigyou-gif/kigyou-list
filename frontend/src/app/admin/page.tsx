@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { ShieldAlert, Plus, Ticket, Loader2, RefreshCcw, Users, MessageSquareWarning, CheckCircle, Ban, Download, CreditCard, History, Building2, Terminal } from "lucide-react";
+import { ShieldAlert, Plus, Ticket, Loader2, RefreshCcw, Users, MessageSquareWarning, CheckCircle, Ban, Download, CreditCard, History, Building2, Terminal, Database } from "lucide-react";
 import { parseUTCDate } from "@/lib/dateUtils";
 
 interface Coupon {
@@ -75,6 +75,15 @@ interface PaymentAdminView {
   created_at: string;
 }
 
+interface BackupLog {
+  id: string;
+  backup_time: string;
+  status: string;
+  file_name: string | null;
+  file_size: string | null;
+  error_message: string | null;
+}
+
 export default function AdminPage() {
   const { isLoggedIn, user, setAuthModalOpen } = useAuth();
 
@@ -86,7 +95,7 @@ export default function AdminPage() {
     };
   }, [user?.email]);
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"coupons" | "users" | "inquiries" | "exports" | "payments" | "logs" | "partners" | "apiKeys">("logs");
+  const [activeTab, setActiveTab] = useState<"coupons" | "users" | "inquiries" | "exports" | "payments" | "logs" | "partners" | "apiKeys" | "backups">("logs");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -100,6 +109,10 @@ export default function AdminPage() {
   const [logs, setLogs] = useState<AdminActionLog[]>([]);
   const [partners, setPartners] = useState<any[]>([]);
   const [apiKeys, setApiKeys] = useState<any[]>([]);
+  const [backups, setBackups] = useState<BackupLog[]>([]);
+  const [runningBackup, setRunningBackup] = useState(false);
+  const [backupMessage, setBackupMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
   const [searchTermExports, setSearchTermExports] = useState("");
   const [searchTermPayments, setSearchTermPayments] = useState("");
   const [searchTermLogs, setSearchTermLogs] = useState("");
@@ -137,7 +150,7 @@ export default function AdminPage() {
     try {
       const headers = getAdminHeaders();
 
-      const [resCoupons, resUsers, resInquiries, resExports, resPayments, resLogs, resPartners, resApiKeys] = await Promise.all([
+      const [resCoupons, resUsers, resInquiries, resExports, resPayments, resLogs, resPartners, resApiKeys, resBackups] = await Promise.all([
         fetch("/api/coupon/admin", { headers }),
         fetch("/api/admin/users", { headers }),
         fetch("/api/admin/inquiries", { headers }),
@@ -145,7 +158,8 @@ export default function AdminPage() {
         fetch("/api/admin/payments", { headers }),
         fetch("/api/admin/logs", { headers }),
         fetch("/api/admin/partners", { headers }),
-        fetch("/api/admin/apikeys", { headers })
+        fetch("/api/admin/apikeys", { headers }),
+        fetch("/api/admin/backups", { headers })
       ]);
 
       if (
@@ -156,7 +170,8 @@ export default function AdminPage() {
         resPayments.status === 403 ||
         resLogs.status === 403 ||
         resPartners.status === 403 ||
-        resApiKeys.status === 403
+        resApiKeys.status === 403 ||
+        resBackups.status === 403
       ) {
         const passcode = prompt("Nhập mã bảo mật Admin (Admin Secret Passcode) để xác thực truy cập:");
         if (passcode) {
@@ -166,7 +181,7 @@ export default function AdminPage() {
         }
       }
 
-      if (resCoupons.ok && resUsers.ok && resInquiries.ok && resExports.ok && resPayments.ok && resLogs.ok && resPartners.ok && resApiKeys.ok) {
+      if (resCoupons.ok && resUsers.ok && resInquiries.ok && resExports.ok && resPayments.ok && resLogs.ok && resPartners.ok && resApiKeys.ok && resBackups.ok) {
         const dataCoupons = await resCoupons.json();
         const dataUsers = await resUsers.json();
         const dataInquiries = await resInquiries.json();
@@ -175,6 +190,7 @@ export default function AdminPage() {
         const dataLogs = await resLogs.json();
         const dataPartners = await resPartners.json();
         const dataApiKeys = await resApiKeys.json();
+        const dataBackups = await resBackups.json();
 
         setCoupons(dataCoupons.coupons || []);
         setUsersList(dataUsers.users || []);
@@ -184,6 +200,7 @@ export default function AdminPage() {
         setLogs(dataLogs.logs || []);
         setPartners(dataPartners.partners || []);
         setApiKeys(dataApiKeys.apiKeys || []);
+        setBackups(dataBackups.backups || []);
         setError(null);
       } else {
         setError("Không thể lấy dữ liệu. Hãy kiểm tra quyền truy cập.");
@@ -198,6 +215,33 @@ export default function AdminPage() {
   useEffect(() => {
     fetchDataRef.current = fetchData;
   }, [fetchData]);
+
+  const runBackupNow = async () => {
+    if (runningBackup) return;
+    setRunningBackup(true);
+    setBackupMessage(null);
+    try {
+      const headers = getAdminHeaders();
+      const res = await fetch("/api/admin/backups", {
+        method: "POST",
+        headers
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setBackupMessage({ type: 'success', text: 'バックアップが正常に完了しました。' });
+        setBackups(data.backups || []);
+      } else {
+        setBackupMessage({ type: 'error', text: data.error || 'バックアップ実行中にエラーが発生しました。' });
+        if (data.backups) {
+          setBackups(data.backups);
+        }
+      }
+    } catch (err) {
+      setBackupMessage({ type: 'error', text: 'ネットワークエラーが発生しました。' });
+    } finally {
+      setRunningBackup(false);
+    }
+  };
 
   const handleUpdatePlan = async () => {
     if (!user?.email || !planEditUser) return;
@@ -548,6 +592,12 @@ export default function AdminPage() {
             className={`py-3 px-4 font-bold text-sm border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'apiKeys' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
           >
             <Terminal className="w-4 h-4" /> APIキー管理
+          </button>
+          <button
+            onClick={() => setActiveTab("backups")}
+            className={`py-3 px-4 font-bold text-sm border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'backups' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          >
+            <Database className="w-4 h-4" /> バックアップ履歴
           </button>
         </div>
 
@@ -1423,6 +1473,109 @@ export default function AdminPage() {
                           </tr>
                         );
                       })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        )}
+
+        {/* Backups Tab */}
+        {activeTab === "backups" && (
+          <section className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <div>
+                <h2 className="text-lg font-bold">バックアップ履歴 (R2 Storage)</h2>
+                <p className="text-xs text-slate-400 mt-1">6時間ごとに自動バックアップが実行されます。手動で今すぐバックアップを実行することも可能です。</p>
+              </div>
+              <button
+                onClick={runBackupNow}
+                disabled={runningBackup}
+                className="flex items-center justify-center gap-2 bg-primary hover:bg-primary-hover disabled:bg-slate-300 dark:disabled:bg-slate-700 text-white font-bold text-sm px-5 py-2.5 rounded-xl transition-all cursor-pointer disabled:cursor-not-allowed animate-none"
+              >
+                {runningBackup ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    バックアップ中...
+                  </>
+                ) : (
+                  <>
+                    <Database className="w-4 h-4" />
+                    今すぐバックアップを実行
+                  </>
+                )}
+              </button>
+            </div>
+
+            {backupMessage && (
+              <div className={`p-4 rounded-xl mb-6 text-sm font-bold border ${
+                backupMessage.type === 'success' 
+                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/20 dark:text-emerald-400 dark:border-emerald-900/50' 
+                  : 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/20 dark:text-rose-400 dark:border-rose-900/50'
+              }`}>
+                {backupMessage.text}
+              </div>
+            )}
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-sm whitespace-nowrap">
+                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold text-xs">
+                  <tr>
+                    <th className="px-4 py-3 rounded-tl-lg">ID / タイムスタンプ</th>
+                    <th className="px-4 py-3">実行時間 (JST)</th>
+                    <th className="px-4 py-3">ステータス</th>
+                    <th className="px-4 py-3">ファイル名</th>
+                    <th className="px-4 py-3">ファイルサイズ</th>
+                    <th className="px-4 py-3 rounded-tr-lg">ログ / エラーメッセージ</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                  {backups.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
+                        バックアップ履歴が見つかりません。
+                      </td>
+                    </tr>
+                  ) : (
+                    backups.map((log) => {
+                      const timeJst = new Date(log.backup_time).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+                      return (
+                        <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20">
+                          <td className="px-4 py-3 font-mono text-xs text-slate-500">
+                            {log.id}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-slate-600 dark:text-slate-300 font-mono">
+                            {timeJst}
+                          </td>
+                          <td className="px-4 py-3">
+                            {log.status === "success" ? (
+                              <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs font-bold rounded-full">
+                                成功 (Success)
+                              </span>
+                            ) : (
+                              <span className="px-2.5 py-1 bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400 text-xs font-bold rounded-full">
+                                失敗 (Failed)
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-300">
+                            {log.file_name || "-"}
+                          </td>
+                          <td className="px-4 py-3 font-mono text-xs text-slate-700 dark:text-slate-300">
+                            {log.file_size || "-"}
+                          </td>
+                          <td className="px-4 py-3 text-xs text-slate-500 dark:text-slate-400">
+                            {log.status === "success" ? (
+                              <span className="text-emerald-600 dark:text-emerald-400 font-medium">Cloudflare R2 へのアップロード完了</span>
+                            ) : (
+                              <span className="text-rose-600 dark:text-rose-400 font-bold max-w-[300px] truncate block" title={log.error_message || ""}>
+                                {log.error_message}
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>

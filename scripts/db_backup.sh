@@ -53,17 +53,27 @@ if [ $? -eq 0 ]; then
   echo "[$(date)] Database dump successfully created: $BACKUP_DIR/$FILE_NAME"
 else
   echo "[$(date)] Error: PostgreSQL pg_dump failed!"
+  if pg_isready -h localhost >/dev/null 2>&1; then
+    sudo -u postgres psql -d kigyou_list -c "INSERT INTO backup_logs (id, status, error_message) VALUES ('$(date +%s)', 'failed', 'PostgreSQL pg_dump failed!')"
+  fi
   exit 1
 fi
 
 # 3. Upload backup file to Cloudflare R2
 echo "[$(date)] Uploading backup file to Cloudflare R2..."
+FILE_SIZE=$(du -h "$BACKUP_DIR/$FILE_NAME" | cut -f1)
 aws s3 cp $BACKUP_DIR/$FILE_NAME $R2_BUCKET/$FILE_NAME --endpoint-url $R2_ENDPOINT_URL
 
 if [ $? -eq 0 ]; then
   echo "[$(date)] Upload completed successfully."
+  if pg_isready -h localhost >/dev/null 2>&1; then
+    sudo -u postgres psql -d kigyou_list -c "INSERT INTO backup_logs (id, status, file_name, file_size) VALUES ('$(date +%s)', 'success', '$FILE_NAME', '$FILE_SIZE')"
+  fi
 else
   echo "[$(date)] Error: Failed to upload backup to R2!"
+  if pg_isready -h localhost >/dev/null 2>&1; then
+    sudo -u postgres psql -d kigyou_list -c "INSERT INTO backup_logs (id, status, error_message) VALUES ('$(date +%s)', 'failed', 'R2 upload failed!')"
+  fi
   exit 1
 fi
 

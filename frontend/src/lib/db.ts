@@ -17,6 +17,7 @@ async function ensureAllTablesInitialized() {
     await initCouponTables();
     await initAdminTables();
     await initAdminLogTable();
+    await initBackupLogsTable();
     allTablesInitialized = true;
   } catch (err) {
     console.error('Failed to initialize all database tables:', err);
@@ -3465,5 +3466,75 @@ export async function getBusinessSignalsGlobal(
     return { signals: [], totalCount: 0 };
   }
 }
+
+let backupLogsTableInitialized = false;
+export async function initBackupLogsTable(): Promise<void> {
+  if (backupLogsTableInitialized) return;
+  const isPG = !!DATABASE_URL;
+  if (isPG) {
+    const pool = getPGPool();
+    const client = await pool.connect();
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS backup_logs (
+          id VARCHAR(50) PRIMARY KEY,
+          backup_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          status VARCHAR(20) NOT NULL,
+          file_name VARCHAR(255),
+          file_size VARCHAR(50),
+          error_message TEXT
+        );
+      `);
+    } catch (e) {
+      console.error('Error initializing PG backup log table:', e);
+    } finally {
+      client.release();
+    }
+  } else {
+    try {
+      const db = getSQLiteDB();
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS backup_logs (
+          id TEXT PRIMARY KEY,
+          backup_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          status TEXT NOT NULL,
+          file_name TEXT,
+          file_size TEXT,
+          error_message TEXT
+        );
+      `);
+    } catch (e) {
+      console.error('Error initializing SQLite backup log table:', e);
+    }
+  }
+  backupLogsTableInitialized = true;
+}
+
+export interface BackupLog {
+  id: string;
+  backup_time: string;
+  status: string;
+  file_name: string | null;
+  file_size: string | null;
+  error_message: string | null;
+}
+
+export async function getBackupLogs(): Promise<BackupLog[]> {
+  try {
+    const rows = await runQuery('SELECT * FROM backup_logs ORDER BY backup_time DESC LIMIT 50');
+    return rows ? rows.map(r => ({
+      id: String(r.id),
+      backup_time: String(r.backup_time),
+      status: String(r.status),
+      file_name: r.file_name || null,
+      file_size: r.file_size || null,
+      error_message: r.error_message || null,
+    })) : [];
+  } catch (error) {
+    console.error('Error in getBackupLogs:', error);
+    return [];
+  }
+}
+
 
 
