@@ -16,6 +16,11 @@ if [ -f "$ENV_FILE" ]; then
   R2_ENDPOINT_URL=$(grep "^R2_ENDPOINT=" "$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
   R2_BUCKET_NAME=$(grep "^R2_BUCKET_NAME=" "$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
   R2_BUCKET="s3://$R2_BUCKET_NAME/backups"
+  
+  # Extract and export credentials for the AWS CLI dynamically
+  export AWS_ACCESS_KEY_ID=$(grep "^R2_ACCESS_KEY_ID=" "$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
+  export AWS_SECRET_ACCESS_KEY=$(grep "^R2_SECRET_ACCESS_KEY=" "$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
+  export AWS_DEFAULT_REGION="us-east-1"
 else
   # Local development fallbacks
   R2_BUCKET="s3://kigyou-list-storage/backups"
