@@ -66,6 +66,7 @@ def main():
     DROP TABLE IF EXISTS database_stats_temp CASCADE;
     DROP TABLE IF EXISTS city_counts_temp CASCADE;
     DROP TABLE IF EXISTS sitemap_companies_temp CASCADE;
+    DROP TABLE IF EXISTS blog_posts_temp CASCADE;
     """)
     pg_conn.commit()
 
@@ -222,6 +223,20 @@ def main():
         corporate_number VARCHAR(50) PRIMARY KEY,
         updated_at TIMESTAMP,
         employee_count INTEGER
+    );
+    """)
+
+    # Bảng 11: blog_posts_temp
+    pg_cur.execute("""
+    CREATE TABLE blog_posts_temp (
+        id SERIAL PRIMARY KEY,
+        slug VARCHAR(255) UNIQUE NOT NULL,
+        title VARCHAR(255) NOT NULL,
+        content TEXT NOT NULL,
+        summary TEXT NOT NULL,
+        category VARCHAR(100) NOT NULL,
+        published_at VARCHAR(20) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
     """)
 
@@ -529,6 +544,14 @@ def main():
             [1, 2]
         )
 
+        # Table 11: blog_posts
+        migrate_table_csv(
+            "blog_posts",
+            "SELECT id, slug, title, content, summary, category, published_at, created_at FROM blog_posts",
+            ["id", "slug", "title", "content", "summary", "category", "published_at", "created_at"],
+            None
+        )
+
         # 3. Create indices for performance
         print("Creating performance indices in PostgreSQL on temp tables...", flush=True)
         t_indices = time.time()
@@ -583,6 +606,7 @@ def main():
         DROP TABLE IF EXISTS database_stats CASCADE;
         DROP TABLE IF EXISTS city_counts CASCADE;
         DROP TABLE IF EXISTS sitemap_companies CASCADE;
+        DROP TABLE IF EXISTS blog_posts CASCADE;
         """)
         
         # Rename temp tables to main tables
@@ -597,6 +621,7 @@ def main():
         ALTER TABLE database_stats_temp RENAME TO database_stats;
         ALTER TABLE city_counts_temp RENAME TO city_counts;
         ALTER TABLE sitemap_companies_temp RENAME TO sitemap_companies;
+        ALTER TABLE blog_posts_temp RENAME TO blog_posts;
         """)
         
         # Rename physical partitions
@@ -630,6 +655,10 @@ def main():
         ALTER INDEX idx_companies_is_detailed_temp RENAME TO idx_companies_is_detailed;
         ALTER INDEX idx_comp_ind_code_detailed_temp RENAME TO idx_comp_ind_code_detailed;
         """)
+        
+        # Reset primary key sequence for blog_posts
+        pg_cur.execute("SELECT setval('blog_posts_id_seq', COALESCE((SELECT MAX(id) FROM blog_posts), 1), true);")
+
         
         pg_conn.commit()
         print(f"Shadow table swap completed successfully in {time.time() - t_swap:.2f} seconds!", flush=True)

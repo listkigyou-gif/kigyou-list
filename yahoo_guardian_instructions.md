@@ -11,7 +11,7 @@ Hệ thống cào dữ liệu Yahoo Maps gồm các thành phần sau:
 
 | Thành phần | Mô tả |
 | :--- | :--- |
-| **56 Docker WARP Containers** | Image `caomingjun/warp`, cổng `40002–40080` (đã tắt cổng lỗi 40001, bỏ một số cổng như `40013–40029`, 40040, 40042, 40044, 40046, 40048, 40056). Mỗi container cung cấp một SOCKS5 proxy qua Cloudflare WARP. |
+| **53 Docker WARP Containers** | Image `caomingjun/warp`, cổng `40002–40080` (đã tắt cổng lỗi 40001, bỏ các cổng 40006–40008 đang được HelloWork sử dụng, và một số cổng như `40013–40029`, 40040, 40042, 40044, 40046, 40048, 40056). Mỗi container cung cấp một SOCKS5 proxy qua Cloudflare WARP. |
 | **50 Yahoo Crawler Workers** | Tiến trình `yahoo_searcher.py` chạy song song dùng cổng proxy riêng (tối đa 50 luồng hoạt động cùng lúc). Giãn cách request: **6–20 giây/request**. |
 | **1 Daemon** | `run_yahoo_daemon.py` — Quản lý độc lập vòng đời từng luồng theo cơ chế cuốn chiếu: khi worker kết thúc thành công (`exit code = 0`), Daemon tự gộp kết quả riêng luồng đó vào `companies_basic.csv`, xóa `results_{port}.csv`, lấy 1,000 công ty mới tiếp theo ghi vào `part_i.csv` và restart worker ngay lập tức. Chạy lệnh: `python scripts/run_yahoo_daemon.py --max-workers 50 --thread-batch-size 1000`. |
 | **1 Watchdog** | `yahoo_watchdog.py` — Kiểm tra chủ động container, log và tự động quét dọn các tiến trình Chrome headless mồ côi mỗi 2 phút để tránh rò rỉ RAM/CPU. |
@@ -35,7 +35,7 @@ Chạy lần lượt các lệnh sau:
 # Đếm số tiến trình Python đang hoạt động (yêu cầu: ≥ 53 tiến trình)
 (Get-CimInstance Win32_Process -Filter "name LIKE 'python%'").Count
 
-# Đếm số container proxy warp đang chạy (yêu cầu: đúng 56 container)
+# Đếm số container proxy warp đang chạy (yêu cầu: đúng 53 container)
 (docker ps --filter "name=warp-" --filter "status=running" -q).Count
 
 # Kiểm tra trạng thái chi tiết từng container
@@ -44,7 +44,7 @@ docker ps -a --filter name=warp- --filter name=kigyou-postgres
 
 **Yêu cầu bình thường**:
 * Đầy đủ **≥ 53 tiến trình Python** đang chạy (50 crawlers + 1 daemon + 1 watchdog + 1 monitor, cộng thêm 1 tiến trình ETL `run_pipeline.py` chạy nền bất đồng bộ khi đạt ngưỡng).
-* Đầy đủ **56 container `warp-*`** đang ở trạng thái `Up (healthy)` hoặc `Up (health: starting)` (cổng 40001 đã dừng).
+* Đầy đủ **53 container `warp-*`** đang ở trạng thái `Up (healthy)` hoặc `Up (health: starting)` (cổng 40001 đã dừng, các cổng 40006-40008 được HelloWork sử dụng nên không tính).
 * Container database **`kigyou-postgres`** ở trạng thái `Up`.
 
 ---
@@ -120,7 +120,7 @@ python scripts/get_yahoo_delta.py
 | Thành phần | Yêu cầu | Thực tế | Trạng thái |
 | :--- | :---: | :---: | :---: |
 | **Tiến trình Python** | $\ge 53$ | **[Số lượng thực tế]** | 🟢 Khỏe mạnh / 🔴 Cần khắc phục |
-| **Warp Proxy Containers** | $56$ | **[Số lượng]/56** | 🟢 Khỏe mạnh / 🔴 Cần khắc phục |
+| **Warp Proxy Containers** | $53$ | **[Số lượng]/53** | 🟢 Khỏe mạnh / 🔴 Cần khắc phục |
 | **PostgreSQL Database** | `Up` | **[Trạng thái thực tế]** | 🟢 Khỏe mạnh / 🔴 Cần khắc phục |
 ```
 

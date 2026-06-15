@@ -1,14 +1,13 @@
 # Báo cáo Giám sát Chi tiết Yahoo Maps Crawler
 
-* **Thời gian cập nhật báo cáo**: `2026-06-10 09:46:39`
-* **Số cổng proxy hoạt động**: `🟢 52 / 53`
+* **Thời gian cập nhật báo cáo**: `2026-06-11 20:30:47`
+* **Số cổng proxy hoạt động**: `🟢 53 / 53`
 
 ---
 
 ## 🚨 Trạng thái Cảnh báo Hệ thống
-> [!WARNING]
-> **CẢNH BÁO CỔNG PROXY**: Phát hiện 1 cổng proxy đang offline (container Docker bị dừng): `40043`...
-> * Hãy khởi chạy lại daemon cào hoặc tự động khắc phục bằng Watchdog.
+> [!NOTE]
+> **HỆ THỐNG KHỎE MẠNH**: Tất cả 50 cổng proxy đang hoạt động tốt với tỷ lệ thành công ổn định.
 
 
 
@@ -18,10 +17,10 @@
 
 | Chỉ số dữ liệu | Số lượng bản ghi | Mô tả |
 | :--- | :--- | :--- |
-| **Tổng số doanh nghiệp đã quét qua** | **5,378,506** | Số lượng doanh nghiệp được đọc và tìm kiếm trên Yahoo Map |
-| **Số lượng Số điện thoại (SĐT) thu được** | **1,786,236** | Số lượng SĐT trích xuất thành công |
-| **Số lượng Website chính thức thu được** | **409,840** | Số lượng URL website chính thức của doanh nghiệp |
-| **Tỷ lệ trích xuất SĐT thành công** | **33.21%** | Hiệu năng tìm thấy thông tin liên hệ thực tế |
+| **Tổng số doanh nghiệp đã quét qua** | **6,071,532** | Số lượng doanh nghiệp được đọc và tìm kiếm trên Yahoo Map |
+| **Số lượng Số điện thoại (SĐT) thu được** | **2,074,914** | Số lượng SĐT trích xuất thành công |
+| **Số lượng Website chính thức thu được** | **474,059** | Số lượng URL website chính thức của doanh nghiệp |
+| **Tỷ lệ trích xuất SĐT thành công** | **34.17%** | Hiệu năng tìm thấy thông tin liên hệ thực tế |
 
 ---
 
@@ -31,8 +30,8 @@
 
 | Phân lớp dữ liệu | Số lượng bản ghi | Mô tả trạng thái |
 | :--- | :--- | :--- |
-| **Dữ liệu thô trong Staging (`raw_yahoo`)** | **4,817,656** | Dữ liệu Yahoo thô đã nạp thành công vào SQLite Staging (Step 3) |
-| **Dữ liệu đã hợp nhất Master (`companies`)** | **4,817,647** | Số lượng doanh nghiệp đã được cập nhật dữ liệu Yahoo chính thức và đồng bộ sang **PostgreSQL** sản xuất (Step 5 & 7) |
+| **Dữ liệu thô trong Staging (`raw_yahoo`)** | **5,066,526** | Dữ liệu Yahoo thô đã nạp thành công vào SQLite Staging (Step 3) |
+| **Dữ liệu đã hợp nhất Master (`companies`)** | **5,066,517** | Số lượng doanh nghiệp đã được cập nhật dữ liệu Yahoo chính thức và đồng bộ sang **PostgreSQL** sản xuất (Step 5 & 7) |
 
 ---
 
@@ -52,56 +51,56 @@
 
 | Cổng Proxy | Trạng thái | Đã cào (Dòng CSV) | Số Điện Thoại | Website | Lỗi Chặn (Gần đây) | Tỷ lệ SĐT (%) |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **Port 40002** | 🟢 Active | 728 | 269 | 81 | 0 | 37.0% |
-| **Port 40003** | 🟢 Active | 771 | 291 | 54 | 0 | 37.7% |
-| **Port 40004** | 🟢 Active | 775 | 359 | 135 | 0 | 46.3% |
-| **Port 40005** | 🟢 Active | 781 | 377 | 101 | 0 | 48.3% |
-| **Port 40009** | 🟢 Active | 773 | 229 | 49 | 2 | 29.6% |
-| **Port 40010** | 🟢 Active | 758 | 359 | 86 | 0 | 47.4% |
-| **Port 40011** | 🟢 Active | 763 | 348 | 105 | 0 | 45.6% |
-| **Port 40012** | 🟢 Active | 808 | 244 | 33 | 2 | 30.2% |
-| **Port 40030** | 🟢 Active | 757 | 87 | 17 | 0 | 11.5% |
-| **Port 40031** | 🟢 Active | 795 | 409 | 101 | 0 | 51.4% |
-| **Port 40032** | 🟢 Active | 754 | 252 | 40 | 0 | 33.4% |
-| **Port 40033** | 🟢 Active | 758 | 69 | 8 | 0 | 9.1% |
-| **Port 40034** | 🟢 Active | 748 | 245 | 54 | 0 | 32.8% |
-| **Port 40035** | 🟢 Active | 749 | 191 | 25 | 0 | 25.5% |
-| **Port 40036** | 🟢 Active | 85 | 20 | 3 | 0 | 23.5% |
-| **Port 40037** | 🟢 Active | 742 | 222 | 62 | 0 | 29.9% |
-| **Port 40038** | 🟢 Active | 786 | 200 | 42 | 2 | 25.4% |
-| **Port 40039** | 🟢 Active | 780 | 247 | 55 | 0 | 31.7% |
-| **Port 40041** | 🟢 Active | 788 | 299 | 60 | 0 | 37.9% |
-| **Port 40043** | 🔴 Stopped | 774 | 258 | 47 | 0 | 33.3% |
-| **Port 40045** | 🟢 Active | 788 | 341 | 108 | 0 | 43.3% |
-| **Port 40047** | 🟢 Active | 801 | 278 | 61 | 0 | 34.7% |
-| **Port 40049** | 🟢 Active | 734 | 269 | 77 | 0 | 36.6% |
-| **Port 40050** | 🟢 Active | 820 | 230 | 40 | 0 | 28.0% |
-| **Port 40051** | 🟢 Active | 916 | 481 | 124 | 0 | 52.5% |
-| **Port 40052** | 🟢 Active | 821 | 183 | 24 | 0 | 22.3% |
-| **Port 40053** | 🟢 Active | 910 | 374 | 74 | 0 | 41.1% |
-| **Port 40054** | 🟢 Active | 734 | 227 | 47 | 0 | 30.9% |
-| **Port 40055** | 🟢 Active | 745 | 230 | 70 | 0 | 30.9% |
-| **Port 40057** | 🟢 Active | 771 | 426 | 112 | 0 | 55.3% |
-| **Port 40058** | 🟢 Active | 736 | 259 | 70 | 0 | 35.2% |
-| **Port 40059** | 🟢 Active | 744 | 326 | 78 | 0 | 43.8% |
-| **Port 40060** | 🟢 Active | 787 | 203 | 37 | 0 | 25.8% |
-| **Port 40061** | 🟢 Active | 754 | 391 | 136 | 0 | 51.9% |
-| **Port 40062** | 🟢 Active | 746 | 342 | 93 | 0 | 45.8% |
-| **Port 40063** | 🟢 Active | 781 | 201 | 20 | 0 | 25.7% |
-| **Port 40064** | 🟢 Active | 754 | 164 | 40 | 0 | 21.8% |
-| **Port 40065** | 🟢 Active | 762 | 183 | 42 | 0 | 24.0% |
-| **Port 40066** | 🟢 Active | 746 | 382 | 94 | 0 | 51.2% |
-| **Port 40067** | 🟢 Active | 757 | 333 | 94 | 0 | 44.0% |
-| **Port 40068** | 🟢 Active | 738 | 183 | 36 | 0 | 24.8% |
-| **Port 40069** | 🟢 Active | 731 | 368 | 73 | 0 | 50.3% |
-| **Port 40070** | 🟢 Active | 752 | 211 | 43 | 0 | 28.1% |
-| **Port 40071** | 🟢 Active | 734 | 281 | 86 | 0 | 38.3% |
-| **Port 40072** | 🟢 Active | 725 | 164 | 20 | 0 | 22.6% |
-| **Port 40073** | 🟢 Active | 817 | 224 | 19 | 0 | 27.4% |
-| **Port 40074** | 🟢 Active | 451 | 110 | 16 | 0 | 24.4% |
-| **Port 40075** | 🟢 Active | 763 | 396 | 112 | 0 | 51.9% |
-| **Port 40076** | 🟢 Active | 794 | 183 | 38 | 2 | 23.0% |
-| **Port 40077** | 🟢 Active | 797 | 359 | 90 | 0 | 45.0% |
+| **Port 40002** | 🟢 Active | 316 | 244 | 69 | 0 | 77.2% |
+| **Port 40003** | 🟢 Active | 292 | 117 | 5 | 0 | 40.1% |
+| **Port 40004** | 🟢 Active | 322 | 233 | 67 | 0 | 72.4% |
+| **Port 40005** | 🟢 Active | 290 | 205 | 44 | 0 | 70.7% |
+| **Port 40009** | 🟢 Active | 312 | 231 | 68 | 0 | 74.0% |
+| **Port 40010** | 🟢 Active | 312 | 223 | 64 | 0 | 71.5% |
+| **Port 40011** | 🟢 Active | 310 | 183 | 45 | 0 | 59.0% |
+| **Port 40012** | 🟢 Active | 312 | 128 | 20 | 0 | 41.0% |
+| **Port 40030** | 🟢 Active | 270 | 101 | 17 | 0 | 37.4% |
+| **Port 40031** | 🟢 Active | 251 | 189 | 57 | 0 | 75.3% |
+| **Port 40032** | 🟢 Active | 305 | 182 | 61 | 0 | 59.7% |
+| **Port 40033** | 🟢 Active | 282 | 199 | 51 | 0 | 70.6% |
+| **Port 40034** | 🟢 Active | 313 | 135 | 26 | 0 | 43.1% |
+| **Port 40035** | 🟢 Active | 198 | 86 | 23 | 0 | 43.4% |
+| **Port 40036** | 🟢 Active | 344 | 120 | 15 | 0 | 34.9% |
+| **Port 40037** | 🟢 Active | 61 | 26 | 1 | 0 | 42.6% |
+| **Port 40038** | 🟢 Active | 102 | 75 | 25 | 0 | 73.5% |
+| **Port 40039** | 🟢 Active | 329 | 236 | 71 | 0 | 71.7% |
+| **Port 40041** | 🟢 Active | 333 | 124 | 22 | 0 | 37.2% |
+| **Port 40043** | 🟢 Active | 301 | 136 | 19 | 0 | 45.2% |
+| **Port 40045** | 🟢 Active | 319 | 129 | 24 | 0 | 40.4% |
+| **Port 40047** | 🟢 Active | 132 | 94 | 23 | 0 | 71.2% |
+| **Port 40049** | 🟢 Active | 285 | 199 | 74 | 0 | 69.8% |
+| **Port 40050** | 🟢 Active | 290 | 217 | 58 | 0 | 74.8% |
+| **Port 40051** | 🟢 Active | 289 | 174 | 56 | 0 | 60.2% |
+| **Port 40052** | 🟢 Active | 294 | 123 | 17 | 0 | 41.8% |
+| **Port 40053** | 🟢 Active | 318 | 222 | 75 | 0 | 69.8% |
+| **Port 40054** | 🟢 Active | 280 | 119 | 17 | 0 | 42.5% |
+| **Port 40055** | 🟢 Active | 301 | 226 | 67 | 0 | 75.1% |
+| **Port 40057** | 🟢 Active | 288 | 95 | 12 | 0 | 33.0% |
+| **Port 40058** | 🟢 Active | 338 | 256 | 77 | 0 | 75.7% |
+| **Port 40059** | 🟢 Active | 324 | 237 | 63 | 0 | 73.1% |
+| **Port 40060** | 🟢 Active | 334 | 237 | 65 | 0 | 71.0% |
+| **Port 40061** | 🟢 Active | 307 | 222 | 72 | 0 | 72.3% |
+| **Port 40062** | 🟢 Active | 325 | 213 | 67 | 0 | 65.5% |
+| **Port 40063** | 🟢 Active | 307 | 197 | 63 | 0 | 64.2% |
+| **Port 40064** | 🟢 Active | 257 | 96 | 21 | 0 | 37.4% |
+| **Port 40065** | 🟢 Active | 278 | 208 | 57 | 0 | 74.8% |
+| **Port 40066** | 🟢 Active | 267 | 154 | 33 | 0 | 57.7% |
+| **Port 40067** | 🟢 Active | 331 | 247 | 72 | 0 | 74.6% |
+| **Port 40068** | 🟢 Active | 293 | 219 | 80 | 0 | 74.7% |
+| **Port 40069** | 🟢 Active | 240 | 107 | 25 | 0 | 44.6% |
+| **Port 40070** | 🟢 Active | 312 | 237 | 71 | 0 | 76.0% |
+| **Port 40071** | 🟢 Active | 375 | 262 | 74 | 0 | 69.9% |
+| **Port 40072** | 🟢 Active | 370 | 138 | 21 | 0 | 37.3% |
+| **Port 40073** | 🟢 Active | 301 | 217 | 53 | 0 | 72.1% |
+| **Port 40074** | 🟢 Active | 289 | 202 | 62 | 0 | 69.9% |
+| **Port 40075** | 🟢 Active | 309 | 237 | 72 | 0 | 76.7% |
+| **Port 40076** | 🟢 Active | 87 | 36 | 14 | 0 | 41.4% |
+| **Port 40077** | 🟢 Active | 341 | 249 | 82 | 0 | 73.0% |
 | **Port 40078** | 🟢 Active | 460 | 162 | 19 | 0 | 35.2% |
 | **Port 40079** | 🟢 Active | 463 | 247 | 64 | 0 | 53.3% |
 | **Port 40080** | 🟢 Active | 464 | 183 | 40 | 0 | 39.4% |

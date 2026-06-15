@@ -211,7 +211,7 @@ if __name__ == "__main__":
     py_status = "🟢 Khỏe mạnh" if py_count >= 53 else "🔴 Cần khắc phục"
     
     # Active ports we expect to be running
-    ACTIVE_PORTS = [40002, 40003, 40004, 40005] + list(range(40006, 40013)) + list(range(40030, 40040)) + [40041, 40043, 40045, 40047, 40049] + [p for p in range(40050, 40060) if p != 40056] + [40060] + list(range(40061, 40081))
+    ACTIVE_PORTS = [40002, 40003, 40004, 40005] + list(range(40009, 40013)) + list(range(40030, 40040)) + [40041, 40043, 40045, 40047, 40049] + [p for p in range(40050, 40060) if p != 40056] + [40060] + list(range(40061, 40081))
     
     SPECIAL_CONTAINERS = {
         "warp-proxy-2": 40006,
@@ -265,14 +265,14 @@ if __name__ == "__main__":
     else:
         py_status = "🔴 Cần khắc phục"
         
-    warp_status = "🟢 Khỏe mạnh" if running_warp == 56 else "🔴 Cần khắc phục"
+    warp_status = "🟢 Khỏe mạnh" if running_warp == 53 else "🔴 Cần khắc phục"
     
     # 2. Print Table 1: System Health
     print("#### 1. Bảng Trạng thái Sức khỏe Hệ thống (System Health):")
     print("| Thành phần | Yêu cầu | Thực tế | Trạng thái |")
     print("| :--- | :---: | :---: | :---: |")
     print(f"| **Tiến trình Python** | $\\ge 53$ | **{py_count}** | {py_status} |")
-    print(f"| **Warp Proxy Containers** | $56$ | **{running_warp}**/56 | {warp_status} |")
+    print(f"| **Warp Proxy Containers** | $53$ | **{running_warp}**/53 | {warp_status} |")
     print(f"| **PostgreSQL Database** | `Up` | **{pg_raw}** | {pg_status_text} |")
     
     if unhealthy_warps:
