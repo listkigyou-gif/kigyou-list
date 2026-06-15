@@ -52,7 +52,7 @@ export const Header: React.FC = () => {
   };
 
   return (
-    <header className="sticky top-0 z-40 backdrop-blur-md bg-white/95 border-b border-slate-200/80 dark:bg-[#0D1117]/95 dark:border-slate-800/80 transition-all shadow-sm">
+    <header data-nosnippet className="sticky top-0 z-40 backdrop-blur-md bg-white/95 border-b border-slate-200/80 dark:bg-[#0D1117]/95 dark:border-slate-800/80 transition-all shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-3 active:scale-98 transition-transform">
@@ -74,6 +74,9 @@ export const Header: React.FC = () => {
           </Link>
           <Link href="/pricing" className="text-slate-600 hover:text-primary dark:text-slate-350 dark:hover:text-secondary transition-colors">
             料金プラン
+          </Link>
+          <Link href="/blog" className="text-slate-600 hover:text-primary dark:text-slate-350 dark:hover:text-secondary transition-colors">
+            ブログ
           </Link>
           {isLoggedIn && (
             <Link href="/dashboard" className="text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-secondary transition-colors flex items-center gap-1.5">
@@ -184,6 +187,13 @@ export const Header: React.FC = () => {
             className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1"
           >
             料金プラン
+          </Link>
+          <Link 
+            href="/blog" 
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1"
+          >
+            ブログ
           </Link>
           {isLoggedIn && (
             <Link 

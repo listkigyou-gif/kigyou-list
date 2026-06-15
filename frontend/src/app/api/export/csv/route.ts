@@ -150,7 +150,7 @@ export async function POST(request: Request) {
     const headers = [
       "法人番号", "企業名", "都道府県", "郵便番号", "住所", 
       "代表者名", "資本金", "従業員数", "売上高", 
-      "電話番号", "メールアドレス", "Website", "ステータス"
+      "電話番号", "FAX番号", "メールアドレス", "Website", "ステータス"
     ];
 
     const jobId = `job_${Date.now()}`;
@@ -184,6 +184,7 @@ export async function POST(request: Request) {
           c.employee_count !== null ? c.employee_count : "",
           c.sales_amount !== null ? c.sales_amount : "",
           c.phone_number || "",
+          c.fax_number || "",
           c.email_address || "",
           c.website_url || "",
           c.status
@@ -244,6 +245,7 @@ export async function POST(request: Request) {
             c.employee_count !== null ? c.employee_count : "",
             c.sales_amount !== null ? c.sales_amount : "",
             c.phone_number || "",
+            c.fax_number || "",
             c.email_address || "",
             c.website_url || "",
             c.status

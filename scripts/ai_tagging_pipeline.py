@@ -41,7 +41,8 @@ VALID_JSIC_CODES = {
     "61", "62", "63", "64", "65", "66", "67", "68", "69", "70",
     "71", "72", "73", "74", "75", "76", "77", "78", "79", "80",
     "81", "82", "83", "84", "85", "86", "87", "88", "89", "90",
-    "91", "92", "93", "94", "95", "96", "97", "98", "99"
+    "91", "92", "93", "94", "95", "96", "97", "98", "99",
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U"
 }
 
 # Global state tracking if the Groq API has been rate-limited or run out of credits
@@ -548,6 +549,24 @@ def save_company_tags(cursor, corp_num, codes, tags, master_shumoku, is_deep=Fal
     cursor.execute("SELECT industry_code FROM company_industries WHERE corporate_number = ?;", (corp_num,))
     existing_db_codes = {row[0] for row in cursor.fetchall()}
     
+    # Resolve parent codes (Major Classification) from m_industries for medium codes (length > 1)
+    parent_codes = set()
+    medium_codes = [c for c in valid_codes if len(c) > 1]
+    if medium_codes:
+        placeholders = ",".join("?" for _ in medium_codes)
+        cursor.execute(f"""
+            SELECT DISTINCT parent_code 
+            FROM m_industries 
+            WHERE industry_code IN ({placeholders}) AND parent_code IS NOT NULL;
+        """, tuple(medium_codes))
+        for row in cursor.fetchall():
+            if row[0]:
+                parent_codes.add(row[0])
+                
+    for p_code in parent_codes:
+        if p_code not in valid_codes:
+            valid_codes.append(p_code)
+            
     # Compute the union of all codes
     all_codes = existing_db_codes.union(valid_codes)
     
@@ -584,14 +603,25 @@ def save_company_tags(cursor, corp_num, codes, tags, master_shumoku, is_deep=Fal
                 INSERT OR IGNORE INTO company_industries (corporate_number, industry_code)
                 VALUES (?, ?);
             """, (corp_num, code))
+            
+    # Update is_detailed flag on all mappings of this company in company_industries
+    is_detailed_val = 1 if any(len(c) > 1 for c in all_codes) else 0
+    cursor.execute("""
+        UPDATE company_industries 
+        SET is_detailed = ? 
+        WHERE corporate_number = ?;
+    """, (is_detailed_val, corp_num))
         
-    # 2. Update Master jigyo_shumoku by reconstructing it from all_codes using m_industries names
-    # This guarantees that jigyo_shumoku matches exactly the codes in company_industries.
+    # 2. Update Master jigyo_shumoku by reconstructing it from medium/specific codes only (len > 1) to avoid redundancy with the banner
+    medium_codes_only = [c for c in all_codes if len(c) > 1]
+    if not medium_codes_only:
+        medium_codes_only = list(all_codes)
+        
     cursor.execute(f"""
         SELECT DISTINCT m.industry_name 
         FROM m_industries m
-        WHERE m.industry_code IN ({','.join('?' for _ in all_codes)});
-    """, tuple(all_codes))
+        WHERE m.industry_code IN ({','.join('?' for _ in medium_codes_only)});
+    """, tuple(medium_codes_only))
     final_tags = [row[0] for row in cursor.fetchall() if row[0]]
     
     # Rebuild jigyo_shumoku. If for some reason final_tags is empty, default to "その他のサービス業"
@@ -600,21 +630,26 @@ def save_company_tags(cursor, corp_num, codes, tags, master_shumoku, is_deep=Fal
         
     final_shumoku = ", ".join(final_tags)
     
+    # Check if we have mapped any detailed industry codes (length > 1)
+    is_detailed_val = 1 if any(len(c) > 1 for c in all_codes) else 0
+    
     if is_deep:
         cursor.execute("""
             UPDATE companies 
             SET jigyo_shumoku = ?,
+                is_detailed = ?,
                 last_deep_tagged_at = datetime('now', 'localtime'),
                 updated_at = CURRENT_TIMESTAMP
             WHERE corporate_number = ?;
-        """, (final_shumoku, corp_num))
+        """, (final_shumoku, is_detailed_val, corp_num))
     else:
         cursor.execute("""
             UPDATE companies 
             SET jigyo_shumoku = ?,
+                is_detailed = ?,
                 updated_at = CURRENT_TIMESTAMP
             WHERE corporate_number = ?;
-        """, (final_shumoku, corp_num))
+        """, (final_shumoku, is_detailed_val, corp_num))
     
     return len(valid_codes)
 
@@ -629,6 +664,19 @@ def process_tagging(force_offline=False, limit_gbiz=100000, stage1_only=False):
     if "last_deep_tagged_at" not in columns:
         print("[*] Migrating SQLite schema: Adding last_deep_tagged_at column to companies table...")
         cursor.execute("ALTER TABLE companies ADD COLUMN last_deep_tagged_at TEXT;")
+        conn.commit()
+    if "is_detailed" not in columns:
+        print("[*] Migrating SQLite schema: Adding is_detailed column to companies table...")
+        cursor.execute("ALTER TABLE companies ADD COLUMN is_detailed INTEGER NOT NULL DEFAULT 0;")
+        conn.commit()
+        
+    # Check if is_detailed exists in company_industries
+    cursor.execute("PRAGMA table_info(company_industries);")
+    ci_columns = [col[1] for col in cursor.fetchall()]
+    if "is_detailed" not in ci_columns:
+        print("[*] Migrating SQLite schema: Adding is_detailed column to company_industries table...")
+        cursor.execute("ALTER TABLE company_industries ADD COLUMN is_detailed INTEGER NOT NULL DEFAULT 0;")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_comp_ind_code_detailed ON company_industries (industry_code, is_detailed);")
         conn.commit()
     
     # -------------------------------------------------------------------------

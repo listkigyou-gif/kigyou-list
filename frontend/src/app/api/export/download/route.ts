@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { getExportJobById } from "@/lib/db";
 import { getFileFromR2 } from "@/lib/r2";
-import { isAdmin } from "@/lib/adminAuth";
+import { isAdmin, isAdminEmail } from "@/lib/adminAuth";
+import { auth } from "@/auth";
 
 export async function GET(request: Request) {
   try {
@@ -22,7 +23,15 @@ export async function GET(request: Request) {
     const normalizedRequestEmail = email.toLowerCase();
     const normalizedJobEmail = job.user_email.toLowerCase();
     
-    const isRequesterAdmin = isAdmin(request);
+    let isRequesterAdmin = isAdmin(request);
+
+    const session = await auth();
+    if (session && session.user && session.user.email) {
+      const sessionEmail = session.user.email.toLowerCase();
+      if (isAdminEmail(sessionEmail)) {
+        isRequesterAdmin = true;
+      }
+    }
 
     if (normalizedRequestEmail !== normalizedJobEmail && !isRequesterAdmin) {
       return NextResponse.json({ error: "Unauthorized access to download" }, { status: 403 });

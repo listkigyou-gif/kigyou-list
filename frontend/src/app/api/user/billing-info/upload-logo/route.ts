@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
-import fs from "fs/promises";
-import path from "path";
 import { saveUserBillingInfo, getUserBillingInfo } from "@/lib/db";
+import { uploadFileToR2 } from "@/lib/r2";
 
 export async function POST(request: NextRequest) {
   try {
@@ -44,15 +43,11 @@ export async function POST(request: NextRequest) {
 
     const buffer = Buffer.from(await file.arrayBuffer());
     
-    // Ensure the public/uploads/logos directory exists
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "logos");
-    await fs.mkdir(uploadDir, { recursive: true });
+    // Write file to R2 or local storage fallback
+    const key = `uploads/logos/${filename}`;
+    await uploadFileToR2(key, buffer, file.type);
 
-    // Write file to filesystem
-    const filePath = path.join(uploadDir, filename);
-    await fs.writeFile(filePath, buffer);
-
-    const logoUrl = `/uploads/logos/${filename}`;
+    const logoUrl = `/api/uploads/logos/${filename}`;
 
     // Load current billing info to preserve existing values
     const currentBilling = await getUserBillingInfo(email);

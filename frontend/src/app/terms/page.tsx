@@ -1,10 +1,15 @@
 import React from "react";
+import Link from "next/link";
 import { Header } from "@/components/Header";
+import { Footer } from "@/components/Footer";
 import { FileText, ChevronRight } from "lucide-react";
 
 export const metadata = {
   title: "利用規約 | Kigyou-list",
   description: "Kigyou-list（企業リスト）の利用規約です。当サービスをご利用になる前に必ずお読みください。",
+  alternates: {
+    canonical: "/terms",
+  },
 };
 
 export default function TermsPage() {
@@ -19,32 +24,65 @@ export default function TermsPage() {
     { id: "art8", title: "第8条（準拠法・管轄）" },
   ];
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "ホーム",
+        "item": "https://kigyoulist.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "利用規約",
+        "item": "https://kigyoulist.com/terms"
+      }
+    ]
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
+      {/* Schema Injection */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+
       <Header />
 
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row gap-8">
-        {/* Left Navigation Sidebar (Desktop only) */}
-        <aside className="hidden md:block w-64 shrink-0 h-[fit-content] sticky top-20 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-          <h2 className="font-extrabold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
-            目次 (利用規約)
-          </h2>
-          <nav className="flex flex-col gap-2.5 text-xs font-bold">
-            {sections.map((sec) => (
-              <a
-                key={sec.id}
-                href={`#${sec.id}`}
-                className="text-slate-600 hover:text-primary dark:text-slate-450 dark:hover:text-secondary flex items-center justify-between group transition-colors py-1"
-              >
-                <span>{sec.title}</span>
-                <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </a>
-            ))}
-          </nav>
-        </aside>
+      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col gap-6">
+        {/* Visual Breadcrumbs */}
+        <nav className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
+          <Link href="/" className="hover:text-primary transition-colors">ホーム</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+          <span className="text-slate-800 dark:text-slate-200" aria-current="page">利用規約</span>
+        </nav>
 
-        {/* Right Content Sheet */}
-        <section className="flex-1 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-6 md:p-10 shadow-sm flex flex-col gap-6 leading-relaxed text-sm text-slate-700 dark:text-slate-300">
+        <div className="flex flex-col md:flex-row gap-8">
+          {/* Left Navigation Sidebar (Desktop only) */}
+          <aside className="hidden md:block w-64 shrink-0 h-[fit-content] sticky top-20 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+            <h2 className="font-extrabold text-xs text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-4 pb-2 border-b border-slate-100 dark:border-slate-800">
+              目次 (利用規約)
+            </h2>
+            <nav className="flex flex-col gap-2.5 text-xs font-bold">
+              {sections.map((sec) => (
+                <a
+                  key={sec.id}
+                  href={`#${sec.id}`}
+                  className="text-slate-600 hover:text-primary dark:text-slate-450 dark:hover:text-secondary flex items-center justify-between group transition-colors py-1"
+                >
+                  <span>{sec.title}</span>
+                  <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                </a>
+              ))}
+            </nav>
+          </aside>
+
+          {/* Right Content Sheet */}
+          <section className="flex-1 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-6 md:p-10 shadow-sm flex flex-col gap-6 leading-relaxed text-sm text-slate-700 dark:text-slate-300">
           <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
             <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
               <FileText className="w-5.5 h-5.5" />
@@ -149,7 +187,9 @@ export default function TermsPage() {
             <p>ウェブサイト：https://kigyoulist.com</p>
           </div>
         </section>
-      </main>
-    </div>
+      </div>
+    </main>
+    <Footer />
+  </div>
   );
 }

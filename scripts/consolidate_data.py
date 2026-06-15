@@ -135,8 +135,8 @@ def normalize_email(email_str):
     if not email_str:
         return None
     email_str = to_half_width(email_str).lower().strip()
-    # Simple regex validation
-    if re.match(r"^[\w\.\-]+@[\w\.\-]+\.[\w]+$", email_str):
+    # Simple regex validation supporting + for sub-addressing
+    if re.match(r"^[\w\.\-\+]+@[\w\.\-]+\.[\w]+$", email_str):
         return email_str
     return None
 
@@ -152,6 +152,18 @@ def normalize_url(url_str):
     if url_str.endswith("/"):
         url_str = url_str[:-1]
     return url_str
+
+def safe_int(val):
+    """Safely convert value to integer, ensuring it doesn't overflow SQLite 8-byte signed integer limits."""
+    if val is None:
+        return None
+    try:
+        val = int(val)
+        if val > 9223372036854775807 or val < -9223372036854775808:
+            return None
+        return val
+    except (ValueError, TypeError, OverflowError):
+        return None
 
 def normalize_capital(capital_str):
     """Convert various Japanese capital notations (e.g., 1000万円, 1.5億円, 5千万円) into clean integers in Yen."""
@@ -176,19 +188,19 @@ def normalize_capital(capital_str):
             m_man_after = re.search(r"億\s*(\d+)\s*万?", capital_str)
             if m_man_after:
                 val_man = float(m_man_after.group(1))
-                return int(val * 100000000 + val_man * 10000)
-            return int(val * 100000000)
+                return safe_int(val * 100000000 + val_man * 10000)
+            return safe_int(val * 100000000)
         
         # Match 万 (ten-thousand)
         m_man = re.search(r"([\d\.]+)\s*万", capital_str)
         if m_man:
             val = float(m_man.group(1))
-            return int(val * 10000)
+            return safe_int(val * 10000)
             
         # Match pure digits
         nums = "".join(re.findall(r"\d+", capital_str))
         if nums:
-            return int(nums)
+            return safe_int(nums)
     except Exception:
         pass
     return None
@@ -200,7 +212,7 @@ def normalize_employee(employee_str):
     employee_str = to_half_width(employee_str)
     m = re.search(r"\d+", employee_str)
     if m:
-        return int(m.group(0))
+        return safe_int(m.group(0))
     return None
 
 def clean_representative_name(rep_name):
@@ -452,7 +464,7 @@ def normalize_establishment_date(est_str):
         
     return None
 
-def consolidate_data():
+def consolidate_data(incremental=False):
     """Main ETL orchestration logic (optimized to only process corporate numbers with raw staging records)."""
     print("[*] Connecting to database...")
     conn = get_db_connection()
@@ -477,18 +489,44 @@ def consolidate_data():
     # Run Entity Resolution first to link raw records
     resolve_entities(conn)
     
-    # 1. Fetch all distinct corporate numbers from the raw tables
-    print("[*] Gathering corporate numbers from raw tables...")
-    cursor.execute("""
-        SELECT DISTINCT corporate_number FROM raw_hellowork 
-        WHERE corporate_number IS NOT NULL AND length(corporate_number) = 13
-        UNION
-        SELECT DISTINCT corporate_number FROM raw_yahoo
-        WHERE corporate_number IS NOT NULL AND length(corporate_number) = 13
-        UNION
-        SELECT DISTINCT corporate_number FROM raw_website
-        WHERE corporate_number IS NOT NULL AND length(corporate_number) = 13;
-    """)
+    # 1. Fetch all distinct corporate numbers from the raw tables (full or incremental)
+    if incremental:
+        print("[*] Gathering corporate numbers with new/unmerged raw data (incremental)...")
+        cursor.execute("""
+            SELECT DISTINCT hw.corporate_number FROM raw_hellowork hw
+            LEFT JOIN business_signals bs ON hw.corporate_number = bs.corporate_number 
+                 AND bs.signal_type = '求人あり' 
+                 AND bs.signal_title = hw.job_title
+            LEFT JOIN companies c ON hw.corporate_number = c.corporate_number
+            WHERE hw.corporate_number IS NOT NULL AND length(hw.corporate_number) = 13
+              AND (bs.id IS NULL OR hw.scraped_at > c.updated_at)
+            
+            UNION
+            
+            SELECT DISTINCT w.corporate_number FROM raw_website w
+            LEFT JOIN companies c ON w.corporate_number = c.corporate_number
+            WHERE w.corporate_number IS NOT NULL AND length(w.corporate_number) = 13
+              AND (c.website_last_crawled_at IS NULL OR w.scraped_at > c.updated_at)
+              
+            UNION
+            
+            SELECT DISTINCT y.corporate_number FROM raw_yahoo y
+            LEFT JOIN companies c ON y.corporate_number = c.corporate_number
+            WHERE y.corporate_number IS NOT NULL AND length(y.corporate_number) = 13
+              AND (c.yahoo_last_crawled_at IS NULL OR y.scraped_at > c.updated_at);
+        """)
+    else:
+        print("[*] Gathering ALL corporate numbers from raw tables...")
+        cursor.execute("""
+            SELECT DISTINCT corporate_number FROM raw_hellowork 
+            WHERE corporate_number IS NOT NULL AND length(corporate_number) = 13
+            UNION
+            SELECT DISTINCT corporate_number FROM raw_yahoo
+            WHERE corporate_number IS NOT NULL AND length(corporate_number) = 13
+            UNION
+            SELECT DISTINCT corporate_number FROM raw_website
+            WHERE corporate_number IS NOT NULL AND length(corporate_number) = 13;
+        """)
     raw_corp_nums = [row[0] for row in cursor.fetchall()]
     total_nums = len(raw_corp_nums)
     print(f"[+] Found {total_nums} distinct corporate numbers in raw tables.")
@@ -803,13 +841,20 @@ def consolidate_data():
     print("="*50)
 
 def main():
+    import argparse
+    parser = argparse.ArgumentParser(description="Kigyou-list Data Consolidation ETL")
+    parser.add_argument("--incremental", action="store_true", help="Only process corporate numbers with new raw staging data")
+    args = parser.parse_args()
+
     print("="*60)
     print("      KIGYOU-LIST: DATA CONSOLIDATION SYSTEM (ETL)")
+    if args.incremental:
+        print("      MODE: INCREMENTAL CONSOLIDATION")
     print("="*60)
     
     start_time = datetime.now()
     try:
-        consolidate_data()
+        consolidate_data(incremental=args.incremental)
         duration = datetime.now() - start_time
         print(f"[+] Consolidation ETL completed successfully in: {duration}")
         

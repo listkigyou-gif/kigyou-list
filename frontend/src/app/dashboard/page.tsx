@@ -121,6 +121,8 @@ export default function DashboardPage() {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [loadingBilling, setLoadingBilling] = useState(false);
   const [savingBilling, setSavingBilling] = useState(false);
+  const [contactPerson, setContactPerson] = useState("");
+  const [contactPhone, setContactPhone] = useState("");
 
   // Quota indicators state
   const [quota, setQuota] = useState<{
@@ -224,6 +226,8 @@ export default function DashboardPage() {
         setBillingTaxId(data.billingInfo.billing_tax_id || "");
         setBillingPhone(data.billingInfo.billing_phone || "");
         setLogoUrl(data.billingInfo.logo_url || "");
+        setContactPerson(data.billingInfo.contact_person || "");
+        setContactPhone(data.billingInfo.contact_phone || "");
       }
     } catch (e) {
       console.error("Failed to fetch billing info", e);
@@ -248,6 +252,8 @@ export default function DashboardPage() {
           billingTaxId,
           billingPhone,
           logoUrl,
+          contactPerson,
+          contactPhone,
         }),
       });
       const data = await response.json();
@@ -1097,7 +1103,7 @@ export default function DashboardPage() {
                           <td className="py-4.5 px-4 text-slate-700 dark:text-slate-300">
                             <div className="flex flex-col gap-1 font-mono">
                               <span>
-                                {comp.employee_count ? `${comp.employee_count}名` : "未登録"}
+                                {comp.employee_count ? `${comp.employee_count.toLocaleString()}名` : "未登録"}
                               </span>
                               <span className="text-[10px] text-slate-400">
                                 {comp.capital_amount ? `${Math.round(comp.capital_amount / 10000).toLocaleString()}万円` : "未登録"}
@@ -1567,6 +1573,34 @@ export default function DashboardPage() {
                     value={billingPhone}
                     onChange={(e) => setBillingPhone(e.target.value)}
                     placeholder="例: 03-6907-1219"
+                    className="px-4 py-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-primary dark:focus:border-secondary transition-all"
+                  />
+                </div>
+
+                {/* Contact Person */}
+                <div className="flex flex-col gap-2">
+                  <label className="font-extrabold text-slate-700 dark:text-slate-350">
+                    担当者 (お名前) <span className="text-[10px] text-slate-400 font-normal">(※領収書には印刷されません)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={contactPerson}
+                    onChange={(e) => setContactPerson(e.target.value)}
+                    placeholder="例: 山田 太郎"
+                    className="px-4 py-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-primary dark:focus:border-secondary transition-all"
+                  />
+                </div>
+
+                {/* Contact Phone */}
+                <div className="flex flex-col gap-2">
+                  <label className="font-extrabold text-slate-700 dark:text-slate-350">
+                    担当者連絡先 (電話番号) <span className="text-[10px] text-slate-400 font-normal">(※領収書には印刷されません)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={contactPhone}
+                    onChange={(e) => setContactPhone(e.target.value)}
+                    placeholder="例: 090-xxxx-xxxx"
                     className="px-4 py-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-primary dark:focus:border-secondary transition-all"
                   />
                 </div>

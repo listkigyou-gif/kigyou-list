@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getPaymentRecordById, getUserBillingInfo } from "@/lib/db";
 import { getFileFromR2 } from "@/lib/r2";
-import { isAdmin } from "@/lib/adminAuth";
+import { isAdmin, isAdminEmail } from "@/lib/adminAuth";
 import { auth } from "@/auth";
 import { generateInvoiceHtml } from "@/app/api/stripe/webhook/route";
 
@@ -14,15 +14,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Missing required parameter: id" }, { status: 400 });
     }
 
-    const isRequesterAdmin = isAdmin(request);
+    let isRequesterAdmin = isAdmin(request);
     let sessionEmail: string | null = null;
 
-    if (!isRequesterAdmin) {
-      const session = await auth();
-      if (!session || !session.user || !session.user.email) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
+    const session = await auth();
+    if (session && session.user && session.user.email) {
       sessionEmail = session.user.email.toLowerCase();
+      if (isAdminEmail(sessionEmail)) {
+        isRequesterAdmin = true;
+      }
+    }
+
+    if (!isRequesterAdmin && !sessionEmail) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const record = await getPaymentRecordById(id);

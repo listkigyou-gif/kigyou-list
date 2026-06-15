@@ -19,7 +19,9 @@ export async function GET(request: Request) {
         billing_name: "",
         billing_address: "",
         billing_tax_id: "",
-        billing_phone: ""
+        billing_phone: "",
+        contact_person: "",
+        contact_phone: ""
       }
     });
   } catch (error) {
@@ -36,7 +38,7 @@ export async function POST(request: Request) {
     }
 
     const email = session.user.email;
-    const { billingName, billingAddress, billingTaxId, billingPhone, logoUrl } = await request.json();
+    const { billingName, billingAddress, billingTaxId, billingPhone, logoUrl, contactPerson, contactPhone } = await request.json();
 
     const current = await getUserBillingInfo(email);
 
@@ -47,7 +49,9 @@ export async function POST(request: Request) {
       billing_tax_id: billingTaxId || "",
       billing_phone: billingPhone || "",
       logo_url: logoUrl !== undefined ? logoUrl : (current?.logo_url || null),
-      is_featured_partner: current?.is_featured_partner || false
+      is_featured_partner: current?.is_featured_partner || false,
+      contact_person: contactPerson || "",
+      contact_phone: contactPhone || ""
     });
 
     if (success) {

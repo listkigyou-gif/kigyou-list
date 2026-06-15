@@ -41,6 +41,8 @@ def run_parallel_crawlers():
     parser = argparse.ArgumentParser(description="HelloWork Parallel Prefecture Crawlers Orchestrator")
     parser.add_argument("--stage", choices=["harvest", "extract", "both"], default="extract",
                         help="Giai đoạn chạy: 'harvest', 'extract' (mặc định), hoặc 'both'")
+    parser.add_argument("--mode", choices=["full", "update"], default="full",
+                        help="Chế độ chạy: 'full' (mặc định) hoặc 'update'")
     parser.add_argument("--concurrency-per-worker", type=int, default=1,
                         help="Số luồng song song bên trong mỗi worker tỉnh (mặc định: 1 để giãn cách requests)")
     parser.add_argument("--limit-per-worker", type=int, default=0,
@@ -55,6 +57,7 @@ def run_parallel_crawlers():
     print("=" * 60)
     print(f"HELLOWORK PARALLEL CRAWL ORCHESTRATOR STARTING AT {datetime.now()}")
     print(f"Stage: {args.stage.upper()}")
+    print(f"Mode: {args.mode.upper()}")
     print(f"Max Parallel Workers: {args.max_workers}")
     print(f"Concurrency per worker: {args.concurrency_per_worker}")
     print(f"Limit per worker: {args.limit_per_worker if args.limit_per_worker > 0 else 'Unlimited'}")
@@ -71,15 +74,19 @@ def run_parallel_crawlers():
             except ValueError:
                 print(f"[Warning] Invalid prefecture code format: {p}")
     else:
-        print("[Info] Scanning database for prefectures with pending jobs...")
-        target_prefs = get_prefectures_with_pending_jobs()
-        if not target_prefs:
-            print("[Info] No pending jobs in jobs_queue. Exiting.")
-            return
+        if args.stage in ["harvest", "both"]:
+            print("[Info] Stage includes harvest. Targeting all 47 prefectures...")
+            target_prefs = [{"code": f"{i:02d}", "count": "Harvesting"} for i in range(1, 48)]
+        else:
+            print("[Info] Scanning database for prefectures with pending jobs...")
+            target_prefs = get_prefectures_with_pending_jobs()
+            if not target_prefs:
+                print("[Info] No pending jobs in jobs_queue. Exiting.")
+                return
 
     print(f"\nFound {len(target_prefs)} prefectures to process:")
     for item in target_prefs:
-        print(f" - Tỉnh {item['code']}: {item['count']} jobs pending")
+        print(f" - Tỉnh {item['code']}: {item['count']} jobs pending/harvesting")
     print("-" * 60)
 
     # Queue of prefectures to process
@@ -120,6 +127,7 @@ def run_parallel_crawlers():
                 cmd = [
                     sys.executable, "main.py",
                     "--stage", args.stage,
+                    "--mode", args.mode,
                     "--prefecture", pref,
                     "--proxy", proxy_url,
                     "--container", container,

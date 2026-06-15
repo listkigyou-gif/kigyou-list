@@ -2,7 +2,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { 
-  Building2, MapPin, Phone, ArrowRight, 
+  Building2, MapPin, Phone, ArrowRight, ChevronRight,
   Search, Briefcase, TrendingUp, AlertCircle, BarChart3 
 } from 'lucide-react';
 import { 
@@ -37,6 +37,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     title: `${pref.name}の${ind.industry_name}企業一覧（2026年最新） | Kigyou-list`,
     description: `${pref.name}で稼働している${ind.industry_name}の企業データベースです。企業名、電話番号、登記住所、資本金、従業員数、最新の採用活動、補助金受給履歴などの購買シグナルを網羅しています。`,
     keywords: [`${pref.name} ${ind.industry_name}`, `${pref.name} 企業リスト`, `${ind.industry_name} 営業リスト`],
+    alternates: {
+      canonical: `/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
+    },
   };
 }
 
@@ -71,14 +74,83 @@ export default async function CategoryPage({ params }: PageProps) {
     return `${val.toLocaleString()}万円`;
   };
 
+  // 4. Generate BreadcrumbList JSON-LD
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "ホーム",
+        "item": "https://kigyoulist.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "企業データ一覧",
+        "item": "https://kigyoulist.com/directory"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": `${pref.name}の${ind.industry_name}企業一覧`,
+        "item": `https://kigyoulist.com/industry/${industryCode}/location/${prefectureCode}`
+      }
+    ]
+  };
+
+  // 5. Generate ItemList JSON-LD for listed companies
+  const itemListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "numberOfItems": companies.length,
+    "itemListElement": companies.map((comp, idx) => ({
+      "@type": "ListItem",
+      "position": idx + 1,
+      "url": `https://kigyoulist.com/company/${comp.corporate_number}`,
+      "item": {
+        "@type": "Corporation",
+        "name": comp.company_name,
+        "taxID": comp.corporate_number,
+        "address": {
+          "@type": "PostalAddress",
+          "addressRegion": comp.prefecture_name || "",
+          "addressCountry": "JP"
+        }
+      }
+    }))
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
+      {/* Schema Injection */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+      />
+
       {/* Header */}
-      <Header />
+      <div data-nosnippet>
+        <Header />
+      </div>
 
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
         
+        {/* Visual Breadcrumbs */}
+        <nav className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
+          <Link href="/" className="hover:text-primary transition-colors">ホーム</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+          <Link href="/directory" className="hover:text-primary transition-colors">企業データ一覧</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+          <span className="text-slate-800 dark:text-slate-200 truncate" aria-current="page">{pref.name}の{ind.industry_name}</span>
+        </nav>
+
         {/* Dynamic SEO Header / Intro Banner */}
         <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-6 md:p-8 shadow-sm flex flex-col gap-6">
           <div className="flex flex-col gap-3">
@@ -231,7 +303,7 @@ export default async function CategoryPage({ params }: PageProps) {
         </section>
 
         {/* SEO Cross-linking Matrix Grid */}
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6 pt-8 border-t border-slate-200 dark:border-slate-800">
+        <section data-nosnippet className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-6 pt-8 border-t border-slate-200 dark:border-slate-800">
           {/* 同地域・他業界 (Sibling industries in same prefecture) */}
           <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-6 shadow-sm">
             <h3 className="font-black text-sm text-slate-900 dark:text-white mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
@@ -278,7 +350,9 @@ export default async function CategoryPage({ params }: PageProps) {
         </section>
 
       </main>
-      <Footer />
+      <div data-nosnippet>
+        <Footer />
+      </div>
     </div>
   );
 }

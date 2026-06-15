@@ -1,13 +1,14 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { CountdownTimer } from "@/components/CountdownTimer";
 import { 
   Check, Info, Sparkles, ShieldCheck, CreditCard, 
-  HelpCircle, Coins, ArrowRight, Loader2, Star, Clock
+  HelpCircle, Coins, ArrowRight, Loader2, Star, Clock, ChevronRight
 } from "lucide-react";
 
 interface PlanDetails {
@@ -294,12 +295,43 @@ export default function PricingPage() {
     );
   }
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "ホーム",
+        "item": "https://kigyoulist.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "料金プラン",
+        "item": "https://kigyoulist.com/pricing"
+      }
+    ]
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
+      {/* Schema Injection */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+
       <Header />
 
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col gap-8 relative">
+        {/* Visual Breadcrumbs */}
+        <nav className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
+          <Link href="/" className="hover:text-primary transition-colors">ホーム</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+          <span className="text-slate-800 dark:text-slate-200" aria-current="page">料金プラン</span>
+        </nav>
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 md:py-16 flex flex-col gap-12 relative">
         <div className="absolute top-0 right-1/4 -translate-y-1/2 w-80 h-80 bg-primary/3 rounded-full blur-3xl pointer-events-none" />
         
         {/* Main Title Section */}

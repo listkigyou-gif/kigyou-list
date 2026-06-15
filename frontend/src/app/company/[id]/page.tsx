@@ -43,7 +43,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   return {
     title: `${company.company_name} - 企業基本情報・財務情報・連絡先 | Kigyou-list`,
-    description: `${company.company_name}（法人番号：${company.corporate_number}）の会社概要、代表者名、資本金、従業員数、決算情報、連絡先（電話番号、FAX、メール）や最新の営業シグナルを掲載しています。`,
+    description: `${company.company_name}（法人番号：${company.corporate_number}）の会社概要、代表者名、資本金、従業員数、決算情報、連絡先（電話番号、FAX、メール）や最新 of 営業シグナルを掲載しています。`,
+    alternates: {
+      canonical: `/company/${companyId}`,
+    },
   };
 }
 
@@ -78,14 +81,23 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   // 3. Fetch related companies for internal linking matrix (SEO) (using prefecture_code for indexed fast search)
   const { sameIndustry, nearby } = await getRelatedCompanies(
     companyId, 
-    industryCode, 
+    industryCode ? [industryCode] : [], 
     company.prefecture_code
   );
 
-  // 5. Generate Schema Markup JSON-LD for Organization
+  // Find a representative industry for the breadcrumb
+  const categoryPath = industryCode 
+    ? `/industry/${industryCode}/location/${company.prefecture_code}`
+    : `/search?prefecture=${company.prefecture_code}`;
+  
+  const categoryName = industryName 
+    ? `${company.prefecture_name}の${industryName}企業一覧`
+    : `${company.prefecture_name}の企業一覧`;
+
+  // 5. Generate Schema Markup JSON-LD for Corporation
   const schemaMarkup = {
     "@context": "https://schema.org",
-    "@type": "Organization",
+    "@type": "Corporation",
     "name": company.company_name,
     "taxID": company.corporate_number,
     "description": company.business_summary || `${company.company_name}の基本情報、電話番号、財務指標情報。`,
@@ -103,12 +115,48 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     "foundingDate": company.establishment_date || undefined
   };
 
+  // 6. Generate BreadcrumbList JSON-LD
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "ホーム",
+        "item": "https://kigyoulist.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "企業データ一覧",
+        "item": "https://kigyoulist.com/directory"
+      },
+      {
+        "@type": "ListItem",
+        "position": 3,
+        "name": categoryName,
+        "item": `https://kigyoulist.com${categoryPath}`
+      },
+      {
+        "@type": "ListItem",
+        "position": 4,
+        "name": company.company_name,
+        "item": `https://kigyoulist.com/company/${company.corporate_number}`
+      }
+    ]
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
       {/* Schema Injection */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(schemaMarkup) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
       {/* Header */}
@@ -135,6 +183,17 @@ export default async function CompanyDetailPage({ params }: PageProps) {
       {/* Main Container */}
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
         
+        {/* Visual Breadcrumbs */}
+        <nav className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
+          <Link href="/" className="hover:text-primary transition-colors">ホーム</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+          <Link href="/directory" className="hover:text-primary transition-colors">企業データ一覧</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+          <Link href={categoryPath} className="hover:text-primary transition-colors">{categoryName}</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+          <span className="text-slate-800 dark:text-slate-200 truncate max-w-[240px]" aria-current="page">{company.company_name}</span>
+        </nav>
+
         {/* Company Title Banner */}
         <section className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 dark:from-[#1C2128] dark:to-[#171B21] dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-shadow duration-300">
           <div className="flex flex-col md:flex-row gap-5 items-start">
@@ -152,9 +211,12 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   {company.status}
                 </span>
                 {industryName && (
-                  <span className="text-[10px] font-black tracking-wider uppercase text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 px-2.5 py-0.5 rounded-full shadow-sm">
+                  <Link 
+                    href={`/industry/${industryCode}/location/${company.prefecture_code}`}
+                    className="text-[10px] font-black tracking-wider uppercase text-slate-600 hover:text-primary bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-secondary px-2.5 py-0.5 rounded-full shadow-sm transition-colors"
+                  >
                     {industryName}
-                  </span>
+                  </Link>
                 )}
                 {/* Data freshness trust signal — design system: accent gold (#F2A30F) */}
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-[#B07500] bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-200/70 dark:border-amber-900/40 shadow-sm">
@@ -322,11 +384,13 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                     <span className="text-xs text-slate-400 block mb-0.5">
                       FAX番号
                     </span>
-                    <UnlockCard type="inline" fallbackText="03-3456-7890 (サンプル)">
-                      <span className="font-mono text-slate-800 dark:text-slate-100 font-semibold">
-                        {company.fax_number || '未登録'}
-                      </span>
-                    </UnlockCard>
+                    <div data-nosnippet>
+                      <UnlockCard type="inline" fallbackText="03-3456-7890 (サンプル)">
+                        <span className="font-mono text-slate-800 dark:text-slate-100 font-semibold">
+                          {company.fax_number || '未登録'}
+                        </span>
+                      </UnlockCard>
+                    </div>
                   </div>
                 </div>
 
@@ -339,16 +403,20 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                     <span className="text-xs text-slate-400 block mb-0.5">
                       メールアドレス
                     </span>
-                    <UnlockCard type="inline" requiredPlan="pro" fallbackText="contact@company.co.jp (サンプル)">
-                      <span className="text-slate-800 dark:text-slate-100 font-semibold break-all">
-                        {company.email_address || '未登録'}
-                      </span>
-                    </UnlockCard>
+                    <div data-nosnippet>
+                      <UnlockCard type="inline" requiredPlan="pro" fallbackText="contact@company.co.jp (サンプル)">
+                        <span className="text-slate-800 dark:text-slate-100 font-semibold break-all">
+                          {company.email_address || '未登録'}
+                        </span>
+                      </UnlockCard>
+                    </div>
                   </div>
                 </div>
 
                 {/* Free Registration Call to Action */}
-                <UnlockCTA />
+                <div data-nosnippet>
+                  <UnlockCTA />
+                </div>
               </div>
             </section>
 

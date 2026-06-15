@@ -32,7 +32,7 @@ export const CookieBanner: React.FC = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-[400px] z-[9999] bg-white/95 dark:bg-[#1C2128]/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl p-5 flex flex-col gap-4 animate-slide-in transition-all">
+    <div data-nosnippet className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:w-[400px] z-[9999] bg-white/95 dark:bg-[#1C2128]/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 shadow-2xl rounded-2xl p-5 flex flex-col gap-4 animate-slide-in transition-all">
       <div className="flex items-start justify-between gap-3">
         <div className="flex gap-2.5 items-center">
           <div className="w-8 h-8 rounded-lg bg-primary/10 dark:bg-secondary/10 text-primary dark:text-secondary flex items-center justify-center shrink-0">

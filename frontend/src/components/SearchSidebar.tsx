@@ -45,6 +45,7 @@ interface SearchSidebarProps {
   hasAward: boolean;
   hasCertification: boolean;
   hasPatent: boolean;
+  hasFinancials: boolean;
   minSales?: number;
   maxSales?: number;
   hasEmail: boolean;
@@ -82,6 +83,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   hasAward,
   hasCertification,
   hasPatent,
+  hasFinancials,
   minSales,
   maxSales,
   hasEmail,
@@ -124,6 +126,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
       award: hasAward ? "true" : undefined,
       certification: hasCertification ? "true" : undefined,
       patent: hasPatent ? "true" : undefined,
+      financials: hasFinancials ? "true" : undefined,
       min_sales: minSales != null ? String(minSales) : undefined,
       max_sales: maxSales != null ? String(maxSales) : undefined,
       email: hasEmail ? "true" : undefined,
@@ -173,6 +176,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         else if (key === "award") updates.award = val === "true";
         else if (key === "certification") updates.certification = val === "true";
         else if (key === "patent") updates.patent = val === "true";
+        else if (key === "financials") updates.financials = val === "true";
         else if (key === "min_sales") updates.min_sales = val;
         else if (key === "max_sales") updates.max_sales = val;
         else if (key === "email") updates.email = val === "true";
@@ -222,6 +226,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               award: false,
               certification: false,
               patent: false,
+              financials: false,
               min_sales: null,
               max_sales: null,
               email: false,
@@ -723,6 +728,16 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
               />
               <span className="flex items-center gap-1">特許・商標の保有あり</span>
+            </label>
+            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasFinancials}
+                disabled={!isLoggedIn}
+                onChange={(e) => navigate({ financials: e.target.checked ? "true" : null })}
+                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+              />
+              <span className="flex items-center gap-1">決算・財務情報あり</span>
             </label>
           </div>
           {!isLoggedIn && (

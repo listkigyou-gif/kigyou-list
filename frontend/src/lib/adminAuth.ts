@@ -15,3 +15,11 @@ export function isAdmin(request: Request): boolean {
   }
   return isEmailAdmin;
 }
+
+export function isAdminEmail(email: string | null | undefined): boolean {
+  if (!email) return false;
+  const normalizedEmail = email.toLowerCase().trim();
+  const adminEmailsEnv = process.env.ADMIN_EMAILS || "trungkim8694@gmail.com";
+  const allowedAdmins = adminEmailsEnv.split(",").map(e => e.trim().toLowerCase());
+  return allowedAdmins.includes(normalizedEmail);
+}

@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getPrefecturesWithCounts, getIndustriesHierarchy } from "@/lib/db";
-import { MapPin, Briefcase, ChevronRight, Compass } from "lucide-react";
+import { MapPin, Briefcase, ChevronRight } from "lucide-react";
 
 export const revalidate = 0; // Dynamic directory hub page, do not cache static
 
@@ -43,6 +43,9 @@ export const metadata = {
   title: "日本全国の企業データ一覧・カテゴリ別検索 | Kigyou-list",
   description:
     "日本全国47都道府県および全19種類のJSIC産業分類から企業データベースを検索できます。最新の会社情報、電話番号、財務指標、営業シグナル情報が豊富に収録されています。",
+  alternates: {
+    canonical: "/directory",
+  },
 };
 
 export default async function DirectoryPage() {
@@ -69,16 +72,48 @@ export default async function DirectoryPage() {
   // Map database prefectures by name for quick lookup
   const prefMap = new Map(prefectures.map((p) => [p.name, p]));
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "ホーム",
+        "item": "https://kigyoulist.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "企業データ一覧",
+        "item": "https://kigyoulist.com/directory"
+      }
+    ]
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
+      {/* Schema Injection */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+
       <Header />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col gap-10">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col gap-8">
+        {/* Visual Breadcrumbs */}
+        <nav className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
+          <Link href="/" className="hover:text-primary transition-colors">ホーム</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+          <span className="text-slate-800 dark:text-slate-200" aria-current="page">企業データ一覧</span>
+        </nav>
+
         {/* Page Hero Banner */}
         <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-8 shadow-sm relative overflow-hidden text-center md:text-left">
           <div className="absolute top-0 right-0 w-80 h-80 bg-primary/4 rounded-full blur-3xl pointer-events-none" />
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative">
-            <div className="flex flex-col gap-2.5 max-w-xl">
+            <div className="flex flex-col gap-2.5 max-w-2xl">
               <span className="text-[10px] font-bold text-primary dark:text-secondary uppercase tracking-wider block">
                 SITEMAP INDEX &amp; DIRECTORY
               </span>
@@ -87,15 +122,8 @@ export default async function DirectoryPage() {
               </h1>
               <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                 47都道府県の地域別およびJSIC標準産業大分類別に、登録企業を整理したディレクトリハブです。
-                Google Botのインデックス化を促進し、ご希望のエリア・業界の企業データに素早くアクセスできます。
+                ご希望のエリア・業界から、ビジネスパートナー候補や営業リストとなる企業データを素早く検索・特定できます。
               </p>
-            </div>
-            <div className="shrink-0 flex items-center gap-2 px-4 py-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900/50 rounded-2xl">
-              <Compass className="w-5 h-5 text-amber-500 shrink-0" />
-              <div className="text-left text-[11px]">
-                <strong className="text-amber-800 dark:text-amber-400 block font-bold">SEO内部リンク対応</strong>
-                <span className="text-slate-500 dark:text-slate-400">PageRankを最適配分しています。</span>
-              </div>
             </div>
           </div>
         </section>
@@ -139,7 +167,7 @@ export default async function DirectoryPage() {
                                 {pref.name}
                               </span>
                               <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                                {pref.count}社
+                                {pref.count.toLocaleString()}社
                               </span>
                             </div>
                             <ChevronRight className="w-3 h-3 text-slate-300 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -218,7 +246,7 @@ export default async function DirectoryPage() {
                                 </span>
                               </div>
                               <span className="text-[10px] text-slate-400 font-mono shrink-0">
-                                {child.count}社
+                                {child.count.toLocaleString()}社
                               </span>
                             </Link>
                           ))}

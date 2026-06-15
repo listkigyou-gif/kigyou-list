@@ -95,14 +95,15 @@ async def heal_system(orchestrator_pid, running_workers, db_stats):
     """Perform self-healing actions on proxies and workers."""
     actions = []
     
-    # 1. Restart Orchestrator if it died but there are still pending jobs
+    # 1. Restart Orchestrator if it died but there are still pending jobs or incomplete tasks
     total_pending = db_stats.get("total_pending", 0)
-    if total_pending > 0 and orchestrator_pid is None:
+    pending_search_tasks = db_stats.get("pending_search_tasks", 0)
+    if (total_pending > 0 or pending_search_tasks > 0) and orchestrator_pid is None:
         print(f"[{datetime.now()}] [Self-Healing] Orchestrator run_parallel.py is NOT running! Restarting it...")
         try:
             creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
-            subprocess.Popen([sys.executable, "run_parallel.py", "--max-workers", "47", "--concurrency-per-worker", "1"], creationflags=creationflags)
-            actions.append("Orchestrator run_parallel.py has been restarted.")
+            subprocess.Popen([sys.executable, "run_parallel.py", "--mode", "update", "--stage", "both", "--max-workers", "47", "--concurrency-per-worker", "1"], creationflags=creationflags)
+            actions.append("Orchestrator run_parallel.py has been restarted in update mode (both stages).")
         except Exception as e:
             actions.append(f"Failed to restart orchestrator: {e}")
             
@@ -152,13 +153,21 @@ def get_database_stats():
         "failed": 0,
         "pending": 0,
         "processing": 0,
-        "prefectures": {}
+        "prefectures": {},
+        "pending_search_tasks": 0
     }
     
     try:
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
         
+        # Query incomplete search tasks count
+        try:
+            cursor.execute("SELECT COUNT(*) FROM search_tasks WHERE is_completed = 0")
+            stats["pending_search_tasks"] = cursor.fetchone()[0]
+        except Exception:
+            pass
+            
         # 1. Total counts
         cursor.execute("SELECT status, COUNT(*) FROM jobs_queue GROUP BY status")
         for status, count in cursor.fetchall():
@@ -300,6 +309,16 @@ async def main():
     # 3. Heal system if needed
     actions = await heal_system(orchestrator_pid, running_workers, db_stats)
     
+    # 3.5. Run database migration utility to sync crawled data to the main database
+    try:
+        print(f"[{datetime.now()}] Running migration to sync raw data...")
+        creationflags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+        subprocess.run([sys.executable, "migrate_to_rawdata.py"], check=True, capture_output=True, creationflags=creationflags)
+        actions.append("Database migration and sync executed successfully.")
+    except Exception as e:
+        print(f"Error during migration: {e}")
+        actions.append(f"Database migration failed: {e}")
+        
     # 4. Re-check processes after healing to reflect in the report
     orchestrator_pid, running_workers = get_running_processes()
     

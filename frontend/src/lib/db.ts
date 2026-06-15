@@ -3,6 +3,10 @@ import { Pool } from 'pg';
 import path from 'path';
 import crypto from 'crypto';
 import { deleteFileFromR2 } from './r2';
+import { loadEnvConfig } from '@next/env';
+
+// Load env variables dynamically if running in standalone script scripts
+loadEnvConfig(process.cwd());
 
 // Connection parameters
 const DATABASE_URL = process.env.DATABASE_URL;
@@ -18,6 +22,7 @@ async function ensureAllTablesInitialized() {
     await initAdminTables();
     await initAdminLogTable();
     await initBackupLogsTable();
+    await initBlogPostsTable();
     allTablesInitialized = true;
   } catch (err) {
     console.error('Failed to initialize all database tables:', err);
@@ -137,6 +142,12 @@ async function runGetQuery(sql: string, params: any[] = []): Promise<any | null>
   }
 }
 
+export interface CompanyIndustryDetail {
+  industry_code: string;
+  industry_name: string;
+  classification_level: string;
+}
+
 // Interface definitions based on Database Schema
 export interface Company {
   corporate_number: string;
@@ -163,8 +174,10 @@ export interface Company {
   jigyo_shumoku: string | null;
   branch_phone_numbers: string | null;
   status: string;
+  is_detailed: boolean;
   created_at: string;
   updated_at: string;
+  industries?: CompanyIndustryDetail[];
 }
 
 export interface Industry {
@@ -182,6 +195,7 @@ export interface BusinessSignal {
   signal_date: string | null;
   source_url: string | null;
   details: string | null;
+  total_count?: number;
 }
 
 export interface CompanyFinancial {
@@ -221,6 +235,7 @@ export interface SearchFilters {
   has_award?: boolean;
   has_certification?: boolean;
   has_patent?: boolean;
+  has_financials?: boolean;
   min_establishment_year?: number;
   max_establishment_year?: number;
   min_sales?: number;
@@ -269,6 +284,7 @@ function mapCompanyRow(row: any): Company {
     jigyo_shumoku: row.jigyo_shumoku || null,
     branch_phone_numbers: row.branch_phone_numbers || null,
     status: row.status || '活動中',
+    is_detailed: !!row.is_detailed,
     created_at: row.created_at ? String(row.created_at) : '',
     updated_at: row.updated_at ? String(row.updated_at) : '',
   };
@@ -333,7 +349,18 @@ export async function getCompanyFinancials(corpNum: string): Promise<CompanyFina
  */
 export async function getCompanySignals(corpNum: string): Promise<BusinessSignal[]> {
   try {
-    const rows = await runQuery('SELECT * FROM business_signals WHERE corporate_number = ? ORDER BY signal_date DESC, id DESC', [corpNum]);
+    const rows = await runQuery(`
+      SELECT id, corporate_number, signal_type, signal_title, signal_date, source_url, details, total_count
+      FROM (
+        SELECT *, 
+               ROW_NUMBER() OVER (PARTITION BY signal_type ORDER BY signal_date DESC, id DESC) as rn,
+               COUNT(*) OVER (PARTITION BY signal_type) as total_count
+        FROM business_signals 
+        WHERE corporate_number = ?
+      ) t
+      WHERE rn <= 20
+      ORDER BY signal_date DESC, id DESC
+    `, [corpNum]);
     return rows ? (rows as BusinessSignal[]) : [];
   } catch (error) {
     console.error(`Error in getCompanySignals(${corpNum}):`, error);
@@ -346,20 +373,24 @@ export async function getCompanySignals(corpNum: string): Promise<BusinessSignal
  */
 export async function getRelatedCompanies(
   corpNum: string, 
-  industryCode: string | null, 
+  industryCodes: string[], 
   prefectureCode: string | null
 ): Promise<{ sameIndustry: Company[]; nearby: Company[] }> {
   const sameIndustry: Company[] = [];
   const nearby: Company[] = [];
 
   try {
-    if (industryCode) {
+    if (industryCodes && industryCodes.length > 0) {
+      const placeholders = industryCodes.map(() => '?').join(',');
       const rows = await runQuery(`
-        SELECT c.* FROM companies c
-        JOIN company_industries ci ON c.corporate_number = ci.corporate_number
-        WHERE ci.industry_code = ? AND c.corporate_number != ?
-        LIMIT 5
-      `, [industryCode, corpNum]);
+        SELECT * FROM companies 
+        WHERE corporate_number IN (
+          SELECT ci.corporate_number 
+          FROM company_industries ci 
+          WHERE ci.industry_code IN (${placeholders})
+        ) AND corporate_number != ?
+        LIMIT 10
+      `, [...industryCodes, corpNum]);
       sameIndustry.push(...rows.map(mapCompanyRow));
     }
 
@@ -370,7 +401,7 @@ export async function getRelatedCompanies(
         SELECT * FROM companies 
         WHERE prefecture_code = ? 
         AND corporate_number NOT IN (${placeholder})
-        LIMIT 5
+        LIMIT 10
       `, [prefectureCode, ...excludeIds]);
       nearby.push(...rows.map(mapCompanyRow));
     }
@@ -526,7 +557,7 @@ function buildSearchQuery(
     c.street_address, c.full_address, c.representative_name, c.representative_position, 
     c.establishment_date, c.capital_amount, c.employee_count, c.sales_amount, 
     c.phone_number, c.fax_number, c.website_url, c.email_address, 
-    c.jigyo_shumoku, c.branch_phone_numbers, c.status, c.created_at, c.updated_at
+    c.jigyo_shumoku, c.branch_phone_numbers, c.status, c.is_detailed, c.created_at, c.updated_at
   `;
   const sql = isCountOnly 
     ? 'SELECT COUNT(*) as count FROM companies c' 
@@ -553,9 +584,13 @@ function buildSearchQuery(
         'c.corporate_number IN (' +
         '  SELECT ci.corporate_number FROM company_industries ci' +
         '  WHERE ci.industry_code = ?' +
+        '  UNION' +
+        '  SELECT ci.corporate_number FROM company_industries ci' +
+        '  WHERE ci.industry_code = (SELECT parent_code FROM m_industries WHERE industry_code = ? LIMIT 1)' +
+        '    AND ci.is_detailed = false' +
         ')'
       );
-      params.push(filters.industry_code);
+      params.push(filters.industry_code, filters.industry_code);
     }
   }
 
@@ -614,6 +649,9 @@ function buildSearchQuery(
   }
   if (filters.has_patent) {
     whereClauses.push("c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '特許')");
+  }
+  if (filters.has_financials) {
+    whereClauses.push("c.corporate_number IN (SELECT fr.corporate_number FROM financial_records fr)");
   }
 
   // Founding year range filters
@@ -687,19 +725,33 @@ function buildSearchQuery(
   }
 
   if (financialClauses.length > 0) {
-    let subquery = `c.corporate_number IN (
-      SELECT fr.corporate_number
-      FROM financial_records fr
-      JOIN (
-        SELECT corporate_number, MAX(fiscal_year) AS max_year
-        FROM financial_records
-        GROUP BY corporate_number
-      ) fr_latest ON fr.corporate_number = fr_latest.corporate_number
-        AND fr.fiscal_year = fr_latest.max_year
-    `;
-
-    subquery += ` WHERE ${financialClauses.join(' AND ')}`;
-    subquery += ')';
+    const isPG = !!DATABASE_URL;
+    let subquery = '';
+    if (isPG) {
+      subquery = `c.corporate_number IN (
+        SELECT fr.corporate_number
+        FROM (
+          SELECT DISTINCT ON (corporate_number) corporate_number, operating_income, ordinary_income, net_income
+          FROM financial_records
+          ORDER BY corporate_number, fiscal_year DESC
+        ) fr
+        WHERE ${financialClauses.join(' AND ')}
+      )`;
+    } else {
+      let sqliteSubquery = `c.corporate_number IN (
+        SELECT fr.corporate_number
+        FROM financial_records fr
+        JOIN (
+          SELECT corporate_number, MAX(fiscal_year) AS max_year
+          FROM financial_records
+          GROUP BY corporate_number
+        ) fr_latest ON fr.corporate_number = fr_latest.corporate_number
+          AND fr.fiscal_year = fr_latest.max_year
+      `;
+      sqliteSubquery += ` WHERE ${financialClauses.join(' AND ')}`;
+      sqliteSubquery += ')';
+      subquery = sqliteSubquery;
+    }
     
     whereClauses.push(subquery);
     params.push(...financialParams);
@@ -759,6 +811,7 @@ export async function searchCompanies(
     if (filters.has_award) activeFiltersList.push('award');
     if (filters.has_certification) activeFiltersList.push('certification');
     if (filters.has_patent) activeFiltersList.push('patent');
+    if (filters.has_financials) activeFiltersList.push('financials');
     if (filters.min_establishment_year !== undefined || filters.max_establishment_year !== undefined) activeFiltersList.push('establishment_year');
     if (filters.min_sales !== undefined || filters.max_sales !== undefined) activeFiltersList.push('sales');
     if (filters.has_email) activeFiltersList.push('email');
@@ -812,6 +865,13 @@ export async function searchCompanies(
       } else if (singleFilter === 'patent') {
         const stats = await getDatabaseStats();
         totalCount = stats.signalPatent;
+      } else if (singleFilter === 'financials') {
+        const row = await runGetQuery(`
+          SELECT COUNT(DISTINCT fr.corporate_number) as count 
+          FROM financial_records fr 
+          WHERE fr.corporate_number NOT IN (SELECT corporate_number FROM hidden_companies)
+        `);
+        totalCount = row ? Number(row.count) : 0;
       } else {
         // Not directly cached -> execute count query
         const countQuery = buildSearchQuery(keyword, filters, true);
@@ -842,13 +902,7 @@ export async function searchCompanies(
     const isPG = !!DATABASE_URL;
     const hasComplexFilters = !!(
       keyword ||
-      filters.industry_code ||
-      filters.has_hiring ||
-      filters.has_subsidy ||
-      filters.has_bidding ||
-      filters.has_award ||
-      filters.has_certification ||
-      filters.has_patent
+      filters.industry_code
     );
     if (isPG) {
       if (hasComplexFilters) {
@@ -870,8 +924,37 @@ export async function searchCompanies(
     }
     
     const results = await runQuery(sql, params);
+    const companies = results.map(mapCompanyRow);
+
+    if (companies.length > 0) {
+      const corpNums = companies.map(c => c.corporate_number);
+      const placeholders = corpNums.map(() => '?').join(',');
+      const indRows = await runQuery(`
+        SELECT ci.corporate_number, ci.industry_code, m.industry_name, m.classification_level
+        FROM company_industries ci
+        JOIN m_industries m ON ci.industry_code = m.industry_code
+        WHERE ci.corporate_number IN (${placeholders})
+        ORDER BY LENGTH(ci.industry_code) ASC, ci.industry_code ASC
+      `, corpNums);
+
+      const indMap: Record<string, CompanyIndustryDetail[]> = {};
+      for (const row of indRows) {
+        const corp = String(row.corporate_number);
+        if (!indMap[corp]) indMap[corp] = [];
+        indMap[corp].push({
+          industry_code: String(row.industry_code),
+          industry_name: String(row.industry_name),
+          classification_level: String(row.classification_level)
+        });
+      }
+
+      for (const company of companies) {
+        company.industries = indMap[company.corporate_number] || [];
+      }
+    }
+
     return {
-      companies: results.map(mapCompanyRow),
+      companies,
       totalCount
     };
   } catch (error) {
@@ -1090,6 +1173,7 @@ export async function getCompanyIndustry(corpNum: string): Promise<{ industry_co
       FROM company_industries ci
       JOIN m_industries m ON ci.industry_code = m.industry_code
       WHERE ci.corporate_number = ? 
+      ORDER BY LENGTH(ci.industry_code) ASC, ci.industry_code ASC
       LIMIT 1
     `, [corpNum]);
     return row ? { industry_code: row.industry_code, industry_name: row.industry_name } : null;
@@ -1235,6 +1319,8 @@ async function initQuotaTables(): Promise<void> {
           billing_phone VARCHAR(50),
           logo_url TEXT,
           is_featured_partner BOOLEAN DEFAULT false,
+          contact_person VARCHAR(255),
+          contact_phone VARCHAR(50),
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
@@ -1246,6 +1332,12 @@ async function initQuotaTables(): Promise<void> {
       } catch {}
       try {
         await client.query(`ALTER TABLE user_billing_info ADD COLUMN is_featured_partner BOOLEAN DEFAULT false;`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE user_billing_info ADD COLUMN contact_person VARCHAR(255);`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE user_billing_info ADD COLUMN contact_phone VARCHAR(50);`);
       } catch {}
 
       await client.query(`
@@ -1361,6 +1453,8 @@ async function initQuotaTables(): Promise<void> {
           billing_phone TEXT,
           logo_url TEXT,
           is_featured_partner INTEGER DEFAULT 0,
+          contact_person TEXT,
+          contact_phone TEXT,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
@@ -1372,6 +1466,12 @@ async function initQuotaTables(): Promise<void> {
       } catch {}
       try {
         db.exec(`ALTER TABLE user_billing_info ADD COLUMN is_featured_partner INTEGER DEFAULT 0;`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE user_billing_info ADD COLUMN contact_person TEXT;`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE user_billing_info ADD COLUMN contact_phone TEXT;`);
       } catch {}
 
       db.exec(`
@@ -1948,6 +2048,7 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
     if (filtersCopy.has_award) activeFiltersList.push('award');
     if (filtersCopy.has_certification) activeFiltersList.push('certification');
     if (filtersCopy.has_patent) activeFiltersList.push('patent');
+    if (filtersCopy.has_financials) activeFiltersList.push('financials');
     if (filtersCopy.min_establishment_year !== undefined || filtersCopy.max_establishment_year !== undefined) activeFiltersList.push('establishment_year');
 
     const useForcedIndex = !keyword && activeFiltersList.length <= 1;
@@ -2518,6 +2619,8 @@ export interface UserAdminView {
   plan: string;
   subscription_status: string;
   updated_at: string;
+  contact_person?: string | null;
+  contact_phone?: string | null;
 }
 
 let adminTablesInitialized = false;
@@ -2602,7 +2705,12 @@ export async function initAdminTables(): Promise<void> {
 export async function getAllUsers(): Promise<UserAdminView[]> {
   await initQuotaTables();
   try {
-    const rows = await runQuery('SELECT * FROM user_export_quotas ORDER BY updated_at DESC');
+    const rows = await runQuery(`
+      SELECT ueq.*, ubi.contact_person, ubi.contact_phone 
+      FROM user_export_quotas ueq
+      LEFT JOIN user_billing_info ubi ON ueq.user_email = ubi.user_email
+      ORDER BY ueq.updated_at DESC
+    `);
     return rows ? rows.map(r => ({
       user_email: String(r.user_email),
       monthly_base_allowance: Number(r.monthly_base_allowance),
@@ -2610,7 +2718,9 @@ export async function getAllUsers(): Promise<UserAdminView[]> {
       purchased_add_on_balance: Number(r.purchased_add_on_balance),
       plan: r.plan ? String(r.plan) : 'free',
       subscription_status: r.subscription_status ? String(r.subscription_status) : 'inactive',
-      updated_at: String(r.updated_at)
+      updated_at: String(r.updated_at),
+      contact_person: r.contact_person ? String(r.contact_person) : null,
+      contact_phone: r.contact_phone ? String(r.contact_phone) : null,
     })) : [];
   } catch (error) {
     console.error('Error in getAllUsers:', error);
@@ -2890,6 +3000,8 @@ export interface UserBillingInfo {
   billing_phone: string | null;
   logo_url?: string | null;
   is_featured_partner?: boolean | null;
+  contact_person?: string | null;
+  contact_phone?: string | null;
 }
 
 export async function getUserBillingInfo(email: string): Promise<UserBillingInfo | null> {
@@ -2906,6 +3018,8 @@ export async function getUserBillingInfo(email: string): Promise<UserBillingInfo
       billing_phone: row.billing_phone || null,
       logo_url: row.logo_url || null,
       is_featured_partner: row.is_featured_partner === 1 || row.is_featured_partner === true || row.is_featured_partner === 'true' || false,
+      contact_person: row.contact_person || null,
+      contact_phone: row.contact_phone || null,
     };
   } catch (error) {
     console.error(`Error in getUserBillingInfo(${email}):`, error);
@@ -2920,22 +3034,22 @@ export async function saveUserBillingInfo(info: UserBillingInfo): Promise<boolea
     const isFeaturedVal = info.is_featured_partner ? (DATABASE_URL ? true : 1) : (DATABASE_URL ? false : 0);
     
     if (exists) {
-      const updateSql = 'UPDATE user_billing_info SET billing_name = ?, billing_address = ?, billing_tax_id = ?, billing_phone = ?, logo_url = ?, is_featured_partner = ?, updated_at = CURRENT_TIMESTAMP WHERE user_email = ?';
+      const updateSql = 'UPDATE user_billing_info SET billing_name = ?, billing_address = ?, billing_tax_id = ?, billing_phone = ?, logo_url = ?, is_featured_partner = ?, contact_person = ?, contact_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE user_email = ?';
       if (DATABASE_URL) {
         const pool = getPGPool();
-        await pool.query(convertSqlForPG(updateSql), [info.billing_name, info.billing_address, info.billing_tax_id, info.billing_phone, info.logo_url || null, isFeaturedVal, info.user_email]);
+        await pool.query(convertSqlForPG(updateSql), [info.billing_name, info.billing_address, info.billing_tax_id, info.billing_phone, info.logo_url || null, isFeaturedVal, info.contact_person || null, info.contact_phone || null, info.user_email]);
       } else {
         const db = getSQLiteDB();
-        db.prepare(updateSql).run(info.billing_name, info.billing_address, info.billing_tax_id, info.billing_phone, info.logo_url || null, isFeaturedVal, info.user_email);
+        db.prepare(updateSql).run(info.billing_name, info.billing_address, info.billing_tax_id, info.billing_phone, info.logo_url || null, isFeaturedVal, info.contact_person || null, info.contact_phone || null, info.user_email);
       }
     } else {
-      const insertSql = 'INSERT INTO user_billing_info (user_email, billing_name, billing_address, billing_tax_id, billing_phone, logo_url, is_featured_partner) VALUES (?, ?, ?, ?, ?, ?, ?)';
+      const insertSql = 'INSERT INTO user_billing_info (user_email, billing_name, billing_address, billing_tax_id, billing_phone, logo_url, is_featured_partner, contact_person, contact_phone) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
       if (DATABASE_URL) {
         const pool = getPGPool();
-        await pool.query(convertSqlForPG(insertSql), [info.user_email, info.billing_name, info.billing_address, info.billing_tax_id, info.billing_phone, info.logo_url || null, isFeaturedVal]);
+        await pool.query(convertSqlForPG(insertSql), [info.user_email, info.billing_name, info.billing_address, info.billing_tax_id, info.billing_phone, info.logo_url || null, isFeaturedVal, info.contact_person || null, info.contact_phone || null]);
       } else {
         const db = getSQLiteDB();
-        db.prepare(insertSql).run(info.user_email, info.billing_name, info.billing_address, info.billing_tax_id, info.billing_phone, info.logo_url || null, isFeaturedVal);
+        db.prepare(insertSql).run(info.user_email, info.billing_name, info.billing_address, info.billing_tax_id, info.billing_phone, info.logo_url || null, isFeaturedVal, info.contact_person || null, info.contact_phone || null);
       }
     }
     return true;
@@ -3535,6 +3649,206 @@ export async function getBackupLogs(): Promise<BackupLog[]> {
     return [];
   }
 }
+
+export async function getMajorIndustryNames(): Promise<string[]> {
+  const cacheKey = 'major_industry_names';
+  const cached = getCachedData<string[]>(cacheKey);
+  if (cached) return cached;
+
+  try {
+    const rows = await runQuery("SELECT DISTINCT industry_name FROM m_industries WHERE classification_level = '大分類'");
+    const result = rows ? rows.map(r => ({ industry_code: r.industry_code, industry_name: r.industry_name })) : [];
+    // Cache only the names for backward compatibility if needed, but since we are modifying the query let's keep it clean
+    const names = rows ? rows.map(r => r.industry_name) : [];
+    setCachedData(cacheKey, names);
+    return names;
+  } catch (error) {
+    console.error('Error in getMajorIndustryNames:', error);
+    return [];
+  }
+}
+
+export interface CompanyIndustryDetail {
+  industry_code: string;
+  industry_name: string;
+  classification_level: string;
+}
+
+export async function getCompanyIndustries(corpNum: string): Promise<CompanyIndustryDetail[]> {
+  try {
+    const rows = await runQuery(`
+      SELECT ci.industry_code, m.industry_name, m.classification_level
+      FROM company_industries ci
+      JOIN m_industries m ON ci.industry_code = m.industry_code
+      WHERE ci.corporate_number = ?
+      ORDER BY LENGTH(ci.industry_code) ASC, ci.industry_code ASC
+    `, [corpNum]);
+    return rows ? rows.map(r => ({
+      industry_code: String(r.industry_code),
+      industry_name: String(r.industry_name),
+      classification_level: String(r.classification_level)
+    })) : [];
+  } catch (error) {
+    console.error(`Error in getCompanyIndustries(${corpNum}):`, error);
+    return [];
+  }
+}
+
+// =============================================================================
+// BLOG SYSTEM DYNAMIC SCHEMAS & UTILITIES
+// =============================================================================
+let blogPostsTableInitialized = false;
+export async function initBlogPostsTable(): Promise<void> {
+  if (blogPostsTableInitialized) return;
+  const isPG = !!DATABASE_URL;
+  if (isPG) {
+    const pool = getPGPool();
+    const client = await pool.connect();
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS blog_posts (
+          id SERIAL PRIMARY KEY,
+          slug VARCHAR(255) UNIQUE NOT NULL,
+          title VARCHAR(255) NOT NULL,
+          content TEXT NOT NULL,
+          summary TEXT NOT NULL,
+          category VARCHAR(100) NOT NULL,
+          published_at VARCHAR(20) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    } catch (e) {
+      console.error('Error initializing PG blog_posts table:', e);
+    } finally {
+      client.release();
+    }
+  } else {
+    try {
+      const db = getSQLiteDB();
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS blog_posts (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          slug TEXT UNIQUE NOT NULL,
+          title TEXT NOT NULL,
+          content TEXT NOT NULL,
+          summary TEXT NOT NULL,
+          category TEXT NOT NULL,
+          published_at TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    } catch (e) {
+      console.error('Error initializing SQLite blog_posts table:', e);
+    }
+  }
+  blogPostsTableInitialized = true;
+}
+
+export interface BlogPost {
+  id: number;
+  slug: string;
+  title: string;
+  content: string;
+  summary: string;
+  category: string;
+  published_at: string;
+  created_at: string;
+}
+
+export async function getBlogPosts(limit = 10, offset = 0): Promise<BlogPost[]> {
+  try {
+    const rows = await runQuery(
+      'SELECT * FROM blog_posts ORDER BY published_at DESC, id DESC LIMIT ? OFFSET ?',
+      [limit, offset]
+    );
+    return rows ? rows.map(r => ({
+      id: Number(r.id),
+      slug: String(r.slug),
+      title: String(r.title),
+      content: String(r.content),
+      summary: String(r.summary),
+      category: String(r.category),
+      published_at: String(r.published_at),
+      created_at: String(r.created_at)
+    })) : [];
+  } catch (error) {
+    console.error('Error in getBlogPosts:', error);
+    return [];
+  }
+}
+
+export async function getBlogPostsCount(): Promise<number> {
+  try {
+    const row = await runGetQuery('SELECT COUNT(*) as count FROM blog_posts');
+    return row ? Number(row.count) : 0;
+  } catch (error) {
+    console.error('Error in getBlogPostsCount:', error);
+    return 0;
+  }
+}
+
+export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
+  try {
+    const row = await runGetQuery('SELECT * FROM blog_posts WHERE slug = ?', [slug]);
+    if (!row) return null;
+    return {
+      id: Number(row.id),
+      slug: String(row.slug),
+      title: String(row.title),
+      content: String(row.content),
+      summary: String(row.summary),
+      category: String(row.category),
+      published_at: String(row.published_at),
+      created_at: String(row.created_at)
+    };
+  } catch (error) {
+    console.error(`Error in getBlogPostBySlug(${slug}):`, error);
+    return null;
+  }
+}
+
+export async function createBlogPost(post: {
+  slug: string;
+  title: string;
+  content: string;
+  summary: string;
+  category: string;
+  published_at: string;
+}): Promise<void> {
+  try {
+    const isPG = !!DATABASE_URL;
+    if (isPG) {
+      const sql = `
+        INSERT INTO blog_posts (slug, title, content, summary, category, published_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(slug) DO UPDATE SET
+          title = EXCLUDED.title,
+          content = EXCLUDED.content,
+          summary = EXCLUDED.summary,
+          category = EXCLUDED.category,
+          published_at = EXCLUDED.published_at
+      `;
+      await runQuery(sql, [post.slug, post.title, post.content, post.summary, post.category, post.published_at]);
+    } else {
+      const sql = `
+        INSERT INTO blog_posts (slug, title, content, summary, category, published_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON CONFLICT(slug) DO UPDATE SET
+          title = excluded.title,
+          content = excluded.content,
+          summary = excluded.summary,
+          category = excluded.category,
+          published_at = excluded.published_at
+      `;
+      await runQuery(sql, [post.slug, post.title, post.content, post.summary, post.category, post.published_at]);
+    }
+  } catch (error) {
+    console.error('Error in createBlogPost:', error);
+    throw error;
+  }
+}
+
+
 
 
 

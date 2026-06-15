@@ -1,14 +1,36 @@
 import React from "react";
+import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { Scale, Building, Mail, Phone, ShieldAlert, FileText, Globe } from "lucide-react";
+import { Scale, Building, Mail, Phone, ShieldAlert, FileText, Globe, ChevronRight } from "lucide-react";
 
 export const metadata = {
   title: "特定商取引法に基づく表記 | Kigyou-list",
   description: "Kigyou-list（企業リスト）の特定商取引法に基づく表記です。当サービスのご利用に関する法的要件を記載しています。",
+  alternates: {
+    canonical: "/tokushoho",
+  },
 };
 
 export default function TokushohoPage() {
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": "ホーム",
+        "item": "https://kigyoulist.com"
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": "特定商取引法に基づく表記",
+        "item": "https://kigyoulist.com/tokushoho"
+      }
+    ]
+  };
   const infoItems = [
     {
       icon: <Building className="w-5 h-5 text-primary" />,
@@ -18,7 +40,7 @@ export default function TokushohoPage() {
     {
       icon: <Building className="w-5 h-5 text-primary" />,
       label: "運営責任者",
-      value: "TQC株式会社 運営事務局"
+      value: "キム　バン　チュン"
     },
     {
       icon: <Scale className="w-5 h-5 text-primary" />,
@@ -79,9 +101,22 @@ export default function TokushohoPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
+      {/* Schema Injection */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+
       <Header />
 
-      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-8">
+      <main className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10 flex flex-col gap-6">
+        {/* Visual Breadcrumbs */}
+        <nav className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
+          <Link href="/" className="hover:text-primary transition-colors">ホーム</Link>
+          <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
+          <span className="text-slate-800 dark:text-slate-200" aria-current="page">特定商取引法に基づく表記</span>
+        </nav>
+
         {/* Title Section */}
         <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 md:p-10 shadow-sm flex flex-col gap-6 leading-relaxed relative overflow-hidden">
           <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />

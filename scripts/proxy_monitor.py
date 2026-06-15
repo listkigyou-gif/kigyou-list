@@ -25,6 +25,7 @@ def get_unhealthy_containers():
             capture_output=True,
             text=True,
             check=True,
+            timeout=15,
             creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         )
         return [name.strip() for name in result.stdout.splitlines() if name.strip()]
@@ -39,6 +40,7 @@ def restart_container(name):
             ["docker", "restart", name],
             check=True,
             capture_output=True,
+            timeout=30,
             creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
         )
         logger.info(f"[+] Successfully restarted '{name}'")

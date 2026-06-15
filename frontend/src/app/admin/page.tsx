@@ -36,6 +36,8 @@ interface UserAdminView {
   plan: string;
   subscription_status?: string;
   updated_at: string;
+  contact_person?: string | null;
+  contact_phone?: string | null;
 }
 
 interface Inquiry {
@@ -688,6 +690,7 @@ export default function AdminPage() {
                   <tr>
                     <th className="px-4 py-3 rounded-tl-lg">メールアドレス</th>
                     <th className="px-4 py-3">プラン</th>
+                    <th className="px-4 py-3">担当者 / 連絡先</th>
                     <th className="px-4 py-3">ステータス</th>
                     <th className="px-4 py-3">クォータ (月間基本)</th>
                     <th className="px-4 py-3">使用済み</th>
@@ -698,7 +701,7 @@ export default function AdminPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {usersList.length === 0 ? (
-                    <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-500">登録ユーザーがいません。</td></tr>
+                    <tr><td colSpan={9} className="px-4 py-8 text-center text-slate-500">登録ユーザーがいません。</td></tr>
                   ) : usersList.map((usr) => (
                     <tr key={usr.user_email} className="hover:bg-slate-50 dark:hover:bg-slate-800/20">
                       <td className="px-4 py-3 font-bold">{usr.user_email}</td>
@@ -713,6 +716,22 @@ export default function AdminPage() {
                           }`}>
                           {usr.plan || "free"}
                         </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        {usr.contact_person || usr.contact_phone ? (
+                          <div className="flex flex-col gap-0.5 text-xs">
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">
+                              {usr.contact_person || "-"}
+                            </span>
+                            {usr.contact_phone && (
+                              <span className="text-[10px] text-slate-450 dark:text-slate-400 font-mono">
+                                {usr.contact_phone}
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic text-[11px]">未設定</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         {usr.subscription_status === "suspended" ? (

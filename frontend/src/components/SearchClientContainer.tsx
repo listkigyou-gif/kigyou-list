@@ -38,6 +38,11 @@ interface Company {
   status: string;
   created_at: string;
   updated_at: string;
+  industries?: {
+    industry_code: string;
+    industry_name: string;
+    classification_level: string;
+  }[];
 }
 
 interface PrefectureOption {
@@ -85,6 +90,7 @@ interface SearchClientContainerProps {
     hasAward?: boolean;
     hasCertification?: boolean;
     hasPatent?: boolean;
+    hasFinancials?: boolean;
     minSales?: number;
     maxSales?: number;
     hasEmail?: boolean;
@@ -196,6 +202,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   const [hasAward, setHasAward] = useState(!!initialFilters.hasAward);
   const [hasCertification, setHasCertification] = useState(!!initialFilters.hasCertification);
   const [hasPatent, setHasPatent] = useState(!!initialFilters.hasPatent);
+  const [hasFinancials, setHasFinancials] = useState(!!initialFilters.hasFinancials);
   const [minSales, setMinSales] = useState(initialFilters.minSales);
   const [maxSales, setMaxSales] = useState(initialFilters.maxSales);
   const [hasEmail, setHasEmail] = useState(!!initialFilters.hasEmail);
@@ -237,6 +244,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     const newHasAward = overrides.hasAward !== undefined ? overrides.hasAward : hasAward;
     const newHasCertification = overrides.hasCertification !== undefined ? overrides.hasCertification : hasCertification;
     const newHasPatent = overrides.hasPatent !== undefined ? overrides.hasPatent : hasPatent;
+    const newHasFinancials = overrides.hasFinancials !== undefined ? overrides.hasFinancials : hasFinancials;
     const newMinSales = overrides.minSales !== undefined ? overrides.minSales : minSales;
     const newMaxSales = overrides.maxSales !== undefined ? overrides.maxSales : maxSales;
     const newHasEmail = overrides.hasEmail !== undefined ? overrides.hasEmail : hasEmail;
@@ -272,6 +280,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     if (newHasAward) apiParams.set("award", "true");
     if (newHasCertification) apiParams.set("certification", "true");
     if (newHasPatent) apiParams.set("patent", "true");
+    if (newHasFinancials) apiParams.set("financials", "true");
     if (newMinSales != null) apiParams.set("min_sales", String(newMinSales));
     if (newMaxSales != null) apiParams.set("max_sales", String(newMaxSales));
     if (newHasEmail) apiParams.set("email", "true");
@@ -331,6 +340,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       if (newHasAward) browserParams.set("award", "true");
       if (newHasCertification) browserParams.set("certification", "true");
       if (newHasPatent) browserParams.set("patent", "true");
+      if (newHasFinancials) browserParams.set("financials", "true");
       if (newMinSales != null) browserParams.set("min_sales", String(newMinSales));
       if (newMaxSales != null) browserParams.set("max_sales", String(newMaxSales));
       if (newHasEmail) browserParams.set("email", "true");
@@ -443,6 +453,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       const val = !!updates.patent;
       setHasPatent(val);
       resolvedUpdates.hasPatent = val;
+    }
+    if (updates.financials !== undefined) {
+      const val = !!updates.financials;
+      setHasFinancials(val);
+      resolvedUpdates.hasFinancials = val;
     }
     if (updates.min_sales !== undefined) {
       const val = updates.min_sales ? parseInt(updates.min_sales, 10) : undefined;
@@ -579,6 +594,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             hasAward={hasAward}
             hasCertification={hasCertification}
             hasPatent={hasPatent}
+            hasFinancials={hasFinancials}
             minSales={minSales}
             maxSales={maxSales}
             hasEmail={hasEmail}
@@ -618,6 +634,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
         hasAward={hasAward}
         hasCertification={hasCertification}
         hasPatent={hasPatent}
+        hasFinancials={hasFinancials}
         minSales={minSales}
         maxSales={maxSales}
         hasEmail={hasEmail}
@@ -759,6 +776,12 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                 <button type="button" onClick={() => handleFilterChange({ patent: false })}><X className="w-3 h-3 text-amber-400 hover:text-amber-600 ml-1" /></button>
               </span>
             )}
+            {hasFinancials && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
+                決算・財務情報あり
+                <button type="button" onClick={() => handleFilterChange({ financials: false })}><X className="w-3 h-3 text-amber-400 hover:text-amber-600 ml-1" /></button>
+              </span>
+            )}
             {(minSales !== undefined || maxSales !== undefined) && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                 売上高: {minSales !== undefined && maxSales !== undefined ? `${minSales}〜${maxSales}億円` : minSales !== undefined ? `${minSales}億円以上` : `${maxSales}億円以下`}
@@ -840,6 +863,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                 has_award: hasAward,
                 has_certification: hasCertification,
                 has_patent: hasPatent,
+                has_financials: hasFinancials,
                 min_establishment_year: minEstYear,
                 max_establishment_year: maxEstYear,
                 min_sales: minSales,
@@ -890,7 +914,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                         {company.prefecture_name}
                       </span>
                     )}
-                    {/* Removed duplicate industry badge since it is now shown inside 事業種目 (Tags) */}
+                    {company.industries?.filter(ind => ind.classification_level === '大分類').map((ind, idx) => (
+                      <span key={idx} className="text-[10px] font-black tracking-wider uppercase text-slate-650 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 px-2.5 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-xs">
+                        {ind.industry_code}.{ind.industry_name}
+                      </span>
+                    ))}
                   </div>
                   
                   <div className="flex items-center gap-2">
@@ -925,7 +953,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                   <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60">
                     <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">従業員数</span>
                     <strong className="text-slate-800 dark:text-slate-200 font-extrabold text-sm">
-                      {company.employee_count ? `${company.employee_count}名` : '未登録'}
+                      {company.employee_count ? `${company.employee_count.toLocaleString()}名` : '未登録'}
                     </strong>
                   </div>
                   <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60">
@@ -938,6 +966,18 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">事業種目 (Tags)</span>
                     <div className="flex flex-wrap gap-1 mt-1 max-h-[48px] overflow-y-auto scrollbar-thin">
                       {(() => {
+                        const mediumInds = company.industries?.filter(ind => ind.classification_level === '中分類') || [];
+                        if (mediumInds.length > 0) {
+                          return mediumInds.map((ind, idx) => (
+                            <span 
+                              key={idx} 
+                              className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-700/80"
+                            >
+                              {ind.industry_code}.{ind.industry_name}
+                            </span>
+                          ));
+                        }
+
                         const tags = company.jigyo_shumoku 
                           ? company.jigyo_shumoku.replace(' (AI確認済)', '').split(',')
                           : [];

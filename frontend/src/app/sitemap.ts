@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { getSitemapCompanies, getSitemapCompaniesCount, getActiveIndustryPrefecturePairs } from '@/lib/db';
+import { getSitemapCompanies, getSitemapCompaniesCount, getActiveIndustryPrefecturePairs, getBlogPosts } from '@/lib/db';
 
 export const revalidate = 86400; // Cache sitemap for 24 hours, rebuild in background
 
@@ -38,16 +38,16 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
         priority: 1.0,
       },
       {
-        url: `${baseUrl}/search`,
-        lastModified: new Date(),
-        changeFrequency: 'daily',
-        priority: 0.9,
-      },
-      {
         url: `${baseUrl}/directory`,
         lastModified: new Date(),
         changeFrequency: 'weekly',
         priority: 0.85,
+      },
+      {
+        url: `${baseUrl}/blog`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.80,
       },
       {
         url: `${baseUrl}/contact`,
@@ -69,6 +69,22 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
       },
     ];
 
+    // 1.5. Dynamic Blog Pages
+    const blogPages: MetadataRoute.Sitemap = [];
+    try {
+      const posts = await getBlogPosts(1000, 0);
+      posts.forEach(post => {
+        blogPages.push({
+          url: `${baseUrl}/blog/${post.slug}`,
+          lastModified: post.published_at ? new Date(post.published_at) : new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.7,
+        });
+      });
+    } catch (error) {
+      console.error('Error generating dynamic blog pages sitemap:', error);
+    }
+
     // 2. Category Matrix Pages (Prefecture × Industry JSIC) (pSEO)
     const categoryPages: MetadataRoute.Sitemap = [];
     try {
@@ -85,7 +101,7 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
       console.error('Error generating dynamic categories sitemap:', error);
     }
 
-    return [...corePages, ...categoryPages];
+    return [...corePages, ...blogPages, ...categoryPages];
   }
 
   // Otherwise, it is a numeric ID representing a company profile chunk

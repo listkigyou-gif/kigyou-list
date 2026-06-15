@@ -102,8 +102,8 @@ def main():
         capital_amount BIGINT,
         employee_count INTEGER,
         sales_amount BIGINT,
-        phone_number VARCHAR(50),
-        fax_number VARCHAR(50),
+        phone_number TEXT,
+        fax_number TEXT,
         website_url TEXT,
         email_address TEXT,
         business_summary TEXT,
@@ -116,6 +116,7 @@ def main():
         website_last_crawled_at TEXT,
         website_crawl_status TEXT,
         last_deep_tagged_at VARCHAR(50),
+        is_detailed BOOLEAN NOT NULL DEFAULT FALSE,
         PRIMARY KEY (prefecture_code, corporate_number)
     ) PARTITION BY LIST (prefecture_code);
     """)
@@ -134,6 +135,7 @@ def main():
         corporate_number VARCHAR(50),
         industry_code VARCHAR(50),
         industry_path TEXT,
+        is_detailed BOOLEAN NOT NULL DEFAULT FALSE,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (corporate_number, industry_code)
     );
@@ -545,6 +547,7 @@ def main():
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_companies_has_phone_temp ON companies_temp(phone_number) WHERE phone_number IS NOT NULL AND phone_number <> '';")
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_companies_has_website_temp ON companies_temp(website_url) WHERE website_url IS NOT NULL AND website_url <> '';")
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_companies_has_fax_temp ON companies_temp(fax_number) WHERE fax_number IS NOT NULL AND fax_number <> '';")
+        pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_companies_is_detailed_temp ON companies_temp(is_detailed);")
         
         # Trigram GIN indexes for fast text search
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_companies_name_trgm_temp ON companies_temp USING gin (company_name gin_trgm_ops);")
@@ -557,6 +560,7 @@ def main():
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_signals_corp_temp ON business_signals_temp(corporate_number, signal_date DESC);")
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_signals_type_corp_temp ON business_signals_temp(signal_type, corporate_number);")
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_comp_ind_code_corp_temp ON company_industries_temp(industry_code, corporate_number);")
+        pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_comp_ind_code_detailed_temp ON company_industries_temp(industry_code, is_detailed);")
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_company_industries_path_temp ON company_industries_temp(industry_path);")
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_sitemap_companies_emp_temp ON sitemap_companies_temp(employee_count DESC, corporate_number ASC);")
         
@@ -623,6 +627,8 @@ def main():
         ALTER INDEX idx_comp_ind_code_corp_temp RENAME TO idx_comp_ind_code_corp;
         ALTER INDEX idx_company_industries_path_temp RENAME TO idx_company_industries_path;
         ALTER INDEX idx_sitemap_companies_emp_temp RENAME TO idx_sitemap_companies_emp;
+        ALTER INDEX idx_companies_is_detailed_temp RENAME TO idx_companies_is_detailed;
+        ALTER INDEX idx_comp_ind_code_detailed_temp RENAME TO idx_comp_ind_code_detailed;
         """)
         
         pg_conn.commit()

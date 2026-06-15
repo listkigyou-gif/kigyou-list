@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { 
   searchCompanies, getPrefecturesWithCounts, 
   getCitiesWithCounts, getIndustriesHierarchy, SearchFilters, getIndustryMap 
@@ -7,6 +8,16 @@ import { Footer } from '@/components/Footer';
 import { SearchClientContainer } from '@/components/SearchClientContainer';
 
 export const revalidate = 0; // Dynamic search page, do not cache static
+
+export const metadata: Metadata = {
+  title: '企業データ検索 | Kigyou-list',
+  description: 'Kigyou-listの高度な企業検索。業界、地域、資本金、従業員数や最新の営業シグナルから企業データを絞り込み検索できます。',
+  robots: {
+    index: false,
+    follow: true,
+  },
+};
+
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -46,6 +57,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
   const hasHiring = params.hiring === 'true';
   const hasSubsidy = params.subsidy === 'true';
   const hasBidding = params.bidding === 'true';
+  const hasFinancials = params.financials === 'true';
   
   let minEstYear: number | undefined;
   if (params.min_establishment_year) {
@@ -140,6 +152,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
     has_award: hasAward,
     has_certification: hasCertification,
     has_patent: hasPatent,
+    has_financials: hasFinancials,
     min_establishment_year: minEstYear,
     max_establishment_year: maxEstYear,
     min_sales: minSales,
@@ -194,6 +207,7 @@ export default async function SearchPage({ searchParams }: PageProps) {
     hasHiring,
     hasSubsidy,
     hasBidding,
+    hasFinancials,
     minEstYear,
     maxEstYear,
     hasAward,

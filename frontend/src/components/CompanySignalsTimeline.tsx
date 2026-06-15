@@ -47,14 +47,19 @@ const AccordionPanel: React.FC<{ isExpanded: boolean; children: React.ReactNode 
 };
 
 export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ signals }) => {
-  // Group signals by type
+  // Group signals by type and track total counts
   const groupedSignals: Record<string, BusinessSignal[]> = {};
+  const signalTotals: Record<string, number> = {};
+  
   signals.forEach(sig => {
     const type = sig.signal_type || "その他";
     if (!groupedSignals[type]) {
       groupedSignals[type] = [];
     }
     groupedSignals[type].push(sig);
+    if (sig.total_count !== undefined) {
+      signalTotals[type] = Math.max(signalTotals[type] || 0, sig.total_count);
+    }
   });
 
   // State to track expanded status of each group
@@ -121,6 +126,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
         const meta = getGroupMetadata(type);
         const Icon = meta.IconComponent;
         const isPatent = type === '特許';
+        const totalCount = signalTotals[type] || list.length;
 
         return (
           <div 
@@ -142,7 +148,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                     {meta.title}
                   </h3>
                   <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
-                    登録件数: {list.length}件
+                    登録件数: {totalCount.toLocaleString()}件
                   </span>
                 </div>
               </div>
@@ -231,6 +237,12 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                       </div>
                     ))}
                   </div>
+
+                  {totalCount > 20 && (
+                    <div className="mt-5 pt-3 border-t border-slate-150 dark:border-slate-800 text-[11px] text-slate-400 dark:text-slate-500 font-medium ml-4">
+                      ※データ件数が多いため、直近の20件のみ表示しています。
+                    </div>
+                  )}
                 </UnlockCard>
               </div>
             </AccordionPanel>

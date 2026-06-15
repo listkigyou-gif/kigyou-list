@@ -29,10 +29,15 @@ Set-Location -Path (Join-Path $ProjectRoot "crawlers/yahoo")
 & $PythonExec yahoo_searcher.py --limit 500 --headless
 
 # --- STEP 3: Run Orchestrator Pipeline ---
-Write-Output "`n[3/3] Running central ETL Pipeline Orchestrator..."
+Write-Output "`n[3/4] Running central ETL Pipeline Orchestrator..."
 Set-Location -Path $ProjectRoot
 # Run Step 1 (G-Biz Sync), Step 3 (Staging Load), Step 4 (Website Crawl limit 100),
 # Step 5 (Consolidation), Step 6 (AI Tagging), and Step 7 (PostgreSQL Sync)
 & $PythonExec scripts/run_pipeline.py --steps 1,3,4,5,6,7 --limit 100 --offline
+
+# --- STEP 4: Programmatic Blog Post Generation ---
+Write-Output "`n[4/4] Running Programmatic Blog Post Generator..."
+Set-Location -Path (Join-Path $ProjectRoot "frontend")
+npx tsx src/scripts/generate-blog.ts
 
 Write-Output "`n[+] Weekly ETL Run Completed Successfully!"

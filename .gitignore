@@ -2,7 +2,7 @@
 *.db-shm
 *.db-wal
 *.csv
-*.log
+*.log*
 crawlers/yahoo/data/
 crawlers/yahoo/logs/
 

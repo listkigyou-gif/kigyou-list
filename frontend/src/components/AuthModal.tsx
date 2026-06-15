@@ -18,7 +18,7 @@ export const AuthModal: React.FC = () => {
   if (!authModalOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div data-nosnippet className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm dark:bg-black/80 transition-all duration-300"
