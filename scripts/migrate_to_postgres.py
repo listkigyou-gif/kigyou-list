@@ -657,7 +657,7 @@ def main():
         """)
         
         # Reset primary key sequence for blog_posts
-        pg_cur.execute("SELECT setval('blog_posts_id_seq', COALESCE((SELECT MAX(id) FROM blog_posts), 1), true);")
+        pg_cur.execute("SELECT setval(pg_get_serial_sequence('blog_posts', 'id'), COALESCE((SELECT MAX(id) FROM blog_posts), 1), true);")
 
         
         pg_conn.commit()
