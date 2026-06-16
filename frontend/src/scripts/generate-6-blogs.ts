@@ -1,9 +1,8 @@
-import { getDB, createBlogPost, initBlogPostsTable, getBlogPosts } from '../lib/db';
+import { createBlogPost, initBlogPostsTable, getBlogPosts, runQuery, runGetQuery } from '../lib/db';
 
 async function run() {
   console.log('--- STARTING BULK BLOG GENERATION JOB (6 POSTS) ---');
   await initBlogPostsTable();
-  const db = getDB();
 
   // 1. Fetch existing slugs to avoid collisions
   const existingRows = await getBlogPosts(1000, 0);
@@ -22,22 +21,22 @@ async function run() {
     attempts++;
 
     // Select a random prefecture from counts table with more than 10 companies
-    const pref = db.prepare(`
+    const pref = await runGetQuery(`
       SELECT prefecture_code, prefecture_name 
       FROM prefecture_counts 
       WHERE company_count > 10 
       ORDER BY RANDOM() 
       LIMIT 1
-    `).get() as { prefecture_code: string; prefecture_name: string } | undefined;
+    `) as { prefecture_code: string; prefecture_name: string } | null;
 
     // Select a random industry from m_industries (classification_level = '中分類')
-    const ind = db.prepare(`
+    const ind = await runGetQuery(`
       SELECT industry_code, industry_name 
       FROM m_industries 
       WHERE classification_level = '中分類' 
       ORDER BY RANDOM() 
       LIMIT 1
-    `).get() as { industry_code: string; industry_name: string } | undefined;
+    `) as { industry_code: string; industry_name: string } | null;
 
     if (!pref || !ind) continue;
 
@@ -49,14 +48,14 @@ async function run() {
     }
 
     // Check if we have at least 3 active companies matching this pair
-    const countRes = db.prepare(`
+    const countRes = await runGetQuery(`
       SELECT COUNT(*) as count
       FROM company_industries ci
       JOIN companies c ON ci.corporate_number = c.corporate_number
       WHERE ci.industry_code = ? AND c.prefecture_code = ? AND c.status = '活動中'
-    `).get(ind.industry_code, pref.prefecture_code) as { count: number } | undefined;
+    `, [ind.industry_code, pref.prefecture_code]) as { count: number | string } | null;
 
-    if (!countRes || countRes.count < 3) {
+    if (!countRes || Number(countRes.count) < 3) {
       continue;
     }
 
@@ -64,7 +63,7 @@ async function run() {
     const prefecture_name = pref.prefecture_name;
     const industry_code = ind.industry_code;
     const industry_name = ind.industry_name;
-    const count = countRes.count;
+    const count = Number(countRes.count);
 
     console.log(`[Post ${postsCount + 1}] Found Pair: ${prefecture_name} x ${industry_name} (Total active: ${count}) - Slug: ${slug}`);
 
@@ -74,10 +73,10 @@ async function run() {
       FROM companies c
       JOIN company_industries ci ON c.corporate_number = ci.corporate_number
       WHERE ci.industry_code = ? AND c.prefecture_code = ? AND c.status = '活動中'
-      ORDER BY IFNULL(c.employee_count, 0) DESC, c.corporate_number ASC
+      ORDER BY COALESCE(c.employee_count, 0) DESC, c.corporate_number ASC
       LIMIT 5
     `;
-    const companies = db.prepare(companiesQuery).all(industry_code, prefecture_code) as any[];
+    const companies = await runQuery(companiesQuery, [industry_code, prefecture_code]) as any[];
 
     // Compute stats
     const avgCapitalQuery = `
@@ -86,8 +85,8 @@ async function run() {
       JOIN company_industries ci ON c.corporate_number = ci.corporate_number
       WHERE ci.industry_code = ? AND c.prefecture_code = ? AND c.capital_amount IS NOT NULL
     `;
-    const statsRes = db.prepare(avgCapitalQuery).get(industry_code, prefecture_code) as { avg_cap: number | null } | undefined;
-    const avgCapital = statsRes?.avg_cap ? Math.round(statsRes.avg_cap) : 0;
+    const statsRes = await runGetQuery(avgCapitalQuery, [industry_code, prefecture_code]) as { avg_cap: number | string | null } | null;
+    const avgCapital = statsRes?.avg_cap ? Math.round(Number(statsRes.avg_cap)) : 0;
 
     // Distribute template selection round-robin or randomly
     const templateId = (postsCount + attempts) % 3;

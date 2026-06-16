@@ -108,7 +108,7 @@ function convertSqlForPG(sql: string): string {
 /**
  * Executes a SELECT query returning multiple rows, supporting both PostgreSQL and SQLite.
  */
-async function runQuery(sql: string, params: any[] = []): Promise<any[]> {
+export async function runQuery(sql: string, params: any[] = []): Promise<any[]> {
   await ensureAllTablesInitialized();
   const isPG = !!DATABASE_URL;
   if (isPG) {
@@ -127,7 +127,7 @@ async function runQuery(sql: string, params: any[] = []): Promise<any[]> {
 /**
  * Executes a SELECT query returning a single row, supporting both PostgreSQL and SQLite.
  */
-async function runGetQuery(sql: string, params: any[] = []): Promise<any | null> {
+export async function runGetQuery(sql: string, params: any[] = []): Promise<any | null> {
   await ensureAllTablesInitialized();
   const isPG = !!DATABASE_URL;
   if (isPG) {
