@@ -1,4 +1,4 @@
-import { getDB, createBlogPost, initBlogPostsTable } from '../lib/db';
+import { getDB, createBlogPost, initBlogPostsTable, getBlogPosts } from '../lib/db';
 
 async function run() {
   console.log('--- STARTING BULK BLOG GENERATION JOB (6 POSTS) ---');
@@ -6,7 +6,7 @@ async function run() {
   const db = getDB();
 
   // 1. Fetch existing slugs to avoid collisions
-  const existingRows = db.prepare('SELECT slug FROM blog_posts').all() as { slug: string }[];
+  const existingRows = await getBlogPosts(1000, 0);
   const existingSlugs = new Set(existingRows.map(r => r.slug));
   console.log('Existing slugs in DB:', Array.from(existingSlugs));
 
