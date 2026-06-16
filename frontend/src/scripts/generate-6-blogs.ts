@@ -1,7 +1,8 @@
-import { getDB, createBlogPost } from '../lib/db';
+import { getDB, createBlogPost, initBlogPostsTable } from '../lib/db';
 
 async function run() {
   console.log('--- STARTING BULK BLOG GENERATION JOB (6 POSTS) ---');
+  await initBlogPostsTable();
   const db = getDB();
 
   // 1. Fetch existing slugs to avoid collisions
