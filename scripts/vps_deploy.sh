@@ -79,12 +79,12 @@ fi
 # Cấp quyền thực thi cho script backup
 chmod +x /var/www/kigyou-list/scripts/db_backup.sh
 
-# Cấu hình Cron Job (Chạy lúc 2 giờ sáng hàng ngày)
-CRON_JOB="0 2 * * * /bin/bash /var/www/kigyou-list/scripts/db_backup.sh >> /var/www/kigyou-list/scripts/backup.log 2>&1"
+# Cấu hình Cron Job (Chạy mỗi 6 tiếng một lần)
+CRON_JOB="0 */6 * * * /var/www/kigyou-list/scripts/db_backup.sh >> /var/www/kigyou-list/scripts/backup.log 2>&1"
 (crontab -l 2>/dev/null | grep -F "db_backup.sh") &> /dev/null
 if [ $? -ne 0 ]; then
     (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
-    echo "Đã thêm Cron Job sao lưu vào lúc 2:00 AM hàng ngày."
+    echo "Đã thêm Cron Job sao lưu định kỳ mỗi 6 tiếng một lần."
 else
     echo "Cron Job sao lưu đã tồn tại."
 fi

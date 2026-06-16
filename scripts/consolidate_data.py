@@ -116,15 +116,49 @@ def parse_address(raw_address):
 
 
 def normalize_phone(phone_str):
-    """Clean and standardize phone numbers to standard half-width formatted numbers."""
+    """Clean and standardize phone numbers to standard half-width formatted numbers, rejecting invalid placeholder/fake numbers."""
     if not phone_str:
         return None
-    phone_str = to_half_width(phone_str)
-    # Remove everything except numbers, hyphens and parentheses
-    phone_str = re.sub(r"[^\d\-()]", "", phone_str)
-    if len(phone_str) >= 6:
-        return phone_str
-    return None
+    phone_str = to_half_width(phone_str).strip()
+    if not phone_str:
+        return None
+        
+    # 1. Reject common text placeholders
+    lower_str = phone_str.lower()
+    placeholders = ['なし', '非公開', '不明', '未設定', '未登録', '連絡不可', 'null', 'none', 'temp', 'dummy', 'テスト', 'test']
+    for p in placeholders:
+        if p in lower_str:
+            return None
+            
+    # 2. Extract digits only to validate structure
+    digits = re.sub(r'\D', '', phone_str)
+    if not digits:
+        return None
+        
+    # 3. Japanese phone numbers must start with '0' (except international prefix but representative numbers in JP should use domestic form)
+    if not digits.startswith('0'):
+        return None
+        
+    # 4. Must be of valid length (10 or 11 digits)
+    if len(digits) not in (10, 11):
+        return None
+        
+    # 5. Check if it consists of all identical digits (like 0000000000, 1111111111)
+    if len(set(digits)) == 1:
+        return None
+        
+    # 6. Check for dummy sequences
+    if digits in ("0123456789", "1234567890"):
+        return None
+        
+    # 7. Check if the suffix/local part is all zeros (e.g. 03-0000-0000 or 090-0000-0000)
+    # The last 7 digits being all zeros is a clear indication of a fake/placeholder number
+    if digits[-7:] == "0000000":
+        return None
+
+    # If valid, clean and return formatted number (digits and hyphens/parentheses)
+    cleaned = re.sub(r"[^\d\-()]", "", phone_str)
+    return cleaned if len(cleaned) >= 6 else None
 
 def normalize_fax(fax_str):
     """Clean and standardize fax numbers."""
@@ -216,14 +250,66 @@ def normalize_employee(employee_str):
     return None
 
 def clean_representative_name(rep_name):
-    """Clean representative names by removing common corporate titles."""
+    """Clean representative names by removing titles and validating against invalid/suspicious patterns."""
     if not rep_name:
         return None
-    rep_name = to_half_width(rep_name)
-    titles = ["代表取締役", "代表取締役社長", "代表取締役会長", "取締役", "代表者", "代表", "社長", "所長", "支店長"]
+    rep_name = to_half_width(rep_name).strip()
+    if not rep_name:
+        return None
+        
+    # 1. Reject common text placeholders
+    lower_str = rep_name.lower()
+    placeholders = ['なし', '非公開', '不明', '未設定', '未登録', 'null', 'none', 'temp', 'dummy', 'テスト', 'test']
+    for p in placeholders:
+        if p in lower_str:
+            return None
+            
+    # 2. Reject values containing digits or transition notes (Japanese names do not contain digits)
+    if re.search(r'\d', rep_name) or re.search(r'[０-９]', rep_name):
+        return None
+        
+    # 3. Reject values containing corporate or organization keywords
+    corp_keywords = ['株式会社', '有限会社', '合同会社', '合資会社', '一般社団', '一般財団', '特定非営利', 'NPO', '組合', '事務局', '役場']
+    for kw in corp_keywords:
+        if kw in rep_name:
+            return None
+            
+    # 4. Reject values containing email or URL patterns
+    if '@' in rep_name or 'http' in lower_str or '.jp' in lower_str or '.com' in lower_str:
+        return None
+        
+    # 5. Clean / remove titles from longest to shortest
+    titles = [
+        "代表取締役共同社長", "代表取締役社長", "代表取締役会長", "代表取締役副社長", "代表取締役",
+        "共同代表取締役", "共同代表", "代表常務取締役", "代表専務取締役", "常務取締役", "専務取締役",
+        "取締役", "代表役員", "代表社員", "代表者", "代表幹事", "代表理事", "代表",
+        "会長執行役員", "社長執行役員", "副社長執行役員", "専務執行役員", "常務執行役員", "執行役員", "執行役",
+        "チ-フオペレ-ティングオフィサ-", "最高経営責任者", "最高執行責任者",
+        "Co-CEO", "Group CEO", "Group COO", "Group", "CEO", "COO",
+        "会長", "社長", "副社長", "所長", "支店長", "管理者", "理事長", "理事", "監事",
+        "兼", "務執行者", "職務執行者"
+    ]
+    
+    # Strip titles
     for t in titles:
-        rep_name = rep_name.replace(t, "")
-    return rep_name.strip()
+        rep_name = re.sub(re.escape(t), "", rep_name, flags=re.IGNORECASE)
+        
+    cleaned_name = rep_name.strip()
+    
+    # 6. Reject if the remaining string is empty
+    if not cleaned_name:
+        return None
+        
+    # Reject if it's too short (1 char) and not a common 1-kanji JP surname
+    clean_len = len(re.sub(r'\s', '', cleaned_name))
+    if clean_len <= 1 and cleaned_name not in ('林', '森', '原', '関', '辻', '東', '南', '西', '北'):
+        return None
+        
+    # Reject if too long (e.g. > 15 characters, highly likely to be raw description or text error)
+    if clean_len > 15:
+        return None
+        
+    return cleaned_name
 
 import difflib
 

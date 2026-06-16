@@ -11,6 +11,7 @@ import {
   getCompanySignals, getRelatedCompanies, getCompanyIndustry 
 } from '@/lib/db';
 import { UnlockCard } from '@/components/UnlockCard';
+import { ObfuscatedPhone } from '@/components/ObfuscatedPhone';
 import { CompanyActions } from '@/components/CompanyActions';
 import { UnlockCTA } from '@/components/UnlockCTA';
 import { Footer } from '@/components/Footer';
@@ -332,7 +333,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
           <div className="flex flex-col gap-8">
             
             {/* Contact Details Panel */}
-            <section id="contact" className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-6 shadow-sm sticky top-20">
+            <section id="contact" className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-6 shadow-sm">
               <h2 className="text-lg font-black text-slate-900 dark:text-white mb-6 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
                 <Phone className="w-5 h-5 text-primary" />
                 企業連絡先情報
@@ -347,11 +348,24 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   </div>
                   <div>
                     <span className="text-xs text-slate-400 block mb-0.5">代表電話番号 (公開)</span>
-                    <strong className="text-slate-800 dark:text-slate-100 text-base font-mono">
-                      {company.phone_number || '未登録'}
-                    </strong>
+                    {company.phone_number ? (
+                      <ObfuscatedPhone encodedPhone={btoa(company.phone_number)} />
+                    ) : (
+                      <strong className="text-slate-800 dark:text-slate-100 text-base font-mono">未登録</strong>
+                    )}
                   </div>
                 </div>
+
+                {/* Honeypot trap link for scrapers (invisible to actual users) */}
+                <a 
+                  href="/api/sys-check" 
+                  style={{ display: 'none' }} 
+                  tabIndex={-1} 
+                  aria-hidden="true"
+                  data-nosnippet
+                >
+                  システム整合性の検証リンク (System Health Verification)
+                </a>
 
                 {/* 2. Website URL (PUBLIC) */}
                 <div className="flex items-start gap-3">

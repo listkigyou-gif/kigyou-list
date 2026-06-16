@@ -7,7 +7,8 @@ import {
   resetUserQuotaUsage, 
   cancelUserSubscriptionBySubId,
   suspendUserQuotaInDb,
-  getUserBillingInfo
+  getUserBillingInfo,
+  redeemCoupon
 } from "@/lib/db";
 import { uploadFileToR2 } from "@/lib/r2";
 
@@ -484,6 +485,15 @@ export async function POST(request: Request) {
             allowance,
             'active'
           );
+
+          if (metadata && metadata.couponCode) {
+            try {
+              console.log(`[Stripe Webhook] Redeeming coupon ${metadata.couponCode} for ${userEmail}`);
+              await redeemCoupon(metadata.couponCode, userEmail);
+            } catch (couponErr) {
+              console.error(`[Stripe Webhook] Failed to redeem coupon ${metadata.couponCode}:`, couponErr);
+            }
+          }
 
           const formattedDate = new Intl.DateTimeFormat('ja-JP', { dateStyle: 'long' }).format(new Date());
           const taxExclusivePrice = Math.round(priceJpy / 1.1);

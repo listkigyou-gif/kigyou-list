@@ -1,8 +1,53 @@
 import { NextRequest, NextResponse } from "next/server";
-import { searchCompanies, SearchFilters, getCitiesWithCounts } from "@/lib/db";
+import { searchCompanies, SearchFilters, getCitiesWithCounts, isIpBlocked } from "@/lib/db";
+
+// Memory-based rate limiter store
+const ipRequestCounts = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute
+const MAX_REQUESTS_PER_WINDOW = 40;
 
 export async function GET(request: NextRequest) {
   try {
+    const forwarded = request.headers.get("x-forwarded-for");
+    const realIp = request.headers.get("x-real-ip");
+    const ip = (forwarded ? forwarded.split(",")[0].trim() : "") || (realIp ? realIp.trim() : "") || "127.0.0.1";
+
+    // 1. Check if the IP is blacklisted in database
+    if (await isIpBlocked(ip)) {
+      return NextResponse.json(
+        { error: "Access Forbidden: Your IP is blocked due to abusive bot crawling behavior." },
+        { status: 403 }
+      );
+    }
+
+    // 2. Rate limiting check (Max 40/min)
+    const now = Date.now();
+
+    // Periodically clean up expired entries from memory to prevent leaks
+    if (ipRequestCounts.size > 2000) {
+      for (const [key, value] of ipRequestCounts.entries()) {
+        if (now > value.resetTime) {
+          ipRequestCounts.delete(key);
+        }
+      }
+    }
+
+    let limitInfo = ipRequestCounts.get(ip);
+    if (!limitInfo || now > limitInfo.resetTime) {
+      limitInfo = { count: 1, resetTime: now + RATE_LIMIT_WINDOW_MS };
+      ipRequestCounts.set(ip, limitInfo);
+    } else {
+      limitInfo.count++;
+    }
+
+    if (limitInfo.count > MAX_REQUESTS_PER_WINDOW) {
+      console.warn(`[Rate Limit Exceeded] IP: ${ip} hit search rate limit.`);
+      return NextResponse.json(
+        { error: "Too Many Requests: Rate limit exceeded (Max 40/min). Please slow down." },
+        { status: 429 }
+      );
+    }
+
     const { searchParams } = request.nextUrl;
     
     const keyword = searchParams.get("q") || "";

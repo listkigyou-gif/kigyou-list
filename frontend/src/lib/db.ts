@@ -23,6 +23,7 @@ async function ensureAllTablesInitialized() {
     await initAdminLogTable();
     await initBackupLogsTable();
     await initBlogPostsTable();
+    await initBlockedIpsTable();
     allTablesInitialized = true;
   } catch (err) {
     console.error('Failed to initialize all database tables:', err);
@@ -3847,6 +3848,91 @@ export async function createBlogPost(post: {
     throw error;
   }
 }
+
+// =============================================================================
+// BLOCKED IPS FOR BOT SCRAMBLING & SECURITY SHIELD
+// =============================================================================
+const blockedIpsCache = new Set<string>();
+let blockedIpsTableInitialized = false;
+
+export async function initBlockedIpsTable(): Promise<void> {
+  if (blockedIpsTableInitialized) return;
+  const isPG = !!DATABASE_URL;
+  if (isPG) {
+    const pool = getPGPool();
+    const client = await pool.connect();
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS blocked_ips (
+          ip VARCHAR(50) PRIMARY KEY,
+          reason TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    } catch (e) {
+      console.error('Error initializing PG blocked_ips table:', e);
+    } finally {
+      client.release();
+    }
+  } else {
+    try {
+      const db = getSQLiteDB();
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS blocked_ips (
+          ip TEXT PRIMARY KEY,
+          reason TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    } catch (e) {
+      console.error('Error initializing SQLite blocked_ips table:', e);
+    }
+  }
+  blockedIpsTableInitialized = true;
+}
+
+export async function isIpBlocked(ip: string): Promise<boolean> {
+  if (blockedIpsCache.has(ip)) return true;
+  try {
+    const row = await runGetQuery('SELECT ip FROM blocked_ips WHERE ip = ?', [ip]);
+    if (row) {
+      blockedIpsCache.add(ip);
+      return true;
+    }
+    return false;
+  } catch (error) {
+    console.error(`Error in isIpBlocked(${ip}):`, error);
+    return false;
+  }
+}
+
+export async function blockIp(ip: string, reason: string): Promise<boolean> {
+  try {
+    const isPG = !!DATABASE_URL;
+    let sql = "";
+    if (isPG) {
+      sql = `
+        INSERT INTO blocked_ips (ip, reason)
+        VALUES (?, ?)
+        ON CONFLICT(ip) DO UPDATE SET reason = EXCLUDED.reason
+      `;
+    } else {
+      sql = `
+        INSERT INTO blocked_ips (ip, reason)
+        VALUES (?, ?)
+        ON CONFLICT(ip) DO UPDATE SET reason = excluded.reason
+      `;
+    }
+    await runQuery(sql, [ip, reason]);
+    blockedIpsCache.add(ip);
+    console.log(`[Security] Successfully blocked IP: ${ip} for reason: ${reason}`);
+    return true;
+  } catch (error) {
+    console.error(`Error in blockIp(${ip}):`, error);
+    return false;
+  }
+}
+
 
 
 

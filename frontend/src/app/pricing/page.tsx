@@ -827,11 +827,33 @@ export default function PricingPage() {
                 <label className="text-[10px] font-bold text-slate-400 uppercase">
                   選択したパッケージ
                 </label>
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs font-bold">
-                  <span className="text-slate-700 dark:text-slate-200">{showCheckoutModal.name}</span>
-                  <span className="text-rose-500">
-                    ¥{showCheckoutModal.campaignPrice.toLocaleString()} / 月
-                  </span>
+                <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col gap-1 text-xs">
+                  <div className="flex justify-between items-center font-bold">
+                    <span className="text-slate-700 dark:text-slate-200">{showCheckoutModal.name}</span>
+                    <span className="text-rose-500">
+                      {showCheckoutModal.listPrice > 0 ? (
+                        <span className="flex items-center gap-1.5 flex-wrap justify-end">
+                          <span className="line-through text-slate-400 font-normal">
+                            ¥{showCheckoutModal.listPrice.toLocaleString()}
+                          </span>
+                          <span className="bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 text-[10px] px-1.5 py-0.5 rounded font-black shrink-0">
+                            {appliedCoupon && couponDiscount ? couponDiscount : 30}% お得
+                          </span>
+                          <span className="font-extrabold text-rose-500">
+                            = ¥{(appliedCoupon && couponDiscount ? Math.floor(showCheckoutModal.listPrice * (1 - couponDiscount / 100)) : showCheckoutModal.campaignPrice).toLocaleString()} / 月
+                          </span>
+                        </span>
+                      ) : (
+                        <span>¥0 / 月</span>
+                      )}
+                    </span>
+                  </div>
+                  {appliedCoupon && (
+                    <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex justify-between items-center border-t border-slate-100 dark:border-slate-800/50 pt-1.5">
+                      <span>適用中のクーポン: {appliedCoupon}</span>
+                      <span>-{couponDiscount}% OFF</span>
+                    </div>
+                  )}
                 </div>
               </div>
 

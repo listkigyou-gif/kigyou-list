@@ -164,7 +164,7 @@ Vì VPS có RAM 2GB, chúng ta cần cấu hình PostgreSQL tối ưu hóa bộ 
 
 ## 📦 BƯỚC 6: TỰ ĐỘNG HÓA SAO LƯU DATABASE (BACKUP TO CLOUDFLARE R2)
 
-Để đảm bảo kho dữ liệu và thông tin khách hàng không bao giờ bị mất mát, chúng ta thiết lập script tự động backup cơ sở dữ liệu lên **Cloudflare R2** vào 2 giờ sáng mỗi ngày.
+Để đảm bảo kho dữ liệu và thông tin khách hàng không bao giờ bị mất mát, chúng ta thiết lập script tự động backup cơ sở dữ liệu lên **Cloudflare R2** định kỳ mỗi 6 tiếng một lần.
 
 1.  Cài đặt AWS CLI (Để giao tiếp với Cloudflare R2 qua giao thức S3):
     ```bash
@@ -228,9 +228,9 @@ Vì VPS có RAM 2GB, chúng ta cần cấu hình PostgreSQL tối ưu hóa bộ 
     # Mở bảng lập lịch crontab
     crontab -e
     ```
-    Thêm dòng cấu hình sau ở cuối file để chạy script vào **2 giờ sáng hàng ngày**:
+    Thêm dòng cấu hình sau ở cuối file để chạy script **định kỳ mỗi 6 tiếng một lần**:
     ```cron
-    0 2 * * * /bin/bash /home/ubuntu/scripts/db_backup.sh >> /home/ubuntu/scripts/backup.log 2>&1
+    0 */6 * * * /bin/bash /home/ubuntu/scripts/db_backup.sh >> /home/ubuntu/scripts/backup.log 2>&1
     ```
 
 ---

@@ -154,9 +154,9 @@ export async function POST(request: Request) {
 
       const sessionData: any = {
         payment_method_types: ["card"],
-        consent_collection: {
-          terms_of_service: "required",
-        },
+        // consent_collection: {
+        //   terms_of_service: "required",
+        // },
         line_items: [
           {
             price_data: {
