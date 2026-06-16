@@ -48,9 +48,9 @@ if ! command -v certbot &> /dev/null; then
     sudo apt install certbot python3-certbot-nginx -y
 fi
 
-# Chạy Certbot để đăng ký và cấu hình HTTPS tự động
-echo "Nhấn Enter để tiếp tục đăng ký SSL. Certbot sẽ hỏi email và lựa chọn redirect..."
-sudo certbot --nginx -d kigyoulist.com -d www.kigyoulist.com
+# Chạy Certbot để đăng ký và cấu hình HTTPS tự động (Chế độ không tương tác để tránh bị nghẽn prompt)
+echo "Cấu hình SSL..."
+sudo certbot --nginx -d kigyoulist.com -d www.kigyoulist.com --keep-until-expiring --non-interactive --agree-tos --register-unsafely-without-email
 
 # 5. Khởi chạy PM2
 echo "5. Đang cấu hình và chạy PM2..."
