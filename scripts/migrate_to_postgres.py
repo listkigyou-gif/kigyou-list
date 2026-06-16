@@ -10,6 +10,11 @@ SQLITE_DB = "kigyou-list.db"
 
 # Retrieve PostgreSQL URL from environment or .env file
 def get_postgres_url():
+    # Fallback to system env first
+    env_url = os.environ.get("DATABASE_URL")
+    if env_url:
+        return env_url
+
     # Attempt to read .env first
     if os.path.exists(".env"):
         with open(".env", "r", encoding="utf-8") as f:
@@ -23,9 +28,6 @@ def get_postgres_url():
             for line in f:
                 if line.strip().startswith("DATABASE_URL="):
                     return line.strip().split("DATABASE_URL=")[1].strip().strip('"').strip("'")
-                    
-    # Fallback to system env
-    return os.environ.get("DATABASE_URL")
 
 def main():
     pg_url = get_postgres_url()
