@@ -71,7 +71,11 @@ def main():
         print("Syncing posts to PostgreSQL...")
         for post in posts:
             slug, title, content, summary, category, published_at, locale = post
-            print(f"Syncing: [{locale}] {title} (slug: {slug})")
+            try:
+                safe_title = title.encode(sys.stdout.encoding or 'utf-8', errors='replace').decode(sys.stdout.encoding or 'utf-8')
+                print(f"Syncing: [{locale}] {safe_title} (slug: {slug})")
+            except Exception:
+                print(f"Syncing: [{locale}] slug: {slug}")
             pg_cur.execute("""
                 INSERT INTO blog_posts (slug, title, content, summary, category, published_at, locale)
                 VALUES (%s, %s, %s, %s, %s, %s, %s)
