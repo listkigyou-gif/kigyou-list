@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Filter, Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
+import { industryJaToEn } from "@/lib/locale-mapping";
 
 interface PrefectureOption {
   code: string;
@@ -103,7 +105,31 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 }) => {
   const router = useRouter();
   const { isLoggedIn, user, setAuthModalOpen } = useAuth();
+  const { locale, t } = useLanguage();
   const isProOrHigher = user && (user.role === 'pro' || user.role === 'business' || user.role === 'enterprise');
+
+  const displayCapital = (val?: number) => {
+    if (val === undefined || val === null) return "";
+    return String(locale === 'en' ? val / 100 : val);
+  };
+  const displaySales = (val?: number) => {
+    if (val === undefined || val === null) return "";
+    return String(locale === 'en' ? val * 105 || val * 100 : val); // standard float multiplier
+  };
+
+  const processCapitalInput = (val: string) => {
+    if (!val) return null;
+    const num = parseFloat(val);
+    if (isNaN(num)) return null;
+    return String(locale === 'en' ? Math.round(num * 100) : num);
+  };
+
+  const processSalesInput = (val: string) => {
+    if (!val) return null;
+    const num = parseFloat(val);
+    if (isNaN(num)) return null;
+    return String(locale === 'en' ? (num / 100) : num);
+  };
 
   // Build a new query string merging current params with overrides
   const buildUrl = (overrides: Record<string, string | null | undefined>) => {
@@ -205,7 +231,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200/80 dark:border-slate-800">
         <h2 className="font-bold flex items-center gap-2 text-slate-800 dark:text-white">
           <Filter className="w-4 h-4 text-primary" />
-          絞り込み条件
+          {t.search.title}
         </h2>
         {onFilterChange ? (
           <button
@@ -241,16 +267,16 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               min_net_income: null,
               max_net_income: null,
             })}
-            className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+            className="text-xs text-slate-400 hover:text-slate-650 dark:hover:text-white transition-colors"
           >
-            クリア
+            {t.search.clear}
           </button>
         ) : (
           <Link
-            href="/search"
-            className="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+            href={locale === "en" ? "/en/search" : "/search"}
+            className="text-xs text-slate-400 hover:text-slate-650 dark:hover:text-white transition-colors"
           >
-            クリア
+            {t.search.clear}
           </Link>
         )}
       </div>
@@ -259,17 +285,17 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         {/* Filter by Prefecture */}
         <div>
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-            都道府県
+            {t.search.prefecture}
           </label>
           <select
             value={prefCode || ""}
             onChange={(e) => navigate({ prefecture: e.target.value || null, city: null })}
             className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:border-slate-700"
           >
-            <option value="">すべて（日本全国）</option>
+            <option value="">{t.search.allPrefectures}</option>
             {prefectures.map((pref) => (
               <option key={pref.code} value={pref.code}>
-                {pref.name} ({pref.count})
+                {(t.prefectures as Record<string, string>)?.[pref.name] || pref.name} ({pref.count.toLocaleString()}{locale === 'en' ? ' companies' : '社'})
               </option>
             ))}
           </select>
@@ -279,17 +305,17 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         {prefCode && cities && cities.length > 0 && (
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-              市区町村
+              {t.search.city}
             </label>
             <select
               value={city || ""}
               onChange={(e) => navigate({ city: e.target.value || null })}
               className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:border-slate-700"
             >
-              <option value="">すべての市区町村</option>
+              <option value="">{t.search.allCities}</option>
               {cities.map((c) => (
                 <option key={c.cityName} value={c.cityName}>
-                  {c.cityName} ({c.count.toLocaleString()}社)
+                  {c.cityName} ({c.count.toLocaleString()}{locale === 'en' ? ' companies' : '社'})
                 </option>
               ))}
             </select>
@@ -299,22 +325,22 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         {/* Filter by Industry */}
         <div>
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-            JSIC 産業分類
+            {t.search.industry}
           </label>
           <select
             value={indCode || ""}
             onChange={(e) => navigate({ industry: e.target.value || null })}
             className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:border-slate-700 font-sans"
           >
-            <option value="">すべての業界</option>
+            <option value="">{t.search.allIndustries}</option>
             {industries.map((major) => (
               <React.Fragment key={major.code}>
                 <option value={major.code} className="font-extrabold text-slate-900 dark:text-white">
-                  {major.code} {major.name} (計 {major.totalCount.toLocaleString()}社)
+                  {major.code} {(t.majorIndustries as Record<string, string>)?.[major.code] || major.name} ({locale === 'en' ? 'Total' : '計'} {major.totalCount.toLocaleString()}{locale === 'en' ? ' companies' : '社'})
                 </option>
                 {major.children.map((medium) => (
                   <option key={medium.code} value={medium.code} className="text-slate-700 dark:text-slate-300">
-                    {"\u00A0\u00A0"}{medium.code} {medium.name} ({medium.count.toLocaleString()}社)
+                    {"\u00A0\u00A0"}{medium.code} {locale === 'en' ? (industryJaToEn[medium.name] || medium.name) : medium.name} ({medium.count.toLocaleString()}{locale === 'en' ? ' companies' : '社'})
                   </option>
                 ))}
               </React.Fragment>
@@ -325,12 +351,12 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         {/* Filter by Employee Count */}
         <div>
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-            従業員数
+            {t.search.employees}
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
               type="number"
-              placeholder="下限 (名)"
+              placeholder={t.search.minEmployees}
               defaultValue={minEmp || ""}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -348,7 +374,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             />
             <input
               type="number"
-              placeholder="上限 (名)"
+              placeholder={t.search.maxEmployees}
               defaultValue={maxEmp || ""}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -370,41 +396,41 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         {/* Filter by Capital */}
         <div>
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-            資本金
+            {t.search.capital}
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
               type="number"
-              placeholder="下限 (万円)"
-              defaultValue={minCap || ""}
+              placeholder={t.search.minCapital}
+              defaultValue={displayCapital(minCap)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   const val = (e.target as HTMLInputElement).value;
-                  navigate({ min_capital: val || null });
+                  navigate({ min_capital: processCapitalInput(val) });
                 }
               }}
               onBlur={(e) => {
                 const val = e.target.value;
-                if (val !== (minCap != null ? String(minCap) : "")) {
-                  navigate({ min_capital: val || null });
+                if (val !== displayCapital(minCap)) {
+                  navigate({ min_capital: processCapitalInput(val) });
                 }
               }}
               className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
             />
             <input
               type="number"
-              placeholder="上限 (万円)"
-              defaultValue={maxCap || ""}
+              placeholder={t.search.maxCapital}
+              defaultValue={displayCapital(maxCap)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   const val = (e.target as HTMLInputElement).value;
-                  navigate({ max_capital: val || null });
+                  navigate({ max_capital: processCapitalInput(val) });
                 }
               }}
               onBlur={(e) => {
                 const val = e.target.value;
-                if (val !== (maxCap != null ? String(maxCap) : "")) {
-                  navigate({ max_capital: val || null });
+                if (val !== displayCapital(maxCap)) {
+                  navigate({ max_capital: processCapitalInput(val) });
                 }
               }}
               className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
@@ -415,41 +441,41 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         {/* Filter by Sales */}
         <div>
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-            売上高
+            {t.search.sales}
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
               type="number"
-              placeholder="下限 (億円)"
-              defaultValue={minSales || ""}
+              placeholder={t.search.minSales}
+              defaultValue={displaySales(minSales)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   const val = (e.target as HTMLInputElement).value;
-                  navigate({ min_sales: val || null });
+                  navigate({ min_sales: processSalesInput(val) });
                 }
               }}
               onBlur={(e) => {
                 const val = e.target.value;
-                if (val !== (minSales != null ? String(minSales) : "")) {
-                  navigate({ min_sales: val || null });
+                if (val !== displaySales(minSales)) {
+                  navigate({ min_sales: processSalesInput(val) });
                 }
               }}
               className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
             />
             <input
               type="number"
-              placeholder="上限 (億円)"
-              defaultValue={maxSales || ""}
+              placeholder={t.search.maxSales}
+              defaultValue={displaySales(maxSales)}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
                   const val = (e.target as HTMLInputElement).value;
-                  navigate({ max_sales: val || null });
+                  navigate({ max_sales: processSalesInput(val) });
                 }
               }}
               onBlur={(e) => {
                 const val = e.target.value;
-                if (val !== (maxSales != null ? String(maxSales) : "")) {
-                  navigate({ max_sales: val || null });
+                if (val !== displaySales(maxSales)) {
+                  navigate({ max_sales: processSalesInput(val) });
                 }
               }}
               className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
@@ -460,7 +486,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         {/* Growth & Financial Indicators */}
         <div className="border-t border-slate-100 dark:border-slate-800/60 pt-4">
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-            財務指標 (決算)
+            {t.search.financials}
           </label>
           <div className="flex flex-col gap-4">
 
@@ -468,41 +494,41 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             {/* Operating Income */}
             <div>
               <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                営業利益
+                {t.search.operatingIncome}
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="number"
-                  placeholder="下限 (億円)"
-                  defaultValue={minOpIncome || ""}
+                  placeholder={t.search.minSales}
+                  defaultValue={displaySales(minOpIncome)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       const val = (e.target as HTMLInputElement).value;
-                      navigate({ min_operating_income: val || null });
+                      navigate({ min_operating_income: processSalesInput(val) });
                     }
                   }}
                   onBlur={(e) => {
                     const val = e.target.value;
-                    if (val !== (minOpIncome != null ? String(minOpIncome) : "")) {
-                      navigate({ min_operating_income: val || null });
+                    if (val !== displaySales(minOpIncome)) {
+                      navigate({ min_operating_income: processSalesInput(val) });
                     }
                   }}
                   className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
                 />
                 <input
                   type="number"
-                  placeholder="上限 (億円)"
-                  defaultValue={maxOpIncome || ""}
+                  placeholder={t.search.maxSales}
+                  defaultValue={displaySales(maxOpIncome)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       const val = (e.target as HTMLInputElement).value;
-                      navigate({ max_operating_income: val || null });
+                      navigate({ max_operating_income: processSalesInput(val) });
                     }
                   }}
                   onBlur={(e) => {
                     const val = e.target.value;
-                    if (val !== (maxOpIncome != null ? String(maxOpIncome) : "")) {
-                      navigate({ max_operating_income: val || null });
+                    if (val !== displaySales(maxOpIncome)) {
+                      navigate({ max_operating_income: processSalesInput(val) });
                     }
                   }}
                   className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
@@ -513,41 +539,41 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             {/* Ordinary Income */}
             <div>
               <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                経常利益
+                {t.search.ordinaryIncome}
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="number"
-                  placeholder="下限 (億円)"
-                  defaultValue={minOrdIncome || ""}
+                  placeholder={t.search.minSales}
+                  defaultValue={displaySales(minOrdIncome)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       const val = (e.target as HTMLInputElement).value;
-                      navigate({ min_ordinary_income: val || null });
+                      navigate({ min_ordinary_income: processSalesInput(val) });
                     }
                   }}
                   onBlur={(e) => {
                     const val = e.target.value;
-                    if (val !== (minOrdIncome != null ? String(minOrdIncome) : "")) {
-                      navigate({ min_ordinary_income: val || null });
+                    if (val !== displaySales(minOrdIncome)) {
+                      navigate({ min_ordinary_income: processSalesInput(val) });
                     }
                   }}
                   className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
                 />
                 <input
                   type="number"
-                  placeholder="上限 (億円)"
-                  defaultValue={maxOrdIncome || ""}
+                  placeholder={t.search.maxSales}
+                  defaultValue={displaySales(maxOrdIncome)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       const val = (e.target as HTMLInputElement).value;
-                      navigate({ max_ordinary_income: val || null });
+                      navigate({ max_ordinary_income: processSalesInput(val) });
                     }
                   }}
                   onBlur={(e) => {
                     const val = e.target.value;
-                    if (val !== (maxOrdIncome != null ? String(maxOrdIncome) : "")) {
-                      navigate({ max_ordinary_income: val || null });
+                    if (val !== displaySales(maxOrdIncome)) {
+                      navigate({ max_ordinary_income: processSalesInput(val) });
                     }
                   }}
                   className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
@@ -558,41 +584,41 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             {/* Net Income */}
             <div>
               <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
-                当期純利益
+                {t.search.netIncome}
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <input
                   type="number"
-                  placeholder="下限 (億円)"
-                  defaultValue={minNetIncome || ""}
+                  placeholder={t.search.minSales}
+                  defaultValue={displaySales(minNetIncome)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       const val = (e.target as HTMLInputElement).value;
-                      navigate({ min_net_income: val || null });
+                      navigate({ min_net_income: processSalesInput(val) });
                     }
                   }}
                   onBlur={(e) => {
                     const val = e.target.value;
-                    if (val !== (minNetIncome != null ? String(minNetIncome) : "")) {
-                      navigate({ min_net_income: val || null });
+                    if (val !== displaySales(minNetIncome)) {
+                      navigate({ min_net_income: processSalesInput(val) });
                     }
                   }}
                   className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
                 />
                 <input
                   type="number"
-                  placeholder="上限 (億円)"
-                  defaultValue={maxNetIncome || ""}
+                  placeholder={t.search.maxSales}
+                  defaultValue={displaySales(maxNetIncome)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       const val = (e.target as HTMLInputElement).value;
-                      navigate({ max_net_income: val || null });
+                      navigate({ max_net_income: processSalesInput(val) });
                     }
                   }}
                   onBlur={(e) => {
                     const val = e.target.value;
-                    if (val !== (maxNetIncome != null ? String(maxNetIncome) : "")) {
-                      navigate({ max_net_income: val || null });
+                    if (val !== displaySales(maxNetIncome)) {
+                      navigate({ max_net_income: processSalesInput(val) });
                     }
                   }}
                   className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
@@ -605,12 +631,12 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         {/* Filter by Establishment Year */}
         <div>
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-            設立年度
+            {t.search.establishmentYear}
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
               type="number"
-              placeholder="下限 (年)"
+              placeholder={t.search.minEstablishmentYear}
               defaultValue={minEstYear || ""}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -628,7 +654,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             />
             <input
               type="number"
-              placeholder="上限 (年)"
+              placeholder={t.search.maxEstablishmentYear}
               defaultValue={maxEstYear || ""}
               onKeyDown={(e) => {
                 if (e.key === "Enter") {
@@ -650,23 +676,23 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         {/* Filter by Status */}
         <div>
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
-            企業ステータス
+            {t.search.status}
           </label>
           <select
             value={companyStatus || ""}
             onChange={(e) => navigate({ status: e.target.value || null })}
             className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:border-slate-700"
           >
-            <option value="">すべてのステータス</option>
-            <option value="活動中">活動中</option>
-            <option value="閉鎖">閉鎖</option>
+            <option value="">{t.search.allStatuses}</option>
+            <option value="活動中">{t.search.active}</option>
+            <option value="閉鎖">{t.search.closed}</option>
           </select>
         </div>
 
         {/* Intent Signal Filters */}
         <div className="relative">
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-            営業活動シグナル 🔑
+            {t.search.signals}
           </label>
           <div className={`${!isLoggedIn ? "blur-[2.5px] pointer-events-none select-none opacity-60" : ""} flex flex-col gap-2.5`}>
             <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
@@ -677,7 +703,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 onChange={(e) => navigate({ hiring: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
               />
-              <span>求人活動あり</span>
+              <span>{t.search.hiring}</span>
             </label>
             <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
               <input
@@ -687,7 +713,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 onChange={(e) => navigate({ subsidy: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
               />
-              <span>国の補助金受給履歴あり</span>
+              <span>{t.search.subsidy}</span>
             </label>
             <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
               <input
@@ -697,7 +723,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 onChange={(e) => navigate({ bidding: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
               />
-              <span>公共機関の入札落札実績あり</span>
+              <span>{t.search.bidding}</span>
             </label>
             <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
               <input
@@ -707,7 +733,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 onChange={(e) => navigate({ award: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
               />
-              <span className="flex items-center gap-1">表彰受賞実績あり</span>
+              <span className="flex items-center gap-1">{t.search.award}</span>
             </label>
             <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
               <input
@@ -717,7 +743,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 onChange={(e) => navigate({ certification: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
               />
-              <span className="flex items-center gap-1">行政の届出認定あり</span>
+              <span className="flex items-center gap-1">{t.search.certification}</span>
             </label>
             <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
               <input
@@ -727,7 +753,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 onChange={(e) => navigate({ patent: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
               />
-              <span className="flex items-center gap-1">特許・商標の保有あり</span>
+              <span className="flex items-center gap-1">{t.search.patent}</span>
             </label>
             <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
               <input
@@ -737,18 +763,18 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 onChange={(e) => navigate({ financials: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
               />
-              <span className="flex items-center gap-1">決算・財務情報あり</span>
+              <span className="flex items-center gap-1">{t.search.hasFinancials}</span>
             </label>
           </div>
           {!isLoggedIn && (
             <div 
               onClick={() => setAuthModalOpen(true)}
               className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-transparent z-10"
-              title="クリックして無料会員登録"
+              title={locale === 'en' ? "Click to register free" : "クリックして無料会員登録"}
             >
               <div className="bg-amber-100/90 dark:bg-amber-950/90 border border-amber-250/50 dark:border-amber-900/50 rounded-xl px-2.5 py-1.5 flex items-center gap-1 shadow-sm text-[10px] font-black text-amber-800 dark:text-amber-300 hover:scale-105 transition-transform duration-200">
                 <Lock className="w-3.5 h-3.5" />
-                無料登録で利用可能
+                {locale === 'en' ? "Register Free to Unlock" : "無料登録で利用可能"}
               </div>
             </div>
           )}
@@ -757,7 +783,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         {/* Contact Presence Filters */}
         <div className="relative">
           <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
-            連絡先情報の有無 🔑
+            {t.search.contactPresence}
           </label>
           <div className={`${!isProOrHigher ? "blur-[2.5px] pointer-events-none select-none opacity-60" : ""} flex flex-col gap-2.5`}>
             <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
@@ -768,7 +794,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 onChange={(e) => navigate({ email: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
               />
-              <span>Emailあり</span>
+              <span>{t.search.emailLabel}</span>
             </label>
             <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
               <input
@@ -778,7 +804,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 onChange={(e) => navigate({ phone: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
               />
-              <span>電話番号あり</span>
+              <span>{t.search.phoneLabel}</span>
             </label>
             <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
               <input
@@ -788,7 +814,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 onChange={(e) => navigate({ website: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
               />
-              <span>Websiteあり</span>
+              <span>{t.search.websiteLabel}</span>
             </label>
             <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
               <input
@@ -798,7 +824,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 onChange={(e) => navigate({ fax: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
               />
-              <span>FAXあり</span>
+              <span>{t.search.faxLabel}</span>
             </label>
           </div>
           {!isProOrHigher && (
@@ -807,15 +833,15 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 if (!isLoggedIn) {
                   setAuthModalOpen(true);
                 } else {
-                  router.push("/pricing");
+                  router.push(locale === 'en' ? "/en/pricing" : "/pricing");
                 }
               }}
               className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-transparent z-10"
-              title={isLoggedIn ? "クリックしてProにアップグレード" : "クリックして会員登録"}
+              title={isLoggedIn ? (locale === 'en' ? "Click to upgrade to PRO" : "クリックしてProにアップグレード") : (locale === 'en' ? "Click to register" : "クリックして会員登録")}
             >
               <div className="bg-amber-100/90 dark:bg-amber-950/90 border border-amber-250/50 dark:border-amber-900/50 rounded-xl px-2.5 py-1.5 flex items-center gap-1 shadow-sm text-[10px] font-black text-amber-800 dark:text-amber-300 hover:scale-105 transition-transform duration-200">
                 <Lock className="w-3.5 h-3.5" />
-                Proプランで利用可能
+                {locale === 'en' ? "PRO Plan Required" : "Proプランで利用可能"}
               </div>
             </div>
           )}

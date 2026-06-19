@@ -238,7 +238,8 @@ def main():
         summary TEXT NOT NULL,
         category VARCHAR(100) NOT NULL,
         published_at VARCHAR(20) NOT NULL,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        locale VARCHAR(10) DEFAULT 'ja'
     );
     """)
 
@@ -549,8 +550,8 @@ def main():
         # Table 11: blog_posts
         migrate_table_csv(
             "blog_posts",
-            "SELECT id, slug, title, content, summary, category, published_at, created_at FROM blog_posts",
-            ["id", "slug", "title", "content", "summary", "category", "published_at", "created_at"],
+            "SELECT id, slug, title, content, summary, category, published_at, created_at, locale FROM blog_posts",
+            ["id", "slug", "title", "content", "summary", "category", "published_at", "created_at", "locale"],
             None
         )
 

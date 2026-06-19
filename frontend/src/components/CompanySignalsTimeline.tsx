@@ -6,18 +6,13 @@ import {
 } from 'lucide-react';
 import { UnlockCard } from './UnlockCard';
 import { BusinessSignal } from '@/lib/db';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface CompanySignalsTimelineProps {
   signals: BusinessSignal[];
 }
 
-const keyLabels: Record<string, string> = {
-  wages: "賃金",
-  work_location: "就業場所",
-  holidays: "休日",
-  job_description: "仕事内容",
-  required_experience: "必要な経験等",
-};
+
 
 // CSS-animated accordion panel — pre-renders content, toggles with max-height transition
 // This avoids the JS re-render lag from conditional {isExpanded && (...)}
@@ -47,6 +42,7 @@ const AccordionPanel: React.FC<{ isExpanded: boolean; children: React.ReactNode 
 };
 
 export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ signals }) => {
+  const { locale, t } = useLanguage();
   // Group signals by type and track total counts
   const groupedSignals: Record<string, BusinessSignal[]> = {};
   const signalTotals: Record<string, number> = {};
@@ -76,43 +72,44 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
     switch (type) {
       case '求人あり':
         return {
-          title: "求人情報 (Hiring)",
+          title: t.company.signalTypes.hiring,
           iconColor: "bg-emerald-500 text-white",
           IconComponent: Briefcase,
         };
       case '補助金受給':
         return {
-          title: "国の補助金受給履歴 (Subsidy)",
+          title: t.company.signalTypes.subsidy,
           iconColor: "bg-orange-500 text-white",
           IconComponent: DollarSign,
         };
       case '調達案件':
         return {
-          title: "公共機関の入札落札実績 (Bidding)",
+          title: t.company.signalTypes.bidding,
           iconColor: "bg-blue-500 text-white",
           IconComponent: DollarSign,
         };
       case '表彰':
         return {
-          title: "表彰受賞実績 (Awards)",
+          title: t.company.signalTypes.awards,
           iconColor: "bg-rose-500 text-white",
           IconComponent: Award,
         };
       case '届出認定':
         return {
-          title: "行政の届出認定 (Certifications)",
+          title: t.company.signalTypes.certifications,
           iconColor: "bg-teal-500 text-white",
           IconComponent: Award,
         };
       case '特許':
         return {
-          title: "特許・商標の保有 (Patents/Trademarks)",
+          title: t.company.signalTypes.patents,
           iconColor: "bg-amber-500 text-white",
           IconComponent: Lightbulb,
         };
       default:
+        const translatedType = type === 'その他' ? (locale === 'en' ? 'Other' : 'その他') : type;
         return {
-          title: `${type}情報`,
+          title: t.company.signalTypes.other.replace("{type}", translatedType),
           iconColor: "bg-slate-500 text-white",
           IconComponent: FileText,
         };
@@ -148,7 +145,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                     {meta.title}
                   </h3>
                   <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
-                    登録件数: {totalCount.toLocaleString()}件
+                    {t.company.registeredCount.replace("{count}", totalCount.toLocaleString())}
                   </span>
                 </div>
               </div>
@@ -164,8 +161,8 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                   type="block"
                   fallbackText={
                     isPatent
-                      ? "特許の番号や詳細な登録情報、公開日、FIコード等がここに表示されます。"
-                      : "求人の詳細な募集要項、助成金の受給理由や調達内容がここに表示されます。"
+                      ? t.company.patentDetailsPlaceholder
+                      : t.company.signalDetailsPlaceholder
                   }
                 >
                   <div className="relative border-l-2 border-dashed border-slate-200 dark:border-slate-800/80 ml-4 pl-6 flex flex-col gap-8">
@@ -179,7 +176,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                         {/* Date */}
                         <span className="text-[10px] font-black text-slate-400 font-mono tracking-wider uppercase flex items-center gap-1.5 mb-1">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                          {sig.signal_date || '日付未登録'}
+                          {sig.signal_date || t.company.dateUnregistered}
                         </span>
 
                         {/* Title */}
@@ -190,13 +187,22 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                         {/* Details */}
                         {sig.details && (
                           <div className="flex flex-col gap-1 max-w-2xl">
-                            <span className="text-[9px] font-bold text-slate-400 block mb-0.5">シグナル詳細内容 🔑</span>
+                            <span className="text-[9px] font-bold text-slate-400 block mb-0.5">{t.company.signalDetailsLabel}</span>
                             <div className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
                               {(() => {
                                 if (isPatent) {
                                   try {
                                     const parsed = JSON.parse(sig.details);
-                                    const patentType = parsed.patent_type || "特許";
+                                    let patentType = parsed.patent_type || "特許";
+                                    if (locale === 'en') {
+                                      const patentTypeMap: Record<string, string> = {
+                                        "特許": "Patent",
+                                        "実用新案": "Utility Model",
+                                        "意匠": "Design",
+                                        "商標": "Trademark"
+                                      };
+                                      patentType = patentTypeMap[patentType] || patentType;
+                                    }
                                     const regNum = parsed.registration_number || "";
                                     const title = sig.signal_title || "";
                                     return `${patentType}: ${regNum} - ${title}`;
@@ -215,7 +221,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                                     return (
                                       <div className="flex flex-col gap-1.5 mt-1">
                                         {filteredEntries.map(([key, value]) => {
-                                          const label = keyLabels[key] || key;
+                                          const label = t.company.signalLabels[key as keyof typeof t.company.signalLabels] || key;
                                           return (
                                             <div key={key} className="flex flex-col sm:flex-row sm:items-start gap-1">
                                               <span className="font-bold text-slate-400 dark:text-slate-500 min-w-[80px] shrink-0 text-[10px]">{label}:</span>
@@ -240,7 +246,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
 
                   {totalCount > 20 && (
                     <div className="mt-5 pt-3 border-t border-slate-150 dark:border-slate-800 text-[11px] text-slate-400 dark:text-slate-500 font-medium ml-4">
-                      ※データ件数が多いため、直近の20件のみ表示しています。
+                      {t.company.recentRecordsNotice}
                     </div>
                   )}
                 </UnlockCard>

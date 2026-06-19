@@ -6,12 +6,14 @@ import {
 } from 'lucide-react';
 import { CompanyFinancial } from '@/lib/db';
 import { UnlockCard } from './UnlockCard';
+import { useLanguage } from '@/context/LanguageContext';
 
 interface CompanyFinancialsProps {
   financials: CompanyFinancial[];
 }
 
 export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials }) => {
+  const { locale, t } = useLanguage();
   const [activeTab, setActiveTab] = useState<'trend' | 'balance'>('trend');
   const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
   const [hoveredBsIndex, setHoveredBsIndex] = useState<number | null>(null);
@@ -22,9 +24,9 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
       <div className="py-12 border-2 border-dashed border-slate-200 rounded-2xl dark:border-slate-800 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
         <AlertCircle className="w-10 h-10 text-slate-300" />
         <div>
-          <h4 className="font-bold text-slate-800 dark:text-white text-sm mb-1">財務推移データは未登録です</h4>
+          <h4 className="font-bold text-slate-800 dark:text-white text-sm mb-1">{t.company.financialChartUnregistered}</h4>
           <p className="text-xs max-w-xs mx-auto leading-relaxed">
-            この企業の財務情報は未申告です。企業オーナー様は無料登録後、決算報告書をアップロードして情報を更新できます。
+            {t.company.financialChartUnregisteredDesc}
           </p>
         </div>
       </div>
@@ -46,8 +48,13 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
   }
 
   // Helpers
-  const formatAmount = (val: number | null) => {
+  const formatAmount = (val: number | null, useFull = false) => {
     if (val === null || val === undefined) return '-';
+    if (locale === 'en') {
+      const millionVal = val / 1000000;
+      const formatted = millionVal.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      return useFull ? `¥${formatted} Million JPY` : `¥${formatted}M JPY`;
+    }
     if (Math.abs(val) >= 100000000) {
       return `${(val / 100000000).toLocaleString(undefined, { maximumFractionDigits: 1 })}億円`;
     }
@@ -59,7 +66,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
       return (
         <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 dark:bg-indigo-950/20 dark:text-indigo-400 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/50 flex items-center gap-1 shadow-sm">
           <Info className="w-3 h-3" />
-          官公・公的データ 統合
+          {t.company.govIntegrator}
         </span>
       );
     } else if (source === 'XML') {
@@ -68,7 +75,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
     return (
       <span className="text-[10px] font-bold text-teal-700 bg-teal-50 dark:bg-teal-950/20 dark:text-teal-400 px-2 py-0.5 rounded border border-teal-100 dark:border-teal-900/50 flex items-center gap-1 shadow-sm">
         <Info className="w-3 h-3" />
-        公的データ CSV
+        {t.company.govCsv}
       </span>
     );
   };
@@ -92,7 +99,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
     
     const points: string[] = [];
     const salesBars = sortedFinancials.map((f, i) => {
-      const yearStr = f.fiscal_year + '年';
+      const yearStr = locale === 'en' ? `FY ${f.fiscal_year}` : `${f.fiscal_year}年`;
       const x = paddingLeft + (chartWidth / (sortedFinancials.length)) * (i + 0.5);
       
       const salesVal = f.revenue || f.sales_amount || 0;
@@ -220,7 +227,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     />
                   ) : (
                     <text x={bar.cx} y={height - paddingBottom - 10} textAnchor="middle" className="text-[8px] font-bold fill-slate-400 dark:fill-slate-600">
-                      (非公開)
+                      {t.company.nonDisclosed}
                     </text>
                   )}
 
@@ -311,9 +318,9 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
             }}
           >
             <div className="font-black text-[10px] text-slate-400 mb-1.5 border-b border-slate-800 pb-1.5 flex items-center justify-between gap-4">
-              <span>{sortedFinancials[hoveredIndex].fiscal_year}年 決算実績</span>
+              <span>{t.company.fiscalYearTrend.replace("{year}", sortedFinancials[hoveredIndex].fiscal_year)}</span>
               <span className="text-amber-500 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider">
-                確定値
+                {t.company.confirmedStatus}
               </span>
             </div>
             
@@ -321,20 +328,20 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
               <div className="flex items-center justify-between gap-6">
                 <span className="flex items-center gap-1.5 text-slate-400">
                   <span className="w-2.5 h-2.5 rounded-sm bg-gradient-to-r from-[#1B4F8A] to-[#00A896]" />
-                  売上高:
+                  {t.company.revenue}
                 </span>
                 <span className="font-extrabold font-mono text-emerald-400">
-                  {formatAmount(sortedFinancials[hoveredIndex].revenue || sortedFinancials[hoveredIndex].sales_amount)}
+                  {formatAmount(sortedFinancials[hoveredIndex].revenue || sortedFinancials[hoveredIndex].sales_amount, true)}
                 </span>
               </div>
               
               <div className="flex items-center justify-between gap-6">
                 <span className="flex items-center gap-1.5 text-slate-400">
                   <span className="w-2.5 h-0.5 bg-[#F2A30F]" />
-                  経常利益:
+                  {t.company.ordinaryIncome}
                 </span>
                 <span className={`font-extrabold font-mono ${ (sortedFinancials[hoveredIndex].ordinary_income || 0) >= 0 ? 'text-amber-400' : 'text-rose-450' }`}>
-                  {formatAmount(sortedFinancials[hoveredIndex].ordinary_income)}
+                  {formatAmount(sortedFinancials[hoveredIndex].ordinary_income, true)}
                 </span>
               </div>
 
@@ -346,7 +353,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                   const margin = (income / sales) * 100;
                   return (
                     <div className="flex items-center justify-between gap-6 text-[10px] text-slate-400">
-                      <span>・売上経常利益率:</span>
+                      <span>{t.company.operatingMargin}</span>
                       <span className="font-bold font-mono">
                         {margin.toFixed(1)}%
                       </span>
@@ -359,7 +366,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
               {/* Year-over-Year Growth */}
               {hoveredIndex > 0 && sortedFinancials[hoveredIndex - 1] && (
                 <div className="mt-1.5 pt-1.5 border-t border-slate-800 text-[10px] text-slate-400 flex items-center justify-between">
-                  <span>前年売上比:</span>
+                  <span>{t.company.yoyGrowth}</span>
                   {(() => {
                     const prevSales = sortedFinancials[hoveredIndex - 1].revenue || sortedFinancials[hoveredIndex - 1].sales_amount || 0;
                     const currSales = sortedFinancials[hoveredIndex].revenue || sortedFinancials[hoveredIndex].sales_amount || 0;
@@ -383,11 +390,11 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
         <div className="flex items-center justify-center gap-6 text-xs font-bold text-slate-500 dark:text-slate-400">
           <span className="flex items-center gap-2 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">
             <span className="w-3.5 h-3.5 bg-gradient-to-r from-[#1B4F8A] to-[#00A896] rounded-sm" />
-            売上高 (棒グラフ)
+            {t.company.trendChartLegendRevenue}
           </span>
           <span className="flex items-center gap-2 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">
             <span className="w-4 h-1 bg-[#F2A30F] rounded-full inline-block relative -top-[1px]" />
-            経常利益 (折れ線)
+            {t.company.trendChartLegendOrdinary}
           </span>
         </div>
       </div>
@@ -404,9 +411,9 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
         <div className="py-12 border border-slate-100 dark:border-slate-800 rounded-2xl bg-white dark:bg-[#1C2128]/10 text-center text-slate-400 flex flex-col items-center gap-3">
           <AlertCircle className="w-10 h-10 text-amber-500/70" />
           <div className="max-w-xs mx-auto">
-            <h4 className="font-bold text-slate-850 dark:text-slate-200 text-sm mb-1">B/Sグラフィカル分析</h4>
+            <h4 className="font-bold text-slate-850 dark:text-slate-200 text-sm mb-1">{t.company.bsUnregistered}</h4>
             <p className="text-[11px] leading-relaxed">
-              詳細な貸借対照表（バランスシート）データは官報決算報告書（XML形式）に含まれます。本企業は現在、要約データのみ開示されています。
+              {t.company.bsUnregisteredDesc}
             </p>
           </div>
         </div>
@@ -430,7 +437,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
     const barWidth = groupWidth / 2 - 4;
 
     const bars = xmlRecords.map((f, i) => {
-      const yearStr = f.fiscal_year + '年';
+      const yearStr = locale === 'en' ? `FY ${f.fiscal_year}` : `${f.fiscal_year}年`;
       const colX = paddingLeft + columnWidth * (i + 0.5);
 
       const totalVal = f.total_assets || 0;
@@ -629,10 +636,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     {bar.yearStr}
                   </text>
                   <text x={bar.assets.x + barWidth / 2} y={height - paddingBottom + 29} textAnchor="middle" className="text-[8px] font-extrabold fill-slate-400 dark:fill-slate-500">
-                    資産
+                    {t.company.bsAssetsAxis}
                   </text>
                   <text x={bar.liabilitiesEquity.x + barWidth / 2} y={height - paddingBottom + 29} textAnchor="middle" className="text-[8px] font-extrabold fill-slate-400 dark:fill-slate-500">
-                    負債資本
+                    {t.company.bsLiabilitiesAxis}
                   </text>
                 </g>
               );
@@ -652,48 +659,48 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
             }}
           >
             <div className="font-black text-[10px] text-slate-400 mb-1.5 border-b border-slate-800 pb-1.5 flex items-center justify-between gap-4">
-              <span>{xmlRecords[hoveredBsIndex].fiscal_year}年 貸借対照表</span>
+              <span>{t.company.fiscalYearBS.replace("{year}", xmlRecords[hoveredBsIndex].fiscal_year)}</span>
               <span className="text-teal-400 font-bold bg-teal-500/10 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider">
-                要旨
+                {t.company.summaryStatus}
               </span>
             </div>
             
             <div className="flex flex-col gap-1.5 text-[10.5px] min-w-[180px]">
               <div className="flex items-center justify-between gap-5 font-extrabold text-emerald-400">
-                <span>総資産:</span>
-                <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].total_assets)}</span>
+                <span>{t.company.bsTotalAssets}:</span>
+                <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].total_assets, true)}</span>
               </div>
               
               <div className="pl-2 flex flex-col gap-1 text-[9.5px] text-slate-300 border-l border-emerald-500/30 ml-1">
                 <div className="flex items-center justify-between gap-4">
-                  <span>・流動資産:</span>
-                  <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].liquid_assets)}</span>
+                  <span>・{t.company.bsLiquidAssets}:</span>
+                  <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].liquid_assets, true)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4">
-                  <span>・固定資産:</span>
+                  <span>・{t.company.bsFixedAssets}:</span>
                   <span className="font-mono">
-                    {formatAmount(xmlRecords[hoveredBsIndex].fixed_assets || (xmlRecords[hoveredBsIndex].total_assets! - xmlRecords[hoveredBsIndex].liquid_assets!))}
+                    {formatAmount(xmlRecords[hoveredBsIndex].fixed_assets || (xmlRecords[hoveredBsIndex].total_assets! - xmlRecords[hoveredBsIndex].liquid_assets!), true)}
                   </span>
                 </div>
               </div>
               
               <div className="flex items-center justify-between gap-5 font-extrabold text-indigo-400 mt-1 border-t border-slate-800 pt-1.5">
-                <span>総負債・純資産:</span>
-                <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].total_assets)}</span>
+                <span>{t.company.bsTotalLiabilities}:</span>
+                <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].total_assets, true)}</span>
               </div>
               
               <div className="pl-2 flex flex-col gap-1 text-[9.5px] text-slate-400 border-l border-indigo-500/30 ml-1">
                 <div className="flex items-center justify-between gap-4">
-                  <span>・流動負債:</span>
-                  <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].liquid_liabilities)}</span>
+                  <span>・{t.company.bsLiquidLiabilities}:</span>
+                  <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].liquid_liabilities, true)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4 text-sky-400">
-                  <span>・固定負債:</span>
-                  <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].fixed_liabilities)}</span>
+                  <span>・{t.company.bsFixedLiabilities}:</span>
+                  <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].fixed_liabilities, true)}</span>
                 </div>
                 <div className="flex items-center justify-between gap-4 text-purple-400 font-extrabold">
-                  <span>・自己資本:</span>
-                  <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].net_assets)}</span>
+                  <span>・{t.company.bsNetAssets}:</span>
+                  <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].net_assets, true)}</span>
                 </div>
               </div>
             </div>
@@ -704,23 +711,23 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
         <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5 text-[10px] text-slate-500 dark:text-slate-400 font-bold bg-slate-50 dark:bg-[#1C2128]/25 p-4 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-sm">
           <div className="flex items-center gap-2 justify-center">
             <span className="w-3.5 h-3.5 bg-gradient-to-tr from-[#00A896] to-[#028090] rounded-sm shadow-sm" />
-            <span>流動資産</span>
+            <span>{t.company.bsLiquidAssets}</span>
           </div>
           <div className="flex items-center gap-2 justify-center">
             <span className="w-3.5 h-3.5 bg-gradient-to-tr from-[#028090] to-[#1B4F8A] rounded-sm shadow-sm" />
-            <span>固定資産</span>
+            <span>{t.company.bsFixedAssets}</span>
           </div>
           <div className="flex items-center gap-2 justify-center">
             <span className="w-3.5 h-3.5 bg-gradient-to-tr from-[#F72585] to-[#B5179E] rounded-sm shadow-sm" />
-            <span>流動負債</span>
+            <span>{t.company.bsLiquidLiabilities}</span>
           </div>
           <div className="flex items-center gap-2 justify-center">
             <span className="w-3.5 h-3.5 bg-gradient-to-tr from-[#4CC9F0] to-[#4895EF] rounded-sm shadow-sm" />
-            <span>固定負債</span>
+            <span>{t.company.bsFixedLiabilities}</span>
           </div>
           <div className="flex items-center gap-2 justify-center">
             <span className="w-3.5 h-3.5 bg-gradient-to-tr from-[#7209B7] to-[#560BAD] rounded-sm shadow-sm" />
-            <span>自己資本</span>
+            <span>{t.company.bsNetAssets}</span>
           </div>
         </div>
       </div>
@@ -741,7 +748,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5" />
-            決算・財務状況推移
+            {t.company.financialTrendTab}
           </button>
           <button 
             onClick={() => setActiveTab('balance')}
@@ -752,7 +759,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
             }`}
           >
             <PieChart className="w-3.5 h-3.5" />
-            バランスシート要旨
+            {t.company.balanceSheetTab}
           </button>
         </div>
         
@@ -773,15 +780,15 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
         <div className="mt-4 border border-slate-100 rounded-2xl p-5 md:p-6 dark:border-slate-800 bg-white dark:bg-[#1C2128]/40 shadow-sm">
           <h3 className="text-xs font-black text-slate-900 dark:text-white mb-4 flex items-center gap-2 pb-2 border-b border-slate-50 dark:border-slate-800/50">
             <Users className="w-4.5 h-4.5 text-primary" />
-            大株主構成
+            {t.company.shareholdersTitle}
           </h3>
-          <UnlockCard type="block" fallbackText="大株主の一覧がここに表示されます。">
+          <UnlockCard type="block" fallbackText={t.company.shareholdersFallback}>
             <div className="overflow-hidden border border-slate-100 dark:border-slate-850 rounded-xl">
               <table className="w-full text-xs text-left text-slate-500 dark:text-slate-400">
                 <thead className="text-[10px] text-slate-400 uppercase bg-slate-50 dark:bg-slate-800/40 font-bold border-b border-slate-100 dark:border-slate-850">
                   <tr>
-                    <th scope="col" className="px-4 py-3">株主・投資家名</th>
-                    <th scope="col" className="px-4 py-3 text-right">所有割合</th>
+                    <th scope="col" className="px-4 py-3">{t.company.shareholderName}</th>
+                    <th scope="col" className="px-4 py-3 text-right">{t.company.shareholderRatio}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-850">

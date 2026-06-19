@@ -3,9 +3,12 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Cookie, X } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
 
 export const CookieBanner: React.FC = () => {
   const [isVisible, setIsVisible] = useState(false);
+  const { locale } = useLanguage();
+  const isEn = locale === "en";
 
   useEffect(() => {
     // Check localStorage for consent state
@@ -39,27 +42,42 @@ export const CookieBanner: React.FC = () => {
             <Cookie className="w-4.5 h-4.5" />
           </div>
           <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
-            Cookie（クッキー）の使用について
+            {isEn ? "About Cookie Usage" : "Cookie（クッキー）の使用について"}
           </h4>
         </div>
         <button
           onClick={handleReject}
           className="text-slate-400 hover:text-slate-650 dark:hover:text-slate-250 transition-colors p-1 cursor-pointer"
-          aria-label="Close cookie consent banner"
+          aria-label={isEn ? "Close cookie consent banner" : "Cookie承諾バナーを閉じる"}
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-        当社は、お客様の利便性向上やアクセス解析のためにCookieを使用しています。「同意する」をクリックするか、本サイトの閲覧を続行することで、Cookieの使用に同意したことになります。詳細については、
-        <Link
-          href="/privacy"
-          className="text-primary dark:text-secondary hover:underline font-semibold"
-        >
-          プライバシーポリシー
-        </Link>
-        をご覧ください。
+        {isEn ? (
+          <>
+            We use cookies to improve your user experience and analyze access. By clicking &quot;Accept&quot; or continuing to browse this site, you consent to our use of cookies. Learn more in our{" "}
+            <Link
+              href={`/${locale}/privacy`}
+              className="text-primary dark:text-secondary hover:underline font-semibold"
+            >
+              Privacy Policy
+            </Link>
+            .
+          </>
+        ) : (
+          <>
+            当社は、お客様の利便性向上やアクセス解析のためにCookieを使用しています。「同意する」をクリックするか、本サイトの閲覧を続行することで、Cookieの使用に同意したことになります。詳細については、
+            <Link
+              href={`/${locale}/privacy`}
+              className="text-primary dark:text-secondary hover:underline font-semibold"
+            >
+              プライバシーポリシー
+            </Link>
+            をご覧ください。
+          </>
+        )}
       </p>
 
       <div className="flex gap-2 justify-end text-xs font-bold mt-1">
@@ -67,13 +85,13 @@ export const CookieBanner: React.FC = () => {
           onClick={handleReject}
           className="px-3.5 py-2 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border border-slate-200 dark:border-slate-800 cursor-pointer"
         >
-          拒否する
+          {isEn ? "Decline" : "拒否する"}
         </button>
         <button
           onClick={handleAccept}
           className="px-5 py-2 bg-primary hover:bg-primary-hover dark:bg-secondary dark:hover:bg-secondary-hover text-white rounded-lg shadow-sm hover:shadow transition-all cursor-pointer"
         >
-          同意する
+          {isEn ? "Accept" : "同意する"}
         </button>
       </div>
     </div>

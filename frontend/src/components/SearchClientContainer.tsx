@@ -10,6 +10,8 @@ import { formatShortDate } from "@/lib/dateUtils";
 import { SearchSidebar } from "@/components/SearchSidebar";
 import { ExportCSVButton } from "@/components/ExportCSVButton";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
+import { industryJaToEn } from "@/lib/locale-mapping";
 
 interface Company {
   corporate_number: string;
@@ -142,6 +144,7 @@ const SearchSkeletonCard: React.FC = () => {
 // ContactTeaserBadge — replaces inline FAX/Email on list cards to prevent bulk copying
 const ContactTeaserBadge: React.FC<{ corporateNumber: string }> = ({ corporateNumber }) => {
   const { isLoggedIn, setAuthModalOpen } = useAuth();
+  const { t } = useLanguage();
 
   if (!isLoggedIn) {
     return (
@@ -149,10 +152,10 @@ const ContactTeaserBadge: React.FC<{ corporateNumber: string }> = ({ corporateNu
         type="button"
         onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAuthModalOpen(true); }}
         className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900/50 text-amber-700 dark:text-amber-400 text-[10px] font-bold hover:bg-amber-100 dark:hover:bg-amber-900/40 hover:border-amber-300 transition-all duration-200 cursor-pointer select-none"
-        title="無料会員登録でFAX・メールアドレスを閲覧できます"
+        title={t.search.contactUnlockTooltip}
       >
         <Lock className="w-3 h-3 shrink-0 group-hover:rotate-6 transition-transform duration-200" />
-        連絡先 (FAX・メール) を見る
+        {t.search.contactUnlockBadge}
       </button>
     );
   }
@@ -161,11 +164,11 @@ const ContactTeaserBadge: React.FC<{ corporateNumber: string }> = ({ corporateNu
     <Link
       href={`/company/${corporateNumber}#contact`}
       className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-teal-200 bg-teal-50 dark:bg-teal-950/30 dark:border-teal-900/50 text-teal-700 dark:text-teal-400 text-[10px] font-bold hover:bg-teal-100 dark:hover:bg-teal-900/40 hover:border-teal-300 transition-all duration-200"
-      title="詳細ページで連絡先情報 (FAX・メール) を確認できます"
+      title={t.search.contactUnlockTooltip}
       onClick={(e) => e.stopPropagation()}
     >
       <ExternalLink className="w-3 h-3 shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
-      連絡先 (FAX・メール) を確認 →
+      {t.search.contactUnlockBadge}
     </Link>
   );
 };
@@ -178,6 +181,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   industries,
   initialFilters
 }) => {
+  const { locale, t } = useLanguage();
   // 1. Local States
   const [companies, setCompanies] = useState<Company[]>(initialCompanies);
   const [totalCount, setTotalCount] = useState<number>(initialTotalCount);
@@ -546,6 +550,54 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     executeSearch({ page: newPage });
   };
 
+  const getEmployeesChipText = () => {
+    if (minEmp !== undefined && maxEmp !== undefined) {
+      return t.search.employeesRange.replace('{min}', String(minEmp)).replace('{max}', String(maxEmp));
+    }
+    if (minEmp !== undefined) {
+      return `${minEmp.toLocaleString()}${t.search.minEmployeesSuffix || '名以上'}`;
+    }
+    return `${maxEmp ? maxEmp.toLocaleString() : ''}${t.search.maxEmployeesSuffix || '名以下'}`;
+  };
+
+  const getCapitalChipText = () => {
+    const displayMin = locale === 'en' && minCap !== undefined ? minCap / 100 : minCap;
+    const displayMax = locale === 'en' && maxCap !== undefined ? maxCap / 100 : maxCap;
+    if (displayMin !== undefined && displayMax !== undefined) {
+      return t.search.capitalRange.replace('{min}', String(displayMin)).replace('{max}', String(displayMax));
+    }
+    if (displayMin !== undefined) {
+      return `${displayMin.toLocaleString()}${t.search.minCapitalSuffix || '万円以上'}`;
+    }
+    return `${displayMax ? displayMax.toLocaleString() : ''}${t.search.maxCapitalSuffix || '万円以下'}`;
+  };
+
+  const getSalesChipText = (min: number | undefined, max: number | undefined, rangeKey: string, minSuffixKey: string, maxSuffixKey: string) => {
+    const displayMin = locale === 'en' && min !== undefined ? min * 100 : min;
+    const displayMax = locale === 'en' && max !== undefined ? max * 100 : max;
+    const tRange = (t.search as any)[rangeKey];
+    const tMinSuffix = (t.search as any)[minSuffixKey];
+    const tMaxSuffix = (t.search as any)[maxSuffixKey];
+
+    if (displayMin !== undefined && displayMax !== undefined) {
+      return tRange.replace('{min}', String(displayMin)).replace('{max}', String(displayMax));
+    }
+    if (displayMin !== undefined) {
+      return `${displayMin.toLocaleString()}${tMinSuffix}`;
+    }
+    return `${displayMax ? displayMax.toLocaleString() : ''}${tMaxSuffix}`;
+  };
+
+  const getEstYearChipText = () => {
+    if (minEstYear !== undefined && maxEstYear !== undefined) {
+      return t.search.estYearRange.replace('{min}', String(minEstYear)).replace('{max}', String(maxEstYear));
+    }
+    if (minEstYear !== undefined) {
+      return `${minEstYear}${t.search.minEstYearSuffix || '年以上'}`;
+    }
+    return `${maxEstYear}${t.search.maxEstYearSuffix || '年以下'}`;
+  };
+
   // 4. Skeleton Loader Overlay and Render Layout
   return (
     <div className="flex-1 max-w-8xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex gap-8">
@@ -564,7 +616,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
         }`}
       >
         <div className="flex items-center justify-between mb-4 pb-2 border-b border-slate-200 dark:border-slate-800">
-          <span className="font-extrabold text-sm text-slate-800 dark:text-white">条件で絞り込む</span>
+          <span className="font-extrabold text-sm text-slate-800 dark:text-white">{t.search.mobileFilterBtn}</span>
           <button 
             type="button" 
             onClick={() => setIsMobileDrawerOpen(false)}
@@ -652,7 +704,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       />
 
       {/* Main Results Column */}
-      <main ref={resultsTopRef} className="flex-1 flex flex-col gap-6 relative">
+      <main ref={resultsTopRef} className="flex-1 min-w-0 flex flex-col gap-6 relative">
 
         {/* Top Search Input Bar */}
         <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row gap-3">
@@ -662,7 +714,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             className="lg:hidden flex items-center justify-center gap-2 px-4 py-3 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 transition-all active:scale-95 shrink-0"
           >
             <SlidersHorizontal className="w-4 h-4 text-primary dark:text-secondary" />
-            条件で絞り込む
+            {t.search.mobileFilterBtn}
           </button>
           <form onSubmit={handleKeywordSearch} className="flex-1 relative flex items-center bg-slate-50 border border-slate-200 rounded-xl dark:bg-slate-800 dark:border-slate-700">
             <Search className="w-5 h-5 text-slate-400 ml-3 shrink-0" />
@@ -671,14 +723,14 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               name="q"
               value={keyword}
               onChange={(e) => setKeyword(e.target.value)}
-              placeholder="企業名、業界、住所などで再検索..."
-              className="w-full px-3 py-3 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none dark:text-white"
+              placeholder={t.home.searchPlaceholder}
+              className="flex-1 min-w-0 px-3 py-3 bg-transparent text-sm text-slate-900 placeholder-slate-400 focus:outline-none dark:text-white"
             />
             <button
               type="submit"
               className="px-5 py-2 mr-1 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-lg shadow-sm transition-colors"
             >
-              検索
+              {t.home.searchBtn}
             </button>
           </form>
 
@@ -686,19 +738,22 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
           <div className="flex flex-wrap gap-1.5 mt-3 text-xs">
             {keyword && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                キーワード: {keyword}
+                {t.search.keywordLabel}: {keyword}
                 <button type="button" onClick={() => handleFilterChange({ keyword: "" })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
             {prefCode && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                エリア: {prefectures.find(p => p.code === prefCode)?.name || prefCode}
+                {t.search.areaLabel}: {(() => {
+                  const prefName = prefectures.find(p => p.code === prefCode)?.name || prefCode;
+                  return (t.prefectures as Record<string, string>)?.[prefName] || prefName;
+                })()}
                 <button type="button" onClick={() => handleFilterChange({ prefecture: null })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
             {city && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                市区町村: {city}
+                {t.search.cityLabel}: {city}
                 <button type="button" onClick={() => handleFilterChange({ city: null })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
@@ -715,125 +770,126 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                   break;
                 }
               }
+              const displayIndustryName = (t.majorIndustries as Record<string, string>)?.[indCode] || selectedIndustryName;
               return (
                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                  業界: {selectedIndustryName}
+                  {t.search.industryLabel}: {displayIndustryName}
                   <button type="button" onClick={() => handleFilterChange({ industry: null })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
                 </span>
               );
             })()}
             {(minEmp !== undefined || maxEmp !== undefined) && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                従業員数: {minEmp !== undefined && maxEmp !== undefined ? `${minEmp}〜${maxEmp}名` : minEmp !== undefined ? `${minEmp}名以上` : `${maxEmp}名以下`}
+                {t.search.employees}: {getEmployeesChipText()}
                 <button type="button" onClick={() => handleFilterChange({ min_employees: null, max_employees: null })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
             {(minCap !== undefined || maxCap !== undefined) && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                資本金: {minCap !== undefined && maxCap !== undefined ? `${minCap}〜${maxCap}万円` : minCap !== undefined ? `${minCap}万円以上` : `${maxCap}万円以下`}
+                {t.search.capital}: {getCapitalChipText()}
                 <button type="button" onClick={() => handleFilterChange({ min_capital: null, max_capital: null })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
             {hasHiring && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
-                求人活動あり
+                {t.search.hiring}
                 <button type="button" onClick={() => handleFilterChange({ hiring: false })}><X className="w-3 h-3 text-amber-400 hover:text-amber-600 ml-1" /></button>
               </span>
             )}
             {hasSubsidy && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
-                補助金受給あり
+                {t.search.subsidy}
                 <button type="button" onClick={() => handleFilterChange({ subsidy: false })}><X className="w-3 h-3 text-amber-400 hover:text-amber-600 ml-1" /></button>
               </span>
             )}
             {hasBidding && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
-                入札落札実績あり
+                {t.search.bidding}
                 <button type="button" onClick={() => handleFilterChange({ bidding: false })}><X className="w-3 h-3 text-amber-400 hover:text-amber-600 ml-1" /></button>
               </span>
             )}
             {(minEstYear !== undefined || maxEstYear !== undefined) && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                設立年: {minEstYear !== undefined && maxEstYear !== undefined ? `${minEstYear}〜${maxEstYear}年` : minEstYear !== undefined ? `${minEstYear}年以上` : `${maxEstYear}年以下`}
+                {t.search.establishmentYear}: {getEstYearChipText()}
                 <button type="button" onClick={() => handleFilterChange({ min_establishment_year: null, max_establishment_year: null })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
             {hasAward && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
-                表彰あり
+                {t.search.award}
                 <button type="button" onClick={() => handleFilterChange({ award: false })}><X className="w-3 h-3 text-amber-400 hover:text-amber-600 ml-1" /></button>
               </span>
             )}
             {hasCertification && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
-                届出認定あり
+                {t.search.certification}
                 <button type="button" onClick={() => handleFilterChange({ certification: false })}><X className="w-3 h-3 text-amber-400 hover:text-amber-600 ml-1" /></button>
               </span>
             )}
             {hasPatent && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
-                特許・商標あり
+                {t.search.patent}
                 <button type="button" onClick={() => handleFilterChange({ patent: false })}><X className="w-3 h-3 text-amber-400 hover:text-amber-600 ml-1" /></button>
               </span>
             )}
             {hasFinancials && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/20 dark:text-amber-400 dark:border-amber-900/50">
-                決算・財務情報あり
+                {t.search.hasFinancials}
                 <button type="button" onClick={() => handleFilterChange({ financials: false })}><X className="w-3 h-3 text-amber-400 hover:text-amber-600 ml-1" /></button>
               </span>
             )}
             {(minSales !== undefined || maxSales !== undefined) && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                売上高: {minSales !== undefined && maxSales !== undefined ? `${minSales}〜${maxSales}億円` : minSales !== undefined ? `${minSales}億円以上` : `${maxSales}億円以下`}
+                {t.search.sales}: {getSalesChipText(minSales, maxSales, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}
                 <button type="button" onClick={() => handleFilterChange({ min_sales: null, max_sales: null })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
 
             {(minOpIncome !== undefined || maxOpIncome !== undefined) && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                営業利益: {minOpIncome !== undefined && maxOpIncome !== undefined ? `${minOpIncome}〜${maxOpIncome}億円` : minOpIncome !== undefined ? `${minOpIncome}億円以上` : `${maxOpIncome}億円以下`}
+                {t.search.operatingIncome}: {getSalesChipText(minOpIncome, maxOpIncome, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}
                 <button type="button" onClick={() => handleFilterChange({ min_operating_income: null, max_operating_income: null })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
             {(minOrdIncome !== undefined || maxOrdIncome !== undefined) && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                経常利益: {minOrdIncome !== undefined && maxOrdIncome !== undefined ? `${minOrdIncome}〜${maxOrdIncome}億円` : minOrdIncome !== undefined ? `${minOrdIncome}億円以上` : `${maxOrdIncome}億円以下`}
+                {t.search.ordinaryIncome}: {getSalesChipText(minOrdIncome, maxOrdIncome, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}
                 <button type="button" onClick={() => handleFilterChange({ min_ordinary_income: null, max_ordinary_income: null })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
             {(minNetIncome !== undefined || maxNetIncome !== undefined) && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                当期純利益: {minNetIncome !== undefined && maxNetIncome !== undefined ? `${minNetIncome}〜${maxNetIncome}億円` : minNetIncome !== undefined ? `${minNetIncome}億円以上` : `${maxNetIncome}億円以下`}
+                {t.search.netIncome}: {getSalesChipText(minNetIncome, maxNetIncome, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}
                 <button type="button" onClick={() => handleFilterChange({ min_net_income: null, max_net_income: null })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
             {hasEmail && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                Emailあり
+                {t.search.emailLabel}
                 <button type="button" onClick={() => handleFilterChange({ email: false })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
             {hasPhone && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                電話番号あり
+                {t.search.phoneLabel}
                 <button type="button" onClick={() => handleFilterChange({ phone: false })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
             {hasWebsite && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                Websiteあり
+                {t.search.websiteLabel}
                 <button type="button" onClick={() => handleFilterChange({ website: false })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
             {hasFax && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                FAXあり
+                {t.search.faxLabel}
                 <button type="button" onClick={() => handleFilterChange({ fax: false })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
             {companyStatus && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                ステータス: {companyStatus}
+                {t.search.statusLabel}: {locale === 'en' && companyStatus === '活動中' ? 'Active' : locale === 'en' && companyStatus === '閉鎖' ? 'Closed' : locale === 'en' && companyStatus === '解散' ? 'Dissolved' : companyStatus}
                 <button type="button" onClick={() => handleFilterChange({ status: null })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
@@ -843,9 +899,13 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
         {/* Stats Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400 bg-white border border-slate-200/60 dark:bg-[#1C2128] dark:border-slate-800 p-4 rounded-2xl shadow-sm">
           <span>
-            検索結果: <strong className="text-slate-900 dark:text-white text-sm font-black">{totalCount.toLocaleString()}</strong> 件の企業が見つかりました
+            {totalCount > 0 ? (
+              t.search.companiesFound.replace("{count}", totalCount.toLocaleString())
+            ) : (
+              t.search.companiesFoundZero
+            )}
           </span>
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <ExportCSVButton 
               totalCount={totalCount}
               keyword={keyword}
@@ -882,7 +942,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               }}
             />
             <span className="hidden sm:inline border-l border-slate-200 dark:border-slate-800 h-4" />
-            <span>ページ {page} / {totalPages || 1}</span>
+            <span>{t.search.pageIndicator.replace("{page}", String(page)).replace("{totalPages}", String(totalPages || 1))}</span>
           </div>
         </div>
 
@@ -900,43 +960,43 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               >
                 {/* Top info and badge */}
                 <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded border shadow-sm ${
                       company.status === '閉鎖' || company.status === '解散'
                         ? 'text-rose-800 bg-rose-100 dark:bg-rose-950/30 dark:text-rose-450 border-rose-200/50 dark:border-rose-900/50'
                         : 'text-emerald-800 bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/50'
                     }`}>
-                      {company.status}
+                      {company.status === '活動中' ? t.search.active : company.status === '閉鎖' ? t.search.closed : company.status === '解散' ? t.search.dissolved : company.status}
                     </span>
                     {company.prefecture_name && (
                       <span className="text-slate-400 text-xs font-medium flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5" />
-                        {company.prefecture_name}
+                        {(t.prefectures as Record<string, string>)?.[company.prefecture_name] || company.prefecture_name}
                       </span>
                     )}
                     {company.industries?.filter(ind => ind.classification_level === '大分類').map((ind, idx) => (
                       <span key={idx} className="text-[10px] font-black tracking-wider uppercase text-slate-650 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 px-2.5 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-xs">
-                        {ind.industry_code}.{ind.industry_name}
+                        {ind.industry_code}.{(t.majorIndustries as Record<string, string>)?.[ind.industry_code] || ind.industry_name}
                       </span>
                     ))}
                   </div>
                   
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     {/* Data freshness trust signal */}
                     <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#B07500] bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-2 py-0.5 rounded border border-amber-200/60 dark:border-amber-900/40">
                       <Clock className="w-3.5 h-3.5" />
                       {formatShortDate(company.updated_at)}
                     </span>
                     <span className="text-[10px] font-semibold text-slate-400 font-mono">
-                      法人番号: {company.corporate_number}
+                      {locale === 'en' ? 'Corp No' : '法人番号'}: {company.corporate_number}
                     </span>
                   </div>
                 </div>
 
                 {/* Company Name */}
-                <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white hover:text-primary dark:hover:text-secondary mb-3 transition-colors">
+                <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white hover:text-primary dark:hover:text-secondary mb-3 transition-colors break-words">
                   <Link href={`/company/${company.corporate_number}`}>
-                    {company.company_name}
+                    {company.company_name_en && locale === 'en' ? company.company_name_en : company.company_name}
                   </Link>
                 </h3>
 
@@ -944,26 +1004,26 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
 
                 {/* Matrix Details */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 py-4 border-t border-b border-slate-100 dark:border-slate-850 text-xs">
-                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60">
-                    <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">資本金</span>
+                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                    <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">{t.company.capital}</span>
                     <strong className="text-slate-800 dark:text-slate-200 font-extrabold text-sm">
-                      {company.capital_amount ? `${(company.capital_amount / 10000).toLocaleString()}万円` : '未登録'}
+                      {company.capital_amount ? (locale === 'en' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1})}M JPY` : `${(company.capital_amount / 10000).toLocaleString()}万円`) : t.company.unregistered}
                     </strong>
                   </div>
-                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60">
-                    <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">従業員数</span>
+                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                    <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">{t.company.employees}</span>
                     <strong className="text-slate-800 dark:text-slate-200 font-extrabold text-sm">
-                      {company.employee_count ? `${company.employee_count.toLocaleString()}名` : '未登録'}
+                      {company.employee_count ? `${company.employee_count.toLocaleString()}${locale === 'en' ? ' employees' : '名'}` : t.company.unregistered}
                     </strong>
                   </div>
-                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60">
-                    <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">設立年度</span>
+                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                    <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">{t.search.establishmentYear}</span>
                     <strong className="text-slate-800 dark:text-slate-200 font-extrabold text-sm">
-                      {company.establishment_date ? `${company.establishment_date.substring(0, 4)}年` : '未登録'}
+                      {company.establishment_date ? (locale === 'en' ? `Est. ${company.establishment_date.substring(0, 4)}` : `${company.establishment_date.substring(0, 4)}年`) : t.company.unregistered}
                     </strong>
                   </div>
-                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60">
-                    <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">事業種目 (Tags)</span>
+                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                    <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">{t.company.tags}</span>
                     <div className="flex flex-wrap gap-1 mt-1 max-h-[48px] overflow-y-auto scrollbar-thin">
                       {(() => {
                         const mediumInds = company.industries?.filter(ind => ind.classification_level === '中分類') || [];
@@ -973,7 +1033,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                               key={idx} 
                               className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-700/80"
                             >
-                              {ind.industry_code}.{ind.industry_name}
+                              {ind.industry_code}.{locale === 'en' ? (industryJaToEn[ind.industry_name] || ind.industry_name) : ind.industry_name}
                             </span>
                           ));
                         }
@@ -987,11 +1047,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                               key={idx} 
                               className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-700/80"
                             >
-                              {tag.trim()}
+                              {locale === 'en' ? (industryJaToEn[tag.trim()] || tag.trim()) : tag.trim()}
                             </span>
                           ))
                         ) : (
-                          <span className="text-slate-400 text-xs font-semibold">未登録</span>
+                          <span className="text-slate-400 text-xs font-semibold">{t.company.unregistered}</span>
                         );
                       })()}
                     </div>
@@ -1003,7 +1063,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
                     <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
                       <Phone className="w-3.5 h-3.5 text-primary" />
-                      TEL: {company.phone_number || '未登録'}
+                      TEL: {company.phone_number || t.company.unregistered}
                     </span>
                     {company.website_url ? (
                       <a 
@@ -1018,7 +1078,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     ) : (
                       <span className="flex items-center gap-1.5 text-slate-400">
                         <Globe className="w-3.5 h-3.5" />
-                        Website: なし
+                        Website: {t.company.none}
                       </span>
                     )}
 
@@ -1030,7 +1090,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     href={`/company/${company.corporate_number}`}
                     className="px-4 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300 dark:text-slate-300 dark:border-slate-800 dark:hover:border-slate-700 rounded-xl transition-all"
                   >
-                    詳細プロフィール →
+                    {locale === 'en' ? 'Details →' : '詳細プロフィール →'}
                   </Link>
                 </div>
               </div>
@@ -1038,25 +1098,25 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
           ) : (
             <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-12 text-center text-slate-500">
               <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-              <h4 className="font-bold text-slate-800 dark:text-white mb-2">該当する企業が見つかりませんでした</h4>
-              <p className="text-xs">絞り込み条件uを緩和するか, 別のキーワードでお試しください。</p>
+              <h4 className="font-bold text-slate-800 dark:text-white mb-2">{t.search.companiesFoundZero}</h4>
+              <p className="text-xs">{locale === 'en' ? 'Try adjusting your filters or search keyword to find what you are looking for.' : '絞り込み条件を緩和するか、別のキーワードでお試しください。'}</p>
             </div>
           )}
         </div>
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-center gap-1.5 py-6">
+          <div className="flex items-center justify-center gap-1 sm:gap-1.5 py-6">
             {page > 1 ? (
               <button 
                 type="button"
                 onClick={() => handlePageChange(page - 1)}
-                className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-300 flex items-center justify-center dark:bg-[#1C2128] dark:border-slate-800 dark:text-slate-300 dark:hover:text-white"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-300 flex items-center justify-center dark:bg-[#1C2128] dark:border-slate-800 dark:text-slate-300 dark:hover:text-white"
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
             ) : (
-              <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200/50 flex items-center justify-center dark:bg-slate-800/30 dark:border-slate-800 opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-600">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-100 border border-slate-200/50 flex items-center justify-center dark:bg-slate-800/30 dark:border-slate-800 opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-600">
                 <ChevronLeft className="w-4 h-4" />
               </div>
             )}
@@ -1079,7 +1139,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                   type="button"
                   key={pageNum}
                   onClick={() => handlePageChange(pageNum)}
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-xs border transition-all ${
+                  className={`w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center font-bold text-xs border transition-all ${
                     isCurrent 
                       ? 'bg-primary border-primary text-white shadow-md shadow-primary/10' 
                       : 'bg-white border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-300 dark:bg-[#1C2128] dark:border-slate-800 dark:text-slate-300 dark:hover:text-white'
@@ -1094,12 +1154,12 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               <button 
                 type="button"
                 onClick={() => handlePageChange(page + 1)}
-                className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-300 flex items-center justify-center dark:bg-[#1C2128] dark:border-slate-800 dark:text-slate-300 dark:hover:text-white"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:border-slate-300 flex items-center justify-center dark:bg-[#1C2128] dark:border-slate-800 dark:text-slate-300 dark:hover:text-white"
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
-              <div className="w-10 h-10 rounded-xl bg-slate-100 border border-slate-200/50 flex items-center justify-center dark:bg-slate-800/30 dark:border-slate-800 opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-600">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-slate-100 border border-slate-200/50 flex items-center justify-center dark:bg-slate-800/30 dark:border-slate-800 opacity-50 cursor-not-allowed text-slate-400 dark:text-slate-600">
                 <ChevronRight className="w-4 h-4" />
               </div>
             )}

@@ -120,7 +120,7 @@ export async function runQuery(sql: string, params: any[] = []): Promise<any[]> 
     const db = getSQLiteDB();
     const stmt = db.prepare(sql);
     const results = stmt.all(...params);
-    return results;
+    return results ? results.map(r => ({ ...r })) : [];
   }
 }
 
@@ -139,7 +139,7 @@ export async function runGetQuery(sql: string, params: any[] = []): Promise<any 
     const db = getSQLiteDB();
     const stmt = db.prepare(sql);
     const result = stmt.get(...params);
-    return result || null;
+    return result ? { ...result } : null;
   }
 }
 
@@ -348,6 +348,19 @@ export async function getCompanyFinancials(corpNum: string): Promise<CompanyFina
 /**
  * Fetch business signals for a company sorted by signal_date DESC
  */
+function mapSignalRow(row: any): BusinessSignal {
+  return {
+    id: row.id,
+    corporate_number: row.corporate_number,
+    signal_type: row.signal_type,
+    signal_title: row.signal_title,
+    signal_date: row.signal_date || null,
+    source_url: row.source_url || null,
+    details: row.details || null,
+    total_count: row.total_count !== undefined && row.total_count !== null ? Number(row.total_count) : undefined
+  };
+}
+
 export async function getCompanySignals(corpNum: string): Promise<BusinessSignal[]> {
   try {
     const rows = await runQuery(`
@@ -362,12 +375,13 @@ export async function getCompanySignals(corpNum: string): Promise<BusinessSignal
       WHERE rn <= 20
       ORDER BY signal_date DESC, id DESC
     `, [corpNum]);
-    return rows ? (rows as BusinessSignal[]) : [];
+    return rows ? rows.map(mapSignalRow) : [];
   } catch (error) {
     console.error(`Error in getCompanySignals(${corpNum}):`, error);
     return [];
   }
 }
+
 
 /**
  * Fetch related companies for internal linking (同業他社 & 近隣企業)
@@ -3718,6 +3732,10 @@ export async function initBlogPostsTable(): Promise<void> {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
+      // Add locale column if it does not exist
+      await client.query(`
+        ALTER TABLE blog_posts ADD COLUMN IF NOT EXISTS locale VARCHAR(10) DEFAULT 'ja';
+      `);
     } catch (e) {
       console.error('Error initializing PG blog_posts table:', e);
     } finally {
@@ -3738,6 +3756,12 @@ export async function initBlogPostsTable(): Promise<void> {
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
+      // Add locale column if it does not exist
+      try {
+        db.exec("ALTER TABLE blog_posts ADD COLUMN locale TEXT DEFAULT 'ja';");
+      } catch (e) {
+        // Ignore if already exists
+      }
     } catch (e) {
       console.error('Error initializing SQLite blog_posts table:', e);
     }
@@ -3754,13 +3778,14 @@ export interface BlogPost {
   category: string;
   published_at: string;
   created_at: string;
+  locale: string;
 }
 
-export async function getBlogPosts(limit = 10, offset = 0): Promise<BlogPost[]> {
+export async function getBlogPosts(limit = 10, offset = 0, locale = 'ja'): Promise<BlogPost[]> {
   try {
     const rows = await runQuery(
-      'SELECT * FROM blog_posts ORDER BY published_at DESC, id DESC LIMIT ? OFFSET ?',
-      [limit, offset]
+      'SELECT * FROM blog_posts WHERE locale = ? ORDER BY published_at DESC, id DESC LIMIT ? OFFSET ?',
+      [locale, limit, offset]
     );
     return rows ? rows.map(r => ({
       id: Number(r.id),
@@ -3770,7 +3795,8 @@ export async function getBlogPosts(limit = 10, offset = 0): Promise<BlogPost[]> 
       summary: String(r.summary),
       category: String(r.category),
       published_at: String(r.published_at),
-      created_at: String(r.created_at)
+      created_at: String(r.created_at),
+      locale: String(r.locale || 'ja')
     })) : [];
   } catch (error) {
     console.error('Error in getBlogPosts:', error);
@@ -3778,9 +3804,9 @@ export async function getBlogPosts(limit = 10, offset = 0): Promise<BlogPost[]> 
   }
 }
 
-export async function getBlogPostsCount(): Promise<number> {
+export async function getBlogPostsCount(locale = 'ja'): Promise<number> {
   try {
-    const row = await runGetQuery('SELECT COUNT(*) as count FROM blog_posts');
+    const row = await runGetQuery('SELECT COUNT(*) as count FROM blog_posts WHERE locale = ?', [locale]);
     return row ? Number(row.count) : 0;
   } catch (error) {
     console.error('Error in getBlogPostsCount:', error);
@@ -3788,9 +3814,13 @@ export async function getBlogPostsCount(): Promise<number> {
   }
 }
 
-export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> {
+export async function getBlogPostBySlug(slug: string, locale?: string): Promise<BlogPost | null> {
   try {
-    const row = await runGetQuery('SELECT * FROM blog_posts WHERE slug = ?', [slug]);
+    const query = locale 
+      ? 'SELECT * FROM blog_posts WHERE slug = ? AND locale = ?' 
+      : 'SELECT * FROM blog_posts WHERE slug = ?';
+    const params = locale ? [slug, locale] : [slug];
+    const row = await runGetQuery(query, params);
     if (!row) return null;
     return {
       id: Number(row.id),
@@ -3800,7 +3830,8 @@ export async function getBlogPostBySlug(slug: string): Promise<BlogPost | null> 
       summary: String(row.summary),
       category: String(row.category),
       published_at: String(row.published_at),
-      created_at: String(row.created_at)
+      created_at: String(row.created_at),
+      locale: String(row.locale || 'ja')
     };
   } catch (error) {
     console.error(`Error in getBlogPostBySlug(${slug}):`, error);
@@ -3815,33 +3846,37 @@ export async function createBlogPost(post: {
   summary: string;
   category: string;
   published_at: string;
+  locale?: string;
 }): Promise<void> {
   try {
     const isPG = !!DATABASE_URL;
+    const localeVal = post.locale || 'ja';
     if (isPG) {
       const sql = `
-        INSERT INTO blog_posts (slug, title, content, summary, category, published_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO blog_posts (slug, title, content, summary, category, published_at, locale)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(slug) DO UPDATE SET
           title = EXCLUDED.title,
           content = EXCLUDED.content,
           summary = EXCLUDED.summary,
           category = EXCLUDED.category,
-          published_at = EXCLUDED.published_at
+          published_at = EXCLUDED.published_at,
+          locale = EXCLUDED.locale
       `;
-      await runQuery(sql, [post.slug, post.title, post.content, post.summary, post.category, post.published_at]);
+      await runQuery(sql, [post.slug, post.title, post.content, post.summary, post.category, post.published_at, localeVal]);
     } else {
       const sql = `
-        INSERT INTO blog_posts (slug, title, content, summary, category, published_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO blog_posts (slug, title, content, summary, category, published_at, locale)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(slug) DO UPDATE SET
           title = excluded.title,
           content = excluded.content,
           summary = excluded.summary,
           category = excluded.category,
-          published_at = excluded.published_at
+          published_at = excluded.published_at,
+          locale = excluded.locale
       `;
-      await runQuery(sql, [post.slug, post.title, post.content, post.summary, post.category, post.published_at]);
+      await runQuery(sql, [post.slug, post.title, post.content, post.summary, post.category, post.published_at, localeVal]);
     }
   } catch (error) {
     console.error('Error in createBlogPost:', error);

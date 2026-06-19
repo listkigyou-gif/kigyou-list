@@ -13,3 +13,6 @@ out/
 .env*
 .DS_Store
 importdata/
+scratch/
+__pycache__/
+*.pyc

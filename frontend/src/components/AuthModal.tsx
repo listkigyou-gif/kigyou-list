@@ -4,9 +4,11 @@ import React, { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { X, Lock, CheckCircle2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
+import { useLanguage } from "@/context/LanguageContext";
 
 export const AuthModal: React.FC = () => {
   const { authModalOpen, setAuthModalOpen, isLoggedIn, loginWithGoogle } = useAuth();
+  const { locale, t } = useLanguage();
 
   // Automatically close modal when logged in
   useEffect(() => {
@@ -41,14 +43,14 @@ export const AuthModal: React.FC = () => {
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
             <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-white text-[10px] font-bold mb-2 backdrop-blur-md">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>無料会員登録 (所要時間10秒)</span>
+              <span>{t.auth.freeRegisterTenSec}</span>
             </div>
             <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
               <Lock className="w-4.5 h-4.5" />
-              Kigyou-list プレミアム機能
+              {t.auth.premiumFeaturesTitle}
             </h3>
             <p className="text-xs text-slate-100/80 mt-1">
-              連絡先情報（FAX・メールアドレス）や営業活動シグナル詳細がすべて閲覧可能になります。
+              {t.auth.premiumFeaturesDesc}
             </p>
           </div>
 
@@ -56,10 +58,10 @@ export const AuthModal: React.FC = () => {
           <div className="p-6 flex flex-col gap-6">
             <div className="text-center">
               <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
-                アカウントを作成またはログイン
+                {t.auth.loginOrCreateTitle}
               </h4>
               <p className="text-[11px] text-slate-400">
-                Googleアカウントを使用して安全に10秒で登録できます。
+                {t.auth.loginOrCreateDesc}
               </p>
             </div>
 
@@ -75,39 +77,62 @@ export const AuthModal: React.FC = () => {
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
                 <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
               </svg>
-              <span>Googleでログイン / 登録</span>
+              <span>{t.auth.googleBtn}</span>
             </button>
 
             {/* Legal Consent Notice */}
             <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center leading-relaxed -mt-2">
-              「Googleでログイン / 登録」ボタンを押すことで、当サービスの
-              <Link href="/terms" className="text-primary hover:underline dark:text-secondary font-bold mx-0.5">利用規約</Link>
-              および
-              <Link href="/privacy" className="text-primary hover:underline dark:text-secondary font-bold mx-0.5">プライバシーポリシー</Link>
-              に同意したものとみなされます。
+              {(() => {
+                const parts = t.auth.consentNotice.split(/(\{terms\}|\{privacy\})/);
+                return parts.map((part, idx) => {
+                  if (part === "{terms}") {
+                    return (
+                      <Link 
+                        key={idx} 
+                        href={`/${locale}/terms`} 
+                        className="text-primary hover:underline dark:text-secondary font-bold mx-0.5"
+                      >
+                        {t.auth.terms}
+                      </Link>
+                    );
+                  }
+                  if (part === "{privacy}") {
+                    return (
+                      <Link 
+                        key={idx} 
+                        href={`/${locale}/privacy`} 
+                        className="text-primary hover:underline dark:text-secondary font-bold mx-0.5"
+                      >
+                        {t.auth.privacy}
+                      </Link>
+                    );
+                  }
+                  return part;
+                });
+              })()}
             </p>
 
             {/* Value Propositions */}
             <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3">
               <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block text-left">
-                会員登録で解放される主な機能
+                {t.auth.unlockedFeaturesTitle}
               </span>
               <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 dark:text-slate-400 text-left">
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>FAX・メールアドレス</span>
+                  <span>{t.auth.featureFaxEmail}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>営業シグナルの詳細</span>
+                  <span>{t.auth.featureSignalDetails}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>ABM マイリスト (100社)</span>
+                  <span>{t.auth.featureMylist}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
                   <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>かんばん営業管理</span>
+                  <span>{t.auth.featureKanban}</span>
                 </div>
               </div>
             </div>

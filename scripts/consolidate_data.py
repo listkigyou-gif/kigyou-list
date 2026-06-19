@@ -15,7 +15,7 @@ import sys
 import sqlite3
 import json
 import re
-from datetime import datetime
+from datetime import datetime, timedelta
 
 DB_PATH = "kigyou-list.db"
 
@@ -342,7 +342,7 @@ def clean_phone_number_for_match(phone):
         return phone
     return None
 
-def resolve_entities(conn):
+def resolve_entities(conn, incremental=False):
     """Resolve entities by linking raw records without corporate numbers to master registries."""
     print("[*] Running Entity Resolution (Waterfall Matching)...")
     cursor = conn.cursor()
@@ -385,7 +385,12 @@ def resolve_entities(conn):
     print(f"  [+] Linked {hw_phone_updated} HelloWork and {yahoo_phone_updated} Yahoo records by Phone Match.")
     
     # 2. Fuzzy Name & Address matching for remaining unresolved records
-    cursor.execute("SELECT id, office_name, office_address FROM raw_hellowork WHERE corporate_number IS NULL OR length(corporate_number) != 13;")
+    hw_query = "SELECT id, office_name, office_address FROM raw_hellowork WHERE (corporate_number IS NULL OR length(corporate_number) != 13)"
+    if incremental:
+        # Only fuzzy match raw records from the last 1 hour to avoid processing the huge unresolved backlog (96k+)
+        one_hour_ago = (datetime.now() - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
+        hw_query += f" AND scraped_at >= '{one_hour_ago}'"
+    cursor.execute(hw_query)
     hw_unresolved = cursor.fetchall()
     
     resolved_hw_fuzzy = 0
@@ -425,7 +430,11 @@ def resolve_entities(conn):
         conn.commit()
         print(f"  [+] Linked {resolved_hw_fuzzy} HelloWork records by Fuzzy Name/Address Match.")
         
-    cursor.execute("SELECT id, company_name, yahoo_name, yahoo_address FROM raw_yahoo WHERE corporate_number IS NULL OR length(corporate_number) != 13;")
+    yahoo_query = "SELECT id, company_name, yahoo_name, yahoo_address FROM raw_yahoo WHERE (corporate_number IS NULL OR length(corporate_number) != 13)"
+    if incremental:
+        one_hour_ago = (datetime.now() - timedelta(hours=1)).strftime("%Y-%m-%d %H:%M:%S")
+        yahoo_query += f" AND scraped_at >= '{one_hour_ago}'"
+    cursor.execute(yahoo_query)
     yahoo_unresolved = cursor.fetchall()
     
     resolved_yahoo_fuzzy = 0
@@ -573,7 +582,7 @@ def consolidate_data(incremental=False):
         conn.commit()
     
     # Run Entity Resolution first to link raw records
-    resolve_entities(conn)
+    resolve_entities(conn, incremental=incremental)
     
     # 1. Fetch all distinct corporate numbers from the raw tables (full or incremental)
     if incremental:

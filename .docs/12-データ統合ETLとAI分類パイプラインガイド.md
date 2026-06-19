@@ -86,7 +86,16 @@ Tất cả các chữ số, dấu gạch ngang, ký tự đặc biệt tiếng N
 
 ### B. Số điện thoại (`phone_number`) & Số Fax (`fax_number`)
 * **Hàm xử lý:** `normalize_phone(phone_str)` và `normalize_fax(fax_str)`.
-* **Quy tắc:** Loại bỏ tất cả khoảng trắng, chữ cái, chỉ giữ lại số, dấu gạch ngang `-` và dấu ngoặc đơn `()`. Yêu cầu độ dài chuỗi tối thiểu phải đạt 6 ký tự để tránh dữ liệu rác.
+* **Bộ Quy tắc Kiểm tra & Loại bỏ Số ảo (Mới cập nhật):**
+  Hệ thống áp dụng bộ kiểm duyệt nghiêm ngặt đối với số điện thoại/FAX để tự động lọc bỏ các thông tin giả hoặc sai sự thật trước khi đưa vào bảng Master:
+  1. **Loại bỏ từ khóa giữ chỗ (Placeholder words):** Bỏ qua các giá trị chứa văn bản mô tả như `なし` (không có), `非公開` (không công khai), `不明` (không rõ), `未設定`, `未登録`, `連絡不可`, `null`, `none`, `temp`, `dummy`, `test`, `テスト`...
+  2. **Bắt buộc bắt đầu bằng số 0:** Số điện thoại domestic tại Nhật Bản luôn phải bắt đầu bằng chữ số `0`.
+  3. **Độ dài hợp lệ (10 hoặc 11 chữ số):** Chỉ chấp nhận các số có tổng chữ số là **10** (đối với điện thoại cố định/đầu hotline toll-free) hoặc **11** (đối với di động/đầu số IP `050`).
+  4. **Loại bỏ chuỗi số lặp hoặc giả lập:**
+     * Trùng lặp hoàn toàn (như `0000-00-0000`, `1111-11-1111`).
+     * Chuỗi tuần tự đơn giản (như `0123456789`, `1234567890`).
+  5. **Loại bỏ đuôi số toàn số 0 (Suffix all zeros):** Chặn các số giả lập có dạng mã vùng thật nhưng local part toàn số 0 (ví dụ: `03-0000-0000` hoặc `090-0000-0000` với 7 chữ số cuối cùng đều là số `0`).
+  6. **Đầu ra sạch:** Sau khi vượt qua kiểm duyệt, hệ thống loại bỏ các ký tự thừa, chỉ giữ lại chữ số, dấu gạch ngang `-` và dấu ngoặc đơn `()`. Chuỗi đầu ra phải dài tối thiểu 6 ký tự. Nếu không đạt yêu cầu kiểm duyệt, trường này được gán giá trị `NULL` để kích hoạt cơ chế ưu tiên lấy số hợp lệ từ nguồn tiếp theo trong danh sách Fallback.
 
 ### C. Email (`email_address`)
 * **Hàm xử lý:** `normalize_email(email_str)`.

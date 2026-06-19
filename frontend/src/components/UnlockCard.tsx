@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { Lock, Sparkles } from "lucide-react";
 import { useRouter } from "next/navigation";
 
@@ -19,6 +20,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
   requiredPlan = "free"
 }) => {
   const { isLoggedIn, user, setAuthModalOpen } = useAuth();
+  const { locale, t } = useLanguage();
   const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
@@ -47,9 +49,9 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
             {children}
           </div>
           <div className="absolute inset-0 bg-white/40 dark:bg-black/20 backdrop-blur-[2px] flex items-center justify-center">
-            <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-3 py-1.5 rounded-xl border border-amber-200/50 flex items-center gap-1 shadow-sm dark:bg-amber-950/80 dark:text-amber-300 dark:border-amber-900/50">
+            <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-3 py-1.5 rounded-xl border border-amber-200/50 flex items-center gap-1 shadow-sm dark:bg-amber-955/80 dark:text-amber-300 dark:border-amber-900/50">
               <Lock className="w-3.5 h-3.5" />
-              {requiredPlan === "pro" ? "Pro会員登録で詳細表示" : "無料会員登録で詳細表示"}
+              {requiredPlan === "pro" ? "Pro version required" : "Free registration required"}
             </span>
           </div>
         </div>
@@ -68,7 +70,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
     if (!isLoggedIn) {
       setAuthModalOpen(true);
     } else if (requiredPlan === "pro" && !isProOrHigher) {
-      router.push("/pricing");
+      router.push(`/${locale}/pricing`);
     }
   };
 
@@ -78,12 +80,12 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
       <span 
         onClick={handleUnlockClick}
         className="group relative inline-flex items-center cursor-pointer select-none mx-1"
-        title={isLoggedIn && requiredPlan === "pro" ? "クリックしてProにアップグレード" : "クリックしてアンロック"}
+        title={isLoggedIn && requiredPlan === "pro" ? t.auth.unlockCardInlineProLock : t.auth.unlockCardInlineLock}
       >
         <span className="blur-[4.5px] group-hover:blur-[1.8px] transition-all duration-300 font-mono text-slate-400 dark:text-slate-500 font-bold tracking-tight">
           {fallbackText || "info@example.co.jp"}
         </span>
-        <span className="absolute -right-6 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-amber-50 dark:bg-amber-950/40 border border-amber-250 dark:border-amber-900/50 flex items-center justify-center opacity-90 group-hover:scale-110 group-hover:bg-amber-100 group-hover:border-amber-300 dark:group-hover:bg-amber-900/60 transition-all duration-300 shadow-sm">
+        <span className="absolute -right-6 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-amber-50 dark:bg-amber-955/40 border border-amber-250 dark:border-amber-900/50 flex items-center justify-center opacity-90 group-hover:scale-110 group-hover:bg-amber-100 group-hover:border-amber-300 dark:group-hover:bg-amber-900/60 transition-all duration-300 shadow-sm">
           <Lock className="w-2.5 h-2.5 text-amber-550 group-hover:rotate-12 transition-transform duration-300" />
         </span>
       </span>
@@ -112,15 +114,15 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
         
         <h4 className="text-xs sm:text-sm font-black text-slate-850 dark:text-white mb-2 flex items-center gap-1.5 tracking-tight">
           <Sparkles className="w-4 h-4 text-amber-500 fill-amber-550/40 animate-pulse" />
-          {requiredPlan === "pro" ? "Proプラン限定のプレミアム情報をロック解除" : "無料登録で閲覧可能"}
+          {requiredPlan === "pro" ? t.auth.unlockCardProTitle : t.auth.unlockCardFreeTitle}
         </h4>
         
         <p className="text-[10px] text-slate-500 dark:text-slate-400 max-w-[320px] leading-relaxed mb-4">
-          {fallbackText || (requiredPlan === "pro" ? "メールアドレス等のProプラン限定情報を即座に閲覧できます。" : "求人・補助金の詳細な内訳や主要な株主情報などを即座に閲覧できます。")}
+          {fallbackText || (requiredPlan === "pro" ? t.auth.unlockCardProDesc : t.auth.unlockCardFreeDesc)}
         </p>
         
         <span className="inline-flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-primary via-primary-hover to-secondary text-white text-[11px] font-black shadow-md hover:shadow-lg group-hover:scale-105 group-hover:shadow-primary/10 transition-all duration-300 select-none">
-          {requiredPlan === "pro" ? "Proプランにアップグレード (10秒)" : "無料会員登録で即時表示 (10秒)"}
+          {requiredPlan === "pro" ? t.auth.unlockCardProBtn : t.auth.unlockCardFreeBtn}
         </span>
       </div>
     </div>
