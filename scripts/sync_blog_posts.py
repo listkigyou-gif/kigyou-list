@@ -9,16 +9,25 @@ def get_postgres_url():
     env_url = os.environ.get("DATABASE_URL")
     if env_url:
         return env_url
-    if os.path.exists(".env"):
-        with open(".env", "r", encoding="utf-8") as f:
-            for line in f:
-                if line.strip().startswith("DATABASE_URL="):
-                    return line.strip().split("DATABASE_URL=")[1].strip().strip('"').strip("'")
-    if os.path.exists(".env.local"):
-        with open(".env.local", "r", encoding="utf-8") as f:
-            for line in f:
-                if line.strip().startswith("DATABASE_URL="):
-                    return line.strip().split("DATABASE_URL=")[1].strip().strip('"').strip("'")
+        
+    possible_paths = [
+        ".env",
+        ".env.local",
+        "frontend/.env",
+        "frontend/.env.local",
+        "../.env",
+        "../.env.local",
+        "../frontend/.env",
+        "../frontend/.env.local"
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            with open(path, "r", encoding="utf-8") as f:
+                for line in f:
+                    if line.strip().startswith("DATABASE_URL="):
+                        return line.strip().split("DATABASE_URL=")[1].strip().strip('"').strip("'")
+    return None
 
 def main():
     pg_url = get_postgres_url()
