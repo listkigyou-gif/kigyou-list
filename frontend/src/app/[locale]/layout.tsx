@@ -8,6 +8,7 @@ import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
 import { getTranslations } from "@/lib/i18n";
 import { LanguageProvider } from "@/context/LanguageContext";
+import Script from "next/script";
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
@@ -87,12 +88,29 @@ export default async function LocalizedLayout({
   const session = await auth();
   const { locale } = await params;
   const translations = getTranslations(locale);
+  const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
   return (
     <html
       lang={locale}
       className={`h-full antialiased ${notoSansJP.variable}`}
     >
+      {gaId && (
+        <>
+          <Script
+            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+            strategy="afterInteractive"
+          />
+          <Script id="google-analytics" strategy="afterInteractive">
+            {`
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', '${gaId}');
+            `}
+          </Script>
+        </>
+      )}
       <body className="min-h-full flex flex-col font-sans bg-bg-light text-slate-900 dark:bg-[#0D1117] dark:text-slate-100">
         <SessionProvider session={session}>
           <LanguageProvider locale={locale} translations={translations}>
