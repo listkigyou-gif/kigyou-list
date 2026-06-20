@@ -136,6 +136,10 @@ def rebuild_metadata():
         ON company_industries(industry_path);
     """)
     cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_company_industries_corp
+        ON company_industries(corporate_number);
+    """)
+    cursor.execute("""
         CREATE INDEX IF NOT EXISTS idx_sitemap_companies_employees 
         ON sitemap_companies(employee_count DESC, corporate_number ASC);
     """)

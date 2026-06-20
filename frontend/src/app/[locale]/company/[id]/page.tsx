@@ -28,9 +28,10 @@ function generateDynamicSummary(
   industryName: string | null,
   prefectureName: string | null
 ): string {
-  if (company.business_summary) {
-    return company.business_summary;
-  }
+  // Bypassed company.business_summary to keep SEO description clean and professional
+  // if (company.business_summary) {
+  //   return company.business_summary;
+  // }
   const companyName = locale === 'en' && company.company_name_en ? company.company_name_en : company.company_name;
   const prefName = getPrefectureName(prefectureName, locale);
   const industryMappedName = getIndustryName(industryName, locale);
@@ -352,12 +353,14 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 {t.company.basicInfo}
               </h2>
 
-              {/* Dynamic Summary/Overview paragraph for SEO and users */}
+              {/* Dynamic Summary/Overview paragraph for SEO and users - Hidden for now as requested by user */}
+              {/*
               <div className="mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80">
                 <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-350 font-semibold">
                   {summary}
                 </p>
               </div>
+              */}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
                 <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">

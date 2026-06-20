@@ -1378,6 +1378,19 @@ async function initQuotaTables(): Promise<void> {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_email ON user_api_keys(user_email);`);
       } catch {}
 
+      // Magic Link Tokens Table for PG
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS magic_link_tokens (
+          email VARCHAR(255) NOT NULL,
+          token VARCHAR(255) PRIMARY KEY,
+          expires_at TIMESTAMP NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      try {
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_magic_link_tokens_email ON magic_link_tokens(email);`);
+      } catch {}
+
     } catch (e) {
       console.error('Error initializing PG quota tables:', e);
     } finally {
@@ -1512,12 +1525,78 @@ async function initQuotaTables(): Promise<void> {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_email ON user_api_keys(user_email);`);
       } catch {}
 
+      // Magic Link Tokens Table for SQLite
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS magic_link_tokens (
+          email TEXT NOT NULL,
+          token TEXT PRIMARY KEY,
+          expires_at TEXT NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      try {
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_magic_link_tokens_email ON magic_link_tokens(email);`);
+      } catch {}
+
     } catch (e) {
       console.error('Error initializing SQLite quota tables:', e);
     }
   }
   
   tablesInitialized = true;
+}
+
+export async function saveMagicLinkToken(email: string, token: string, expiresAt: Date): Promise<void> {
+  await initQuotaTables();
+  const expiresStr = expiresAt.toISOString();
+  
+  const deleteSql = 'DELETE FROM magic_link_tokens WHERE email = ?';
+  const insertSql = 'INSERT INTO magic_link_tokens (email, token, expires_at) VALUES (?, ?, ?)';
+  
+  if (DATABASE_URL) {
+    const pool = getPGPool();
+    const client = await pool.connect();
+    try {
+      await client.query(convertSqlForPG(deleteSql), [email]);
+      await client.query(convertSqlForPG(insertSql), [email, token, expiresAt]);
+    } finally {
+      client.release();
+    }
+  } else {
+    const db = getSQLiteDB();
+    db.prepare(deleteSql).run(email);
+    db.prepare(insertSql).run(email, token, expiresStr);
+  }
+}
+
+export async function verifyAndConsumeMagicLinkToken(email: string, token: string): Promise<boolean> {
+  await initQuotaTables();
+  
+  const selectSql = 'SELECT * FROM magic_link_tokens WHERE email = ? AND token = ? LIMIT 1';
+  const deleteSql = 'DELETE FROM magic_link_tokens WHERE email = ?';
+  
+  const row = await runGetQuery(selectSql, [email, token]);
+  if (!row) {
+    return false;
+  }
+  
+  const expiresAt = new Date(row.expires_at);
+  const now = new Date();
+  
+  if (DATABASE_URL) {
+    const pool = getPGPool();
+    await pool.query(convertSqlForPG(deleteSql), [email]);
+  } else {
+    const db = getSQLiteDB();
+    db.prepare(deleteSql).run(email);
+  }
+  
+  if (expiresAt < now) {
+    console.log(`Magic link token expired for ${email}. Expired at: ${expiresAt}, now: ${now}`);
+    return false;
+  }
+  
+  return true;
 }
 
 /**

@@ -1,14 +1,19 @@
 "use client";
 
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { X, Lock, CheckCircle2, ShieldCheck } from "lucide-react";
+import { X, Lock, CheckCircle2, ShieldCheck, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
+import { signIn } from "next-auth/react";
 
 export const AuthModal: React.FC = () => {
   const { authModalOpen, setAuthModalOpen, isLoggedIn, loginWithGoogle } = useAuth();
   const { locale, t } = useLanguage();
+
+  const [emailInput, setEmailInput] = useState("");
+  const [magicLinkStatus, setMagicLinkStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
+  const [magicLinkError, setMagicLinkError] = useState("");
 
   // Automatically close modal when logged in
   useEffect(() => {
@@ -16,6 +21,34 @@ export const AuthModal: React.FC = () => {
       setAuthModalOpen(false);
     }
   }, [isLoggedIn, authModalOpen, setAuthModalOpen]);
+
+  const handleSendMagicLink = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!emailInput) return;
+    setMagicLinkStatus("sending");
+    setMagicLinkError("");
+
+    try {
+      const res = await fetch("/api/auth/send-magic-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: emailInput, locale }),
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setMagicLinkStatus("success");
+        setEmailInput("");
+      } else {
+        setMagicLinkStatus("error");
+        setMagicLinkError(data.error || t.auth.magicLinkError);
+      }
+    } catch (err) {
+      console.error("Magic link request failed:", err);
+      setMagicLinkStatus("error");
+      setMagicLinkError(t.auth.magicLinkError);
+    }
+  };
 
   if (!authModalOpen) return null;
 
@@ -79,6 +112,73 @@ export const AuthModal: React.FC = () => {
               </svg>
               <span>{t.auth.googleBtn}</span>
             </button>
+
+            {/* Microsoft Sign In Button */}
+            <button
+              type="button"
+              onClick={() => signIn("microsoft-entra-id")}
+              className="w-full py-3.5 px-4 text-xs font-bold border border-slate-200 dark:border-slate-800 rounded-xl bg-white hover:bg-slate-50 dark:bg-[#1C2128] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-sm hover:shadow transition-all flex items-center justify-center gap-3 cursor-pointer -mt-3"
+            >
+              <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
+                <path fill="#f35325" d="M1 1h10v10H1z"/>
+                <path fill="#81bc06" d="M12 1h10v10H12z"/>
+                <path fill="#05a6f0" d="M1 12h10v10H1z"/>
+                <path fill="#ffba08" d="M12 12h10v10H12z"/>
+              </svg>
+              <span>{t.auth.microsoftBtn}</span>
+            </button>
+
+            {/* Or Divider */}
+            <div className="flex items-center my-1 -mt-2">
+              <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+              <span className="px-3 text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
+                {t.auth.magicLinkOr}
+              </span>
+              <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+            </div>
+
+            {/* Magic Link Email Form */}
+            <form onSubmit={handleSendMagicLink} className="flex flex-col gap-2 -mt-2">
+              <div className="text-left">
+                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
+                  {t.auth.magicLinkTitle}
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder={t.auth.magicLinkPlaceholder}
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  className="w-full px-3 py-3 text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 focus:bg-white dark:bg-[#1C2128] text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all"
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={magicLinkStatus === "sending"}
+                className="w-full py-3.5 px-4 text-xs font-bold rounded-xl bg-primary hover:bg-primary/90 text-white shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+              >
+                {magicLinkStatus === "sending" ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>{t.auth.magicLinkSending}</span>
+                  </>
+                ) : (
+                  <span>{t.auth.magicLinkBtn}</span>
+                )}
+              </button>
+              
+              {magicLinkStatus === "success" && (
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 text-left mt-1 font-semibold">
+                  {t.auth.magicLinkSuccess}
+                </p>
+              )}
+              {magicLinkStatus === "error" && (
+                <p className="text-[11px] text-red-500 dark:text-red-400 text-left mt-1 font-semibold">
+                  {magicLinkError}
+                </p>
+              )}
+            </form>
+
 
             {/* Legal Consent Notice */}
             <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center leading-relaxed -mt-2">

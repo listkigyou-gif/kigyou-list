@@ -705,6 +705,9 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
 
       {/* Main Results Column */}
       <main ref={resultsTopRef} className="flex-1 min-w-0 flex flex-col gap-6 relative">
+        <h1 className="sr-only">
+          {locale === 'en' ? 'Search Companies' : locale === 'vi' ? 'Tìm kiếm doanh nghiệp' : '企業データ検索'}
+        </h1>
 
         {/* Top Search Input Bar */}
         <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-4 shadow-sm flex flex-col sm:flex-row gap-3">

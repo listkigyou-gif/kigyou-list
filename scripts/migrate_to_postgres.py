@@ -588,6 +588,7 @@ def main():
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_comp_ind_code_corp_temp ON company_industries_temp(industry_code, corporate_number);")
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_comp_ind_code_detailed_temp ON company_industries_temp(industry_code, is_detailed);")
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_company_industries_path_temp ON company_industries_temp(industry_path);")
+        pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_company_industries_corp_temp ON company_industries_temp(corporate_number);")
         pg_cur.execute("CREATE INDEX IF NOT EXISTS idx_sitemap_companies_emp_temp ON sitemap_companies_temp(employee_count DESC, corporate_number ASC);")
         
         pg_conn.commit()
@@ -654,6 +655,7 @@ def main():
         ALTER INDEX idx_signals_type_corp_temp RENAME TO idx_signals_type_corp;
         ALTER INDEX idx_comp_ind_code_corp_temp RENAME TO idx_comp_ind_code_corp;
         ALTER INDEX idx_company_industries_path_temp RENAME TO idx_company_industries_path;
+        ALTER INDEX idx_company_industries_corp_temp RENAME TO idx_company_industries_corp;
         ALTER INDEX idx_sitemap_companies_emp_temp RENAME TO idx_sitemap_companies_emp;
         ALTER INDEX idx_companies_is_detailed_temp RENAME TO idx_companies_is_detailed;
         ALTER INDEX idx_comp_ind_code_detailed_temp RENAME TO idx_comp_ind_code_detailed;
