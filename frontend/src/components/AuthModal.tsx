@@ -113,23 +113,8 @@ export const AuthModal: React.FC = () => {
               <span>{t.auth.googleBtn}</span>
             </button>
 
-            {/* Microsoft Sign In Button */}
-            <button
-              type="button"
-              onClick={() => signIn("microsoft-entra-id")}
-              className="w-full py-3.5 px-4 text-xs font-bold border border-slate-200 dark:border-slate-800 rounded-xl bg-white hover:bg-slate-50 dark:bg-[#1C2128] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-sm hover:shadow transition-all flex items-center justify-center gap-3 cursor-pointer -mt-3"
-            >
-              <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 23 23" xmlns="http://www.w3.org/2000/svg">
-                <path fill="#f35325" d="M1 1h10v10H1z"/>
-                <path fill="#81bc06" d="M12 1h10v10H12z"/>
-                <path fill="#05a6f0" d="M1 12h10v10H1z"/>
-                <path fill="#ffba08" d="M12 12h10v10H12z"/>
-              </svg>
-              <span>{t.auth.microsoftBtn}</span>
-            </button>
-
             {/* Or Divider */}
-            <div className="flex items-center my-1 -mt-2">
+            <div className="flex items-center my-1">
               <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
               <span className="px-3 text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
                 {t.auth.magicLinkOr}

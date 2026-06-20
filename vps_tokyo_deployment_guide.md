@@ -86,6 +86,16 @@ Vì VPS có RAM 2GB, chúng ta cần cấu hình PostgreSQL tối ưu hóa bộ 
 
 ## 🚀 BƯỚC 4: TRIỂN KHAI ỨNG DỤNG NEXT.JS LÊN VPS
 
+> [!TIP]
+> **Phương pháp Tự động hóa khuyên dùng:** Bạn có thể tự động hóa toàn bộ Bước 4, Bước 5 và cấu hình Cron Job bằng cách chạy script tự động triển khai có sẵn trong dự án:
+> ```bash
+> cd /var/www/kigyou-list
+> sudo bash scripts/vps_deploy.sh
+> ```
+> *Script này sẽ tự động pull code mới nhất, build Next.js, cấu hình Nginx, cài đặt SSL Let's Encrypt (Certbot), thiết lập PM2 và cài đặt Cron Job cho sao lưu tự động.*
+
+### Hướng dẫn triển khai thủ công từng bước:
+
 1.  **Clone mã nguồn dự án** từ GitHub về thư mục `/var/www/kigyou-list` trên VPS.
 2.  Tạo tệp cấu hình môi trường Production tĩnh trên VPS:
     ```bash
@@ -177,27 +187,47 @@ Vì VPS có RAM 2GB, chúng ta cần cấu hình PostgreSQL tối ưu hóa bộ 
     # Phần Default region name nhập: us-east-1
     # Phần Default output format nhập: json
     ```
-3.  Tạo script sao lưu (bạn có thể copy trực tiếp tệp `scripts/db_backup.sh` có sẵn trong mã nguồn hoặc tạo mới):
-    ```bash
-    mkdir -p /home/ubuntu/scripts
-    nano /home/ubuntu/scripts/db_backup.sh
-    ```
-    Dán nội dung script tối ưu hóa phân tách dữ liệu sau (loại trừ các bảng doanh nghiệp tĩnh khổng lồ để tiết kiệm dung lượng R2 xuống <100KB):
+3.  **Cấu hình script sao lưu định kỳ**:
+    Tệp script sao lưu được đặt trực tiếp trong mã nguồn dự án tại đường dẫn `/var/www/kigyou-list/scripts/db_backup.sh`. Script này sẽ tự động đọc các thông tin kết nối và API Key của Cloudflare R2 từ tệp cấu hình `.env.local` của Next.js để thực hiện sao lưu và upload lên R2 một cách bảo mật:
+
+    Nội dung chi tiết của `scripts/db_backup.sh` mới nhất:
     ```bash
     #!/bin/bash
-    
-    # 1. Định nghĩa các biến cấu hình
+
+    # Kigyou-list: Optimized PostgreSQL User & Transaction Data Backup Script
+    # ======================================================================
+    # This script dumps only dynamic user-related tables (quotas, jobs, billing, keys, etc.)
+    # and excludes all heavy company reference tables to minimize Cloudflare R2 storage usage.
+
+    # 1. Configuration variables
     DB_NAME="kigyou_list"
     BACKUP_DIR="/home/ubuntu/backups"
-    FILE_NAME="db_user_backup_$(date +%Y%m%d_%H%M%S).sql.gz"
-    R2_BUCKET="s3://kigyou-list-exports/backups" # Thay tên bucket của bạn
-    R2_ENDPOINT_URL="https://[ACCOUNT_ID].r2.cloudflarestorage.com" # Thay Account ID của bạn
-    
-    mkdir -p $BACKUP_DIR
-    
-    # 2. Thực hiện Backup PostgreSQL loại trừ các bảng tĩnh lớn
-    echo "[$(date)] Starting Database Backup (User & Payment Data only)..."
-    pg_dump -h localhost -U postgres -d $DB_NAME \
+    FILE_NAME="db_user_backup_\$(date +%Y%m%d_%H%M%S).sql.gz"
+
+    # Attempt to load Cloudflare R2 configurations dynamically from Next.js environment file
+    ENV_FILE="/var/www/kigyou-list/frontend/.env.local"
+    if [ -f "\$ENV_FILE" ]; then
+      R2_ENDPOINT_URL=\$(grep "^R2_ENDPOINT=" "\$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
+      R2_BUCKET_NAME=\$(grep "^R2_BUCKET_NAME=" "\$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
+      R2_BUCKET="s3://\$R2_BUCKET_NAME/backups"
+      
+      # Extract and export credentials for the AWS CLI dynamically
+      export AWS_ACCESS_KEY_ID=\$(grep "^R2_ACCESS_KEY_ID=" "\$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
+      export AWS_SECRET_ACCESS_KEY=\$(grep "^R2_SECRET_ACCESS_KEY=" "\$ENV_FILE" | cut -d'=' -f2- | tr -d '"' | tr -d "'" | tr -d '\r')
+      export AWS_DEFAULT_REGION="us-east-1"
+    else
+      # Local development fallbacks
+      R2_BUCKET="s3://kigyou-list-storage/backups"
+      R2_ENDPOINT_URL="https://baafa3ec333eb25d4b1f26d03dce1c14.r2.cloudflarestorage.com"
+    fi
+
+    mkdir -p \$BACKUP_DIR
+
+    echo "[\$(date)] Starting PostgreSQL Backup (User & Payment Data only)..."
+
+    # 2. pg_dump executing with table exclusion filters
+    # Wildcards are used to catch all partitions of companies (e.g. companies_p01, etc.)
+    sudo -u postgres pg_dump -d \$DB_NAME \
       --exclude-table="companies*" \
       --exclude-table="business_signals*" \
       --exclude-table="company_industries*" \
@@ -211,26 +241,51 @@ Vì VPS có RAM 2GB, chúng ta cần cấu hình PostgreSQL tối ưu hóa bộ 
       --exclude-table="database_stats_history*" \
       --exclude-table="yahoo_stats_history*" \
       --exclude-table="raw_*" \
-      | gzip > $BACKUP_DIR/$FILE_NAME
-    
-    # 3. Upload lên Cloudflare R2
-    echo "[$(date)] Uploading backup file to Cloudflare R2..."
-    aws s3 cp $BACKUP_DIR/$FILE_NAME $R2_BUCKET/$FILE_NAME --endpoint-url $R2_ENDPOINT_URL
-    
-    # 4. Dọn dẹp file cục bộ trên VPS để tiết kiệm SSD
-    rm -f $BACKUP_DIR/$FILE_NAME
-    echo "[$(date)] Backup completed successfully!"
+      | gzip > \$BACKUP_DIR/\$FILE_NAME
+
+    if [ \$? -eq 0 ]; then
+      echo "[\$(date)] Database dump successfully created: \$BACKUP_DIR/\$FILE_NAME"
+    else
+      echo "[\$(date)] Error: PostgreSQL pg_dump failed!"
+      if pg_isready -h localhost >/dev/null 2>&1; then
+        sudo -u postgres psql -d kigyou_list -c "INSERT INTO backup_logs (id, status, error_message) VALUES ('\$(date +%s)', 'failed', 'PostgreSQL pg_dump failed!')"
+      fi
+      exit 1
+    fi
+
+    # 3. Upload backup file to Cloudflare R2
+    echo "[\$(date)] Uploading backup file to Cloudflare R2..."
+    FILE_SIZE=\$(du -h "\$BACKUP_DIR/\$FILE_NAME" | cut -f1)
+    aws s3 cp \$BACKUP_DIR/\$FILE_NAME \$R2_BUCKET/\$FILE_NAME --endpoint-url \$R2_ENDPOINT_URL
+
+    if [ \$? -eq 0 ]; then
+      echo "[\$(date)] Upload completed successfully."
+      if pg_isready -h localhost >/dev/null 2>&1; then
+        sudo -u postgres psql -d kigyou_list -c "INSERT INTO backup_logs (id, status, file_name, file_size) VALUES ('\$(date +%s)', 'success', '\$FILE_NAME', '\$FILE_SIZE')"
+      fi
+    else
+      echo "[\$(date)] Error: Failed to upload backup to R2!"
+      if pg_isready -h localhost >/dev/null 2>&1; then
+        sudo -u postgres psql -d kigyou_list -c "INSERT INTO backup_logs (id, status, error_message) VALUES ('\$(date +%s)', 'failed', 'R2 upload failed!')"
+      fi
+      exit 1
+    fi
+
+    # 4. Cleanup local file on VPS to save disk space
+    rm -f \$BACKUP_DIR/\$FILE_NAME
+    echo "[\$(date)] Cleaned up local backup file. Process complete!"
     ```
-4.  Cấp quyền thực thi cho script và thiết lập **Cron Job** chạy tự động:
+
+4.  **Cấp quyền thực thi và cài đặt Cron Job chạy tự động**:
     ```bash
-    chmod +x /home/ubuntu/scripts/db_backup.sh
-    
+    chmod +x /var/www/kigyou-list/scripts/db_backup.sh
+
     # Mở bảng lập lịch crontab
     crontab -e
     ```
-    Thêm dòng cấu hình sau ở cuối file để chạy script **định kỳ mỗi 6 tiếng một lần**:
+    Thêm dòng sau ở cuối tệp crontab để script tự động chạy **định kỳ mỗi 6 tiếng một lần**:
     ```cron
-    0 */6 * * * /bin/bash /home/ubuntu/scripts/db_backup.sh >> /home/ubuntu/scripts/backup.log 2>&1
+    0 */6 * * * /bin/bash /var/www/kigyou-list/scripts/db_backup.sh >> /var/www/kigyou-list/scripts/backup.log 2>&1
     ```
 
 ---

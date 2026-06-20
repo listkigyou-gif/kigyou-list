@@ -1,6 +1,5 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
-import MicrosoftEntraID from "next-auth/providers/microsoft-entra-id";
 import Credentials from "next-auth/providers/credentials";
 import { getUserQuota, verifyAndConsumeMagicLinkToken } from "@/lib/db";
 
@@ -9,10 +8,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    }),
-    MicrosoftEntraID({
-      clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID,
-      clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET,
     }),
     Credentials({
       id: "magiclink",
@@ -54,6 +49,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session;
     },
+  },
+  session: {
+    strategy: "jwt",
+    maxAge: 365 * 24 * 60 * 60, // 365 days in seconds
   },
   secret: process.env.AUTH_SECRET,
 });

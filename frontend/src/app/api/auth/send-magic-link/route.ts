@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { saveMagicLinkToken } from "@/lib/db";
+import { saveMagicLinkToken, checkMagicLinkRateLimit } from "@/lib/db";
 import crypto from "crypto";
 
 export async function POST(request: Request) {
@@ -9,8 +9,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
 
+    // Rate Limit Checks
+    const rateCheck = await checkMagicLinkRateLimit(email);
+    if (!rateCheck.allowed) {
+      const errorMsg = rateCheck.reason === "RATE_LIMIT_60S"
+        ? (locale === "vi" ? "Vui lòng đợi 60 giây trước khi yêu cầu lại liên kết đăng nhập." : locale === "en" ? "Please wait 60 seconds before requesting another login link." : "ログインリンクを再要求する前に60秒お待ちください。")
+        : (locale === "vi" ? "Bạn đã vượt quá giới hạn gửi liên kết (tối đa 3 lần mỗi 24 giờ). Vui lòng thử lại sau." : locale === "en" ? "You have exceeded the maximum email limit (3 times per 24 hours). Please try again later." : "メール送信の最大制限（24時間以内で3回）を超えました。後ほどもう一度お試しください。");
+      return NextResponse.json({ error: errorMsg }, { status: 429 });
+    }
+
     const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes validity
+    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour validity
 
     await saveMagicLinkToken(email, token, expiresAt);
 
@@ -37,7 +46,7 @@ export async function POST(request: Request) {
       <div style="font-family: sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px;">
         <h2 style="font-size: 20px; font-weight: bold; color: #0f172a; margin-bottom: 16px;">kigyou-list にログイン</h2>
         <p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 24px;">
-          以下のボタンをクリックして、kigyou-listにログインしてください。このリンクの有効期限は15分間です。
+          以下のボタンをクリックして、kigyou-listにログインしてください。このリンクの有効期限は1時間です。
         </p>
         <a href="${verifyUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 24px; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 8px; margin-bottom: 24px;">ログインする</a>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin-bottom: 24px;" />
@@ -53,7 +62,7 @@ export async function POST(request: Request) {
         <div style="font-family: sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px;">
           <h2 style="font-size: 20px; font-weight: bold; color: #0f172a; margin-bottom: 16px;">Đăng nhập vào kigyou-list</h2>
           <p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 24px;">
-            Vui lòng nhấn vào nút bên dưới để đăng nhập vào tài khoản kigyou-list của bạn. Đường dẫn này sẽ hết hạn sau 15 phút.
+            Vui lòng nhấn vào nút bên dưới để đăng nhập vào tài khoản kigyou-list của bạn. Đường dẫn này sẽ hết hạn sau 1 giờ.
           </p>
           <a href="${verifyUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 24px; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 8px; margin-bottom: 24px;">Đăng nhập ngay</a>
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin-bottom: 24px;" />
@@ -68,7 +77,7 @@ export async function POST(request: Request) {
         <div style="font-family: sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px;">
           <h2 style="font-size: 20px; font-weight: bold; color: #0f172a; margin-bottom: 16px;">Sign in to kigyou-list</h2>
           <p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 24px;">
-            Please click the button below to sign in to your kigyou-list account. This link will expire in 15 minutes.
+            Please click the button below to sign in to your kigyou-list account. This link will expire in 1 hour.
           </p>
           <a href="${verifyUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 24px; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 8px; margin-bottom: 24px;">Sign In</a>
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin-bottom: 24px;" />

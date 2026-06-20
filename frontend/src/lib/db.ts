@@ -1384,9 +1384,13 @@ async function initQuotaTables(): Promise<void> {
           email VARCHAR(255) NOT NULL,
           token VARCHAR(255) PRIMARY KEY,
           expires_at TIMESTAMP NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          used BOOLEAN DEFAULT false
         );
       `);
+      try {
+        await client.query(`ALTER TABLE magic_link_tokens ADD COLUMN IF NOT EXISTS used BOOLEAN DEFAULT false;`);
+      } catch {}
       try {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_magic_link_tokens_email ON magic_link_tokens(email);`);
       } catch {}
@@ -1531,9 +1535,17 @@ async function initQuotaTables(): Promise<void> {
           email TEXT NOT NULL,
           token TEXT PRIMARY KEY,
           expires_at TEXT NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          used INTEGER DEFAULT 0
         );
       `);
+      try {
+        db.exec(`ALTER TABLE magic_link_tokens ADD COLUMN used INTEGER DEFAULT 0;`);
+      } catch (err: any) {
+        if (err && err.message && !err.message.includes('duplicate column name')) {
+          console.error('Error adding column "used" to magic_link_tokens:', err);
+        }
+      }
       try {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_magic_link_tokens_email ON magic_link_tokens(email);`);
       } catch {}
@@ -1548,32 +1560,76 @@ async function initQuotaTables(): Promise<void> {
 
 export async function saveMagicLinkToken(email: string, token: string, expiresAt: Date): Promise<void> {
   await initQuotaTables();
-  const expiresStr = expiresAt.toISOString();
+  const now = new Date();
   
-  const deleteSql = 'DELETE FROM magic_link_tokens WHERE email = ?';
-  const insertSql = 'INSERT INTO magic_link_tokens (email, token, expires_at) VALUES (?, ?, ?)';
+  // Clean up tokens older than 24 hours
+  const cleanupSql = 'DELETE FROM magic_link_tokens WHERE created_at < ?';
+  const cleanupDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  
+  const insertSql = 'INSERT INTO magic_link_tokens (email, token, expires_at, created_at, used) VALUES (?, ?, ?, ?, 0)';
   
   if (DATABASE_URL) {
     const pool = getPGPool();
     const client = await pool.connect();
     try {
-      await client.query(convertSqlForPG(deleteSql), [email]);
-      await client.query(convertSqlForPG(insertSql), [email, token, expiresAt]);
+      await client.query(convertSqlForPG(cleanupSql), [cleanupDate]);
+      await client.query(convertSqlForPG(insertSql), [email, token, expiresAt, now]);
     } finally {
       client.release();
     }
   } else {
     const db = getSQLiteDB();
-    db.prepare(deleteSql).run(email);
-    db.prepare(insertSql).run(email, token, expiresStr);
+    db.prepare(cleanupSql).run(cleanupDate.toISOString());
+    db.prepare(insertSql).run(email, token, expiresAt.toISOString(), now.toISOString());
   }
+}
+
+export async function checkMagicLinkRateLimit(email: string): Promise<{ allowed: boolean; reason?: "RATE_LIMIT_60S" | "RATE_LIMIT_24H" }> {
+  await initQuotaTables();
+  
+  const sql = 'SELECT created_at FROM magic_link_tokens WHERE email = ?';
+  const rows = await runQuery(sql, [email]);
+  
+  const now = new Date();
+  const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
+  const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  
+  const parseDate = (val: any): Date => {
+    if (val instanceof Date) return val;
+    if (typeof val === 'string') {
+      return new Date(val);
+    }
+    return new Date(val);
+  };
+  
+  let sentInLastMinute = false;
+  let sentInLast24Hours = 0;
+  
+  for (const row of rows) {
+    const createdAt = parseDate(row.created_at);
+    if (createdAt > oneMinuteAgo) {
+      sentInLastMinute = true;
+    }
+    if (createdAt > twentyFourHoursAgo) {
+      sentInLast24Hours++;
+    }
+  }
+  
+  if (sentInLastMinute) {
+    return { allowed: false, reason: "RATE_LIMIT_60S" };
+  }
+  if (sentInLast24Hours >= 3) {
+    return { allowed: false, reason: "RATE_LIMIT_24H" };
+  }
+  
+  return { allowed: true };
 }
 
 export async function verifyAndConsumeMagicLinkToken(email: string, token: string): Promise<boolean> {
   await initQuotaTables();
   
-  const selectSql = 'SELECT * FROM magic_link_tokens WHERE email = ? AND token = ? LIMIT 1';
-  const deleteSql = 'DELETE FROM magic_link_tokens WHERE email = ?';
+  const selectSql = 'SELECT * FROM magic_link_tokens WHERE email = ? AND token = ? AND (used = 0 OR used = false OR used IS NULL) LIMIT 1';
+  const updateSql = 'UPDATE magic_link_tokens SET used = 1 WHERE token = ?';
   
   const row = await runGetQuery(selectSql, [email, token]);
   if (!row) {
@@ -1585,10 +1641,10 @@ export async function verifyAndConsumeMagicLinkToken(email: string, token: strin
   
   if (DATABASE_URL) {
     const pool = getPGPool();
-    await pool.query(convertSqlForPG(deleteSql), [email]);
+    await pool.query(convertSqlForPG(updateSql), [token]);
   } else {
     const db = getSQLiteDB();
-    db.prepare(deleteSql).run(email);
+    db.prepare(updateSql).run(token);
   }
   
   if (expiresAt < now) {
