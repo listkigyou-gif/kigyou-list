@@ -18,6 +18,7 @@ export const Header: React.FC = () => {
   const router = useRouter();
   const pathname = usePathname();
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const [mobileLangDropdownOpen, setMobileLangDropdownOpen] = useState(false);
 
   const changeLanguage = (newLocale: string) => {
     if (newLocale === locale) return;
@@ -26,7 +27,7 @@ export const Header: React.FC = () => {
     
     // Replace the current locale prefix in the URL path
     const segments = pathname.split("/");
-    if (segments[1] === "ja" || segments[1] === "en") {
+    if (["ja", "en", "vi"].includes(segments[1])) {
       segments[1] = newLocale;
     } else {
       segments.splice(1, 0, newLocale);
@@ -118,7 +119,7 @@ export const Header: React.FC = () => {
               onClick={() => setLangDropdownOpen(!langDropdownOpen)}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-350 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-all shadow-sm cursor-pointer active:scale-95"
             >
-              <span>{locale === "en" ? "🇺🇸 EN" : "🇯🇵 JP"}</span>
+              <span>{locale === "en" ? "🇺🇸 EN" : locale === "vi" ? "🇻🇳 VI" : "🇯🇵 JP"}</span>
               <span className="text-[9px] opacity-60">▼</span>
             </button>
             {langDropdownOpen && (
@@ -143,6 +144,14 @@ export const Header: React.FC = () => {
                     }`}
                   >
                     <span>🇺🇸</span> EN
+                  </button>
+                  <button
+                    onClick={() => changeLanguage("vi")}
+                    className={`w-full px-4 py-2 text-left text-xs font-bold transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2 cursor-pointer ${
+                      locale === "vi" ? "text-primary dark:text-secondary bg-primary/5 dark:bg-secondary/5" : "text-slate-700 dark:text-slate-350"
+                    }`}
+                  >
+                    <span>🇻🇳</span> VI
                   </button>
                 </div>
               </>
@@ -211,13 +220,50 @@ export const Header: React.FC = () => {
 
         {/* Mobile Menu Button */}
         <div className="flex md:hidden items-center gap-2">
-          {/* Mobile Language Selector Toggle Button */}
-          <button
-            onClick={() => changeLanguage(locale === "en" ? "ja" : "en")}
-            className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-750 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 active:scale-95 transition-all shadow-sm cursor-pointer mr-1"
-          >
-            <span>{locale === "en" ? "🇺🇸 EN" : "🇯🇵 JP"}</span>
-          </button>
+          {/* Mobile Language Selector Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setMobileLangDropdownOpen(!mobileLangDropdownOpen)}
+              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-750 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/40 active:scale-95 transition-all shadow-sm cursor-pointer mr-1"
+            >
+              <span>{locale === "en" ? "🇺🇸 EN" : locale === "vi" ? "🇻🇳 VI" : "🇯🇵 JP"}</span>
+              <span className="text-[7px] opacity-60">▼</span>
+            </button>
+            {mobileLangDropdownOpen && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40 cursor-default"
+                  onClick={() => setMobileLangDropdownOpen(false)}
+                />
+                <div className="absolute right-0 mt-2 w-28 rounded-xl bg-white border border-slate-200 shadow-lg dark:bg-[#1C2128] dark:border-slate-800 py-1.5 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <button
+                    onClick={() => { changeLanguage("ja"); setMobileLangDropdownOpen(false); }}
+                    className={`w-full px-4 py-2 text-left text-xs font-bold transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2 cursor-pointer ${
+                      locale === "ja" ? "text-primary dark:text-secondary bg-primary/5 dark:bg-secondary/5" : "text-slate-700 dark:text-slate-350"
+                    }`}
+                  >
+                    <span>🇯🇵</span> JP
+                  </button>
+                  <button
+                    onClick={() => { changeLanguage("en"); setMobileLangDropdownOpen(false); }}
+                    className={`w-full px-4 py-2 text-left text-xs font-bold transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2 cursor-pointer ${
+                      locale === "en" ? "text-primary dark:text-secondary bg-primary/5 dark:bg-secondary/5" : "text-slate-700 dark:text-slate-350"
+                    }`}
+                  >
+                    <span>🇺🇸</span> EN
+                  </button>
+                  <button
+                    onClick={() => { changeLanguage("vi"); setMobileLangDropdownOpen(false); }}
+                    className={`w-full px-4 py-2 text-left text-xs font-bold transition-colors hover:bg-slate-50 dark:hover:bg-slate-800/50 flex items-center gap-2 cursor-pointer ${
+                      locale === "vi" ? "text-primary dark:text-secondary bg-primary/5 dark:bg-secondary/5" : "text-slate-700 dark:text-slate-350"
+                    }`}
+                  >
+                    <span>🇻🇳</span> VI
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
 
           {mounted && isLoggedIn && (
             <span className="text-[10px] font-black bg-primary/10 text-primary px-2 py-0.5 rounded-full dark:bg-slate-800 dark:text-slate-300">

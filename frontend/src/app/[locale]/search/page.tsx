@@ -6,7 +6,7 @@ import {
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { SearchClientContainer } from '@/components/SearchClientContainer';
-import { prefectureJaToEn, industryJaToEn } from '@/lib/locale-mapping';
+import { prefectureJaToEn, industryJaToEn, getPrefectureName, getIndustryName } from '@/lib/locale-mapping';
 
 export const revalidate = 0; // Dynamic search page, do not cache static
 
@@ -14,11 +14,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const resolvedParams = await params;
   const locale = resolvedParams.locale || "ja";
   const isEn = locale === "en";
+  const isVi = locale === "vi";
   return {
-    title: isEn ? "Search Companies | Kigyou-list" : "企業データ検索 | Kigyou-list",
-    description: isEn 
+    title: isVi ? "Tìm kiếm doanh nghiệp | Kigyou-list" : isEn ? "Search Companies | Kigyou-list" : "企業データ検索 | Kigyou-list",
+    description: isVi
+      ? "Tìm kiếm doanh nghiệp Nhật Bản nâng cao trên Kigyou-list. Lọc công ty theo ngành nghề, khu vực, vốn điều lệ, số lượng nhân viên hoặc các tín hiệu kinh doanh mới nhất."
+      : isEn 
       ? "Advanced company search on Kigyou-list. Filter Japanese companies by industry, location, capital, employee counts, or recent business signals."
-      : "Kigyou-listの高度な企業検索。業界、地域、資本金、従業員数や最新の営業シグナルから企業データを絞り込み検索できます。",
+      : "日本全国の企業データを高度な条件で検索。都道府県、市区町村、JSIC産業分類、資本金や従業員数、さらには採用や補助金などのシグナルで絞り込み可能です。",
     robots: {
       index: false,
       follow: true,
@@ -211,23 +214,23 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
   const industryMap = { ...industryMapResult };
 
   // Translate prefectures & industries if locale is English
-  if (locale === 'en') {
+  if (locale === 'en' || locale === 'vi') {
     prefectures.forEach((pref: any) => {
-      pref.name = prefectureJaToEn[pref.name] || pref.name;
+      pref.name = getPrefectureName(pref.name, locale);
     });
 
     industries.forEach((major: any) => {
-      major.name = industryJaToEn[major.name] || major.name;
+      major.name = getIndustryName(major.name, locale);
       if (major.children) {
         major.children.forEach((medium: any) => {
-          medium.name = industryJaToEn[medium.name] || medium.name;
+          medium.name = getIndustryName(medium.name, locale);
         });
       }
     });
 
     Object.keys(industryMap).forEach((code) => {
       const jaName = industryMap[code];
-      industryMap[code] = industryJaToEn[jaName] || jaName;
+      industryMap[code] = getIndustryName(jaName, locale);
     });
   }
 

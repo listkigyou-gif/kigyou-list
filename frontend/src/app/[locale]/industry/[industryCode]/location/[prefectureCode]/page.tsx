@@ -12,7 +12,7 @@ import {
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { getTranslations } from '@/lib/i18n';
-import { prefectureJaToEn, industryJaToEn } from '@/lib/locale-mapping';
+import { prefectureJaToEn, industryJaToEn, getPrefectureName, getIndustryName } from '@/lib/locale-mapping';
 
 export const revalidate = 3600; // Cache categories for 1 hour, ISR enabled
 
@@ -33,22 +33,29 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!ind || !pref) {
     return {
-      title: locale === 'en' ? 'Category Not Found | Kigyou-list' : 'カテゴリが見つかりません | Kigyou-list',
+      title: locale === 'en' ? 'Category Not Found | Kigyou-list' : locale === 'vi' ? 'Không tìm thấy danh mục | Kigyou-list' : 'カテゴリが見つかりません | Kigyou-list',
     };
   }
 
-  const prefName = locale === 'en' ? (prefectureJaToEn[pref.name] || pref.name) : pref.name;
-  const industryMappedName = locale === 'en' ? (industryJaToEn[ind.industry_name] || ind.industry_name) : ind.industry_name;
+  const prefName = getPrefectureName(pref.name, locale);
+  const industryMappedName = getIndustryName(ind.industry_name, locale);
   const isEn = locale === 'en';
+  const isVi = locale === 'vi';
 
   return {
-    title: isEn
+    title: isVi
+      ? `Danh sách công ty ${industryMappedName} tại ${prefName} (Mới nhất 2026) | Kigyou-list`
+      : isEn
       ? `${prefName} ${industryMappedName} Companies (2026 List) | Kigyou-list`
       : `${prefName}の${industryMappedName}企業一覧（2026年最新） | Kigyou-list`,
-    description: isEn
+    description: isVi
+      ? `Duyệt danh bạ các doanh nghiệp hoạt động trong lĩnh vực ${industryMappedName} tại ${prefName}, Nhật Bản. Chi tiết thông tin liên hệ, mã số thuế, số điện thoại, quy mô nhân sự, vốn điều lệ và các tín hiệu tuyển dụng.`
+      : isEn
       ? `Browse ${prefName} ${industryMappedName} company list. Details include address, telephone, capital, employee counts, current hiring status, and historical subsidies.`
       : `${prefName}で稼働している${industryMappedName}の企業データベースです。企業名、電話番号、登記住所、資本金、従業員数、最新の採用活動、補助金受給履歴などの購買シグナルを網羅しています。`,
-    keywords: isEn
+    keywords: isVi
+      ? [`${prefName} ${industryMappedName}`, `danh sách công ty ${prefName}`, `danh bạ doanh nghiệp ${industryMappedName}`]
+      : isEn
       ? [`${prefName} ${industryMappedName}`, `${prefName} company database`, `${industryMappedName} lead list`]
       : [`${prefName} ${industryMappedName}`, `${prefName} 企業リスト`, `${industryMappedName} 営業リスト`],
     alternates: {
@@ -56,6 +63,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       languages: {
         ja: `/ja/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
         en: `/en/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
+        vi: `/vi/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
       }
     }
   };
@@ -79,7 +87,7 @@ export default async function CategoryPage({ params }: PageProps) {
   const stats = await getCategoryStats(industryCode, prefectureCode);
   const { companies } = await searchCompanies('', { industry_code: industryCode, prefecture_code: prefectureCode }, 50, 0);
 
-  // 3. Generate Cross-linking data for SEO Matrix (同地域・他業界 & 同業界・他地域)
+  // 3. Generate Cross-linking data for SEO Matrix
   const siblingIndustries = await getSiblingIndustries(prefectureCode, industryCode, 5);
   const popularPrefectures = [
     { code: '13', name: '東京都' },
@@ -89,19 +97,44 @@ export default async function CategoryPage({ params }: PageProps) {
     { code: '40', name: '福岡県' }
   ];
 
-  const prefName = locale === 'en' ? (prefectureJaToEn[pref.name] || pref.name) : pref.name;
-  const industryMappedName = locale === 'en' ? (industryJaToEn[ind.industry_name] || ind.industry_name) : ind.industry_name;
+  const prefName = getPrefectureName(pref.name, locale);
+  const industryMappedName = getIndustryName(ind.industry_name, locale);
+  const isEn = locale === 'en';
+  const isVi = locale === 'vi';
 
   // Format currency stats
   const formatCapital = (val: number) => {
     if (locale === 'en') {
       return `¥${(val / 100).toFixed(1)} Million JPY`;
     }
+    if (locale === 'vi') {
+      return `¥${(val / 100).toFixed(1)} triệu JPY`;
+    }
     if (val >= 10000) return `${(val / 10000).toFixed(0)}億円`;
     return `${val.toLocaleString()}万円`;
   };
 
-  const d = locale === 'en' ? {
+  const d = isVi ? {
+    home: "Trang chủ",
+    directory: "Danh mục",
+    categoryLabel: "Phân loại chuyên sâu",
+    introTitle: `Danh sách công ty ${industryMappedName} tại ${prefName}`,
+    introDesc: `Danh sách toàn diện các doanh nghiệp đang hoạt động trong ngành ${industryMappedName} tại khu vực ${prefName}, Nhật Bản. Tra cứu nhanh số điện thoại, thông tin người đại diện, vốn điều lệ, quy mô nhân sự và các tín hiệu mua hàng B2B thực tế.`,
+    activeCompanies: "Doanh nghiệp hoạt động",
+    avgCapital: "Vốn điều lệ trung bình",
+    coverageRate: "Tỷ lệ bao phủ DB",
+    completeCoverage: "Hoàn toàn",
+    companiesCount: `Danh sách doanh nghiệp (Hiển thị ${companies.length} công ty)`,
+    sortByCapital: "Sắp xếp theo vốn điều lệ",
+    viewProfile: "Xem chi tiết",
+    otherIndustriesTitle: `Ngành nghề khác tại ${prefName} (Cùng khu vực)`,
+    otherPrefecturesTitle: `Các tỉnh thành khác (Cùng ngành nghề)`,
+    companySuffix: " doanh nghiệp",
+    unregistered: "Chưa đăng ký",
+    noRelatedCompanies: "Không tìm thấy ngành nghề liên quan nào khác tại tỉnh này.",
+    noMatchingTitle: "Không tìm thấy doanh nghiệp phù hợp",
+    noMatchingDesc: `Hiện tại chưa có dữ liệu mẫu cho ngành ${industryMappedName} tại ${prefName}. Vui lòng quay lại sau khi cơ sở dữ liệu được cập nhật.`
+  } : isEn ? {
     home: "Home",
     directory: "Directory",
     categoryLabel: "Specialized Category",
@@ -126,7 +159,7 @@ export default async function CategoryPage({ params }: PageProps) {
     directory: "企業データ一覧",
     categoryLabel: "業種 × 地域 特設カテゴリ",
     introTitle: `${pref.name}の${ind.industry_name} 企業・営業リスト一覧`,
-    introDesc: `${pref.name}内で活動中の${ind.industry_name}業界の企業データベースです。基本情報、代表者の連絡先、設立年月日に加え、最新の求人募集・補助金の獲得実績・公共入札などの購買シグナル（インテントデータ）をワンストップで確認・活用できます。`,
+    introDesc: `${pref.name}内で活動中の${ind.industry_name}業界の企業データベースです。基本情報、代表者の連絡先、設立年月日に加え、最新の求人募集・助成金の獲得実績・公共入札などの購買シグナル（インテントデータ）をワンストップで確認・活用できます。`,
     activeCompanies: "稼働企業数",
     avgCapital: "平均資本金",
     coverageRate: "データベース網羅率",
@@ -218,7 +251,9 @@ export default async function CategoryPage({ params }: PageProps) {
           <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
           <Link href={`/${locale}/directory`} className="hover:text-primary transition-colors">{d.directory}</Link>
           <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
-          <span className="text-slate-800 dark:text-slate-200 truncate" aria-current="page">{prefName}の{industryMappedName}</span>
+          <span className="text-slate-800 dark:text-slate-200 truncate" aria-current="page">
+            {locale === 'vi' ? `${industryMappedName} tại ${prefName}` : locale === 'en' ? `${prefName} ${industryMappedName}` : `${prefName}の${industryMappedName}`}
+          </span>
         </nav>
 
         {/* Dynamic SEO Header / Intro Banner */}
@@ -292,11 +327,11 @@ export default async function CategoryPage({ params }: PageProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {companies.map((comp) => {
                 const compName = locale === 'en' && comp.company_name_en ? comp.company_name_en : comp.company_name;
-                const compPrefName = locale === 'en' 
-                  ? ((comp.prefecture_name && prefectureJaToEn[comp.prefecture_name]) || comp.prefecture_name || "") 
-                  : (comp.prefecture_name || "");
+                const compPrefName = getPrefectureName(comp.prefecture_name, locale);
                 const localizedCompStatus = locale === 'en' 
                   ? (comp.status === '活動中' ? 'Active' : comp.status === '閉鎖' ? 'Closed' : comp.status === '解散' ? 'Dissolved' : comp.status)
+                  : locale === 'vi'
+                  ? (comp.status === '活動中' ? 'Đang hoạt động' : comp.status === '閉鎖' ? 'Đã đóng cửa' : comp.status === '解散' ? 'Đã giải thể' : comp.status)
                   : comp.status;
 
                 return (
@@ -333,13 +368,13 @@ export default async function CategoryPage({ params }: PageProps) {
                         <div>
                           <span className="text-slate-400 block text-[9px]">{t.company.capital}</span>
                           <strong className="text-slate-700 dark:text-slate-300 font-mono font-bold">
-                            {comp.capital_amount ? (locale === 'en' ? `¥${(comp.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2})}M JPY` : `${(comp.capital_amount / 10000).toLocaleString()}万円`) : d.unregistered}
+                            {comp.capital_amount ? (locale === 'en' ? `¥${(comp.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2})}M JPY` : locale === 'vi' ? `¥${(comp.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2})}tr JPY` : `${(comp.capital_amount / 10000).toLocaleString()}万円`) : d.unregistered}
                           </strong>
                         </div>
                         <div>
                           <span className="text-slate-400 block text-[9px]">{t.company.employees}</span>
                           <strong className="text-slate-700 dark:text-slate-300 font-mono font-bold">
-                            {comp.employee_count ? (locale === 'en' ? `${comp.employee_count.toLocaleString()} employees` : `${comp.employee_count}名`) : d.unregistered}
+                            {comp.employee_count ? (locale === 'en' ? `${comp.employee_count.toLocaleString()} employees` : locale === 'vi' ? `${comp.employee_count.toLocaleString()} nhân viên` : `${comp.employee_count}名`) : d.unregistered}
                           </strong>
                         </div>
                       </div>
@@ -347,7 +382,7 @@ export default async function CategoryPage({ params }: PageProps) {
                       {/* Phone details */}
                       <div className="flex items-center gap-2 py-1.5 px-3 rounded-lg bg-slate-50 dark:bg-slate-800/10 border border-slate-100 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
                         <Phone className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <span className="font-semibold">{locale === 'en' ? 'Phone: ' : '代表電話: '}</span>
+                        <span className="font-semibold">{locale === 'en' ? 'Phone: ' : locale === 'vi' ? 'Điện thoại: ' : '代表電話: '}</span>
                         <span className="font-mono">{comp.phone_number || d.unregistered}</span>
                       </div>
                     </div>
@@ -393,15 +428,15 @@ export default async function CategoryPage({ params }: PageProps) {
             {siblingIndustries.length > 0 ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {siblingIndustries.map(item => {
-                  const itemIndustryName = locale === 'en' ? (industryJaToEn[item.name] || item.name) : item.name;
+                  const itemIndustryName = getIndustryName(item.name, locale);
                   return (
                     <Link 
                       key={item.code} 
                       href={`/${locale}/industry/${item.code}/location/${prefectureCode}`}
-                      className="text-xs font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-secondary flex items-center gap-1 transition-colors"
+                      className="text-xs font-semibold text-slate-600 hover:text-primary dark:text-slate-350 dark:hover:text-secondary flex items-center gap-1 transition-colors"
                     >
                       <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate">{locale === 'en' ? `${itemIndustryName} in ${prefName}` : `${prefName}の${itemIndustryName}`}</span>
+                      <span className="truncate">{locale === 'en' ? `${itemIndustryName} in ${prefName}` : locale === 'vi' ? `${itemIndustryName} tại ${prefName}` : `${prefName}の${itemIndustryName}`}</span>
                     </Link>
                   );
                 })}
@@ -419,15 +454,15 @@ export default async function CategoryPage({ params }: PageProps) {
             </h3>
             <div className="grid grid-cols-2 gap-3">
               {popularPrefectures.filter(p => p.code !== prefectureCode).map(p => {
-                const pPrefName = locale === 'en' ? (prefectureJaToEn[p.name] || p.name) : p.name;
+                const pPrefName = getPrefectureName(p.name, locale);
                 return (
                   <Link 
                     key={p.code} 
                     href={`/${locale}/industry/${industryCode}/location/${p.code}`}
-                    className="text-xs font-semibold text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-secondary flex items-center gap-1 transition-colors"
+                    className="text-xs font-semibold text-slate-600 hover:text-primary dark:text-slate-350 dark:hover:text-secondary flex items-center gap-1 transition-colors"
                   >
                     <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>{locale === 'en' ? `${industryMappedName} in ${pPrefName}` : `${pPrefName}の${industryMappedName}`}</span>
+                    <span>{locale === 'en' ? `${industryMappedName} in ${pPrefName}` : locale === 'vi' ? `${industryMappedName} tại ${pPrefName}` : `${pPrefName}の${industryMappedName}`}</span>
                   </Link>
                 );
               })}

@@ -24,7 +24,9 @@ export const CountdownTimer: React.FC = () => {
     const endOfMonth = new Date(year, month + 1, 0, 23, 59, 59);
     
     // Set current month name
-    if (isEn) {
+    if (locale === "vi") {
+      setCurrentMonthName(`Tháng ${month + 1}`);
+    } else if (locale === "en") {
       const monthsEn = [
         "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
         "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
@@ -66,12 +68,29 @@ export const CountdownTimer: React.FC = () => {
     return () => clearInterval(timer);
   }, [locale]); // Recalculate if locale changes
 
+  const d = locale === "vi" ? {
+    calculating: "Đang tính toán thời gian kết thúc...",
+    limitedOffer: `Ưu đãi giới hạn ${currentMonthName}`,
+    discount: "Giảm tới 30%",
+    hurry: "Nhanh lên, chương trình giảm giá sắp kết thúc!",
+  } : locale === "en" ? {
+    calculating: "Calculating campaign end time...",
+    limitedOffer: `${currentMonthName} Limited Offer`,
+    discount: "Up to 30% OFF",
+    hurry: "Hurry, campaign pricing ends soon!",
+  } : {
+    calculating: "キャンペーン期間計算中...",
+    limitedOffer: `${currentMonthName}限定特別枠`,
+    discount: "最大30%OFF",
+    hurry: "今期キャンペーン価格の適用終了まで、残り時間わずかです！",
+  };
+
   if (!mounted) {
     return (
       <div className="w-full py-3 bg-gradient-to-r from-rose-500/10 to-amber-500/10 border border-rose-500/20 rounded-2xl flex items-center justify-center gap-2">
         <div className="w-4 h-4 rounded-full border-2 border-rose-500 border-t-transparent animate-spin" />
         <span className="text-xs text-rose-500 dark:text-rose-400 font-bold">
-          {isEn ? "Calculating campaign end time..." : "キャンペーン期間計算中..."}
+          {d.calculating}
         </span>
       </div>
     );
@@ -91,17 +110,15 @@ export const CountdownTimer: React.FC = () => {
         <div className="text-left">
           <div className="flex items-center gap-1.5">
             <span className="text-[10px] font-black text-rose-450 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20 uppercase tracking-wider">
-              {isEn ? `${currentMonthName} Limited Offer` : `${currentMonthName}限定特別枠`}
+              {d.limitedOffer}
             </span>
             <span className="text-[10px] font-black text-amber-450 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 uppercase tracking-wider flex items-center gap-0.5">
               <Sparkles className="w-2.5 h-2.5 animate-spin-slow" />
-              {isEn ? "Up to 30% OFF" : "最大30%OFF"}
+              {d.discount}
             </span>
           </div>
           <h4 className="text-xs sm:text-sm font-black text-white mt-1 tracking-tight leading-relaxed">
-            {isEn 
-              ? "Hurry, campaign pricing ends soon!" 
-              : "今期キャンペーン価格の適用終了まで、残り時間わずかです！"}
+            {d.hurry}
           </h4>
         </div>
       </div>

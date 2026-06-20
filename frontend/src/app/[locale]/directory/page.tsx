@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { getPrefecturesWithCounts, getIndustriesHierarchy } from "@/lib/db";
 import { MapPin, Briefcase, ChevronRight } from "lucide-react";
 import { getTranslations } from "@/lib/i18n";
-import { prefectureJaToEn, industryJaToEn } from "@/lib/locale-mapping";
+import { prefectureJaToEn, industryJaToEn, getPrefectureName, getIndustryName } from "@/lib/locale-mapping";
 import { Metadata } from "next";
 
 export const revalidate = 0; // Dynamic directory hub page, do not cache static
@@ -18,10 +18,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const resolvedParams = await params;
   const locale = resolvedParams.locale || 'ja';
   const isEn = locale === 'en';
+  const isVi = locale === 'vi';
 
   return {
-    title: isEn ? "Japan Company Directory & Category Sitemap | Kigyou-list" : "日本全国の企業データ一覧・カテゴリ別検索 | Kigyou-list",
-    description: isEn
+    title: isVi ? "Danh mục doanh nghiệp Nhật Bản & Sơ đồ Trang web | Kigyou-list" : isEn ? "Japan Company Directory & Category Sitemap | Kigyou-list" : "日本全国の企業データ一覧・カテゴリ別検索 | Kigyou-list",
+    description: isVi
+      ? "Tìm kiếm cơ sở dữ liệu doanh nghiệp theo 47 tỉnh thành Nhật Bản và tất cả các phân loại ngành nghề JSIC. Dữ liệu liên hệ, báo cáo tài chính và tín hiệu kinh doanh thực tế phong phú."
+      : isEn
       ? "Search corporate databases by 47 Japanese prefectures and all 20 major JSIC industry classifications. Rich database of contact information, financials, and real-time business signals."
       : "日本全国47都道府県および全19種類のJSIC産業分類から企業データベースを検索できます。最新 of 会社情報、電話番号、財務指標、営業シグナル情報が豊富に収録されています。",
     alternates: {
@@ -29,6 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       languages: {
         ja: "/ja/directory",
         en: "/en/directory",
+        vi: "/vi/directory",
       }
     }
   };
@@ -94,16 +98,34 @@ export default async function DirectoryPage({ params }: PageProps) {
   // Map database prefectures by name for quick lookup
   const prefMap = new Map(prefectures.map((p) => [p.name, p]));
 
-  const d = locale === 'en' ? {
+  const d = locale === 'vi' ? {
+    heroTag: "MỤC LỤC SƠ ĐỒ TRANG WEB & THƯ MỤC",
+    heroTitle: "Thư mục Doanh nghiệp Nhật Bản",
+    heroDesc: "Khám phá danh sách hơn 5 triệu doanh nghiệp Nhật Bản đang hoạt động, lọc theo 47 tỉnh thành và các phân loại ngành nghề JSIC. Tiếp cận trực tiếp thị trường nội địa Nhật Bản.",
+    prefTitle: "Tìm kiếm doanh nghiệp theo tỉnh thành Nhật Bản",
+    prefDesc: "Lọc các công ty Nhật Bản theo từng tỉnh thành từ Hokkaido đến Okinawa.",
+    indTitle: "Tìm kiếm doanh nghiệp theo ngành nghề JSIC",
+    indDesc: "Tìm kiếm thông tin theo các phân loại ngành nghề tiêu chuẩn Nhật Bản (JSIC).",
+    companySuffix: " doanh nghiệp",
+    majorIndexLabel: "Tổng số: {count} doanh nghiệp",
+    childIndexLabel: "{count} doanh nghiệp",
+    regionTitle: "Tìm theo vùng & Tỉnh thành",
+    industryTitle: "Tìm theo phân loại ngành nghề",
+    allInMajor: "Xem tất cả doanh nghiệp ngành {major}"
+  } : locale === 'en' ? {
     heroTag: "SITEMAP INDEX & DIRECTORY",
     heroTitle: "Japan Business Directory Hub",
     heroDesc: "Navigate through 5 million active Japanese companies, filtered by 47 prefectures and standardized JSIC industry classifications. Gain direct access to localized markets and industry sitemaps.",
-    regionTitle: "Browse by Prefecture & Region",
-    industryTitle: "Browse by Industry Classification (JSIC)",
-    allInMajor: "View all {major} companies",
+    prefTitle: "Search Companies by 47 Japanese Prefectures",
+    prefDesc: "Filter Japanese companies geographically from Hokkaido to Okinawa.",
+    indTitle: "Search Companies by JSIC Industry Classifications",
+    indDesc: "Segment prospects using standardized Japanese industrial classifications.",
     companySuffix: " companies",
     majorIndexLabel: "total {count} companies",
-    childIndexLabel: "{count} companies"
+    childIndexLabel: "{count} companies",
+    regionTitle: "Browse by Prefecture & Region",
+    industryTitle: "Browse by Industry Classification (JSIC)",
+    allInMajor: "View all {major} companies"
   } : {
     heroTag: "SITEMAP INDEX & DIRECTORY",
     heroTitle: "全国の企業データ一覧・カテゴリ別検索",
@@ -125,7 +147,7 @@ export default async function DirectoryPage({ params }: PageProps) {
       {
         "@type": "ListItem",
         "position": 1,
-        "name": locale === 'en' ? "Home" : "ホーム",
+        "name": locale === 'vi' ? "Trang chủ" : locale === 'en' ? "Home" : "ホーム",
         "item": `https://kigyoulist.com/${locale}`
       },
       {
@@ -151,7 +173,7 @@ export default async function DirectoryPage({ params }: PageProps) {
         {/* Visual Breadcrumbs */}
         <nav className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
           <Link href={`/${locale}`} className="hover:text-primary transition-colors">
-            {locale === 'en' ? 'Home' : 'ホーム'}
+            {locale === 'vi' ? 'Trang chủ' : locale === 'en' ? 'Home' : 'ホーム'}
           </Link>
           <ChevronRight className="w-3.5 h-3.5 text-slate-300 shrink-0" />
           <span className="text-slate-800 dark:text-slate-200" aria-current="page">{categoryName}</span>
@@ -205,7 +227,7 @@ export default async function DirectoryPage({ params }: PageProps) {
                       </h3>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                         {regionPrefs.map((pref) => {
-                          const localizedPrefName = locale === 'en' ? (prefectureJaToEn[pref.name] || pref.name) : pref.name;
+                          const localizedPrefName = getPrefectureName(pref.name, locale);
 
                           return (
                             <Link
@@ -286,7 +308,7 @@ export default async function DirectoryPage({ params }: PageProps) {
                           {major.children
                             .filter((child) => child.count > 0)
                             .map((child) => {
-                              const localizedChildName = locale === 'en' ? (industryJaToEn[child.name] || child.name) : child.name;
+                              const localizedChildName = getIndustryName(child.name, locale);
 
                               return (
                                 <Link

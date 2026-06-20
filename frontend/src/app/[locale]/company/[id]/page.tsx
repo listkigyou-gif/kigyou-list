@@ -18,9 +18,37 @@ import { Footer } from '@/components/Footer';
 import { CompanyFinancials } from '@/components/CompanyFinancials';
 import { CompanySignalsTimeline } from '@/components/CompanySignalsTimeline';
 import { getTranslations } from '@/lib/i18n';
-import { prefectureJaToEn, industryJaToEn, translatePosition, formatEnglishAddress, formatEnglishDate } from '@/lib/locale-mapping';
+import { prefectureJaToEn, industryJaToEn, translatePosition, formatEnglishAddress, formatEnglishDate, getPrefectureName, getIndustryName } from '@/lib/locale-mapping';
 
 export const revalidate = 600; // Cache profiles for 10 minutes, ISR enabled
+
+function generateDynamicSummary(
+  company: any,
+  locale: string,
+  industryName: string | null,
+  prefectureName: string | null
+): string {
+  if (company.business_summary) {
+    return company.business_summary;
+  }
+  const companyName = locale === 'en' && company.company_name_en ? company.company_name_en : company.company_name;
+  const prefName = getPrefectureName(prefectureName, locale);
+  const industryMappedName = getIndustryName(industryName, locale);
+
+  if (locale === 'en') {
+    const industryPart = industryMappedName ? ` in the field of ${industryMappedName}` : "";
+    const locationPart = prefName ? ` in ${prefName}` : "";
+    return `${companyName} is a company operating${industryPart}${locationPart}. This page displays the detailed corporate profile, tax ID, address map, and contact information (phone, FAX, email) in the latest version.`;
+  } else if (locale === 'vi') {
+    const industryPart = industryMappedName ? ` trong lĩnh vực ${industryMappedName}` : "";
+    const locationPart = prefName ? ` tại ${prefName}` : "";
+    return `${companyName} là doanh nghiệp hoạt động${industryPart}${locationPart}. Trang này hiển thị hồ sơ chi tiết, mã số thuế, bản đồ địa chỉ và thông tin liên hệ (điện thoại, FAX, email) mới nhất của công ty.`;
+  } else {
+    const industryPart = industryMappedName ? `${industryMappedName}の分野` : "ビジネス";
+    const locationPart = prefName ? `${prefName}` : "日本";
+    return `${companyName}は、${locationPart}で${industryPart}で活動している企業です。当ページでは、法` + "人" + `の基本情報、法人番号、地図、連絡先情報（電話番号、FAX、メールアドレス）などの詳細情報を最新版で掲載しています。`;
+  }
+}
 
 interface PageProps {
   params: Promise<{ id: string; locale: string }>;
@@ -33,40 +61,61 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!/^\d{13}$/.test(companyId)) {
     return {
-      title: locale === 'en' ? 'Company Not Found | Kigyou-list' : '企業が見つかりません | Kigyou-list',
+      title: locale === 'en' ? 'Company Not Found | Kigyou-list' : locale === 'vi' ? 'Không tìm thấy doanh nghiệp | Kigyou-list' : '企業が見つかりません | Kigyou-list',
     };
   }
 
-  const company = await getCompanyByNumber(companyId);
+  const [company, industryDetails] = await Promise.all([
+    getCompanyByNumber(companyId),
+    getCompanyIndustry(companyId)
+  ]);
+
   if (!company) {
     return {
-      title: locale === 'en' ? 'Company Not Found | Kigyou-list' : '企業が見つかりません | Kigyou-list',
+      title: locale === 'en' ? 'Company Not Found | Kigyou-list' : locale === 'vi' ? 'Không tìm thấy doanh nghiệp | Kigyou-list' : '企業が見つかりません | Kigyou-list',
     };
   }
 
   const companyName = locale === 'en' && company.company_name_en ? company.company_name_en : company.company_name;
+  const industryName = industryDetails ? industryDetails.industry_name : null;
+  const summary = generateDynamicSummary(company, locale, industryName, company.prefecture_name);
 
   if (locale === 'en') {
     return {
       title: `${companyName} - Company Profile, Financials, Contact | Kigyou-list`,
-      description: `View ${companyName} (Corporate Number: ${company.corporate_number}) corporate profile, representative name, capital, employee counts, financial statements, contact information (phone, FAX, email), and recent business intent signals.`,
+      description: summary,
       alternates: {
         canonical: `/en/company/${companyId}`,
         languages: {
           ja: `/ja/company/${companyId}`,
           en: `/en/company/${companyId}`,
+          vi: `/vi/company/${companyId}`,
+        }
+      },
+    };
+  } else if (locale === 'vi') {
+    return {
+      title: `${companyName} - Thông tin doanh nghiệp, tài chính, liên hệ | Kigyou-list`,
+      description: summary,
+      alternates: {
+        canonical: `/vi/company/${companyId}`,
+        languages: {
+          ja: `/ja/company/${companyId}`,
+          en: `/en/company/${companyId}`,
+          vi: `/vi/company/${companyId}`,
         }
       },
     };
   } else {
     return {
       title: `${companyName} - 企業基本情報・財務情報・連絡先 | Kigyou-list`,
-      description: `${companyName}（法人番号：${company.corporate_number}）の会社概要、代表者名、資本金、従業員数、決算情報、連絡先（電話番号、FAX、メール）や最新 of 営業シグナルを掲載しています。`,
+      description: summary,
       alternates: {
         canonical: `/ja/company/${companyId}`,
         languages: {
           ja: `/ja/company/${companyId}`,
           en: `/en/company/${companyId}`,
+          vi: `/vi/company/${companyId}`,
         }
       },
     };
@@ -116,18 +165,15 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     ? `/${locale}/industry/${industryCode}/location/${company.prefecture_code}`
     : `/${locale}/search?prefecture=${company.prefecture_code}`;
 
-  const prefName = locale === 'en' ? (company.prefecture_name ? (prefectureJaToEn[company.prefecture_name] || company.prefecture_name) : "") : (company.prefecture_name || "");
-  
-  let industryMappedName = industryName;
-  if (locale === 'en' && industryName) {
-    industryMappedName = industryJaToEn[industryName] || industryName;
-  }
+  const prefName = getPrefectureName(company.prefecture_name, locale);
+  const industryMappedName = getIndustryName(industryName, locale);
 
   const categoryName = industryMappedName
-    ? (locale === 'en' ? `${prefName} ${industryMappedName} Companies` : `${prefName}の${industryMappedName}企業一覧`)
-    : (locale === 'en' ? `${prefName} Companies` : `${prefName}の企業一覧`);
+    ? (locale === 'en' ? `${prefName} ${industryMappedName} Companies` : locale === 'vi' ? `Danh sách doanh nghiệp ${industryMappedName} tại ${prefName}` : `${prefName}の${industryMappedName}企業一覧`)
+    : (locale === 'en' ? `${prefName} Companies` : locale === 'vi' ? `Danh sách doanh nghiệp tại ${prefName}` : `${prefName}の企業一覧`);
 
   const companyName = locale === 'en' && company.company_name_en ? company.company_name_en : company.company_name;
+  const summary = generateDynamicSummary(company, locale, industryName, company.prefecture_name);
 
   // 5. Generate Schema Markup JSON-LD for Corporation
   const schemaMarkup = {
@@ -135,7 +181,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     "@type": "Corporation",
     "name": companyName,
     "taxID": company.corporate_number,
-    "description": company.business_summary || (locale === 'en' ? `Basic information, phone number and financials for ${companyName}.` : `${companyName}の基本情報、電話番号、財務指標情報。`),
+    "description": summary,
     "dateModified": toISOStringLocal(company.updated_at),
     "address": {
       "@type": "PostalAddress",
@@ -267,7 +313,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 {/* Data freshness trust signal — design system: accent gold (#F2A30F) */}
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-[#B07500] bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-200/70 dark:border-amber-900/40 shadow-sm">
                   <Clock className="w-3.5 h-3.5 text-[#F2A30F] animate-pulse" />
-                  {locale === 'en' ? 'Updated' : '更新'}: {formatShortDate(company.updated_at)}
+                  {locale === 'en' ? 'Updated' : locale === 'vi' ? 'Cập nhật' : '更新'}: {formatShortDate(company.updated_at)}
                 </span>
               </div>
 
@@ -306,6 +352,13 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 {t.company.basicInfo}
               </h2>
 
+              {/* Dynamic Summary/Overview paragraph for SEO and users */}
+              <div className="mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80">
+                <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-350 font-semibold">
+                  {summary}
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
                 <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
                   <span className="text-slate-400 text-xs block mb-1">{t.company.companyName}</span>
@@ -325,20 +378,20 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   <span className="text-slate-400 text-xs block mb-1">{t.company.representative}</span>
                   <strong className="text-slate-850 dark:text-slate-100">
                     {company.representative_name 
-                      ? `${locale === 'en' && company.representative_position ? `${translatePosition(company.representative_position)} ` : ""}${company.representative_name}`
+                      ? `${(locale === 'en' || locale === 'vi') && company.representative_position ? `${translatePosition(company.representative_position, locale)} ` : ""}${company.representative_name}`
                       : t.company.unregistered}
                   </strong>
                 </div>
                 <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
                   <span className="text-slate-400 text-xs block mb-1">{t.company.capital}</span>
                   <strong className="text-slate-850 dark:text-slate-100">
-                    {company.capital_amount ? (locale === 'en' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2})} Million JPY` : `${(company.capital_amount / 10000).toLocaleString()}万円`) : t.company.unregistered}
+                    {company.capital_amount ? (locale === 'en' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2})} Million JPY` : locale === 'vi' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2})} triệu JPY` : `${(company.capital_amount / 10000).toLocaleString()}万円`) : t.company.unregistered}
                   </strong>
                 </div>
                 <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
                   <span className="text-slate-400 text-xs block mb-1">{t.company.employees}</span>
                   <strong className="text-slate-850 dark:text-slate-100">
-                    {company.employee_count ? (locale === 'en' ? `${company.employee_count.toLocaleString()} employees` : `${company.employee_count}名`) : t.company.unregistered}
+                    {company.employee_count ? (locale === 'en' ? `${company.employee_count.toLocaleString()} employees` : locale === 'vi' ? `${company.employee_count.toLocaleString()} nhân viên` : `${company.employee_count}名`) : t.company.unregistered}
                   </strong>
                 </div>
                 <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
@@ -356,7 +409,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                           .split(',')
                           .map((tag) => {
                             const cleanTag = tag.trim();
-                            return locale === 'en' ? (industryJaToEn[cleanTag] || cleanTag) : cleanTag;
+                            return getIndustryName(cleanTag, locale);
                           })
                           .join(', ')
                       : t.company.unregistered}

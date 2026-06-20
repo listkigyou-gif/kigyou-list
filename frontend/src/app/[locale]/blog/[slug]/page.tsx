@@ -21,12 +21,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!post) {
     return {
-      title: locale === 'en' ? "Article Not Found | Kigyou-list" : "記事が見つかりません | Kigyou-list",
+      title: locale === 'en' ? "Article Not Found | Kigyou-list" : locale === 'vi' ? "Không tìm thấy bài viết | Kigyou-list" : "記事が見つかりません | Kigyou-list",
     };
   }
 
   return {
-    title: `${post.title} | Kigyou-list ${locale === 'en' ? 'Blog' : 'ブログ'}`,
+    title: `${post.title} | Kigyou-list ${locale === 'en' ? 'Blog' : locale === 'vi' ? 'Blog' : 'ブログ'}`,
     description: post.summary,
     alternates: {
       canonical: `/${locale}/blog/${post.slug}`,
@@ -47,7 +47,27 @@ export default async function BlogPostDetailPage({ params }: PageProps) {
   const allRecentPosts = await getBlogPosts(4, 0, locale);
   const relatedPosts = allRecentPosts.filter(p => p.slug !== post.slug).slice(0, 3);
 
-  const d = locale === 'en' ? {
+  const d = locale === 'vi' ? {
+    home: "Trang chủ",
+    blog: "Blog",
+    author: "Tác giả: Ban biên tập Kigyou-list",
+    readingTime: "Thời gian đọc: Khoảng 5 phút",
+    relatedReports: "Báo cáo phân tích liên quan",
+    backToList: "Quay lại danh sách",
+    ctaTitle: "Xây dựng danh sách khách hàng tiềm năng chất lượng cao tức thì",
+    ctaDesc: "Lọc theo ngành nghề JSIC, tỉnh thành, vốn điều lệ và quy mô nhân sự, mở khóa các tín hiệu tuyển dụng, trợ cấp chính phủ và đấu thầu.",
+    ctaBtn: "Tìm kiếm doanh nghiệp miễn phí",
+    dbTitle: "Bao phủ dữ liệu",
+    dbCount1Label: "Doanh nghiệp hoạt động",
+    dbCount1Val: "Hơn 5 triệu",
+    dbCount2Label: "Số điện thoại",
+    dbCount2Val: "Hơn 3 triệu",
+    dbCount3Label: "Địa chỉ Email",
+    dbCount3Val: "Hơn 800 nghìn",
+    dbCount4Label: "Báo cáo tài chính",
+    dbCount4Val: "Hơn 150 nghìn",
+    authorOrg: "Ban biên tập Kigyou-list"
+  } : locale === 'en' ? {
     home: "Home",
     blog: "Blog",
     author: "Author: Kigyou-list Editorial",

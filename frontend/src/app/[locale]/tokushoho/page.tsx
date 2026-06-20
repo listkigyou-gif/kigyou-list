@@ -13,7 +13,7 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const locale = resolvedParams.locale || "ja";
-  const isEn = locale === "en";
+  const isEn = locale === "en" || locale === "vi";
   return {
     title: isEn ? "Act on Specified Commercial Transactions | Kigyou-list" : "特定商取引法に基づく表記 | Kigyou-list",
     description: isEn 
@@ -33,7 +33,7 @@ export default async function TokushohoPage({ params }: PageProps) {
   const resolvedParams = await params;
   const locale = resolvedParams.locale || 'ja';
 
-  const d = locale === 'en' ? {
+  const d = (locale === 'en' || locale === 'vi') ? {
     home: "Home",
     tokushoho: "Act on Specified Commercial Transactions",
     title: "Act on Specified Commercial Transactions",
@@ -220,7 +220,7 @@ export default async function TokushohoPage({ params }: PageProps) {
           <span className="text-slate-800 dark:text-slate-200" aria-current="page">{d.tokushoho}</span>
         </nav>
 
-        {locale === 'en' && (
+        {(locale === 'en' || locale === 'vi') && (
           <div className="bg-amber-50 border border-amber-200/60 dark:bg-amber-955/20 dark:border-amber-900/30 rounded-2xl p-4 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2 mb-2 animate-in fade-in duration-300">
             <AlertCircle className="w-5 h-5 shrink-0 text-amber-500 mt-0.5" />
             <div>

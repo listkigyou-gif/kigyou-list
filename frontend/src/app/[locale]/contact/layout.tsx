@@ -18,6 +18,20 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         languages: {
           ja: "/ja/contact",
           en: "/en/contact",
+          vi: "/vi/contact",
+        }
+      },
+    };
+  } else if (locale === 'vi') {
+    return {
+      title: "Liên hệ & Hỗ trợ | Kigyou-list",
+      description: "Trang liên hệ chính thức của Kigyou-list. Nếu bạn có bất kỳ câu hỏi nào về cách sử dụng dịch vụ, gói cước, hoặc yêu cầu cập nhật/ẩn thông tin doanh nghiệp, vui lòng gửi yêu cầu cho chúng tôi.",
+      alternates: {
+        canonical: `/vi/contact`,
+        languages: {
+          ja: "/ja/contact",
+          en: "/en/contact",
+          vi: "/vi/contact",
         }
       },
     };
@@ -30,6 +44,7 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
         languages: {
           ja: "/ja/contact",
           en: "/en/contact",
+          vi: "/vi/contact",
         }
       },
     };

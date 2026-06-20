@@ -107,7 +107,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
           IconComponent: Lightbulb,
         };
       default:
-        const translatedType = type === 'その他' ? (locale === 'en' ? 'Other' : 'その他') : type;
+        const translatedType = type === 'その他' ? (locale === 'vi' ? 'Khác' : locale === 'en' ? 'Other' : 'その他') : type;
         return {
           title: t.company.signalTypes.other.replace("{type}", translatedType),
           iconColor: "bg-slate-500 text-white",
@@ -194,7 +194,15 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                                   try {
                                     const parsed = JSON.parse(sig.details);
                                     let patentType = parsed.patent_type || "特許";
-                                    if (locale === 'en') {
+                                    if (locale === 'vi') {
+                                      const patentTypeMap: Record<string, string> = {
+                                        "特許": "Sáng chế",
+                                        "実用新案": "Giải pháp hữu ích",
+                                        "意匠": "Kiểu dáng công nghiệp",
+                                        "商標": "Nhãn hiệu"
+                                      };
+                                      patentType = patentTypeMap[patentType] || patentType;
+                                    } else if (locale === 'en') {
                                       const patentTypeMap: Record<string, string> = {
                                         "特許": "Patent",
                                         "実用新案": "Utility Model",

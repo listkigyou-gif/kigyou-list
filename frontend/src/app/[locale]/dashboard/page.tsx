@@ -93,6 +93,11 @@ export default function DashboardPage() {
     "連絡済み": "Contacted",
     "商談中": "Discussing",
     "成約": "Closed Won"
+  } : locale === 'vi' ? {
+    "未連絡": "Chưa liên hệ",
+    "連絡済み": "Đã tiếp cận",
+    "商談中": "Đang thương thảo",
+    "成約": "Chốt hợp đồng thành công"
   } : {
     "未連絡": "未連絡",
     "連絡済み": "連絡済み",
@@ -178,9 +183,9 @@ export default function DashboardPage() {
     };
     
     if (plan === "free") {
-      return locale === 'en' ? `Next reset: ${format(nextDate)}` : `次回リセット日: ${format(nextDate)}`;
+      return locale === 'en' ? `Next reset: ${format(nextDate)}` : locale === 'vi' ? `Lần đặt lại tiếp theo: ${format(nextDate)}` : `次回リセット日: ${format(nextDate)}`;
     }
-    return locale === 'en' ? `Period: ${format(startDate)} - ${format(nextDate)}` : `契約期間: ${format(startDate)} 〜 ${format(nextDate)}`;
+    return locale === 'en' ? `Period: ${format(startDate)} - ${format(nextDate)}` : locale === 'vi' ? `Chu kỳ: ${format(startDate)} - ${format(nextDate)}` : `契約期間: ${format(startDate)} 〜 ${format(nextDate)}`;
   };
 
   const fetchQuota = useCallback(async () => {
@@ -272,13 +277,13 @@ export default function DashboardPage() {
       });
       const data = await response.json();
       if (data.success) {
-        alert(locale === 'en' ? "Receipt information saved successfully." : "領収書情報を保存しました。");
+        alert(t.dashboard.saveReceiptSuccess);
       } else {
-        alert(data.error || (locale === 'en' ? "Failed to save receipt info." : "保存に失敗しました。"));
+        alert(data.error || t.dashboard.saveReceiptFailed);
       }
     } catch (e) {
       console.error("Failed to save billing info", e);
-      alert(locale === 'en' ? "A communication error occurred. Please try again." : "通信エラーが発生しました。");
+      alert(locale === 'en' ? "A communication error occurred. Please try again." : locale === 'vi' ? "Đã xảy ra lỗi kết nối. Vui lòng thử lại sau." : "通信エラーが発生しました。");
     } finally {
       setSavingBilling(false);
     }
@@ -289,13 +294,13 @@ export default function DashboardPage() {
     if (!file) return;
 
     if (file.size > 500 * 1024) {
-      alert(locale === 'en' ? "File size must be under 500KB." : "ファイルサイズは500KB以下にしてください。");
+      alert(t.dashboard.fileSizeError);
       return;
     }
 
     const allowedTypes = ["image/png", "image/jpeg", "image/jpg", "image/svg+xml"];
     if (!allowedTypes.includes(file.type)) {
-      alert(locale === 'en' ? "Only PNG, JPG, and SVG format images are supported." : "PNG, JPG, SVG形式の画像のみアップロード可能です。");
+      alert(t.dashboard.fileTypeError);
       return;
     }
 
@@ -324,13 +329,13 @@ export default function DashboardPage() {
       const data = await res.json();
       if (res.ok && data.success) {
         setLogoUrl(data.logoUrl);
-        alert(locale === 'en' ? "Logo image uploaded successfully." : "ロゴ画像をアップロードしました。");
+        alert(t.dashboard.uploadLogoSuccess);
       } else {
-        alert(data.error || (locale === 'en' ? "Upload failed." : "アップロードに失敗しました。"));
+        alert(data.error || (locale === 'en' ? "Upload failed." : locale === 'vi' ? "Tải lên thất bại." : "アップロードに失敗しました。"));
       }
     } catch (err) {
       console.error("Logo upload error:", err);
-      alert(locale === 'en' ? "A communication error occurred. Please try again." : "通信エラーが発生しました。");
+      alert(locale === 'en' ? "A communication error occurred. Please try again." : locale === 'vi' ? "Đã xảy ra lỗi kết nối. Vui lòng thử lại sau." : "通信エラーが発生しました。");
     } finally {
       setUploadingLogo(false);
     }
@@ -363,18 +368,18 @@ export default function DashboardPage() {
         setNewRawKey(data.rawKey);
         fetchApiKeys();
       } else {
-        alert(data.error || (locale === 'en' ? "Failed to generate API key." : "APIキーの生成に失敗しました。"));
+        alert(data.error || t.dashboard.apiKeyGenerateFailed);
       }
     } catch (e) {
       console.error("Failed to create API key", e);
-      alert(locale === 'en' ? "A communication error occurred. Please try again." : "通信エラーが発生しました。");
+      alert(locale === 'en' ? "A communication error occurred. Please try again." : locale === 'vi' ? "Đã xảy ra lỗi kết nối. Vui lòng thử lại sau." : "通信エラーが発生しました。");
     } finally {
       setGeneratingKey(false);
     }
   };
 
   const handleRevokeApiKey = async (keyId: string) => {
-    if (!window.confirm(locale === 'en' ? "Are you sure you want to deactivate this API key? This action is irreversible, and external systems using this key will stop working." : "このAPIキーを無効化しますか？この操作は取り消せません。外部連携システムが動作しなくなります。")) return;
+    if (!window.confirm(t.dashboard.apiKeyRevokeConfirm)) return;
     try {
       const res = await fetch("/api/user/apikeys", {
         method: "DELETE",
@@ -383,14 +388,14 @@ export default function DashboardPage() {
       });
       const data = await res.json();
       if (res.ok) {
-        alert(locale === 'en' ? "API key deactivated successfully." : "APIキーを無効化しました。");
+        alert(t.dashboard.apiKeyRevokeSuccess);
         fetchApiKeys();
       } else {
-        alert(data.error || (locale === 'en' ? "Failed to deactivate API key." : "APIキーの無効化に失敗しました。"));
+        alert(data.error || (locale === 'en' ? "Failed to deactivate API key." : locale === 'vi' ? "Vô hiệu hóa khóa API thất bại." : "APIキーの無効化に失敗しました。"));
       }
     } catch (e) {
       console.error("Failed to revoke API key", e);
-      alert(locale === 'en' ? "A communication error occurred. Please try again." : "通信エラーが発生しました。");
+      alert(locale === 'en' ? "A communication error occurred. Please try again." : locale === 'vi' ? "Đã xảy ra lỗi kết nối. Vui lòng thử lại sau." : "通信エラーが発生しました。");
     }
   };
 
@@ -465,7 +470,7 @@ export default function DashboardPage() {
             });
             if (res.ok) {
               window.dispatchEvent(new Event("quotaUpdated"));
-              alert(locale === 'en' ? `Subscription to ${plan.toUpperCase()} plan completed successfully (Simulation)` : `${plan.toUpperCase()}プランのご購読手続きが完了しました（シミュレーション）`);
+              alert(t.dashboard.subscriptionSuccess);
               window.location.href = "/dashboard";
             }
           } catch (e) {
@@ -488,7 +493,7 @@ export default function DashboardPage() {
             });
             if (res.ok) {
               window.dispatchEvent(new Event("quotaUpdated"));
-              alert(locale === 'en' ? `Purchase of add-on export quota (${Number(amount).toLocaleString()} rows) completed successfully (Simulation)` : `追加ダウンロード容量（${Number(amount).toLocaleString()}行）の購入が完了しました（シミュレーション）`);
+              alert(t.dashboard.packBuySuccess.replace("{amount}", Number(amount).toLocaleString()));
               window.location.href = "/dashboard";
             }
           } catch (e) {
@@ -497,7 +502,7 @@ export default function DashboardPage() {
         };
         triggerSimulatedPackWebhook();
       } else {
-        alert(locale === 'en' ? "Your subscription order is being processed. It may take a few minutes to reflect in your dashboard." : "ご購読手続きを受け付けました。ダッシュボードに反映されるまで最大数分かかる場合があります。");
+        alert(t.dashboard.subscriptionPending);
         window.location.href = "/dashboard";
       }
     }
@@ -515,16 +520,16 @@ export default function DashboardPage() {
         body: JSON.stringify({ email: user.email }),
       });
       if (res.ok) {
-        alert(locale === 'en' ? "Subscription cancelled successfully. Downgraded to FREE plan." : "サブスクリプションを解約しました。FREEプランにダウングレードされました。");
+        alert(t.dashboard.cancelSubscriptionSuccess);
         setShowCancelModal(false);
         window.location.reload();
       } else {
         const data = await res.json();
-        alert(data.error || (locale === 'en' ? "Failed to cancel subscription." : "解約処理に失敗しました。"));
+        alert(data.error || (locale === 'en' ? "Failed to cancel subscription." : locale === 'vi' ? "Hủy đăng ký thất bại." : "解約処理に失敗しました。"));
       }
     } catch (e) {
       console.error(e);
-      alert(locale === 'en' ? "A communication error occurred. Please try again." : "通信エラーが発生しました。");
+      alert(locale === 'en' ? "A communication error occurred. Please try again." : locale === 'vi' ? "Đã xảy ra lỗi kết nối. Vui lòng thử lại sau." : "通信エラーが発生しました。");
     } finally {
       setCancellingSub(false);
     }

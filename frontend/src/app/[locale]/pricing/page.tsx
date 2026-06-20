@@ -38,6 +38,7 @@ export default function PricingPage() {
   const { isLoggedIn, user, setAuthModalOpen } = useAuth();
   const { locale, t } = useLanguage();
   const isEn = locale === "en";
+  const isVi = locale === "vi";
   
   const [mounted, setMounted] = useState(false);
   const discountType = "campaign";
@@ -47,26 +48,26 @@ export default function PricingPage() {
   const packs: PackDetails[] = [
     {
       id: "10k",
-      name: isEn ? "10,000 Row Add-on Pack" : "10,000 行追加パック",
+      name: isEn ? "10,000 Row Add-on Pack" : isVi ? "Gói bổ sung 10.000 dòng" : "10,000 行追加パック",
       price: 14800,
       allowance: 10000,
-      description: isEn ? "For users who need incremental quota" : "必要な分だけ少しずつ追加したい方向け",
+      description: isEn ? "For users who need incremental quota" : isVi ? "Dành cho người dùng cần thêm hạn ngạch nhỏ giọt" : "必要な分だけ少しずつ追加したい方向け",
       recommended: false
     },
     {
       id: "50k",
-      name: isEn ? "50,000 Row Add-on Pack" : "50,000 行追加パック",
+      name: isEn ? "50,000 Row Add-on Pack" : isVi ? "Gói bổ sung 50.000 dòng" : "50,000 行追加パック",
       price: 49800,
       allowance: 50000,
-      description: isEn ? "Save approx 32%. Most popular tier." : "1回あたり約32%お得な一番人気のボリューム枠",
+      description: isEn ? "Save approx 32%. Most popular tier." : isVi ? "Tiết kiệm khoảng 32%. Gói phổ biến nhất." : "1回あたり約32%お得な一番人気のボリューム枠",
       recommended: true
     },
     {
       id: "100k",
-      name: isEn ? "100,000 Row Add-on Pack" : "100,000 行追加パック",
+      name: isEn ? "100,000 Row Add-on Pack" : isVi ? "Gói bổ sung 100.000 dòng" : "100,000 行追加パック",
       price: 79800,
       allowance: 100000,
-      description: isEn ? "Best price rate, ideal for large exports" : "大量リストの抽出に最適な最安値レート",
+      description: isEn ? "Best price rate, ideal for large exports" : isVi ? "Mức giá tốt nhất, lý tưởng cho xuất dữ liệu lớn" : "大量リストの抽出に最適な最安値レート",
       recommended: false
     }
   ];
@@ -91,17 +92,21 @@ export default function PricingPage() {
   const plans: PlanDetails[] = [
     {
       id: "free",
-      name: isEn ? "FREE Plan" : "FREEプラン",
+      name: isEn ? "FREE Plan" : isVi ? "Gói FREE" : "FREEプラン",
       listPrice: 0,
       campaignPrice: 0,
       referralPrice: 0,
-      quota: isEn ? "20 items / day" : "20 件 / 日",
+      quota: isEn ? "20 items / day" : isVi ? "20 dòng / ngày" : "20 件 / 日",
       quotaNum: 20,
-      description: isEn ? "Perfect for testing usability" : "まずは使い勝手を試してみたい方に最適",
+      description: isEn ? "Perfect for testing usability" : isVi ? "Lý tưởng để kiểm tra thử tính năng của hệ thống" : "まずは使い勝手を試してみたい方に最適",
       features: isEn ? [
         "20 CSV exports per day",
         "View FAX & key shareholders (after login)",
         "View intent signals (after login)"
+      ] : isVi ? [
+        "Tải xuống tối đa 20 dòng CSV mỗi ngày",
+        "Xem số FAX & cổ đông lớn (sau khi đăng nhập)",
+        "Xem chi tiết tín hiệu nhu cầu (sau khi đăng nhập)"
       ] : [
         "毎日 20 件の CSV ダウンロード枠",
         "FAX番号 & 主要株主情報の閲覧 (ログイン後)",
@@ -110,18 +115,23 @@ export default function PricingPage() {
     },
     {
       id: "pro",
-      name: isEn ? "PRO Plan" : "PROプラン",
+      name: isEn ? "PRO Plan" : isVi ? "Gói PRO" : "PROプラン",
       listPrice: 4200,
       campaignPrice: 2900,
       referralPrice: 2100,
-      quota: isEn ? "2,000 rows / month" : "2,000 行 / 月",
+      quota: isEn ? "2,000 rows / month" : isVi ? "2.000 dòng / tháng" : "2,000 行 / 月",
       quotaNum: 2000,
-      description: isEn ? "Ideal for sole proprietors & salespeople running outreach" : "テレアポ・DM営業を始めたい個人事業主や営業マンに最適",
+      description: isEn ? "Ideal for sole proprietors & salespeople running outreach" : isVi ? "Lý tưởng cho cá nhân kinh doanh & nhân viên bán hàng tiếp cận khách hàng" : "テレアポ・DM営業を始めたい個人事業主や営業マンに最適",
       features: isEn ? [
         "2,000 CSV downloads per month",
         "Email address disclosure",
         "ABM Kanban CRM board",
         "Filter by email/phone availability"
+      ] : isVi ? [
+        "Tải xuống 2.000 dòng CSV mỗi tháng",
+        "Mở khóa địa chỉ email doanh nghiệp",
+        "Bảng quản lý phễu CRM Kanban ABM",
+        "Lọc theo sự tồn tại của email/số điện thoại"
       ] : [
         "毎月 2,000 件の CSV ダウンロード枠",
         "メールアドレスの開示",
@@ -131,19 +141,25 @@ export default function PricingPage() {
     },
     {
       id: "business",
-      name: isEn ? "BUSINESS Plan" : "BUSINESSプラン",
+      name: isEn ? "BUSINESS Plan" : isVi ? "Gói BUSINESS" : "BUSINESSプラン",
       listPrice: 14000,
       campaignPrice: 9800,
       referralPrice: 7000,
-      quota: isEn ? "10,000 rows / month" : "10,000 行 / 月",
+      quota: isEn ? "10,000 rows / month" : isVi ? "10.000 dòng / tháng" : "10,000 行 / 月",
       quotaNum: 10000,
-      description: isEn ? "Standard team plan with background exports via Mechanism B" : "Mechanism B による大量エクスポートを可能にする標準チーム枠",
+      description: isEn ? "Standard team plan with background exports via Mechanism B" : isVi ? "Gói chuẩn cho nhóm, hỗ trợ xuất hàng loạt chạy ngầm qua Mechanism B" : "Mechanism B による大量エクスポートを可能にする標準チーム枠",
       features: isEn ? [
         "10,000 CSV downloads per month",
         "Mechanism B background bulk downloads",
         "Supports bulk downloads over 10,000 items",
         "API integration (Key issuance & syncing)",
         "Priority customer support"
+      ] : isVi ? [
+        "Tải xuống 10.000 dòng CSV mỗi tháng",
+        "Tải xuống hàng loạt chạy ngầm qua Mechanism B",
+        "Hỗ trợ tải xuống số lượng lớn hơn 10.000 dòng",
+        "Tích hợp API (Cấp khóa API & đồng bộ hóa)",
+        "Ưu tiên hỗ trợ khách hàng"
       ] : [
         "毎月 10,000 件の CSV ダウンロード枠",
         "Mechanism B バックグラウンド一括ダウンロード",
@@ -155,19 +171,24 @@ export default function PricingPage() {
     },
     {
       id: "enterprise",
-      name: isEn ? "ENTERPRISE Plan" : "ENTERPRISEプラン",
+      name: isEn ? "ENTERPRISE Plan" : isVi ? "Gói ENTERPRISE" : "ENTERPRISEプラン",
       listPrice: 42000,
       campaignPrice: 29000,
       referralPrice: 21000,
-      quota: isEn ? "40,000 rows / month" : "40,000 行 / 月",
+      quota: isEn ? "40,000 rows / month" : isVi ? "40.000 dòng / tháng" : "40,000 行 / 月",
       quotaNum: 40000,
-      description: isEn ? "Premium organizational plan with dedicated engineer support" : "専任サポートと月4万件のデータ抽出を可能にする最上位の組織向け枠",
+      description: isEn ? "Premium organizational plan with dedicated engineer support" : isVi ? "Gói cao cấp cho doanh nghiệp lớn với hỗ trợ kỹ thuật và kỹ sư riêng" : "専任サポートと月4万件のデータ抽出を可能にする最上位の組織向け枠",
       recommended: false,
       features: isEn ? [
         "40,000 CSV downloads per month",
         "API integration (Key issuance & syncing)",
         "Dedicated integration & engineer support",
         "Dedicated account manager"
+      ] : isVi ? [
+        "Tải xuống 40.000 dòng CSV mỗi tháng",
+        "Tích hợp API (Cấp khóa API & đồng bộ hóa)",
+        "Hỗ trợ tích hợp & Kỹ sư kỹ thuật chuyên trách",
+        "Quản lý tài khoản chuyên trách"
       ] : [
         "毎月 40,000 件の CSV ダウンロード枠",
         "API連携 (API Key 発行・外部データ連携)",
@@ -240,7 +261,7 @@ export default function PricingPage() {
 
       if (!res.ok) {
         const errData = await res.json();
-        alert(errData.error || (isEn ? "Failed to create checkout." : "チェックアウトの作成に失敗しました。"));
+        alert(errData.error || (isEn ? "Failed to create checkout." : isVi ? "Không thể tạo phiên thanh toán." : "チェックアウトの作成に失敗しました。"));
         setLoading(false);
         return;
       }
@@ -249,11 +270,11 @@ export default function PricingPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(isEn ? "Failed to acquire checkout URL." : "チェックアウトURLの取得に失敗しました。");
+        alert(isEn ? "Failed to acquire checkout URL." : isVi ? "Không thể lấy URL thanh toán." : "チェックアウトURLの取得に失敗しました。");
       }
     } catch (err) {
       console.error(err);
-      alert(isEn ? "A communication error occurred." : "通信中にエラーが発生しました。");
+      alert(isEn ? "A communication error occurred." : isVi ? "Đã xảy ra lỗi kết nối." : "通信中にエラーが発生しました。");
     } finally {
       setLoading(false);
     }
@@ -288,7 +309,7 @@ export default function PricingPage() {
 
       if (!res.ok) {
         const errData = await res.json();
-        alert(errData.error || (isEn ? "Failed to create checkout." : "チェックアウトの作成に失敗しました。"));
+        alert(errData.error || (isEn ? "Failed to create checkout." : isVi ? "Không thể tạo phiên thanh toán." : "チェックアウトの作成に失敗しました。"));
         setLoading(false);
         return;
       }
@@ -297,11 +318,11 @@ export default function PricingPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        alert(isEn ? "Failed to acquire checkout URL." : "チェックアウトURLの取得に失敗しました。");
+        alert(isEn ? "Failed to acquire checkout URL." : isVi ? "Không thể lấy URL thanh toán." : "チェックアウトURLの取得に失敗しました。");
       }
     } catch (err) {
       console.error(err);
-      alert(isEn ? "A communication error occurred." : "通信中にエラーが発生しました。");
+      alert(isEn ? "A communication error occurred." : isVi ? "Đã xảy ra lỗi kết nối." : "通信中にエラーが発生しました。");
     } finally {
       setLoading(false);
     }
@@ -469,7 +490,7 @@ export default function PricingPage() {
                   </span>
                   <div className="mt-3 flex items-baseline gap-2 flex-wrap">
                     <span className="text-3xl sm:text-4xl font-black text-slate-900 dark:text-white tracking-tight">
-                      {plan.id === "free" ? (isEn ? "Free" : "無料") : `¥${currentPrice.toLocaleString()}`}
+                      {plan.id === "free" ? (isEn ? "Free" : isVi ? "Miễn phí" : "無料") : `¥${currentPrice.toLocaleString()}`}
                     </span>
                     {plan.id !== "free" && <span className="text-xs text-slate-400 font-bold">/ {t.pricing.month}</span>}
                   </div>
@@ -700,7 +721,7 @@ export default function PricingPage() {
                 </tr>
                 <tr className="hover:bg-slate-50/50 dark:hover:bg-[#151B22]">
                   <td className="py-4 px-4 font-bold text-slate-850 dark:text-slate-200">{t.pricing.compRowInitial}</td>
-                  <td className="py-4 px-4">¥100,000 ({isEn ? "On Contract" : "契約時のみ"})</td>
+                  <td className="py-4 px-4">¥100,000 ({isEn ? "On Contract" : isVi ? "Khi ký hợp đồng" : "契約時のみ"})</td>
                   <td className="py-4 px-4">¥0</td>
                   <td className="py-4 px-4 bg-primary/3 dark:bg-secondary/3 font-semibold text-emerald-600 dark:text-emerald-450">
                     {t.pricing.compRowInitialValue}
@@ -708,8 +729,8 @@ export default function PricingPage() {
                 </tr>
                 <tr className="hover:bg-slate-50/50 dark:hover:bg-[#151B22]">
                   <td className="py-4 px-4 font-bold text-slate-850 dark:text-slate-200">{t.pricing.compRowInitial}</td>
-                  <td className="py-4 px-4">{isEn ? "Expensive" : "高機能だが維持費が高価"}</td>
-                  <td className="py-4 px-4">{isEn ? "Free but limited" : "無料枠があるが件数制限"}</td>
+                  <td className="py-4 px-4">{isEn ? "Expensive" : isVi ? "Tính năng cao nhưng duy trì đắt" : "高機能だが維持費が高価"}</td>
+                  <td className="py-4 px-4">{isEn ? "Free but limited" : isVi ? "Có gói miễn phí nhưng giới hạn" : "無料枠があるが件数制限"}</td>
                   <td className="py-4 px-4 bg-primary/3 dark:bg-secondary/3 font-semibold text-slate-900 dark:text-white">
                     {t.pricing.compRowFeaturesValue}
                   </td>
@@ -837,14 +858,14 @@ export default function PricingPage() {
                 {t.pricing.checkoutModalTitle}
               </h3>
               <p className="text-xs text-slate-500">
-                {isEn ? "Please confirm your subscription details to proceed." : "お選びいただいたプランの内容をご確認の上、登録を完了してください。"}
+                {isEn ? "Please confirm your subscription details to proceed." : isVi ? "Vui lòng xác nhận chi tiết đăng ký để tiếp tục." : "お選びいただいたプランの内容をご確認の上、登録を完了してください。"}
               </p>
             </div>
 
             <form onSubmit={handleSubscribe} className="flex flex-col gap-3 text-left">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase">
-                  {isEn ? "Selected Package" : "選択したパッケージ"}
+                  {isEn ? "Selected Package" : isVi ? "Gói đã chọn" : "選択したパッケージ"}
                 </label>
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 flex flex-col gap-1 text-xs">
                   <div className="flex justify-between items-center font-bold">
@@ -859,17 +880,17 @@ export default function PricingPage() {
                             {appliedCoupon && couponDiscount ? couponDiscount : 30}% OFF
                           </span>
                           <span className="font-extrabold text-rose-500">
-                            = ¥{(appliedCoupon && couponDiscount ? Math.floor(showCheckoutModal.listPrice * (1 - couponDiscount / 100)) : showCheckoutModal.campaignPrice).toLocaleString()} / {isEn ? "mo" : "月"}
+                            = ¥{(appliedCoupon && couponDiscount ? Math.floor(showCheckoutModal.listPrice * (1 - couponDiscount / 100)) : showCheckoutModal.campaignPrice).toLocaleString()} / {isEn ? "mo" : isVi ? "tháng" : "月"}
                           </span>
                         </span>
                       ) : (
-                        <span>¥0 / {isEn ? "mo" : "月"}</span>
+                        <span>¥0 / {isEn ? "mo" : isVi ? "tháng" : "月"}</span>
                       )}
                     </span>
                   </div>
                   {appliedCoupon && (
                     <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-450 mt-1 flex justify-between items-center border-t border-slate-100 dark:border-slate-800/50 pt-1.5">
-                      <span>{isEn ? `Coupon active: ${appliedCoupon}` : `適用中のクーポン: ${appliedCoupon}`}</span>
+                      <span>{isEn ? `Coupon active: ${appliedCoupon}` : isVi ? `Đã áp dụng mã: ${appliedCoupon}` : `適用中のクーポン: ${appliedCoupon}`}</span>
                       <span>-{couponDiscount}% OFF</span>
                     </div>
                   )}
@@ -903,6 +924,10 @@ export default function PricingPage() {
                     <>
                       I agree to the <a href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">Terms of Service</a> and <a href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">Act on Specified Commercial Transactions</a>.
                     </>
+                  ) : isVi ? (
+                    <>
+                      Tôi đồng ý với <a href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">Điều khoản dịch vụ</a> và <a href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">Luật giao dịch thương mại đặc định</a>.
+                    </>
                   ) : (
                     <>
                       <a href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">利用規約</a>および<a href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-bold">特定商取引法に基づく表記</a>に同意します。
@@ -931,14 +956,14 @@ export default function PricingPage() {
                   onClick={() => setShowCheckoutModal(null)}
                   className="w-full py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                 >
-                  {isEn ? "Back" : "戻る"}
+                  {isEn ? "Back" : isVi ? "Quay lại" : "戻る"}
                 </button>
               </div>
             </form>
 
             <div className="flex items-center justify-center gap-1.5 text-[9px] text-slate-400 bg-slate-50 dark:bg-slate-850 py-2.5 rounded-xl">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              <span>{isEn ? "Try free membership first." : "現在ご登録は無料でお試しいただけます。"}</span>
+              <span>{isEn ? "Try free membership first." : isVi ? "Bạn có thể đăng ký thử gói miễn phí trước." : "現在ご登録は無料でお試しいただけます。"}</span>
             </div>
           </div>
         </div>
@@ -959,17 +984,17 @@ export default function PricingPage() {
 
             <div>
               <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1">
-                {isEn ? "Add Quota Package" : "容量の追加購入を完了する"}
+                {isEn ? "Add Quota Package" : isVi ? "Mua thêm gói dung lượng" : "容量の追加購入を完了する"}
               </h3>
               <p className="text-xs text-slate-500">
-                {isEn ? "Verify your add-on selections and complete your checkout." : "お選びいただいた追加パッケージの内容をご確認の上、購入を完了してください。"}
+                {isEn ? "Verify your add-on selections and complete your checkout." : isVi ? "Vui lòng xác nhận gói bổ sung đã chọn và hoàn tất thanh toán." : "お選びいただいた追加パッケージの内容をご確認の上、購入を完了してください。"}
               </p>
             </div>
 
             <form onSubmit={handlePackSubscribe} className="flex flex-col gap-3 text-left">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[10px] font-bold text-slate-400 uppercase">
-                  {isEn ? "Selected Package" : "選択したパッケージ"}
+                  {isEn ? "Selected Package" : isVi ? "Gói bổ sung đã chọn" : "選択したパッケージ"}
                 </label>
                 <div className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-slate-100 dark:border-slate-800 flex justify-between items-center text-xs font-bold">
                   <span className="text-slate-700 dark:text-slate-200">{showPackCheckoutModal.name}</span>
@@ -1006,6 +1031,10 @@ export default function PricingPage() {
                     <>
                       I agree to the <a href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-emerald-650 dark:text-emerald-400 hover:underline font-bold">Terms of Service</a> and <a href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-emerald-650 dark:text-emerald-450 hover:underline font-bold">Act on Specified Commercial Transactions</a>.
                     </>
+                  ) : isVi ? (
+                    <>
+                      Tôi đồng ý với <a href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold">Điều khoản dịch vụ</a> và <a href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold">Luật giao dịch thương mại đặc định</a>.
+                    </>
                   ) : (
                     <>
                       <a href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold">利用規約</a>および<a href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold">特定商取引法に基づく表記</a>に同意します。
@@ -1024,7 +1053,7 @@ export default function PricingPage() {
                     <Loader2 className="w-4.5 h-4.5 animate-spin" />
                   ) : (
                     <>
-                      {isEn ? "Complete Purchase" : "購入手続きを完了する"}
+                      {isEn ? "Complete Purchase" : isVi ? "Hoàn tất mua hàng" : "購入手続きを完了する"}
                       <ArrowRight className="w-4.5 h-4.5" />
                     </>
                   )}
@@ -1034,14 +1063,14 @@ export default function PricingPage() {
                   onClick={() => setShowPackCheckoutModal(null)}
                   className="w-full py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
                 >
-                  {isEn ? "Back" : "戻る"}
+                  {isEn ? "Back" : isVi ? "Quay lại" : "戻る"}
                 </button>
               </div>
             </form>
 
             <div className="flex items-center justify-center gap-1.5 text-[9px] text-slate-400 bg-slate-50 dark:bg-slate-850 py-2.5 rounded-xl">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-              <span>{isEn ? "Secure checkout encrypted via Stripe." : "Stripe社による暗号化された安全な決済処理が施されます"}</span>
+              <span>{isEn ? "Secure checkout encrypted via Stripe." : isVi ? "Thanh toán an toàn được mã hóa qua Stripe." : "Stripe社による暗号化された安全な決済処理が施されます"}</span>
             </div>
           </div>
         </div>

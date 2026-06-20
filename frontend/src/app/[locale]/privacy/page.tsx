@@ -13,7 +13,7 @@ interface PageProps {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const resolvedParams = await params;
   const locale = resolvedParams.locale || "ja";
-  const isEn = locale === "en";
+  const isEn = locale === "en" || locale === "vi";
   return {
     title: isEn ? "Privacy Policy | Kigyou-list" : "プライバシーポリシー | Kigyou-list",
     description: isEn 
@@ -33,7 +33,7 @@ export default async function PrivacyPage({ params }: PageProps) {
   const resolvedParams = await params;
   const locale = resolvedParams.locale || 'ja';
 
-  const d = locale === 'en' ? {
+  const d = (locale === 'en' || locale === 'vi') ? {
     home: "Home",
     privacy: "Privacy Policy",
     title: "Privacy Policy",
@@ -210,7 +210,7 @@ export default async function PrivacyPage({ params }: PageProps) {
     ]
   };
 
-  const menuSections = locale === 'en' ? [
+  const menuSections = (locale === 'en' || locale === 'vi') ? [
     { id: "sec1", title: "1. Info Acquisition" },
     { id: "sec2", title: "2. Purpose of Use" },
     { id: "sec3", title: "3. Third-Party Restrictions" },
@@ -246,7 +246,7 @@ export default async function PrivacyPage({ params }: PageProps) {
           <span className="text-slate-800 dark:text-slate-200" aria-current="page">{d.privacy}</span>
         </nav>
 
-        {locale === 'en' && (
+        {(locale === 'en' || locale === 'vi') && (
           <div className="bg-amber-50 border border-amber-200/60 dark:bg-amber-955/20 dark:border-amber-900/30 rounded-2xl p-4 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2 mb-2 animate-in fade-in duration-300">
             <AlertCircle className="w-5 h-5 shrink-0 text-amber-500 mt-0.5" />
             <div>
@@ -262,7 +262,7 @@ export default async function PrivacyPage({ params }: PageProps) {
           {/* Left Navigation Sidebar (Desktop only) */}
           <aside className="w-full md:w-56 shrink-0 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-850 rounded-2xl p-4 flex flex-col gap-1.5 shadow-sm md:sticky md:top-20">
             <h2 className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2.5 pb-2 border-b border-slate-100 dark:border-slate-800 block mb-1">
-              {locale === 'en' ? 'SITEMAP' : '目次'}
+              {locale === 'en' || locale === 'vi' ? 'SITEMAP' : '目次'}
             </h2>
             <nav className="flex flex-col gap-1">
               {menuSections.map((sec) => (

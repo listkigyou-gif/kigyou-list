@@ -40,7 +40,56 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
   const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
   const [agreeBuyTerms, setAgreeBuyTerms] = useState(false);
 
-  const d = locale === 'en' ? {
+  const d = locale === 'vi' ? {
+    history: "Lịch sử xuất file",
+    downloadBtn: "Tải xuống CSV",
+    remainingQuota: "Hạn ngạch: <strong>{remaining}</strong> dòng",
+    purchaseSuccessMsg: "Cảm ơn bạn đã mua hàng! Đã thêm +{amount} dòng hạn ngạch tải xuống CSV.",
+    realStripeSuccessMsg: "Thanh toán thành công! Hạn ngạch CSV đã được cập nhật.",
+    readyToExport: "Sẵn sàng xuất dữ liệu.",
+    verifyingQuota: "Đang xác minh hạn ngạch còn lại...",
+    verifyFailed: "Xác minh thất bại. Vui lòng thử lại.",
+    exportingData: "Đang xuất dữ liệu...",
+    bgProcessStarted: "Tiến trình chạy ngầm đã bắt đầu...",
+    asyncAlert: "Số lượng xuất vượt quá 5.000 dòng, vì vậy chúng tôi đã bắt đầu một tác vụ chạy ngầm.\nBạn có thể tải xuống từ tab 'Lịch sử xuất file' ở phía dưới cùng bảng điều khiển sau khi hoàn thành. (Mã tiến trình: {jobId})",
+    downloading: "Đang tải xuống...",
+    exportComplete: "Xuất dữ liệu hoàn thành!",
+    retry: "Vui lòng thử lại.",
+    failMessage: "Thất bại: {message}",
+    onlyPaidNotice: "Các gói hạn ngạch bổ sung chỉ có thể được mua bởi tài khoản gói trả phí (từ gói PRO trở lên). Vui lòng đăng ký gói trả phí trước.",
+    purchaseError: "Đã xảy ra lỗi trong quá trình xử lý yêu cầu mua hàng.",
+    confirmTitle: "Xác nhận xuất file CSV",
+    confirmDesc: "Bạn chuẩn bị xuất <strong class=\"text-slate-800 dark:text-slate-200\">{count}</strong> bản ghi doanh nghiệp khớp với các bộ lọc hiện tại.<br />Thao tác này sẽ khấu trừ <strong class=\"text-slate-800 dark:text-slate-200\">{count}</strong> dòng hạn ngạch từ tài khoản của bạn.",
+    cancel: "Hủy bỏ",
+    execute: "Xuất ngay",
+    upgradeToPaidTitle: "Yêu cầu tài khoản trả phí",
+    upgradeToPaidDesc: "Các gói mua thêm chỉ có thể được áp dụng đối với tài khoản gói trả phí (từ PRO trở lên). Vui lòng nâng cấp trước.",
+    viewPlans: "Xem & Thay đổi gói trả phí",
+    agreeTerms: "Tôi đồng ý với Điều khoản dịch vụ và các tiết lộ Giao dịch thương mại đặc định.",
+    terms: "Điều khoản dịch vụ",
+    tokushoho: "Luật giao dịch thương mại đặc định",
+    secureNotice: "Thanh toán mã hóa bảo mật được xử lý qua Stripe",
+    packs: {
+      "10k": {
+        title: "Gói 10.000 dòng",
+        desc: "Gói cơ bản cho nhu cầu nhỏ",
+        price: "14.800 JPY",
+        btn: "Chọn"
+      },
+      "50k": {
+        title: "Gói 50.000 dòng",
+        desc: "Gói tiêu chuẩn tối ưu chi phí",
+        price: "49.800 JPY",
+        btn: "Chọn"
+      },
+      "100k": {
+        title: "Gói 100.000 dòng",
+        desc: "Gói doanh nghiệp tải lượng lớn",
+        price: "79.800 JPY",
+        btn: "Chọn"
+      }
+    }
+  } : locale === 'en' ? {
     history: "Export History",
     downloadBtn: "CSV Download",
     remainingQuota: "Quota: <strong>{remaining}</strong> rows",
@@ -481,9 +530,9 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                   />
                   <label htmlFor="agree-buy-terms" className="text-[10px] text-slate-500 leading-normal cursor-pointer selection:bg-transparent">
                     <Link href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-450 hover:underline font-bold">{d.terms}</Link>
-                    {locale === 'en' ? ' and ' : ' および '}
+                    {locale === 'en' ? ' and ' : locale === 'vi' ? ' và ' : ' および '}
                     <Link href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-emerald-600 dark:text-emerald-400 hover:underline font-bold">{d.tokushoho}</Link>
-                    {locale === 'en' ? ' disclosures to proceed.' : ' に同意します。'}
+                    {locale === 'en' ? ' disclosures to proceed.' : locale === 'vi' ? ' để tiếp tục.' : ' に同意します。'}
                   </label>
                 </div>
                 

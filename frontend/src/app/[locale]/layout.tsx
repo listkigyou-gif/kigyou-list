@@ -28,36 +28,43 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
-  const isEn = locale === "en";
+  
+  let title = "Kigyou-list | 500万社の日本企業データベース・営業リスト";
+  let description = "日本全国500万社以上の企業情報を網羅した国内最大級 of B2Bデータベース。業界最安値の料金、JSIC産業分類や都道府県、資本金、従業員数による高度な絞り込みに加え、採用・助成金・入札などの最新 of 営業意欲（インテント）シグナルをご活用いただけます。";
+  let keywords = ["企業リスト", "営業リスト", "企業データベース", "求人活動", "助成金", "補助金", "入札調達"];
+  let ogLocale = "ja_JP";
+
+  if (locale === "en") {
+    title = "Kigyou-list | Over 5M Japanese Companies Database & Sales List";
+    description = "Japan's largest B2B database covering over 5 million company profiles. Benefit from advanced filtering by JSIC industries, prefectures, capital, and active sales intent signals.";
+    keywords = ["corporate database", "sales list", "b2b database", "job hiring list", "subsidies list"];
+    ogLocale = "en_US";
+  } else if (locale === "vi") {
+    title = "Kigyou-list | Cơ sở dữ liệu & Danh sách doanh nghiệp Nhật Bản";
+    description = "Cơ sở dữ liệu B2B lớn nhất Nhật Bản với hơn 5 triệu hồ sơ doanh nghiệp. Hỗ trợ lọc nâng cao theo ngành nghề JSIC, tỉnh thành, vốn điều lệ và tín hiệu tuyển dụng/trợ cấp/đấu thầu.";
+    keywords = ["cơ sở dữ liệu doanh nghiệp", "danh sách doanh nghiệp Nhật Bản", "danh sách công ty", "tuyển dụng", "trợ cấp", "đấu thầu"];
+    ogLocale = "vi_VN";
+  }
 
   return {
     metadataBase: new URL("https://kigyoulist.com"),
-    title: isEn
-      ? "Kigyou-list | Over 5M Japanese Companies Database & Sales List"
-      : "Kigyou-list | 500万社の日本企業データベース・営業リスト",
-    description: isEn
-      ? "Japan's largest B2B database covering over 5 million company profiles. Benefit from advanced filtering by JSIC industries, prefectures, capital, and active sales intent signals."
-      : "日本全国500万社以上の企業情報を網羅した国内最大級 of B2Bデータベース。業界最安値の料金、JSIC産業分類や都道府県、資本金、従業員数による高度な絞り込みに加え、採用・助成金・入札などの最新 of 営業意欲（インテント）シグナルをご活用いただけます。",
-    keywords: isEn
-      ? ["corporate database", "sales list", "b2b database", "job hiring list", "subsidies list"]
-      : ["企業リスト", "営業リスト", "企業データベース", "求人活動", "助成金", "補助金", "入札調達"],
+    title,
+    description,
+    keywords,
     alternates: {
       canonical: `/${locale}`,
       languages: {
         ja: "/ja",
         en: "/en",
+        vi: "/vi",
       },
     },
     openGraph: {
-      title: isEn
-        ? "Kigyou-list | Over 5M Japanese Companies Database & Sales List"
-        : "Kigyou-list | 500万社の日本企業データベース・営業リスト",
-      description: isEn
-        ? "Japan's largest B2B database covering over 5 million company profiles. Benefit from advanced filtering by JSIC industries, prefectures, capital, and active sales intent signals."
-        : "日本全国500万社以上の B2B 企業情報を網羅した国内最大級 of 営業リスト・企業データベース。採用活動、助成金受給、入札結果などの購買インテントシグナルから最適なターゲット企業を特定します。",
+      title,
+      description,
       url: `https://kigyoulist.com/${locale}`,
       siteName: "Kigyou-list",
-      locale: isEn ? "en_US" : "ja_JP",
+      locale: ogLocale,
       type: "website",
       images: [
         {
@@ -70,12 +77,8 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary",
-      title: isEn
-        ? "Kigyou-list | Over 5M Japanese Companies Database & Sales List"
-        : "Kigyou-list | 500万社の日本企業データベース・営業リスト",
-      description: isEn
-        ? "Japan's largest B2B database covering over 5 million company profiles."
-        : "日本全国500万社以上の B2B 企業情報を網羅した国内最大級 of 営業リスト・企業データベース。",
+      title,
+      description,
       images: ["/icon.svg"],
     },
   };

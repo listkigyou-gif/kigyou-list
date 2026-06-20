@@ -35,12 +35,14 @@ Set-Location -Path $ProjectRoot
 # Step 5 (Consolidation), Step 6 (AI Tagging), and Step 7 (PostgreSQL Sync)
 & $PythonExec scripts/run_pipeline.py --steps 1,3,4,5,6,7 --limit 100 --offline
 
-# --- STEP 4: Programmatic Blog Post Generation (JP & EN) ---
+# --- STEP 4: Programmatic Blog Post Generation (JP, EN & VI) ---
 Write-Output "`n[4/4] Running Programmatic Blog Post Generators..."
 Set-Location -Path (Join-Path $ProjectRoot "frontend")
 Write-Output "[*] Generating Japanese blog post..."
 npx tsx src/scripts/generate-blog.ts
 Write-Output "[*] Generating English blog post..."
 npx tsx src/scripts/generate-blog-en.ts
+Write-Output "[*] Generating Vietnamese blog post..."
+npx tsx src/scripts/generate-blog-vi.ts
 
 Write-Output "`n[+] Weekly ETL Run Completed Successfully!"

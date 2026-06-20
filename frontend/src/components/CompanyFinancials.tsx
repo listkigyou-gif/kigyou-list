@@ -55,6 +55,11 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
       const formatted = millionVal.toLocaleString(undefined, { maximumFractionDigits: 2 });
       return useFull ? `¥${formatted} Million JPY` : `¥${formatted}M JPY`;
     }
+    if (locale === 'vi') {
+      const millionVal = val / 1000000;
+      const formatted = millionVal.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      return useFull ? `¥${formatted} triệu JPY` : `¥${formatted}tr JPY`;
+    }
     if (Math.abs(val) >= 100000000) {
       return `${(val / 100000000).toLocaleString(undefined, { maximumFractionDigits: 1 })}億円`;
     }
@@ -99,7 +104,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
     
     const points: string[] = [];
     const salesBars = sortedFinancials.map((f, i) => {
-      const yearStr = locale === 'en' ? `FY ${f.fiscal_year}` : `${f.fiscal_year}年`;
+      const yearStr = locale === 'vi' ? `Năm ${f.fiscal_year}` : locale === 'en' ? `FY ${f.fiscal_year}` : `${f.fiscal_year}年`;
       const x = paddingLeft + (chartWidth / (sortedFinancials.length)) * (i + 0.5);
       
       const salesVal = f.revenue || f.sales_amount || 0;
@@ -437,7 +442,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
     const barWidth = groupWidth / 2 - 4;
 
     const bars = xmlRecords.map((f, i) => {
-      const yearStr = locale === 'en' ? `FY ${f.fiscal_year}` : `${f.fiscal_year}年`;
+      const yearStr = locale === 'vi' ? `Năm ${f.fiscal_year}` : locale === 'en' ? `FY ${f.fiscal_year}` : `${f.fiscal_year}年`;
       const colX = paddingLeft + columnWidth * (i + 0.5);
 
       const totalVal = f.total_assets || 0;

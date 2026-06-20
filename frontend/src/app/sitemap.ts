@@ -19,7 +19,7 @@ export async function generateSitemaps() {
 export default async function sitemap({ id }: { id: any }): Promise<MetadataRoute.Sitemap> {
   const resolvedId = await id;
   const baseUrl = 'https://kigyoulist.com';
-  const locales = ['ja', 'en'];
+  const locales = ['ja', 'en', 'vi'];
 
   if (resolvedId === 'core') {
     // 1. Core Platform Pages (Localized for ja and en)
@@ -74,8 +74,8 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
     // 1.5. Dynamic Blog Pages (Localized)
     const blogPages: MetadataRoute.Sitemap = [];
     try {
-      const posts = await getBlogPosts(1000, 0);
-      locales.forEach(loc => {
+      for (const loc of locales) {
+        const posts = await getBlogPosts(1000, 0, loc);
         posts.forEach(post => {
           blogPages.push({
             url: `${baseUrl}/${loc}/blog/${post.slug}`,
@@ -84,7 +84,7 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
             priority: 0.7,
           });
         });
-      });
+      }
     } catch (error) {
       console.error('Error generating dynamic blog pages sitemap:', error);
     }

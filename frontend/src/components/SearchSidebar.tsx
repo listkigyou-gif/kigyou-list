@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Filter, Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { industryJaToEn } from "@/lib/locale-mapping";
+import { industryJaToEn, getIndustryName } from "@/lib/locale-mapping";
 
 interface PrefectureOption {
   code: string;
@@ -110,25 +110,25 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 
   const displayCapital = (val?: number) => {
     if (val === undefined || val === null) return "";
-    return String(locale === 'en' ? val / 100 : val);
+    return String((locale === 'en' || locale === 'vi') ? val / 100 : val);
   };
   const displaySales = (val?: number) => {
     if (val === undefined || val === null) return "";
-    return String(locale === 'en' ? val * 105 || val * 100 : val); // standard float multiplier
+    return String((locale === 'en' || locale === 'vi') ? val * 105 || val * 100 : val); // standard float multiplier
   };
 
   const processCapitalInput = (val: string) => {
     if (!val) return null;
     const num = parseFloat(val);
     if (isNaN(num)) return null;
-    return String(locale === 'en' ? Math.round(num * 100) : num);
+    return String((locale === 'en' || locale === 'vi') ? Math.round(num * 100) : num);
   };
 
   const processSalesInput = (val: string) => {
     if (!val) return null;
     const num = parseFloat(val);
     if (isNaN(num)) return null;
-    return String(locale === 'en' ? (num / 100) : num);
+    return String((locale === 'en' || locale === 'vi') ? (num / 100) : num);
   };
 
   // Build a new query string merging current params with overrides
@@ -273,7 +273,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
           </button>
         ) : (
           <Link
-            href={locale === "en" ? "/en/search" : "/search"}
+            href={locale === "ja" ? "/search" : `/${locale}/search`}
             className="text-xs text-slate-400 hover:text-slate-650 dark:hover:text-white transition-colors"
           >
             {t.search.clear}
@@ -295,7 +295,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             <option value="">{t.search.allPrefectures}</option>
             {prefectures.map((pref) => (
               <option key={pref.code} value={pref.code}>
-                {(t.prefectures as Record<string, string>)?.[pref.name] || pref.name} ({pref.count.toLocaleString()}{locale === 'en' ? ' companies' : '社'})
+                {(t.prefectures as Record<string, string>)?.[pref.name] || pref.name} ({pref.count.toLocaleString()}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
               </option>
             ))}
           </select>
@@ -315,7 +315,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <option value="">{t.search.allCities}</option>
               {cities.map((c) => (
                 <option key={c.cityName} value={c.cityName}>
-                  {c.cityName} ({c.count.toLocaleString()}{locale === 'en' ? ' companies' : '社'})
+                  {c.cityName} ({c.count.toLocaleString()}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
                 </option>
               ))}
             </select>
@@ -336,11 +336,11 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             {industries.map((major) => (
               <React.Fragment key={major.code}>
                 <option value={major.code} className="font-extrabold text-slate-900 dark:text-white">
-                  {major.code} {(t.majorIndustries as Record<string, string>)?.[major.code] || major.name} ({locale === 'en' ? 'Total' : '計'} {major.totalCount.toLocaleString()}{locale === 'en' ? ' companies' : '社'})
+                  {major.code} {(t.majorIndustries as Record<string, string>)?.[major.code] || major.name} ({locale === 'en' ? 'Total' : locale === 'vi' ? 'Tổng cộng' : '計'} {major.totalCount.toLocaleString()}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
                 </option>
                 {major.children.map((medium) => (
                   <option key={medium.code} value={medium.code} className="text-slate-700 dark:text-slate-300">
-                    {"\u00A0\u00A0"}{medium.code} {locale === 'en' ? (industryJaToEn[medium.name] || medium.name) : medium.name} ({medium.count.toLocaleString()}{locale === 'en' ? ' companies' : '社'})
+                    {"\u00A0\u00A0"}{medium.code} {getIndustryName(medium.name, locale)} ({medium.count.toLocaleString()}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
                   </option>
                 ))}
               </React.Fragment>
@@ -770,11 +770,11 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             <div 
               onClick={() => setAuthModalOpen(true)}
               className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-transparent z-10"
-              title={locale === 'en' ? "Click to register free" : "クリックして無料会員登録"}
+              title={locale === 'en' ? "Click to register free" : locale === 'vi' ? "Nhấp để đăng ký miễn phí" : "クリックして無料会員登録"}
             >
               <div className="bg-amber-100/90 dark:bg-amber-950/90 border border-amber-250/50 dark:border-amber-900/50 rounded-xl px-2.5 py-1.5 flex items-center gap-1 shadow-sm text-[10px] font-black text-amber-800 dark:text-amber-300 hover:scale-105 transition-transform duration-200">
                 <Lock className="w-3.5 h-3.5" />
-                {locale === 'en' ? "Register Free to Unlock" : "無料登録で利用可能"}
+                {locale === 'en' ? "Register Free to Unlock" : locale === 'vi' ? "Đăng ký miễn phí để mở khóa" : "無料登録で利用可能"}
               </div>
             </div>
           )}
@@ -833,15 +833,15 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 if (!isLoggedIn) {
                   setAuthModalOpen(true);
                 } else {
-                  router.push(locale === 'en' ? "/en/pricing" : "/pricing");
+                  router.push(locale === "ja" ? "/pricing" : `/${locale}/pricing`);
                 }
               }}
               className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-transparent z-10"
-              title={isLoggedIn ? (locale === 'en' ? "Click to upgrade to PRO" : "クリックしてProにアップグレード") : (locale === 'en' ? "Click to register" : "クリックして会員登録")}
+              title={isLoggedIn ? (locale === 'en' ? "Click to upgrade to PRO" : locale === 'vi' ? "Nhấp để nâng cấp lên PRO" : "クリックしてProにアップグレード") : (locale === 'en' ? "Click to register" : locale === 'vi' ? "Nhấp để đăng ký" : "クリックして会員登録")}
             >
               <div className="bg-amber-100/90 dark:bg-amber-950/90 border border-amber-250/50 dark:border-amber-900/50 rounded-xl px-2.5 py-1.5 flex items-center gap-1 shadow-sm text-[10px] font-black text-amber-800 dark:text-amber-300 hover:scale-105 transition-transform duration-200">
                 <Lock className="w-3.5 h-3.5" />
-                {locale === 'en' ? "PRO Plan Required" : "Proプランで利用可能"}
+                {locale === 'en' ? "PRO Plan Required" : locale === 'vi' ? "Yêu cầu tài khoản PRO" : "Proプランで利用可能"}
               </div>
             </div>
           )}

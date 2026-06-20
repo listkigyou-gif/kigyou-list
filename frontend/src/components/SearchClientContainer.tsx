@@ -11,7 +11,7 @@ import { SearchSidebar } from "@/components/SearchSidebar";
 import { ExportCSVButton } from "@/components/ExportCSVButton";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { industryJaToEn } from "@/lib/locale-mapping";
+import { industryJaToEn, getPrefectureName, getIndustryName } from "@/lib/locale-mapping";
 
 interface Company {
   corporate_number: string;
@@ -561,8 +561,8 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   };
 
   const getCapitalChipText = () => {
-    const displayMin = locale === 'en' && minCap !== undefined ? minCap / 100 : minCap;
-    const displayMax = locale === 'en' && maxCap !== undefined ? maxCap / 100 : maxCap;
+    const displayMin = (locale === 'en' || locale === 'vi') && minCap !== undefined ? minCap / 100 : minCap;
+    const displayMax = (locale === 'en' || locale === 'vi') && maxCap !== undefined ? maxCap / 100 : maxCap;
     if (displayMin !== undefined && displayMax !== undefined) {
       return t.search.capitalRange.replace('{min}', String(displayMin)).replace('{max}', String(displayMax));
     }
@@ -573,8 +573,8 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   };
 
   const getSalesChipText = (min: number | undefined, max: number | undefined, rangeKey: string, minSuffixKey: string, maxSuffixKey: string) => {
-    const displayMin = locale === 'en' && min !== undefined ? min * 100 : min;
-    const displayMax = locale === 'en' && max !== undefined ? max * 100 : max;
+    const displayMin = (locale === 'en' || locale === 'vi') && min !== undefined ? min * 100 : min;
+    const displayMax = (locale === 'en' || locale === 'vi') && max !== undefined ? max * 100 : max;
     const tRange = (t.search as any)[rangeKey];
     const tMinSuffix = (t.search as any)[minSuffixKey];
     const tMaxSuffix = (t.search as any)[maxSuffixKey];
@@ -889,7 +889,12 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             )}
             {companyStatus && (
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                {t.search.statusLabel}: {locale === 'en' && companyStatus === '活動中' ? 'Active' : locale === 'en' && companyStatus === '閉鎖' ? 'Closed' : locale === 'en' && companyStatus === '解散' ? 'Dissolved' : companyStatus}
+                {t.search.statusLabel}: {
+                  companyStatus === '活動中' ? (locale === 'en' ? 'Active' : locale === 'vi' ? 'Đang hoạt động' : '活動中') :
+                  companyStatus === '閉鎖' ? (locale === 'en' ? 'Closed' : locale === 'vi' ? 'Đã đóng cửa' : '閉鎖') :
+                  companyStatus === '解散' ? (locale === 'en' ? 'Dissolved' : locale === 'vi' ? 'Đã giải thể' : '解散') :
+                  companyStatus
+                }
                 <button type="button" onClick={() => handleFilterChange({ status: null })}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
               </span>
             )}
@@ -988,7 +993,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                       {formatShortDate(company.updated_at)}
                     </span>
                     <span className="text-[10px] font-semibold text-slate-400 font-mono">
-                      {locale === 'en' ? 'Corp No' : '法人番号'}: {company.corporate_number}
+                      {locale === 'vi' ? 'Mã số DN' : locale === 'en' ? 'Corp No' : '法人番号'}: {company.corporate_number}
                     </span>
                   </div>
                 </div>
@@ -1007,19 +1012,19 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                   <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
                     <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">{t.company.capital}</span>
                     <strong className="text-slate-800 dark:text-slate-200 font-extrabold text-sm">
-                      {company.capital_amount ? (locale === 'en' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1})}M JPY` : `${(company.capital_amount / 10000).toLocaleString()}万円`) : t.company.unregistered}
+                      {company.capital_amount ? (locale === 'en' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1})}M JPY` : locale === 'vi' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1})}tr JPY` : `${(company.capital_amount / 10000).toLocaleString()}万円`) : t.company.unregistered}
                     </strong>
                   </div>
                   <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
                     <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">{t.company.employees}</span>
                     <strong className="text-slate-800 dark:text-slate-200 font-extrabold text-sm">
-                      {company.employee_count ? `${company.employee_count.toLocaleString()}${locale === 'en' ? ' employees' : '名'}` : t.company.unregistered}
+                      {company.employee_count ? `${company.employee_count.toLocaleString()}${locale === 'en' ? ' employees' : locale === 'vi' ? ' nhân viên' : '名'}` : t.company.unregistered}
                     </strong>
                   </div>
                   <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
                     <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">{t.search.establishmentYear}</span>
                     <strong className="text-slate-800 dark:text-slate-200 font-extrabold text-sm">
-                      {company.establishment_date ? (locale === 'en' ? `Est. ${company.establishment_date.substring(0, 4)}` : `${company.establishment_date.substring(0, 4)}年`) : t.company.unregistered}
+                      {company.establishment_date ? (locale === 'en' ? `Est. ${company.establishment_date.substring(0, 4)}` : locale === 'vi' ? `Năm ${company.establishment_date.substring(0, 4)}` : `${company.establishment_date.substring(0, 4)}年`) : t.company.unregistered}
                     </strong>
                   </div>
                   <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
@@ -1033,7 +1038,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                               key={idx} 
                               className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-700/80"
                             >
-                              {ind.industry_code}.{locale === 'en' ? (industryJaToEn[ind.industry_name] || ind.industry_name) : ind.industry_name}
+                              {ind.industry_code}.{getIndustryName(ind.industry_name, locale)}
                             </span>
                           ));
                         }
@@ -1047,7 +1052,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                               key={idx} 
                               className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-700/80"
                             >
-                              {locale === 'en' ? (industryJaToEn[tag.trim()] || tag.trim()) : tag.trim()}
+                              {getIndustryName(tag.trim(), locale)}
                             </span>
                           ))
                         ) : (
@@ -1090,7 +1095,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     href={`/company/${company.corporate_number}`}
                     className="px-4 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300 dark:text-slate-300 dark:border-slate-800 dark:hover:border-slate-700 rounded-xl transition-all"
                   >
-                    {locale === 'en' ? 'Details →' : '詳細プロフィール →'}
+                    {locale === 'vi' ? 'Chi tiết →' : locale === 'en' ? 'Details →' : '詳細プロフィール →'}
                   </Link>
                 </div>
               </div>
@@ -1099,7 +1104,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-12 text-center text-slate-500">
               <Building2 className="w-12 h-12 text-slate-300 mx-auto mb-4" />
               <h4 className="font-bold text-slate-800 dark:text-white mb-2">{t.search.companiesFoundZero}</h4>
-              <p className="text-xs">{locale === 'en' ? 'Try adjusting your filters or search keyword to find what you are looking for.' : '絞り込み条件を緩和するか、別のキーワードでお試しください。'}</p>
+              <p className="text-xs">{locale === 'vi' ? 'Hãy thử điều chỉnh bộ lọc hoặc từ khóa tìm kiếm để tìm thấy thông tin bạn muốn.' : locale === 'en' ? 'Try adjusting your filters or search keyword to find what you are looking for.' : '絞り込み条件を緩和するか、別のキーワードでお試しください。'}</p>
             </div>
           )}
         </div>
