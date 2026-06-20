@@ -1566,7 +1566,7 @@ export async function saveMagicLinkToken(email: string, token: string, expiresAt
   const cleanupSql = 'DELETE FROM magic_link_tokens WHERE created_at < ?';
   const cleanupDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   
-  const insertSql = 'INSERT INTO magic_link_tokens (email, token, expires_at, created_at, used) VALUES (?, ?, ?, ?, 0)';
+  const insertSql = 'INSERT INTO magic_link_tokens (email, token, expires_at, created_at, used) VALUES (?, ?, ?, ?, false)';
   
   if (DATABASE_URL) {
     const pool = getPGPool();
@@ -1628,8 +1628,8 @@ export async function checkMagicLinkRateLimit(email: string): Promise<{ allowed:
 export async function verifyAndConsumeMagicLinkToken(email: string, token: string): Promise<boolean> {
   await initQuotaTables();
   
-  const selectSql = 'SELECT * FROM magic_link_tokens WHERE email = ? AND token = ? AND (used = 0 OR used = false OR used IS NULL) LIMIT 1';
-  const updateSql = 'UPDATE magic_link_tokens SET used = 1 WHERE token = ?';
+  const selectSql = 'SELECT * FROM magic_link_tokens WHERE email = ? AND token = ? AND (used = false OR used IS NULL) LIMIT 1';
+  const updateSql = 'UPDATE magic_link_tokens SET used = true WHERE token = ?';
   
   const row = await runGetQuery(selectSql, [email, token]);
   if (!row) {
