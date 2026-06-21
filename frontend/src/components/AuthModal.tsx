@@ -6,6 +6,7 @@ import { X, Lock, CheckCircle2, ShieldCheck, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
 import { signIn } from "next-auth/react";
+import { checkEmailTypo } from "@/lib/emailCorrection";
 
 export const AuthModal: React.FC = () => {
   const { authModalOpen, setAuthModalOpen, isLoggedIn, loginWithGoogle } = useAuth();
@@ -14,6 +15,10 @@ export const AuthModal: React.FC = () => {
   const [emailInput, setEmailInput] = useState("");
   const [magicLinkStatus, setMagicLinkStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
   const [magicLinkError, setMagicLinkError] = useState("");
+  
+  const [emailSuggestion, setEmailSuggestion] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileContainerId = "turnstile-widget-container";
 
   // Automatically close modal when logged in
   useEffect(() => {
@@ -22,9 +27,96 @@ export const AuthModal: React.FC = () => {
     }
   }, [isLoggedIn, authModalOpen, setAuthModalOpen]);
 
+  // Turnstile script and widget explicit render hook
+  useEffect(() => {
+    if (!authModalOpen) {
+      setTurnstileToken("");
+      return;
+    }
+    
+    let widgetId: string | null = null;
+    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
+
+    const renderWidget = () => {
+      const container = document.getElementById(turnstileContainerId);
+      if (container && (window as any).turnstile) {
+        try {
+          container.innerHTML = "";
+          widgetId = (window as any).turnstile.render(`#${turnstileContainerId}`, {
+            sitekey: siteKey,
+            callback: (token: string) => {
+              setTurnstileToken(token);
+            },
+            "error-callback": () => {
+              setTurnstileToken("");
+            },
+            "expired-callback": () => {
+              setTurnstileToken("");
+            }
+          });
+        } catch (err) {
+          console.error("Turnstile render error:", err);
+        }
+      }
+    };
+
+    const scriptId = "cloudflare-turnstile-script";
+    let script = document.getElementById(scriptId) as HTMLScriptElement;
+    
+    if (!script) {
+      script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadTurnstileCallback";
+      script.async = true;
+      script.defer = true;
+      (window as any).onloadTurnstileCallback = () => {
+        renderWidget();
+      };
+      document.body.appendChild(script);
+    } else {
+      if ((window as any).turnstile) {
+        renderWidget();
+      } else {
+        (window as any).onloadTurnstileCallback = () => {
+          renderWidget();
+        };
+      }
+    }
+
+    return () => {
+      if (widgetId !== null && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.remove(widgetId);
+        } catch (err) {
+          // ignore
+        }
+      }
+    };
+  }, [authModalOpen]);
+
+  const handleEmailInputChange = (val: string) => {
+    setEmailInput(val);
+    const suggestion = checkEmailTypo(val);
+    setEmailSuggestion(suggestion);
+  };
+
   const handleSendMagicLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailInput) return;
+    
+    // Enforce captcha verification if sitekey is defined
+    if (!turnstileToken) {
+      setMagicLinkStatus("error");
+      setMagicLinkError(
+        locale === "vi"
+          ? "Vui lòng hoàn thành xác thực CAPTCHA."
+          : locale === "en"
+          ? "Please complete the CAPTCHA verification."
+          : "CAPTCHAの検証を完了してください。"
+      );
+      return;
+    }
+
     setMagicLinkStatus("sending");
     setMagicLinkError("");
 
@@ -32,7 +124,7 @@ export const AuthModal: React.FC = () => {
       const res = await fetch("/api/auth/send-magic-link", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: emailInput, locale }),
+        body: JSON.stringify({ email: emailInput, locale, turnstileToken }),
       });
 
       const data = await res.json();
@@ -133,10 +225,67 @@ export const AuthModal: React.FC = () => {
                   required
                   placeholder={t.auth.magicLinkPlaceholder}
                   value={emailInput}
-                  onChange={(e) => setEmailInput(e.target.value)}
+                  onChange={(e) => handleEmailInputChange(e.target.value)}
                   className="w-full px-3 py-3 text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 focus:bg-white dark:bg-[#1C2128] text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all"
                 />
+                
+                {emailSuggestion && (
+                  <div className="text-[10px] text-amber-600 dark:text-amber-400 mt-1.5 font-semibold leading-relaxed">
+                    {locale === "vi" ? (
+                      <>
+                        Có phải ý bạn là:{" "}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEmailInput(emailSuggestion);
+                            setEmailSuggestion(null);
+                          }}
+                          className="text-primary hover:underline font-bold cursor-pointer"
+                        >
+                          {emailSuggestion}
+                        </button>{" "}
+                        ?
+                      </>
+                    ) : locale === "en" ? (
+                      <>
+                        Did you mean:{" "}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEmailInput(emailSuggestion);
+                            setEmailSuggestion(null);
+                          }}
+                          className="text-primary hover:underline font-bold cursor-pointer"
+                        >
+                          {emailSuggestion}
+                        </button>{" "}
+                        ?
+                      </>
+                    ) : (
+                      <>
+                        もしかして:{" "}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEmailInput(emailSuggestion);
+                            setEmailSuggestion(null);
+                          }}
+                          className="text-primary hover:underline font-bold cursor-pointer"
+                        >
+                          {emailSuggestion}
+                        </button>{" "}
+                        ?
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
+
+              {/* Cloudflare Turnstile CAPTCHA Widget */}
+              <div className="flex justify-center my-2 select-none">
+                <div id={turnstileContainerId}></div>
+              </div>
+
               <button
                 type="submit"
                 disabled={magicLinkStatus === "sending"}

@@ -4,9 +4,45 @@ import crypto from "crypto";
 
 export async function POST(request: Request) {
   try {
-    const { email, locale = "ja" } = await request.json();
+    const { email, locale = "ja", turnstileToken } = await request.json();
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
+    }
+
+    // Verify Cloudflare Turnstile CAPTCHA if configured
+    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+    if (turnstileSecret) {
+      if (!turnstileToken) {
+        return NextResponse.json({ 
+          error: locale === "vi" 
+            ? "Vui lòng xác minh mã CAPTCHA." 
+            : locale === "en" 
+            ? "Please verify CAPTCHA." 
+            : "CAPTCHAの検証を行ってください。" 
+        }, { status: 400 });
+      }
+
+      const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          secret: turnstileSecret,
+          response: turnstileToken,
+          remoteip: request.headers.get("x-forwarded-for") || undefined,
+        }),
+      });
+
+      const verifyData = await verifyRes.json();
+      if (!verifyData.success) {
+        console.error("Turnstile verification failed:", verifyData);
+        return NextResponse.json({ 
+          error: locale === "vi" 
+            ? "Xác minh CAPTCHA thất bại. Vui lòng thử lại." 
+            : locale === "en" 
+            ? "CAPTCHA verification failed. Please try again." 
+            : "CAPTCHAの検証に失敗しました。もう一度お試しください。" 
+        }, { status: 400 });
+      }
     }
 
     // Rate Limit Checks
