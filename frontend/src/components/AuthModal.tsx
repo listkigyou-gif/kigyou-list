@@ -44,6 +44,7 @@ export const AuthModal: React.FC = () => {
           container.innerHTML = "";
           widgetId = (window as any).turnstile.render(`#${turnstileContainerId}`, {
             sitekey: siteKey,
+            language: locale,
             callback: (token: string) => {
               setTurnstileToken(token);
             },
