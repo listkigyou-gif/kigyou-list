@@ -130,7 +130,7 @@ export default async function CategoryPage({ params }: PageProps) {
     otherIndustriesTitle: `Ngành nghề khác tại ${prefName} (Cùng khu vực)`,
     otherPrefecturesTitle: `Các tỉnh thành khác (Cùng ngành nghề)`,
     companySuffix: " doanh nghiệp",
-    unregistered: "Chưa đăng ký",
+    unregistered: "-",
     noRelatedCompanies: "Không tìm thấy ngành nghề liên quan nào khác tại tỉnh này.",
     noMatchingTitle: "Không tìm thấy doanh nghiệp phù hợp",
     noMatchingDesc: `Hiện tại chưa có dữ liệu mẫu cho ngành ${industryMappedName} tại ${prefName}. Vui lòng quay lại sau khi cơ sở dữ liệu được cập nhật.`
@@ -150,7 +150,7 @@ export default async function CategoryPage({ params }: PageProps) {
     otherIndustriesTitle: `Other Industries in ${prefName} (Same Area)`,
     otherPrefecturesTitle: `Other Prefectures (Same Industry)`,
     companySuffix: " companies",
-    unregistered: "Unregistered",
+    unregistered: "-",
     noRelatedCompanies: "No other industries found in this prefecture.",
     noMatchingTitle: "No Matching Companies Found",
     noMatchingDesc: `No mock data is currently registered for the ${industryMappedName} industry in ${prefName}. Please wait for database updates.`
@@ -170,7 +170,7 @@ export default async function CategoryPage({ params }: PageProps) {
     otherIndustriesTitle: `${pref.name}の他の業種から探す (同地域)`,
     otherPrefecturesTitle: "他の主要都道府県から探す (同業種)",
     companySuffix: "社",
-    unregistered: "未登録",
+    unregistered: "-",
     noRelatedCompanies: "他のカテゴリ情報はありません",
     noMatchingTitle: "対象企業が見つかりませんでした",
     noMatchingDesc: `現在、${pref.name}の${ind.industry_name}に該当するテストデータは登録されていません。データアップデートをお待ちください。`

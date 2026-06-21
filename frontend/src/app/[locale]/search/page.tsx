@@ -31,6 +31,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       languages: {
         ja: "/ja/search",
         en: "/en/search",
+        vi: "/vi/search",
       }
     }
   };
@@ -272,6 +273,9 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
       <Header />
+      <h1 className="sr-only">
+        {locale === 'en' ? 'Search Companies' : locale === 'vi' ? 'Tìm kiếm doanh nghiệp' : '企業データ検索'}
+      </h1>
       <SearchClientContainer
         initialCompanies={companies}
         initialTotalCount={totalCount}

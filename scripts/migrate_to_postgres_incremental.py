@@ -405,6 +405,14 @@ def main():
             if rows:
                 execute_values(pg_cur, "INSERT INTO database_stats (stat_key, stat_value) VALUES %s;", rows)
             print("  [+] Synced database_stats.")
+
+            # Table 5: industry_prefecture_pairs
+            pg_cur.execute("TRUNCATE TABLE industry_prefecture_pairs CASCADE;")
+            lite_cur.execute("SELECT industry_code, prefecture_code FROM industry_prefecture_pairs")
+            rows = lite_cur.fetchall()
+            if rows:
+                execute_values(pg_cur, "INSERT INTO industry_prefecture_pairs (industry_code, prefecture_code) VALUES %s;", rows)
+            print("  [+] Synced industry_prefecture_pairs.")
             
             pg_conn.commit()
             print("[+] Stats tables synchronization completed successfully.")

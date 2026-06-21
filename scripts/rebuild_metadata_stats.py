@@ -58,6 +58,14 @@ def rebuild_metadata():
         );
     """)
     
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS industry_prefecture_pairs (
+            industry_code TEXT,
+            prefecture_code TEXT,
+            PRIMARY KEY (industry_code, prefecture_code)
+        );
+    """)
+    
     # Add industry hierarchy columns if they do not exist
     cursor.execute("PRAGMA table_info(m_industries);")
     cols = [r[1] for r in cursor.fetchall()]
@@ -254,6 +262,19 @@ def rebuild_metadata():
            OR corporate_number IN (SELECT DISTINCT corporate_number FROM business_signals);
     """)
     print(f"Sitemap companies populated in {time.time() - t_sitemap:.2f} seconds.")
+    
+    # 8. Populate Active Industry-Prefecture Pairs
+    print("Populating active industry-prefecture pairs table...")
+    t_pairs = time.time()
+    cursor.execute("DELETE FROM industry_prefecture_pairs;")
+    cursor.execute("""
+        INSERT INTO industry_prefecture_pairs (industry_code, prefecture_code)
+        SELECT DISTINCT ci.industry_code, c.prefecture_code
+        FROM company_industries ci
+        JOIN companies c ON ci.corporate_number = c.corporate_number
+        WHERE c.prefecture_code IS NOT NULL AND ci.industry_code IS NOT NULL;
+    """)
+    print(f"Active industry-prefecture pairs populated in {time.time() - t_pairs:.2f} seconds.")
     
     conn.commit()
     conn.close()

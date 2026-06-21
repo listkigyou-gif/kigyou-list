@@ -228,4 +228,12 @@ CREATE TABLE IF NOT EXISTS sitemap_companies (
 
 CREATE INDEX IF NOT EXISTS idx_sitemap_companies_employees ON sitemap_companies(employee_count DESC, corporate_number ASC);
 
+-- Cache table for active industry-prefecture pairs in sitemaps
+CREATE TABLE IF NOT EXISTS industry_prefecture_pairs (
+    industry_code TEXT,
+    prefecture_code TEXT,
+    PRIMARY KEY (industry_code, prefecture_code)
+);
+
+
 

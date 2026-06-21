@@ -69,6 +69,7 @@ def main():
     DROP TABLE IF EXISTS city_counts_temp CASCADE;
     DROP TABLE IF EXISTS sitemap_companies_temp CASCADE;
     DROP TABLE IF EXISTS blog_posts_temp CASCADE;
+    DROP TABLE IF EXISTS industry_prefecture_pairs_temp CASCADE;
     """)
     pg_conn.commit()
 
@@ -240,6 +241,15 @@ def main():
         published_at VARCHAR(20) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         locale VARCHAR(10) DEFAULT 'ja'
+    );
+    """)
+
+    # Bảng 12: industry_prefecture_pairs_temp
+    pg_cur.execute("""
+    CREATE TABLE industry_prefecture_pairs_temp (
+        industry_code VARCHAR(50),
+        prefecture_code VARCHAR(10),
+        PRIMARY KEY (industry_code, prefecture_code)
     );
     """)
 
@@ -555,6 +565,14 @@ def main():
             None
         )
 
+        # Table 12: industry_prefecture_pairs
+        migrate_table_csv(
+            "industry_prefecture_pairs",
+            "SELECT industry_code, prefecture_code FROM industry_prefecture_pairs",
+            ["industry_code", "prefecture_code"],
+            None
+        )
+
         # 3. Create indices for performance
         print("Creating performance indices in PostgreSQL on temp tables...", flush=True)
         t_indices = time.time()
@@ -611,6 +629,7 @@ def main():
         DROP TABLE IF EXISTS city_counts CASCADE;
         DROP TABLE IF EXISTS sitemap_companies CASCADE;
         DROP TABLE IF EXISTS blog_posts CASCADE;
+        DROP TABLE IF EXISTS industry_prefecture_pairs CASCADE;
         """)
         
         # Rename temp tables to main tables
@@ -626,6 +645,7 @@ def main():
         ALTER TABLE city_counts_temp RENAME TO city_counts;
         ALTER TABLE sitemap_companies_temp RENAME TO sitemap_companies;
         ALTER TABLE blog_posts_temp RENAME TO blog_posts;
+        ALTER TABLE industry_prefecture_pairs_temp RENAME TO industry_prefecture_pairs;
         """)
         
         # Rename physical partitions

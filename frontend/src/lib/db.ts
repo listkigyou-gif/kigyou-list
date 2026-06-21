@@ -921,7 +921,22 @@ export async function searchCompanies(
     );
     if (isPG) {
       if (hasComplexFilters) {
-        sql += ' ORDER BY (c.employee_count + 0) DESC NULLS LAST, c.corporate_number ASC';
+        // Wrap the standard query in a Materialized CTE to bypass the PostgreSQL LIMIT optimization trap
+        const selectColumnsPattern = /SELECT\s+[\s\S]+?\s+FROM\s+companies\s+c/i;
+        const originalSql = dataQuery.sql;
+        const selectMatch = originalSql.match(selectColumnsPattern);
+        
+        if (selectMatch) {
+          const selectPart = selectMatch[0];
+          const wherePart = originalSql.substring(selectPart.length);
+          sql = `WITH filtered_companies AS MATERIALIZED (
+            ${selectPart} ${wherePart}
+          )
+          SELECT * FROM filtered_companies
+          ORDER BY employee_count DESC NULLS LAST, corporate_number ASC`;
+        } else {
+          sql = originalSql + ' ORDER BY (c.employee_count + 0) DESC NULLS LAST, c.corporate_number ASC';
+        }
       } else {
         sql += ' ORDER BY c.employee_count DESC NULLS LAST, c.corporate_number ASC';
       }
@@ -1055,10 +1070,8 @@ export async function getPrefectureByCode(code: string): Promise<{ code: string;
 export async function getActiveIndustryPrefecturePairs(): Promise<{ industry_code: string; prefecture_code: string }[]> {
   try {
     const results = await runQuery(`
-      SELECT DISTINCT ci.industry_code, c.prefecture_code
-      FROM company_industries ci
-      JOIN companies c ON ci.corporate_number = c.corporate_number
-      WHERE c.prefecture_code IS NOT NULL AND ci.industry_code IS NOT NULL
+      SELECT industry_code, prefecture_code
+      FROM industry_prefecture_pairs
     `);
     return results ? (results as { industry_code: string; prefecture_code: string }[]) : [];
   } catch (error) {

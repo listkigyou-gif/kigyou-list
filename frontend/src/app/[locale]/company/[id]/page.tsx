@@ -8,7 +8,7 @@ import {
 import { formatShortDate, toISOStringLocal } from '@/lib/dateUtils';
 import { 
   getCompanyByNumber, getCompanyFinancials, 
-  getCompanySignals, getRelatedCompanies, getCompanyIndustry 
+  getCompanySignals, getRelatedCompanies, getCompanyIndustries 
 } from '@/lib/db';
 import { UnlockCard } from '@/components/UnlockCard';
 import { ObfuscatedPhone } from '@/components/ObfuscatedPhone';
@@ -66,9 +66,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
-  const [company, industryDetails] = await Promise.all([
+  const [company, industryDetailsList] = await Promise.all([
     getCompanyByNumber(companyId),
-    getCompanyIndustry(companyId)
+    getCompanyIndustries(companyId)
   ]);
 
   if (!company) {
@@ -77,8 +77,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     };
   }
 
+  const primaryIndustry = industryDetailsList[0] || null;
   const companyName = locale === 'en' && company.company_name_en ? company.company_name_en : company.company_name;
-  const industryName = industryDetails ? industryDetails.industry_name : null;
+  const industryName = primaryIndustry ? primaryIndustry.industry_name : null;
   const summary = generateDynamicSummary(company, locale, industryName, company.prefecture_name);
 
   if (locale === 'en') {
@@ -133,11 +134,11 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   }
 
   // 1. Fetch Company details, financials, signals, and industry details in parallel
-  const [company, financials, signals, industryDetails] = await Promise.all([
+  const [company, financials, signals, companyIndustries] = await Promise.all([
     getCompanyByNumber(companyId),
     getCompanyFinancials(companyId),
     getCompanySignals(companyId),
-    getCompanyIndustry(companyId)
+    getCompanyIndustries(companyId)
   ]);
 
   if (!company) {
@@ -147,12 +148,15 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   const t = getTranslations(locale);
 
   // 2. Resolve primary industry details
+  const primaryIndustry = companyIndustries[0] || null;
   let industryCode: string | null = null;
   let industryName: string | null = null;
-  if (industryDetails) {
-    industryCode = industryDetails.industry_code;
-    industryName = industryDetails.industry_name;
+  if (primaryIndustry) {
+    industryCode = primaryIndustry.industry_code;
+    industryName = primaryIndustry.industry_name;
   }
+
+  const majorIndustries = companyIndustries.filter(ind => ind.classification_level === '大分類');
 
   // 3. Fetch related companies for internal linking matrix (SEO) (using prefecture_code for indexed fast search)
   const { sameIndustry, nearby } = await getRelatedCompanies(
@@ -303,14 +307,15 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 }`}>
                   {localizedStatus}
                 </span>
-                {industryMappedName && (
+                {majorIndustries.map((ind, idx) => (
                   <Link 
-                    href={`/${locale}/industry/${industryCode}/location/${company.prefecture_code}`}
-                    className="text-[10px] font-black tracking-wider uppercase text-slate-600 hover:text-primary bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-secondary px-2.5 py-0.5 rounded-full shadow-sm transition-colors"
+                    key={idx}
+                    href={`/${locale}/industry/${ind.industry_code}/location/${company.prefecture_code}`}
+                    className="text-[10px] font-black tracking-wider uppercase text-slate-650 hover:text-primary bg-slate-100 dark:bg-slate-800 dark:text-slate-400 dark:hover:text-secondary px-2.5 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-sm transition-colors"
                   >
-                    {industryMappedName}
+                    {ind.industry_code}.{(t.majorIndustries as Record<string, string>)?.[ind.industry_code] || ind.industry_name}
                   </Link>
-                )}
+                ))}
                 {/* Data freshness trust signal — design system: accent gold (#F2A30F) */}
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-black text-[#B07500] bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-200/70 dark:border-amber-900/40 shadow-sm">
                   <Clock className="w-3.5 h-3.5 text-[#F2A30F] animate-pulse" />
@@ -403,20 +408,39 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                     {locale === 'en' && company.establishment_date ? formatEnglishDate(company.establishment_date) : (company.establishment_date || t.company.unregistered)}
                   </span>
                 </div>
-                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
+                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30 col-span-1 md:col-span-2">
                   <span className="text-slate-400 text-xs block mb-1">{t.company.tags}</span>
-                  <span className="text-slate-800 dark:text-slate-200">
-                    {company.jigyo_shumoku
-                      ? company.jigyo_shumoku
-                          .replace(' (AI確認済)', '')
-                          .split(',')
-                          .map((tag) => {
-                            const cleanTag = tag.trim();
-                            return getIndustryName(cleanTag, locale);
-                          })
-                          .join(', ')
-                      : t.company.unregistered}
-                  </span>
+                  <div className="flex flex-wrap gap-1.5 mt-1 max-h-[120px] overflow-y-auto scrollbar-thin">
+                    {(() => {
+                      const mediumInds = companyIndustries.filter(ind => ind.classification_level === '中分類');
+                      if (mediumInds.length > 0) {
+                        return mediumInds.map((ind, idx) => (
+                          <span 
+                            key={idx} 
+                            className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-650 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/65 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-750 shadow-xs"
+                          >
+                            {ind.industry_code}.{getIndustryName(ind.industry_name, locale)}
+                          </span>
+                        ));
+                      }
+
+                      const tags = company.jigyo_shumoku 
+                        ? company.jigyo_shumoku.replace(' (AI確認済)', '').split(',')
+                        : [];
+                      return tags.length > 0 ? (
+                        tags.map((tag, idx) => (
+                          <span 
+                            key={idx} 
+                            className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-650 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/65 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-750 shadow-xs"
+                          >
+                            {getIndustryName(tag.trim(), locale)}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-slate-500 dark:text-slate-400 font-bold">{t.company.unregistered}</span>
+                      );
+                    })()}
+                  </div>
                 </div>
               </div>
             </section>
