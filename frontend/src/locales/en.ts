@@ -258,7 +258,7 @@ const en: Translations = {
     signalDetailsLabel: "Signal Details 🔑",
     patentDetailsPlaceholder: "Patent numbers, registry data, filing dates, and codes will appear here.",
     signalDetailsPlaceholder: "Hiring specifications, subsidy details, or tender records will appear here.",
-    recentRecordsNotice: "* Displaying only the 20 most recent records due to data volume limit.",
+    recentRecordsNotice: "* Displaying only the 10 most recent records due to data volume limit.",
     financialTrendTab: "Financial Trend",
     balanceSheetTab: "Balance Sheet Summary",
     trendChartLegendRevenue: "Revenue (Bar)",

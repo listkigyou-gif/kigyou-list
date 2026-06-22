@@ -45,6 +45,7 @@ interface Company {
     industry_name: string;
     classification_level: string;
   }[];
+  has_financials?: boolean;
 }
 
 interface PrefectureOption {
@@ -299,14 +300,14 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     if (newMinNetIncome != null) apiParams.set("min_net_income", String(newMinNetIncome));
     if (newMaxNetIncome != null) apiParams.set("max_net_income", String(newMaxNetIncome));
     
-    // Keyset pagination support
+    // Keyset pagination support (new sort: has_financials DESC, capital_amount DESC)
     if (newPage > 1 && companies.length > 0 && newPage === page + 1 && !overrides.forceOffset) {
       const lastCompany = companies[companies.length - 1];
-      if (lastCompany.employee_count !== null) {
-        apiParams.set("cursor_emp", String(lastCompany.employee_count));
-      } else {
-        apiParams.set("cursor_emp", "0");
-      }
+      // cursor_has_fin: 1 if last company has financial records, 0 otherwise
+      const hasFin = lastCompany.has_financials ? 1 : 0;
+      apiParams.set("cursor_has_fin", String(hasFin));
+      // cursor_cap: capital_amount of last company (0 if NULL)
+      apiParams.set("cursor_cap", String(lastCompany.capital_amount ?? 0));
       apiParams.set("cursor_corp", lastCompany.corporate_number);
     } else {
       apiParams.set("offset", String(offset));

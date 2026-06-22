@@ -252,7 +252,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                     ))}
                   </div>
 
-                  {totalCount > 20 && (
+                  {totalCount > 10 && (
                     <div className="mt-5 pt-3 border-t border-slate-150 dark:border-slate-800 text-[11px] text-slate-400 dark:text-slate-500 font-medium ml-4">
                       {t.company.recentRecordsNotice}
                     </div>

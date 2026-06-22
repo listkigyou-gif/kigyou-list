@@ -256,7 +256,7 @@ const ja = {
     signalDetailsLabel: "シグナル詳細内容 🔑",
     patentDetailsPlaceholder: "特許の番号や詳細な登録情報、公開日、FIコード等がここに表示されます。",
     signalDetailsPlaceholder: "求人の詳細な募集要項、助成金の受給理由や調達内容がここに表示されます。",
-    recentRecordsNotice: "※データ件数が多いため、直近の20件のみ表示しています。",
+    recentRecordsNotice: "※データ件数が多いため、直近の10件のみ表示しています。",
     financialTrendTab: "決算・財務状況推移",
     balanceSheetTab: "バランスシート要旨",
     trendChartLegendRevenue: "売上高 (棒グラフ)",

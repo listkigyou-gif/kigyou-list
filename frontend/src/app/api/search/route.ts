@@ -172,11 +172,17 @@ export async function GET(request: NextRequest) {
       if (!isNaN(val)) filters.max_net_income = val;
     }
     
-    // Keyset cursor pagination
-    const cursor_emp = searchParams.get("cursor_emp");
-    if (cursor_emp) {
-      const val = parseInt(cursor_emp, 10);
-      if (!isNaN(val)) filters.cursor_emp = val;
+    // Keyset cursor pagination (new: has_financials + capital_amount based)
+    const cursor_has_fin = searchParams.get("cursor_has_fin");
+    if (cursor_has_fin !== null) {
+      const val = parseInt(cursor_has_fin, 10);
+      if (!isNaN(val) && (val === 0 || val === 1)) filters.cursor_has_fin = val;
+    }
+
+    const cursor_cap = searchParams.get("cursor_cap");
+    if (cursor_cap !== null) {
+      const val = parseInt(cursor_cap, 10);
+      if (!isNaN(val) && val >= 0) filters.cursor_cap = val;
     }
     
     const cursor_corp = searchParams.get("cursor_corp");

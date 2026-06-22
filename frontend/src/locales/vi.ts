@@ -257,7 +257,7 @@ const vi: Translations = {
     signalDetailsLabel: "Chi tiết tín hiệu 🔑",
     patentDetailsPlaceholder: "Số hiệu bằng sáng chế, dữ liệu đăng ký, ngày nộp đơn và mã phân loại sẽ hiển thị tại đây.",
     signalDetailsPlaceholder: "Mô tả tuyển dụng, thông tin chi tiết gói trợ cấp hoặc hồ sơ đấu thầu công sẽ hiển thị ở đây.",
-    recentRecordsNotice: "* Chỉ hiển thị tối đa 20 bản ghi gần nhất do giới hạn dữ liệu.",
+    recentRecordsNotice: "* Chỉ hiển thị tối đa 10 bản ghi gần nhất do giới hạn dữ liệu.",
     financialTrendTab: "Xu hướng tài chính",
     balanceSheetTab: "Tóm tắt bảng cân đối kế toán",
     trendChartLegendRevenue: "Doanh thu (Cột)",

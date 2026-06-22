@@ -22,32 +22,71 @@ import { prefectureJaToEn, industryJaToEn, translatePosition, formatEnglishAddre
 
 export const revalidate = 600; // Cache profiles for 10 minutes, ISR enabled
 
+function formatJapaneseDate(dateStr: string | null): string {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    return `${parts[0]}年${parts[1]}月${parts[2]}日`;
+  }
+  if (/^\d{4}$/.test(dateStr)) {
+    return `${dateStr}年`;
+  }
+  return dateStr;
+}
+
+function formatVietnameseDate(dateStr: string | null): string {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
+  }
+  return dateStr;
+}
+
 function generateDynamicSummary(
   company: any,
   locale: string,
   industryName: string | null,
-  prefectureName: string | null
+  prefectureName: string | null,
+  isOnPage: boolean = false
 ): string {
-  // Bypassed company.business_summary to keep SEO description clean and professional
-  // if (company.business_summary) {
-  //   return company.business_summary;
-  // }
   const companyName = locale === 'en' && company.company_name_en ? company.company_name_en : company.company_name;
-  const prefName = getPrefectureName(prefectureName, locale);
-  const industryMappedName = getIndustryName(industryName, locale);
+  
+  // Format address: prefer full_address, fallback to combining components
+  const fullAddress = company.full_address || 
+    `${company.prefecture_name || ''}${company.city_name || ''}${company.street_address || ''}`;
 
   if (locale === 'en') {
-    const industryPart = industryMappedName ? ` in the field of ${industryMappedName}` : "";
-    const locationPart = prefName ? ` in ${prefName}` : "";
-    return `${companyName} is a company operating${industryPart}${locationPart}. This page displays the detailed corporate profile, tax ID, address map, and contact information (phone, FAX, email) in the latest version.`;
+    const isYearOnly = /^\d{4}$/.test(company.establishment_date || "");
+    const datePrep = isYearOnly ? " in " : " on ";
+    const datePart = company.establishment_date ? ` Registered${datePrep}${formatEnglishDate(company.establishment_date)},` : "";
+    const addressPart = fullAddress ? ` located at ${fullAddress}` : "";
+    const phonePart = company.phone_number ? ` Contact phone: ${company.phone_number}.` : "";
+    if (isOnPage) {
+      return `${companyName} is a corporation${addressPart} with corporate/tax ID ${company.corporate_number}.${datePart}${phonePart}`;
+    }
+    return `${companyName} is a corporation${addressPart} with corporate/tax ID ${company.corporate_number}.${datePart}${phonePart} This page displays the latest contact details (phone, FAX, email), financial profile, and corporate index history.`;
   } else if (locale === 'vi') {
-    const industryPart = industryMappedName ? ` trong lĩnh vực ${industryMappedName}` : "";
-    const locationPart = prefName ? ` tại ${prefName}` : "";
-    return `${companyName} là doanh nghiệp hoạt động${industryPart}${locationPart}. Trang này hiển thị hồ sơ chi tiết, mã số thuế, bản đồ địa chỉ và thông tin liên hệ (điện thoại, FAX, email) mới nhất của công ty.`;
+    const isYearOnly = /^\d{4}$/.test(company.establishment_date || "");
+    const datePrefix = isYearOnly ? " vào năm " : " ngày ";
+    const datePart = company.establishment_date ? ` được thành lập${datePrefix}${formatVietnameseDate(company.establishment_date)},` : "";
+    const addressPart = fullAddress ? ` tọa lạc tại địa chỉ ${fullAddress}` : "";
+    const phonePart = company.phone_number ? ` Số điện thoại liên hệ: ${company.phone_number}.` : "";
+    if (isOnPage) {
+      return `${companyName} là doanh nghiệp${addressPart}, có mã số thuế/pháp nhân là ${company.corporate_number}. Doanh nghiệp${datePart}${phonePart}`;
+    }
+    return `${companyName} là doanh nghiệp${addressPart}, có mã số thuế/pháp nhân là ${company.corporate_number}. Doanh nghiệp${datePart}${phonePart} Cập nhật đầy đủ thông tin liên hệ (điện thoại, FAX, email) và biểu đồ tài chính mới nhất.`;
   } else {
-    const industryPart = industryMappedName ? `${industryMappedName}の分野` : "ビジネス";
-    const locationPart = prefName ? `${prefName}` : "日本";
-    return `${companyName}は、${locationPart}で${industryPart}で活動している企業です。当ページでは、法` + "人" + `の基本情報、法人番号、地図、連絡先情報（電話番号、FAX、メールアドレス）などの詳細情報を最新版で掲載しています。`;
+    // Japanese locale (ja) - Mirroring G-Search dynamic format closely
+    const kanaPart = company.company_name_kana ? `（${company.company_name_kana}）` : "";
+    const addressPart = fullAddress ? `${fullAddress}に所在する` : "";
+    const datePart = company.establishment_date ? `${formatJapaneseDate(company.establishment_date)}に法人番号が指定され、` : "";
+    const phonePart = company.phone_number ? `電話番号:${company.phone_number}。` : "";
+    
+    if (isOnPage) {
+      return `${companyName}${kanaPart}は、${addressPart}法人番号:${company.corporate_number}の法人です。${datePart}${phonePart}`;
+    }
+    return `${companyName}${kanaPart}は、${addressPart}法人番号:${company.corporate_number}の法人です。${datePart}${phonePart}最新の住所、電話番号、FAX、メールアドレスなどの連絡先情報や財務情報を掲載しています。`;
   }
 }
 
@@ -179,6 +218,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
   const companyName = locale === 'en' && company.company_name_en ? company.company_name_en : company.company_name;
   const summary = generateDynamicSummary(company, locale, industryName, company.prefecture_name);
+  const onPageSummary = generateDynamicSummary(company, locale, industryName, company.prefecture_name, true);
 
   // 5. Generate Schema Markup JSON-LD for Corporation
   const schemaMarkup = {
@@ -358,14 +398,12 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 {t.company.basicInfo}
               </h2>
 
-              {/* Dynamic Summary/Overview paragraph for SEO and users - Hidden for now as requested by user */}
-              {/*
+              {/* Dynamic Summary/Overview paragraph for SEO and users */}
               <div className="mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80">
-                <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-350 font-semibold">
-                  {summary}
+                <p className="text-xs sm:text-sm leading-relaxed text-slate-650 dark:text-slate-350 font-semibold">
+                  {onPageSummary}
                 </p>
               </div>
-              */}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
                 <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
