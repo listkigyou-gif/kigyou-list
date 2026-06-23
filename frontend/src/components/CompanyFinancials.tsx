@@ -24,7 +24,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
       <div className="py-12 border-2 border-dashed border-slate-200 rounded-2xl dark:border-slate-800 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
         <AlertCircle className="w-10 h-10 text-slate-300" />
         <div>
-          <h4 className="font-bold text-slate-800 dark:text-white text-sm mb-1">{t.company.financialChartUnregistered}</h4>
+          <h4 className="font-semibold text-slate-800 dark:text-white text-sm mb-1">{t.company.financialChartUnregistered}</h4>
           <p className="text-xs max-w-xs mx-auto leading-relaxed">
             {t.company.financialChartUnregisteredDesc}
           </p>
@@ -69,7 +69,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
   const getSourceBadge = (source: string) => {
     if (source === 'BOTH') {
       return (
-        <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 dark:bg-indigo-950/20 dark:text-indigo-400 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/50 flex items-center gap-1 shadow-sm">
+        <span className="text-[10px] font-medium text-indigo-700 bg-indigo-50 dark:bg-indigo-950/20 dark:text-indigo-400 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/50 flex items-center gap-1 shadow-sm">
           <Info className="w-3 h-3" />
           {t.company.govIntegrator}
         </span>

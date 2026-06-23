@@ -133,7 +133,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
             {/* Group Header (Accordion Toggle) */}
             <button
               onClick={() => toggleGroup(type)}
-              className="w-full px-5 py-4 flex items-center justify-between gap-4 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-900/10 dark:hover:bg-slate-850/30 transition-colors focus:outline-none"
+              className="w-full px-4 py-3 flex items-center justify-between gap-3 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-900/10 dark:hover:bg-slate-850/30 transition-colors focus:outline-none"
               aria-expanded={isExpanded}
             >
               <div className="flex items-center gap-3">
@@ -141,10 +141,10 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="text-left">
-                  <h3 className="font-extrabold text-slate-850 dark:text-white text-sm sm:text-base leading-tight">
+                  <h3 className="font-bold text-slate-850 dark:text-white text-sm leading-tight">
                     {meta.title}
                   </h3>
-                  <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500">
+                  <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
                     {t.company.registeredCount.replace("{count}", totalCount.toLocaleString())}
                   </span>
                 </div>
@@ -156,7 +156,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
 
             {/* Group Content — CSS-animated, content pre-rendered (no JS lag on toggle) */}
             <AccordionPanel isExpanded={isExpanded}>
-              <div className="p-5 sm:p-6 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-[#1C2128]/5">
+              <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-[#1C2128]/5">
                 <UnlockCard
                   type="block"
                   fallbackText={
@@ -174,20 +174,20 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                         </div>
 
                         {/* Date */}
-                        <span className="text-[10px] font-black text-slate-400 font-mono tracking-wider uppercase flex items-center gap-1.5 mb-1">
+                        <span className="text-[10px] font-semibold text-slate-400 font-mono tracking-wider uppercase flex items-center gap-1.5 mb-1">
                           <Calendar className="w-3.5 h-3.5 text-slate-400" />
                           {sig.signal_date || t.company.dateUnregistered}
                         </span>
 
                         {/* Title */}
-                        <h4 className="font-extrabold text-slate-850 dark:text-white text-sm tracking-tight mb-2">
+                        <h4 className="font-semibold text-slate-850 dark:text-white text-sm tracking-tight mb-1.5">
                           {sig.signal_title}
                         </h4>
 
                         {/* Details */}
                         {sig.details && (
                           <div className="flex flex-col gap-1 max-w-2xl">
-                            <span className="text-[9px] font-bold text-slate-400 block mb-0.5">{t.company.signalDetailsLabel}</span>
+                            <span className="text-[9px] font-medium text-slate-400 block mb-0.5">{t.company.signalDetailsLabel}</span>
                             <div className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">
                               {(() => {
                                 if (isPatent) {
@@ -232,7 +232,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                                           const label = t.company.signalLabels[key as keyof typeof t.company.signalLabels] || key;
                                           return (
                                             <div key={key} className="flex flex-col sm:flex-row sm:items-start gap-1">
-                                              <span className="font-bold text-slate-400 dark:text-slate-500 min-w-[80px] shrink-0 text-[10px]">{label}:</span>
+                                              <span className="font-medium text-slate-400 dark:text-slate-500 min-w-[80px] shrink-0 text-[10px]">{label}:</span>
                                               <span className="text-slate-700 dark:text-slate-300 text-xs whitespace-pre-wrap">{String(value)}</span>
                                             </div>
                                           );

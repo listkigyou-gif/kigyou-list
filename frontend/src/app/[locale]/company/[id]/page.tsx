@@ -314,7 +314,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 min-w-0 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-8">
+      <main className="flex-1 min-w-0 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6 flex flex-col gap-5">
         
         {/* Visual Breadcrumbs */}
         <nav className="text-xs font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1.5 flex-wrap" aria-label="Breadcrumb">
@@ -332,7 +332,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         </nav>
 
         {/* Company Title Banner */}
-        <section className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 dark:from-[#1C2128] dark:to-[#171B21] dark:border-slate-800 rounded-3xl p-5 md:p-6 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-shadow duration-300">
+        <section className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 dark:from-[#1C2128] dark:to-[#171B21] dark:border-slate-800 rounded-3xl p-4 md:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-md transition-shadow duration-300">
           <div className="flex flex-col md:flex-row gap-5 items-start">
             <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-secondary flex items-center justify-center shrink-0 shadow-md shadow-primary/10 border border-white/20">
               <Building2 className="w-8 h-8 text-white" />
@@ -386,14 +386,14 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         </section>
 
         {/* 2-Column Split Details */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
           
           {/* LEFT 2 COLUMNS: Profile, Financials, Signals */}
-          <div className="lg:col-span-2 flex flex-col gap-8">
+          <div className="lg:col-span-2 flex flex-col gap-5 lg:gap-6">
             
             {/* 1. Basic Info Section */}
-            <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-5 md:p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+            <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-4 md:p-5 shadow-sm">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
                 <FileText className="w-5 h-5 text-primary" />
                 {t.company.basicInfo}
               </h2>
@@ -405,7 +405,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                 <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
                   <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-1">{t.company.companyName}</span>
                   <strong className="text-sm font-semibold text-slate-800 dark:text-slate-200">{companyName}</strong>
@@ -485,8 +485,8 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
             {/* 2. Financial Chart Section */}
             {financials && financials.length > 0 && (
-              <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-5 md:p-6 shadow-sm">
-                <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+              <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-4 md:p-5 shadow-sm">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
                   <BarChart3 className="w-5 h-5 text-primary" />
                   {t.company.financialTrend}
                 </h2>
@@ -496,8 +496,8 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             )}
 
             {/* 3. Intent Signals Section */}
-            <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-5 md:p-6 shadow-sm">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+            <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-4 md:p-5 shadow-sm">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-primary" />
                 {t.company.signalTimeline}
               </h2>
@@ -513,16 +513,16 @@ export default async function CompanyDetailPage({ params }: PageProps) {
           </div>
 
           {/* RIGHT 1 COLUMN: Contact Details & Internal Links */}
-          <div className="flex flex-col gap-8">
+          <div className="flex flex-col gap-5 lg:gap-6">
             
             {/* Contact Details Panel */}
-            <section id="contact" className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-4 pb-3 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
+            <section id="contact" className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm">
+              <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-3 pb-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
                 <Phone className="w-5 h-5 text-primary" />
                 {t.company.contactInfo}
               </h2>
 
-              <div className="flex flex-col gap-5 text-sm">
+              <div className="flex flex-col gap-4 text-sm">
                 
                 {/* 1. Phone number (PUBLIC) */}
                 <div className="flex items-start gap-3">
@@ -618,7 +618,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             </section>
 
             {/* SEO internal linking matrix */}
-            <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col gap-5">
+            <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm flex flex-col gap-4">
 
               {/* Same Industry Links (同業他社) */}
               <div>

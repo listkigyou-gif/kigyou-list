@@ -49,7 +49,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
             {children}
           </div>
           <div className="absolute inset-0 bg-white/40 dark:bg-black/20 backdrop-blur-[2px] flex items-center justify-center">
-            <span className="bg-amber-100 text-amber-800 text-[10px] font-bold px-3 py-1.5 rounded-xl border border-amber-200/50 flex items-center gap-1 shadow-sm dark:bg-amber-955/80 dark:text-amber-300 dark:border-amber-900/50">
+            <span className="bg-amber-100 text-amber-800 text-[10px] font-medium px-3 py-1.5 rounded-lg border border-amber-200/50 flex items-center gap-1 shadow-sm dark:bg-amber-955/80 dark:text-amber-300 dark:border-amber-900/50">
               <Lock className="w-3.5 h-3.5" />
               {requiredPlan === "pro" ? "Pro version required" : "Free registration required"}
             </span>
@@ -82,7 +82,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
         className="group relative inline-flex items-center cursor-pointer select-none mx-1"
         title={isLoggedIn && requiredPlan === "pro" ? t.auth.unlockCardInlineProLock : t.auth.unlockCardInlineLock}
       >
-        <span className="blur-[4.5px] group-hover:blur-[1.8px] transition-all duration-300 font-mono text-slate-400 dark:text-slate-500 font-bold tracking-tight">
+        <span className="blur-[4.5px] group-hover:blur-[1.8px] transition-all duration-300 font-mono text-slate-400 dark:text-slate-500 font-semibold tracking-tight">
           {fallbackText || "info@example.co.jp"}
         </span>
         <span className="absolute -right-6 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full bg-amber-50 dark:bg-amber-955/40 border border-amber-250 dark:border-amber-900/50 flex items-center justify-center opacity-90 group-hover:scale-110 group-hover:bg-amber-100 group-hover:border-amber-300 dark:group-hover:bg-amber-900/60 transition-all duration-300 shadow-sm">
@@ -112,7 +112,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
           </div>
         </div>
         
-        <h4 className="text-xs sm:text-sm font-black text-slate-850 dark:text-white mb-2 flex items-center gap-1.5 tracking-tight">
+        <h4 className="text-xs sm:text-sm font-bold text-slate-850 dark:text-white mb-2 flex items-center gap-1.5 tracking-tight">
           <Sparkles className="w-4 h-4 text-amber-500 fill-amber-550/40 animate-pulse" />
           {requiredPlan === "pro" ? t.auth.unlockCardProTitle : t.auth.unlockCardFreeTitle}
         </h4>
@@ -121,7 +121,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
           {fallbackText || (requiredPlan === "pro" ? t.auth.unlockCardProDesc : t.auth.unlockCardFreeDesc)}
         </p>
         
-        <span className="inline-flex items-center gap-1.5 px-4.5 py-2.5 rounded-xl bg-gradient-to-r from-primary via-primary-hover to-secondary text-white text-[11px] font-black shadow-md hover:shadow-lg group-hover:scale-105 group-hover:shadow-primary/10 transition-all duration-300 select-none">
+        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-primary via-primary-hover to-secondary text-white text-[11px] font-bold shadow-sm hover:shadow-md group-hover:scale-105 group-hover:shadow-primary/10 transition-all duration-300 select-none">
           {requiredPlan === "pro" ? t.auth.unlockCardProBtn : t.auth.unlockCardFreeBtn}
         </span>
       </div>

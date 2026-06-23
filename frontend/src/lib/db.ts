@@ -1309,7 +1309,8 @@ export async function searchCompanies(
     // to prevent the DB optimizer from choosing a slow nested loop index scan with LIMIT optimization.
     const isPG = !!DATABASE_URL;
     const hasComplexFilters = !!(
-      keyword // Only use CTE for text searches to bypass LIMIT optimization trap. Other exact filters can use index scans.
+      activeFiltersList.length > 1 || 
+      (activeFiltersList.length === 1 && activeFiltersList[0] !== 'prefecture')
     );
     if (isPG) {
       if (hasComplexFilters) {
