@@ -455,9 +455,15 @@ function mapFinancialRow(row: any, idx: number): CompanyFinancial {
  * Fetch a single company by corporate_number
  */
 export async function getCompanyByNumber(corpNum: string): Promise<Company | null> {
+  const cacheKey = `company_detail_${corpNum}`;
+  const cached = getCachedData<Company | null>(cacheKey);
+  if (cached !== null) return cached;
   try {
     const row = await runGetQuery('SELECT * FROM companies WHERE corporate_number = ? LIMIT 1', [corpNum]);
-    return row ? mapCompanyRow(row) : null;
+    const result = row ? mapCompanyRow(row) : null;
+    // Cache for 5 minutes (company data rarely changes)
+    if (result) cacheMap.set(cacheKey, { data: result, expiry: Date.now() + 5 * 60 * 1000 });
+    return result;
   } catch (error) {
     console.error(`Error in getCompanyByNumber(${corpNum}):`, error);
     return null;
@@ -468,9 +474,15 @@ export async function getCompanyByNumber(corpNum: string): Promise<Company | nul
  * Fetch historical financial records for a company sorted by fiscal_year DESC
  */
 export async function getCompanyFinancials(corpNum: string): Promise<CompanyFinancial[]> {
+  const cacheKey = `company_financials_${corpNum}`;
+  const cached = getCachedData<CompanyFinancial[]>(cacheKey);
+  if (cached !== null) return cached;
   try {
     const rows = await runQuery('SELECT * FROM financial_records WHERE corporate_number = ? ORDER BY fiscal_year DESC', [corpNum]);
-    return rows.map((row, idx) => mapFinancialRow(row, idx));
+    const result = rows.map((row, idx) => mapFinancialRow(row, idx));
+    // Cache for 5 minutes
+    cacheMap.set(cacheKey, { data: result, expiry: Date.now() + 5 * 60 * 1000 });
+    return result;
   } catch (error) {
     console.error(`Error in getCompanyFinancials(${corpNum}):`, error);
     return [];

@@ -197,7 +197,8 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
   const majorIndustries = companyIndustries.filter(ind => ind.classification_level === '大分類');
 
-  // 3. Fetch related companies for internal linking matrix (SEO) (using prefecture_code for indexed fast search)
+  // 3. Fetch related companies in parallel with above (no data dependency yet resolved)
+  // NOTE: We start this fetch immediately after resolving the industry code from companyIndustries
   const { sameIndustry, nearby } = await getRelatedCompanies(
     companyId, 
     industryCode ? [industryCode] : [], 
