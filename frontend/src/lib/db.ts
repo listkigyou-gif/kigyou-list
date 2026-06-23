@@ -891,11 +891,11 @@ function buildSearchQuery(
     c.establishment_date, c.capital_amount, c.employee_count, c.sales_amount, 
     c.phone_number, c.fax_number, c.website_url, c.email_address, 
     c.jigyo_shumoku, c.branch_phone_numbers, c.status, c.is_detailed, c.created_at, c.updated_at,
-    cfs.corporate_number AS has_financials
+    ${isPG ? 'c.has_financials' : 'cfs.corporate_number AS has_financials'}
   `;
   const sql = isCountOnly 
     ? 'SELECT COUNT(*) as count FROM companies c' 
-    : `SELECT ${selectColumns} FROM companies c LEFT JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number`;
+    : (isPG ? `SELECT ${selectColumns} FROM companies c` : `SELECT ${selectColumns} FROM companies c LEFT JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number`);
   
   const params: any[] = [];
   const whereClauses: string[] = [];
@@ -1146,11 +1146,19 @@ function buildSearchQuery(
     // 1. Same has_financials tier, same capital -> corporate_number > cursor
     // 2. Same has_financials tier, lower capital (or capital IS NULL when cursor capital > 0)
     // 3. No financials tier (cursor had financials)
-    whereClauses.push(`(
-      (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END < ?) OR
-      (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END = ? AND (c.capital_amount < ? OR (c.capital_amount IS NULL AND ? > 0))) OR
-      (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END = ? AND COALESCE(c.capital_amount, 0) = ? AND c.corporate_number > ?)
-    )`);
+    if (isPG) {
+      whereClauses.push(`(
+        (c.has_financials::int < ?) OR
+        (c.has_financials::int = ? AND (c.capital_amount < ? OR (c.capital_amount IS NULL AND ? > 0))) OR
+        (c.has_financials::int = ? AND COALESCE(c.capital_amount, 0) = ? AND c.corporate_number > ?)
+      )`);
+    } else {
+      whereClauses.push(`(
+        (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END < ?) OR
+        (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END = ? AND (c.capital_amount < ? OR (c.capital_amount IS NULL AND ? > 0))) OR
+        (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END = ? AND COALESCE(c.capital_amount, 0) = ? AND c.corporate_number > ?)
+      )`);
+    }
     params.push(
       filters.cursor_has_fin,
       filters.cursor_has_fin, filters.cursor_cap, filters.cursor_cap,
@@ -1326,12 +1334,12 @@ export async function searchCompanies(
             ${selectPart} ${wherePart}
           )
           SELECT * FROM filtered_companies
-          ORDER BY (CASE WHEN has_financials IS NOT NULL THEN 1 ELSE 0 END) DESC, capital_amount DESC NULLS LAST, corporate_number ASC`;
+          ORDER BY has_financials DESC, capital_amount DESC NULLS LAST, corporate_number ASC`;
         } else {
-          sql = originalSql + ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+          sql = originalSql + ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
         }
       } else {
-        sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+        sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
       }
     } else {
       // SQLite: NULL is sorted last automatically in DESC order
