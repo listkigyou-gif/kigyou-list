@@ -74,15 +74,8 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
           {t.company.govIntegrator}
         </span>
       );
-    } else if (source === 'XML') {
-      return null;
     }
-    return (
-      <span className="text-[10px] font-bold text-teal-700 bg-teal-50 dark:bg-teal-950/20 dark:text-teal-400 px-2 py-0.5 rounded border border-teal-100 dark:border-teal-900/50 flex items-center gap-1 shadow-sm">
-        <Info className="w-3 h-3" />
-        {t.company.govCsv}
-      </span>
-    );
+    return null;
   };
 
   // --- SVG 1: Trend Chart (Revenue & Ordinary Income) ---

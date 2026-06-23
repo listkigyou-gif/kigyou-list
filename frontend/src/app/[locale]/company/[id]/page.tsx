@@ -619,7 +619,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
             {/* SEO internal linking matrix */}
             <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-6 shadow-sm flex flex-col gap-6">
-              
+
               {/* Same Industry Links (同業他社) */}
               <div>
                 <h3 className="font-extrabold text-sm text-slate-850 dark:text-white mb-3 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
@@ -627,19 +627,43 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   {t.company.sameIndustry}
                 </h3>
                 {sameIndustry.length > 0 ? (
-                  <div className="flex flex-col gap-2.5">
-                    {sameIndustry.map(item => (
-                      <Link 
-                        key={item.corporate_number} 
-                        href={`/${locale}/company/${item.corporate_number}`}
-                        className="text-xs font-medium text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-secondary flex items-center justify-between group transition-colors"
-                      >
-                        <span className="truncate max-w-[85%]">
-                          {locale === 'en' && item.company_name_en ? item.company_name_en : item.company_name}
-                        </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </Link>
-                    ))}
+                  <div className="w-full">
+                    {/* Column header */}
+                    <div className="grid grid-cols-[1fr_auto] gap-x-2 px-1 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">{locale === 'en' ? 'Company' : locale === 'vi' ? 'Công ty' : '企業名'}</span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 text-right">{locale === 'en' ? 'Revenue' : locale === 'vi' ? 'Doanh thu' : '売上高'}</span>
+                    </div>
+                    {sameIndustry.map(item => {
+                      const name = locale === 'en' && item.company_name_en ? item.company_name_en : item.company_name;
+                      const sales = item.sales_amount;
+                      const salesStr = sales
+                        ? locale === 'en'
+                          ? sales >= 1_000_000_000_000 ? `¥${(sales / 1_000_000_000_000).toFixed(1)}T`
+                            : sales >= 1_000_000_000 ? `¥${(sales / 1_000_000_000).toFixed(1)}B`
+                            : `¥${(sales / 1_000_000).toFixed(0)}M`
+                          : locale === 'vi'
+                          ? sales >= 1_000_000_000_000 ? `${(sales / 1_000_000_000_000).toFixed(1)}兆円`
+                            : sales >= 100_000_000 ? `${(sales / 100_000_000).toFixed(0)}億円`
+                            : `${(sales / 10_000).toFixed(0)}万円`
+                          : sales >= 1_000_000_000_000 ? `${(sales / 1_000_000_000_000).toFixed(1)}兆円`
+                            : sales >= 100_000_000 ? `${(sales / 100_000_000).toFixed(0)}億円`
+                            : `${(sales / 10_000).toFixed(0)}万円`
+                        : '—';
+                      return (
+                        <Link
+                          key={item.corporate_number}
+                          href={`/${locale}/company/${item.corporate_number}`}
+                          className="grid grid-cols-[1fr_auto] gap-x-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 group transition-colors items-center"
+                        >
+                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary dark:group-hover:text-secondary truncate min-w-0" title={name}>
+                            {name}
+                          </span>
+                          <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right">
+                            {salesStr}
+                          </span>
+                        </Link>
+                      );
+                    })}
                   </div>
                 ) : (
                   <span className="text-xs text-slate-400">{t.company.noRelatedSameIndustry}</span>
@@ -653,25 +677,50 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   {t.company.nearby}
                 </h3>
                 {nearby.length > 0 ? (
-                  <div className="flex flex-col gap-2.5">
-                    {nearby.map(item => (
-                      <Link 
-                        key={item.corporate_number} 
-                        href={`/${locale}/company/${item.corporate_number}`}
-                        className="text-xs font-medium text-slate-600 hover:text-primary dark:text-slate-400 dark:hover:text-secondary flex items-center justify-between group transition-colors"
-                      >
-                        <span className="truncate max-w-[85%]">
-                          {locale === 'en' && item.company_name_en ? item.company_name_en : item.company_name}
-                        </span>
-                        <ChevronRight className="w-3.5 h-3.5 text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
-                      </Link>
-                    ))}
+                  <div className="w-full">
+                    {/* Column header */}
+                    <div className="grid grid-cols-[1fr_auto] gap-x-2 px-1 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800">
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400">{locale === 'en' ? 'Company' : locale === 'vi' ? 'Công ty' : '企業名'}</span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-slate-400 text-right">{locale === 'en' ? 'Revenue' : locale === 'vi' ? 'Doanh thu' : '売上高'}</span>
+                    </div>
+                    {nearby.map(item => {
+                      const name = locale === 'en' && item.company_name_en ? item.company_name_en : item.company_name;
+                      const sales = item.sales_amount;
+                      const salesStr = sales
+                        ? locale === 'en'
+                          ? sales >= 1_000_000_000_000 ? `¥${(sales / 1_000_000_000_000).toFixed(1)}T`
+                            : sales >= 1_000_000_000 ? `¥${(sales / 1_000_000_000).toFixed(1)}B`
+                            : `¥${(sales / 1_000_000).toFixed(0)}M`
+                          : locale === 'vi'
+                          ? sales >= 1_000_000_000_000 ? `${(sales / 1_000_000_000_000).toFixed(1)}兆円`
+                            : sales >= 100_000_000 ? `${(sales / 100_000_000).toFixed(0)}億円`
+                            : `${(sales / 10_000).toFixed(0)}万円`
+                          : sales >= 1_000_000_000_000 ? `${(sales / 1_000_000_000_000).toFixed(1)}兆円`
+                            : sales >= 100_000_000 ? `${(sales / 100_000_000).toFixed(0)}億円`
+                            : `${(sales / 10_000).toFixed(0)}万円`
+                        : '—';
+                      return (
+                        <Link
+                          key={item.corporate_number}
+                          href={`/${locale}/company/${item.corporate_number}`}
+                          className="grid grid-cols-[1fr_auto] gap-x-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 group transition-colors items-center"
+                        >
+                          <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary dark:group-hover:text-secondary truncate min-w-0" title={name}>
+                            {name}
+                          </span>
+                          <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right">
+                            {salesStr}
+                          </span>
+                        </Link>
+                      );
+                    })}
                   </div>
                 ) : (
                   <span className="text-xs text-slate-400">{t.company.noRelatedNearby}</span>
                 )}
               </div>
             </section>
+
 
           </div>
         </div>
