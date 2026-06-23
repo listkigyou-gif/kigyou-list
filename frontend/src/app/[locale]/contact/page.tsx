@@ -10,13 +10,14 @@ export default function ContactPage() {
   const { locale, t } = useLanguage();
 
   const [formData, setFormData] = useState({
-    corporate_number: "",
-    company_name: "",
-    person_in_charge: "",
-    mobile_number: "",
-    type: "hide",
-    message: "",
-    website_url: "" // Honeypot field
+    corporate_number: '',
+    company_name: '',
+    person_in_charge: '',
+    requester_email: '',
+    mobile_number: '',
+    type: '削除依頼',
+    message: '',
+    website_url: ''
   });
   
   // Turnstile CAPTCHA state
@@ -91,11 +92,17 @@ export default function ContactPage() {
     setError(null);
 
     try {
+      console.log('Sending data:', {
+        ...formData,
+      });
+
       const res = await fetch("/api/inquiry", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
+          // Include client timestamp to detect time-based anomalies
+          client_timestamp: new Date().toISOString(),
           turnstileToken
         })
       });
