@@ -515,7 +515,56 @@ export async function getCompanySignals(corpNum: string): Promise<BusinessSignal
 
 
 /**
- * Fetch related companies for internal linking (同業他社 & 近隣企業)
+ * Helper: get company count for an industry code (for index hint decision).
+ * Returns 0 if not found. Uses in-memory cache via getCachedData.
+ */
+async function getIndustryCount(industryCode: string): Promise<number> {
+  const cacheKey = `ind_count_${industryCode}`;
+  const cached = getCachedData<number>(cacheKey);
+  if (cached !== null) return cached;
+  try {
+    const row = await runGetQuery('SELECT company_count FROM industry_counts WHERE industry_code = ? LIMIT 1', [industryCode]);
+    const count = row ? Number(row.company_count) : 0;
+    setCachedData(cacheKey, count);
+    return count;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Helper: get company count for a prefecture code (for index hint decision).
+ * Returns 0 if not found. Uses in-memory cache via getCachedData.
+ */
+async function getPrefectureCount(prefectureCode: string): Promise<number> {
+  const cacheKey = `pref_count_${prefectureCode}`;
+  const cached = getCachedData<number>(cacheKey);
+  if (cached !== null) return cached;
+  try {
+    const row = await runGetQuery('SELECT company_count FROM prefecture_counts WHERE prefecture_code = ? LIMIT 1', [prefectureCode]);
+    const count = row ? Number(row.company_count) : 0;
+    setCachedData(cacheKey, count);
+    return count;
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Fetch related companies for internal linking (同業他社 & 近隣企業).
+ *
+ * Split Query Optimization (both SQLite & PostgreSQL):
+ *   The original single-query approach with ORDER BY (CASE WHEN …) DESC, capital_amount DESC
+ *   forces the DB to load ALL matching rows into a temp B-Tree for sorting.
+ *   For large prefectures (Tokyo 1.2M, Osaka 442k) or large industries (Construction 320k+),
+ *   this freezes the event loop for 5-30 seconds per request.
+ *
+ *   The fix:
+ *   1. Split into two passes: WITH financials first, then WITHOUT financials to fill up to 10.
+ *      ORDER BY simplifies to `c.capital_amount DESC` which CAN use an index.
+ *   2. SQLite: Dynamic INDEXED BY hint when target set > 50k.
+ *   3. PostgreSQL: Split query avoids CASE WHEN sort entirely; relies on idx_*_capital indexes
+ *      created on each partition table (companies_p01 … companies_p47).
  */
 export async function getRelatedCompanies(
   corpNum: string, 
@@ -524,46 +573,159 @@ export async function getRelatedCompanies(
 ): Promise<{ sameIndustry: Company[]; nearby: Company[] }> {
   const sameIndustry: Company[] = [];
   const nearby: Company[] = [];
+  const isPG = !!DATABASE_URL;
 
   try {
+    // ─── sameIndustry ───────────────────────────────────────────────────────
     if (industryCodes && industryCodes.length > 0) {
       const placeholders = industryCodes.map(() => '?').join(',');
-      const isPG = !!DATABASE_URL;
-      const orderBy = isPG
-        ? 'ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC'
-        : 'ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
-      const rows = await runQuery(`
-        SELECT c.*, cfs.corporate_number AS has_financials
-        FROM companies c
-        LEFT JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number
-        WHERE c.corporate_number IN (
-          SELECT ci.corporate_number 
-          FROM company_industries ci 
-          WHERE ci.industry_code IN (${placeholders})
-        ) AND c.corporate_number != ?
-        ${orderBy}
-        LIMIT 10
-      `, [...industryCodes, corpNum]);
-      sameIndustry.push(...rows.map(mapCompanyRow));
+
+      if (isPG) {
+        // PostgreSQL: Split Query — avoids CASE WHEN sort (see optimization note above)
+        // Pass 1: companies WITH financials, ORDER BY capital DESC
+        const rows1 = await runQuery(`
+          SELECT c.*, cfs.corporate_number AS has_financials
+          FROM companies c
+          JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number
+          WHERE c.corporate_number IN (
+            SELECT ci.corporate_number FROM company_industries ci WHERE ci.industry_code IN (${placeholders})
+          ) AND c.corporate_number != ?
+          ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+          LIMIT 10
+        `, [...industryCodes, corpNum]);
+        sameIndustry.push(...rows1.map(r => mapCompanyRow({ ...r, has_financials: r.corporate_number })));
+
+        // Pass 2: fill up to 10 with companies WITHOUT financials (if needed)
+        if (sameIndustry.length < 10) {
+          const remaining = 10 - sameIndustry.length;
+          const excludeIds = [corpNum, ...sameIndustry.map(c => c.corporate_number)];
+          const excludePlaceholders = excludeIds.map(() => '?').join(',');
+          const rows2 = await runQuery(`
+            SELECT c.*, NULL AS has_financials
+            FROM companies c
+            LEFT JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number
+            WHERE c.corporate_number IN (
+              SELECT ci.corporate_number FROM company_industries ci WHERE ci.industry_code IN (${placeholders})
+            ) AND c.corporate_number NOT IN (${excludePlaceholders})
+              AND cfs.corporate_number IS NULL
+            ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+            LIMIT ?
+          `, [...industryCodes, ...excludeIds, remaining]);
+          sameIndustry.push(...rows2.map(mapCompanyRow));
+        }
+      } else {
+        // SQLite: Dynamic Split Query
+        // Determine whether to use INDEXED BY based on industry size
+        const primaryCode = industryCodes[0];
+        const indCount = await getIndustryCount(primaryCode);
+        const useIndexHint = indCount > 50000;
+        const indexedByClause = useIndexHint ? 'INDEXED BY idx_companies_capital' : '';
+
+        // Pass 1: companies WITH financials
+        const rows1 = await runQuery(`
+          SELECT c.*, cfs.corporate_number AS has_financials
+          FROM companies c ${indexedByClause}
+          JOIN company_industries ci ON c.corporate_number = ci.corporate_number
+          JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number
+          WHERE ci.industry_code IN (${placeholders}) AND c.corporate_number != ?
+          ORDER BY c.capital_amount DESC, c.corporate_number ASC
+          LIMIT 10
+        `, [...industryCodes, corpNum]);
+        sameIndustry.push(...rows1.map(r => mapCompanyRow({ ...r, has_financials: r.corporate_number })));
+
+        // Pass 2: fill up to 10 with companies WITHOUT financials (if needed)
+        if (sameIndustry.length < 10) {
+          const remaining = 10 - sameIndustry.length;
+          const excludeIds = [corpNum, ...sameIndustry.map(c => c.corporate_number)];
+          const excludePlaceholders = excludeIds.map(() => '?').join(',');
+          const rows2 = await runQuery(`
+            SELECT c.*, NULL AS has_financials
+            FROM companies c ${indexedByClause}
+            JOIN company_industries ci ON c.corporate_number = ci.corporate_number
+            LEFT JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number
+            WHERE ci.industry_code IN (${placeholders})
+              AND c.corporate_number NOT IN (${excludePlaceholders})
+              AND cfs.corporate_number IS NULL
+            ORDER BY c.capital_amount DESC, c.corporate_number ASC
+            LIMIT ?
+          `, [...industryCodes, ...excludeIds, remaining]);
+          sameIndustry.push(...rows2.map(mapCompanyRow));
+        }
+      }
     }
 
+    // ─── nearby ─────────────────────────────────────────────────────────────
     if (prefectureCode) {
       const excludeIds = [corpNum, ...sameIndustry.map(c => c.corporate_number)];
-      const placeholder = excludeIds.map(() => '?').join(',');
-      const isPG = !!DATABASE_URL;
-      const orderBy = isPG
-        ? 'ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC'
-        : 'ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
-      const rows = await runQuery(`
-        SELECT c.*, cfs.corporate_number AS has_financials
-        FROM companies c
-        LEFT JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number
-        WHERE c.prefecture_code = ? 
-        AND c.corporate_number NOT IN (${placeholder})
-        ${orderBy}
-        LIMIT 10
-      `, [prefectureCode, ...excludeIds]);
-      nearby.push(...rows.map(mapCompanyRow));
+      const excludePlaceholders = excludeIds.map(() => '?').join(',');
+
+      if (isPG) {
+        // PostgreSQL: Split Query — avoids CASE WHEN sort
+        // Pass 1: nearby companies WITH financials, ORDER BY capital DESC
+        const rows1 = await runQuery(`
+          SELECT c.*, cfs.corporate_number AS has_financials
+          FROM companies c
+          JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number
+          WHERE c.prefecture_code = ?
+            AND c.corporate_number NOT IN (${excludePlaceholders})
+          ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+          LIMIT 10
+        `, [prefectureCode, ...excludeIds]);
+        nearby.push(...rows1.map(r => mapCompanyRow({ ...r, has_financials: r.corporate_number })));
+
+        // Pass 2: fill up to 10 with companies WITHOUT financials
+        if (nearby.length < 10) {
+          const remaining = 10 - nearby.length;
+          const excludeIds2 = [corpNum, ...sameIndustry.map(c => c.corporate_number), ...nearby.map(c => c.corporate_number)];
+          const excludePlaceholders2 = excludeIds2.map(() => '?').join(',');
+          const rows2 = await runQuery(`
+            SELECT c.*, NULL AS has_financials
+            FROM companies c
+            LEFT JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number
+            WHERE c.prefecture_code = ?
+              AND c.corporate_number NOT IN (${excludePlaceholders2})
+              AND cfs.corporate_number IS NULL
+            ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+            LIMIT ?
+          `, [prefectureCode, ...excludeIds2, remaining]);
+          nearby.push(...rows2.map(mapCompanyRow));
+        }
+      } else {
+        // SQLite: Dynamic Split Query
+        const prefCount = await getPrefectureCount(prefectureCode);
+        const useIndexHint = prefCount > 50000;
+        const indexedByClause = useIndexHint ? 'INDEXED BY idx_companies_capital' : '';
+
+        // Pass 1: companies WITH financials
+        const rows1 = await runQuery(`
+          SELECT c.*, cfs.corporate_number AS has_financials
+          FROM companies c ${indexedByClause}
+          JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number
+          WHERE c.prefecture_code = ?
+            AND c.corporate_number NOT IN (${excludePlaceholders})
+          ORDER BY c.capital_amount DESC, c.corporate_number ASC
+          LIMIT 10
+        `, [prefectureCode, ...excludeIds]);
+        nearby.push(...rows1.map(r => mapCompanyRow({ ...r, has_financials: r.corporate_number })));
+
+        // Pass 2: fill up to 10 with companies WITHOUT financials (if needed)
+        if (nearby.length < 10) {
+          const remaining = 10 - nearby.length;
+          const excludeIds2 = [corpNum, ...sameIndustry.map(c => c.corporate_number), ...nearby.map(c => c.corporate_number)];
+          const excludePlaceholders2 = excludeIds2.map(() => '?').join(',');
+          const rows2 = await runQuery(`
+            SELECT c.*, NULL AS has_financials
+            FROM companies c ${indexedByClause}
+            LEFT JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number
+            WHERE c.prefecture_code = ?
+              AND c.corporate_number NOT IN (${excludePlaceholders2})
+              AND cfs.corporate_number IS NULL
+            ORDER BY c.capital_amount DESC, c.corporate_number ASC
+            LIMIT ?
+          `, [prefectureCode, ...excludeIds2, remaining]);
+          nearby.push(...rows2.map(mapCompanyRow));
+        }
+      }
     }
   } catch (error) {
     console.error(`Error in getRelatedCompanies(${corpNum}):`, error);
@@ -1120,57 +1282,69 @@ export async function searchCompanies(
     }
 
     // 2. Fetch page of results
-    // We only force the sorting index if we have 0 or 1 active filters and no keyword text search.
-    // This is because multiple filter combinations are highly selective, and forcing the index causes SQLite to scan the entire 5M row index.
+    // We only force the sorting index if we have 0 or 1 active filters and no keyword.
     const useForcedIndex = !keyword && activeFiltersList.length <= 1;
     const dataQuery = buildSearchQuery(keyword, filters, false, useForcedIndex);
     let sql = dataQuery.sql;
-    
-    // Sort: 1st = has financial reports (DESC), 2nd = capital_amount (DESC), 3rd = corporate_number (ASC tie-breaker)
-    // If complex filters (signals, industry, keyword) are active on PostgreSQL, wrap in Materialized CTE
-    // to prevent the DB optimizer from choosing a slow nested loop index scan with LIMIT optimization.
+
+    // Sort strategy: has_financials DESC, capital_amount DESC, corporate_number ASC
+    // PostgreSQL Split Query: avoids CASE WHEN sort — see comment at top of block.
     const isPG = !!DATABASE_URL;
-    const hasComplexFilters = !!(
-      keyword ||
-      filters.industry_code
-    );
+    let companies: Company[] = [];
+
     if (isPG) {
-      if (hasComplexFilters) {
-        // Wrap the standard query in a Materialized CTE to bypass the PostgreSQL LIMIT optimization trap
-        const selectColumnsPattern = /SELECT\s+[\s\S]+?\s+FROM\s+companies\s+c/i;
-        const originalSql = dataQuery.sql;
-        const selectMatch = originalSql.match(selectColumnsPattern);
-        
-        if (selectMatch) {
-          const selectPart = selectMatch[0];
-          const wherePart = originalSql.substring(selectPart.length);
-          sql = `WITH filtered_companies AS MATERIALIZED (
-            ${selectPart} ${wherePart}
-          )
-          SELECT * FROM filtered_companies
-          ORDER BY (CASE WHEN has_financials IS NOT NULL THEN 1 ELSE 0 END) DESC, capital_amount DESC NULLS LAST, corporate_number ASC`;
-        } else {
-          sql = originalSql + ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
-        }
-      } else {
-        sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+      // ── PostgreSQL Split Query ──────────────────────────────────────────────
+      const cursorActive = filters.cursor_has_fin !== undefined && filters.cursor_cap !== undefined && filters.cursor_corp !== undefined;
+      const limitVal = limit;
+      const offsetVal = offset;
+
+      // The base query from buildSearchQuery already includes:
+      //   SELECT ... FROM companies c LEFT JOIN company_financial_status cfs ... WHERE ...
+      // Pass 1: Replace LEFT JOIN with JOIN (INNER) to only return companies WITH financials
+      const baseSql = dataQuery.sql;
+      const pass1Sql = baseSql
+        .replace(
+          'LEFT JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number',
+          'JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number'
+        ) +
+        ' ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC' +
+        (cursorActive ? ` LIMIT ${limitVal}` : ` LIMIT ${limitVal} OFFSET ${offsetVal}`);
+
+      const p1Results = await runQuery(pass1Sql, [...dataQuery.params]);
+      companies.push(...p1Results.map(r => mapCompanyRow({ ...r, has_financials: r.corporate_number })));
+
+      // Pass 2: fill up to limitVal with companies WITHOUT financials (if needed)
+      if (companies.length < limitVal) {
+        const remaining = limitVal - companies.length;
+        const excludeCorps = companies.map(c => c.corporate_number);
+        const excludeClause = excludeCorps.length > 0
+          ? ` AND c.corporate_number NOT IN (${excludeCorps.map(() => '?').join(',')})`
+          : '';
+        // Use LEFT JOIN + cfs IS NULL to get companies without financials
+        const pass2Sql = baseSql +
+          ` AND cfs.corporate_number IS NULL${excludeClause}` +
+          ` ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC` +
+          ` LIMIT ${remaining}`;
+
+        const p2Results = await runQuery(pass2Sql, [...dataQuery.params, ...excludeCorps]);
+        companies.push(...p2Results.map(mapCompanyRow));
       }
     } else {
+      // ── SQLite path ─────────────────────────────────────────────────────────
       // SQLite: NULL is sorted last automatically in DESC order
       sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
+      const params = [...dataQuery.params];
+      if (filters.cursor_has_fin !== undefined && filters.cursor_cap !== undefined && filters.cursor_corp !== undefined) {
+        sql += ' LIMIT ?';
+        params.push(limit);
+      } else {
+        sql += ' LIMIT ? OFFSET ?';
+        params.push(limit, offset);
+      }
+      const results = await runQuery(sql, params);
+      companies = results.map(mapCompanyRow);
     }
-    
-    const params = [...dataQuery.params];
-    if (filters.cursor_has_fin !== undefined && filters.cursor_cap !== undefined && filters.cursor_corp !== undefined) {
-      sql += ' LIMIT ?';
-      params.push(limit);
-    } else {
-      sql += ' LIMIT ? OFFSET ?';
-      params.push(limit, offset);
-    }
-    
-    const results = await runQuery(sql, params);
-    const companies = results.map(mapCompanyRow);
+
 
     if (companies.length > 0) {
       const corpNums = companies.map(c => c.corporate_number);
@@ -2440,15 +2614,36 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
     let sql = dataQuery.sql;
     
     // Same sort order as searchCompanies: has_financials first, then capital DESC
+    // PostgreSQL: Split Query to avoid CASE WHEN sort on 5M+ rows (same optimization as searchCompanies)
     const isPG_all = !!DATABASE_URL;
+    let allCompanies: Company[] = [];
+
     if (isPG_all) {
-      sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+      // Pass 1: WITH financials (INNER JOIN on 17k-row table)
+      const baseSql = dataQuery.sql;
+      const pass1Sql = baseSql.replace(
+        'LEFT JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number',
+        'JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number'
+      ) + ' ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+      const p1 = await runQuery(pass1Sql, [...dataQuery.params]);
+      allCompanies.push(...p1.map(r => mapCompanyRow({ ...r, has_financials: r.corporate_number })));
+
+      // Pass 2: WITHOUT financials
+      const excludeCorps = allCompanies.map(c => c.corporate_number);
+      const excludeClause = excludeCorps.length > 0
+        ? ` AND c.corporate_number NOT IN (${excludeCorps.map(() => '?').join(',')})`
+        : '';
+      const pass2Sql = baseSql +
+        ` AND cfs.corporate_number IS NULL${excludeClause}` +
+        ' ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+      const p2 = await runQuery(pass2Sql, [...dataQuery.params, ...excludeCorps]);
+      allCompanies.push(...p2.map(mapCompanyRow));
     } else {
       sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
+      allCompanies = (await runQuery(sql, dataQuery.params)).map(mapCompanyRow);
     }
-    
-    const results = await runQuery(sql, dataQuery.params);
-    return results.map(mapCompanyRow);
+
+    return allCompanies;
   } catch (error) {
     console.error('Error in searchCompaniesAll:', error);
     return [];
