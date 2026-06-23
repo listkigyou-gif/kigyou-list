@@ -3216,6 +3216,8 @@ export async function initAdminTables(): Promise<void> {
           company_name VARCHAR(255) NOT NULL,
           type VARCHAR(50) NOT NULL,
           requester_email VARCHAR(255) NOT NULL,
+          person_in_charge VARCHAR(255),
+          mobile_number VARCHAR(50),
           message TEXT,
           status VARCHAR(50) NOT NULL DEFAULT 'pending',
           ip_address VARCHAR(50),
@@ -3225,9 +3227,13 @@ export async function initAdminTables(): Promise<void> {
       // Attempt to alter table if it already exists (Postgres)
       try {
         await client.query(`ALTER TABLE inquiries ADD COLUMN ip_address VARCHAR(50);`);
-      } catch {
-        // Column might already exist
-      }
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE inquiries ADD COLUMN person_in_charge VARCHAR(255);`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE inquiries ADD COLUMN mobile_number VARCHAR(50);`);
+      } catch {}
       
       await client.query(`
         CREATE TABLE IF NOT EXISTS hidden_companies (
@@ -3251,6 +3257,8 @@ export async function initAdminTables(): Promise<void> {
           company_name TEXT NOT NULL,
           type TEXT NOT NULL,
           requester_email TEXT NOT NULL,
+          person_in_charge TEXT,
+          mobile_number TEXT,
           message TEXT,
           status TEXT NOT NULL DEFAULT 'pending',
           ip_address TEXT,
@@ -3260,9 +3268,13 @@ export async function initAdminTables(): Promise<void> {
       // Attempt to alter table if it already exists (SQLite)
       try {
         db.exec(`ALTER TABLE inquiries ADD COLUMN ip_address TEXT;`);
-      } catch {
-        // Column might already exist
-      }
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE inquiries ADD COLUMN person_in_charge TEXT;`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE inquiries ADD COLUMN mobile_number TEXT;`);
+      } catch {}
       
       db.exec(`
         CREATE TABLE IF NOT EXISTS hidden_companies (
@@ -3372,6 +3384,8 @@ export async function createInquiry(
   company_name: string, 
   type: string, 
   requester_email: string, 
+  person_in_charge: string,
+  mobile_number: string,
   message: string,
   ip_address: string = ''
 ): Promise<boolean> {
@@ -3379,15 +3393,15 @@ export async function createInquiry(
   try {
     const id = `inq_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
-      INSERT INTO inquiries (id, corporate_number, company_name, type, requester_email, message, ip_address)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO inquiries (id, corporate_number, company_name, type, requester_email, person_in_charge, mobile_number, message, ip_address)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     if (DATABASE_URL) {
       const pool = getPGPool();
-      await pool.query(convertSqlForPG(sql), [id, corporate_number, company_name, type, requester_email, message, ip_address]);
+      await pool.query(convertSqlForPG(sql), [id, corporate_number, company_name, type, requester_email, person_in_charge, mobile_number, message, ip_address]);
     } else {
       const db = getSQLiteDB();
-      db.prepare(sql).run(id, corporate_number, company_name, type, requester_email, message, ip_address);
+      db.prepare(sql).run(id, corporate_number, company_name, type, requester_email, person_in_charge, mobile_number, message, ip_address);
     }
     return true;
   } catch (error) {
@@ -3406,6 +3420,8 @@ export async function getInquiries(): Promise<Inquiry[]> {
       company_name: String(r.company_name),
       type: String(r.type),
       requester_email: String(r.requester_email),
+      person_in_charge: r.person_in_charge ? String(r.person_in_charge) : undefined,
+      mobile_number: r.mobile_number ? String(r.mobile_number) : undefined,
       message: String(r.message),
       status: String(r.status),
       created_at: String(r.created_at)
