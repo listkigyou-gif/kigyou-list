@@ -1283,15 +1283,23 @@ export async function searchCompanies(
         totalCount = row ? Number(row.count) : 0;
       } else {
         // Not directly cached -> execute count query
+        if (isPG && activeFiltersList.length > 1) {
+          totalCount = 10000; // Skip slow count query on partitioned DB for complex queries
+        } else {
+          const countQuery = buildSearchQuery(keyword, filters, true);
+          const countResult = await runGetQuery(countQuery.sql, countQuery.params);
+          totalCount = countResult ? Number(countResult.count) : 0;
+        }
+      }
+    } else {
+      // Multiple active filters -> execute count query
+      if (isPG) {
+        totalCount = 10000; // Skip slow count query on partitioned DB for complex queries
+      } else {
         const countQuery = buildSearchQuery(keyword, filters, true);
         const countResult = await runGetQuery(countQuery.sql, countQuery.params);
         totalCount = countResult ? Number(countResult.count) : 0;
       }
-    } else {
-      // Multiple active filters -> execute count query
-      const countQuery = buildSearchQuery(keyword, filters, true);
-      const countResult = await runGetQuery(countQuery.sql, countQuery.params);
-      totalCount = countResult ? Number(countResult.count) : 0;
     }
 
     if (totalCount === 0) {
@@ -1310,8 +1318,7 @@ export async function searchCompanies(
     // to prevent the DB optimizer from choosing a slow nested loop index scan with LIMIT optimization.
     const isPG = !!DATABASE_URL;
     const hasComplexFilters = !!(
-      keyword ||
-      filters.industry_code
+      keyword // Only use CTE for text searches to bypass LIMIT optimization trap. Other exact filters can use index scans.
     );
     if (isPG) {
       if (hasComplexFilters) {

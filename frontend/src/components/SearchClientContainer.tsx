@@ -952,7 +952,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
         </div>
 
         {/* Results Grid Cards */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           {isLoading ? (
             Array.from({ length: 5 }).map((_, i) => (
               <SearchSkeletonCard key={i} />
@@ -961,12 +961,12 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             companies.map((company) => (
               <div 
                 key={company.corporate_number}
-                className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800/80 rounded-2xl p-6 shadow-sm hover:scale-[1.005] hover:-translate-y-1 hover:shadow-xl hover:border-primary/30 dark:hover:border-secondary/30 transition-all duration-300 ease-out"
+                className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800/80 rounded-2xl p-3 sm:p-4 shadow-sm hover:scale-[1.005] hover:-translate-y-1 hover:shadow-xl hover:border-primary/30 dark:hover:border-secondary/30 transition-all duration-300 ease-out"
               >
                 {/* Top info and badge */}
-                <div className="flex flex-wrap items-start justify-between gap-2 mb-3">
+                <div className="flex flex-wrap items-start justify-between gap-2 mb-1.5">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border shadow-sm ${
+                    <span className={`text-[10px] font-medium px-2 py-0.5 rounded border shadow-sm ${
                       company.status === '閉鎖' || company.status === '解散'
                         ? 'text-rose-800 bg-rose-100 dark:bg-rose-950/30 dark:text-rose-450 border-rose-200/50 dark:border-rose-900/50'
                         : 'text-emerald-800 bg-emerald-100 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200/50 dark:border-emerald-900/50'
@@ -974,13 +974,13 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                       {company.status === '活動中' ? t.search.active : company.status === '閉鎖' ? t.search.closed : company.status === '解散' ? t.search.dissolved : company.status}
                     </span>
                     {company.prefecture_name && (
-                      <span className="text-slate-400 text-xs font-medium flex items-center gap-1">
+                      <span className="text-slate-500 dark:text-slate-400 text-[10px] font-medium flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5" />
                         {(t.prefectures as Record<string, string>)?.[company.prefecture_name] || company.prefecture_name}
                       </span>
                     )}
                     {company.industries?.filter(ind => ind.classification_level === '大分類').map((ind, idx) => (
-                      <span key={idx} className="text-[10px] font-black tracking-wider uppercase text-slate-650 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 px-2.5 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-xs">
+                      <span key={idx} className="text-[10px] font-medium text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 px-2.5 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-xs">
                         {ind.industry_code}.{(t.majorIndustries as Record<string, string>)?.[ind.industry_code] || ind.industry_name}
                       </span>
                     ))}
@@ -988,18 +988,18 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                   
                   <div className="flex flex-wrap items-center gap-2">
                     {/* Data freshness trust signal */}
-                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-[#B07500] bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-2 py-0.5 rounded border border-amber-200/60 dark:border-amber-900/40">
+                    <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#B07500] bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-2 py-0.5 rounded border border-amber-200/60 dark:border-amber-900/40">
                       <Clock className="w-3.5 h-3.5" />
                       {formatShortDate(company.updated_at)}
                     </span>
-                    <span className="text-[10px] font-semibold text-slate-400 font-mono">
+                    <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 font-mono">
                       {locale === 'vi' ? 'Mã số DN' : locale === 'en' ? 'Corp No' : '法人番号'}: {company.corporate_number}
                     </span>
                   </div>
                 </div>
 
                 {/* Company Name */}
-                <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white hover:text-primary dark:hover:text-secondary mb-3 transition-colors break-words">
+                <h3 className="text-lg sm:text-xl font-bold leading-snug text-slate-900 dark:text-white hover:text-primary dark:hover:text-secondary mb-1.5 transition-colors break-words">
                   <Link href={`/company/${company.corporate_number}`}>
                     {company.company_name_en && locale === 'en' ? company.company_name_en : company.company_name}
                   </Link>
@@ -1008,27 +1008,27 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
 
 
                 {/* Matrix Details */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 py-4 border-t border-b border-slate-100 dark:border-slate-850 text-xs">
-                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
-                    <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">{t.company.capital}</span>
-                    <strong className="text-slate-800 dark:text-slate-200 font-extrabold text-sm">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 py-2 border-t border-b border-slate-100 dark:border-slate-850 text-xs">
+                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                    <span className="block text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-medium">{t.company.capital}</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-semibold text-sm">
                       {company.capital_amount ? (locale === 'en' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1})}M JPY` : locale === 'vi' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1})}tr JPY` : `${(company.capital_amount / 10000).toLocaleString()}万円`) : t.company.unregistered}
                     </strong>
                   </div>
-                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
-                    <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">{t.company.employees}</span>
-                    <strong className="text-slate-800 dark:text-slate-200 font-extrabold text-sm">
+                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                    <span className="block text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-medium">{t.company.employees}</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-semibold text-sm">
                       {company.employee_count ? `${company.employee_count.toLocaleString()}${locale === 'en' ? ' employees' : locale === 'vi' ? ' nhân viên' : '名'}` : t.company.unregistered}
                     </strong>
                   </div>
-                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
-                    <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">{t.search.establishmentYear}</span>
-                    <strong className="text-slate-800 dark:text-slate-200 font-extrabold text-sm">
+                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                    <span className="block text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-medium">{t.search.establishmentYear}</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-semibold text-sm">
                       {company.establishment_date ? (locale === 'en' ? `Est. ${company.establishment_date.substring(0, 4)}` : locale === 'vi' ? `Năm ${company.establishment_date.substring(0, 4)}` : `${company.establishment_date.substring(0, 4)}年`) : t.company.unregistered}
                     </strong>
                   </div>
-                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-3 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
-                    <span className="block text-slate-400 dark:text-slate-500 mb-1 font-medium">{t.company.tags}</span>
+                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                    <span className="block text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-medium">{t.company.tags}</span>
                     <div className="flex flex-wrap gap-1 mt-1 max-h-[48px] overflow-y-auto scrollbar-thin">
                       {(() => {
                         const mediumInds = company.industries?.filter(ind => ind.classification_level === '中分類') || [];
@@ -1036,7 +1036,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                           return mediumInds.map((ind, idx) => (
                             <span 
                               key={idx} 
-                              className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-700/80"
+                              className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-700/80"
                             >
                               {ind.industry_code}.{getIndustryName(ind.industry_name, locale)}
                             </span>
@@ -1050,13 +1050,13 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                           tags.map((tag, idx) => (
                             <span 
                               key={idx} 
-                              className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-700/80"
+                              className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-700/80"
                             >
                               {getIndustryName(tag.trim(), locale)}
                             </span>
                           ))
                         ) : (
-                          <span className="text-slate-400 text-xs font-semibold">{t.company.unregistered}</span>
+                          <span className="text-slate-400 text-[11px] font-medium">{t.company.unregistered}</span>
                         );
                       })()}
                     </div>
@@ -1064,9 +1064,9 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                 </div>
 
                 {/* Contact details */}
-                <div className="flex flex-wrap items-center justify-between gap-4 mt-4 pt-1">
+                <div className="flex flex-wrap items-center justify-between gap-2 mt-2.5 pt-0.5">
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
-                    <span className="flex items-center gap-1.5 text-slate-600 dark:text-slate-300">
+                    <span className="flex items-center gap-1.5 font-medium text-slate-600 dark:text-slate-300">
                       <Phone className="w-3.5 h-3.5 text-primary" />
                       TEL: {company.phone_number || t.company.unregistered}
                     </span>
@@ -1075,13 +1075,13 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                         href={company.website_url} 
                         target="_blank" 
                         rel="noopener noreferrer" 
-                        className="flex items-center gap-1.5 text-primary hover:text-primary-hover dark:text-secondary dark:hover:text-secondary-hover transition-colors"
+                        className="flex items-center gap-1.5 font-medium text-primary hover:text-primary-hover dark:text-secondary dark:hover:text-secondary-hover transition-colors"
                       >
                         <Globe className="w-3.5 h-3.5" />
                         Website
                       </a>
                     ) : (
-                      <span className="flex items-center gap-1.5 text-slate-400">
+                      <span className="flex items-center gap-1.5 font-medium text-slate-400">
                         <Globe className="w-3.5 h-3.5" />
                         Website: {t.company.none}
                       </span>
@@ -1093,7 +1093,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
 
                   <Link 
                     href={`/company/${company.corporate_number}`}
-                    className="px-4 py-1.5 text-xs font-bold text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300 dark:text-slate-300 dark:border-slate-800 dark:hover:border-slate-700 rounded-xl transition-all"
+                    className="px-4 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300 dark:text-slate-300 dark:border-slate-800 dark:hover:border-slate-700 rounded-xl transition-all"
                   >
                     {locale === 'vi' ? 'Chi tiết →' : locale === 'en' ? 'Details →' : '詳細プロフィール →'}
                   </Link>
