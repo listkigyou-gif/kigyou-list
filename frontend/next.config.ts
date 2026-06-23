@@ -9,6 +9,30 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  async headers() {
+    return [
+      {
+        // Cache search page on Cloudflare for 60 seconds
+        source: '/:locale(ja|en|vi)/search',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=60, stale-while-revalidate=300',
+          },
+        ],
+      },
+      {
+        // Cache company detail pages on Cloudflare for 5 minutes
+        source: '/:locale(ja|en|vi)/company/:id',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, s-maxage=300, stale-while-revalidate=600',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
