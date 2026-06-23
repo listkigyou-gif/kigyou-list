@@ -1283,7 +1283,7 @@ export async function searchCompanies(
         totalCount = row ? Number(row.count) : 0;
       } else {
         // Not directly cached -> execute count query
-        if (isPG && activeFiltersList.length > 1) {
+        if (!!DATABASE_URL && activeFiltersList.length > 1) {
           totalCount = 10000; // Skip slow count query on partitioned DB for complex queries
         } else {
           const countQuery = buildSearchQuery(keyword, filters, true);
@@ -1293,7 +1293,7 @@ export async function searchCompanies(
       }
     } else {
       // Multiple active filters -> execute count query
-      if (isPG) {
+      if (!!DATABASE_URL) {
         totalCount = 10000; // Skip slow count query on partitioned DB for complex queries
       } else {
         const countQuery = buildSearchQuery(keyword, filters, true);

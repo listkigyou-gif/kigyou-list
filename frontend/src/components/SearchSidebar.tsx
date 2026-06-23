@@ -227,8 +227,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   };
 
   return (
-    <aside className={className || "hidden lg:block w-76 shrink-0 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-6 sticky top-20 max-h-[calc(100vh-7rem)] overflow-y-auto scrollbar-thin"}>
-      <div className="flex items-center justify-between mb-6 pb-4 border-b border-slate-200/80 dark:border-slate-800">
+    <aside className={className || "hidden lg:block w-76 shrink-0 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-5 sticky top-20 max-h-[calc(100vh-7rem)] overflow-y-auto scrollbar-thin"}>
+      <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200/80 dark:border-slate-800">
         <h2 className="font-bold flex items-center gap-2 text-slate-800 dark:text-white">
           <Filter className="w-4 h-4 text-primary" />
           {t.search.title}
@@ -281,16 +281,16 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         )}
       </div>
 
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         {/* Filter by Prefecture */}
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
             {t.search.prefecture}
           </label>
           <select
             value={prefCode || ""}
             onChange={(e) => navigate({ prefecture: e.target.value || null, city: null })}
-            className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:border-slate-700"
+            className="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
           >
             <option value="">{t.search.allPrefectures}</option>
             {prefectures.map((pref) => (
@@ -304,13 +304,13 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         {/* Filter by City (市区町村) - Lọc phân cấp dưới Tỉnh */}
         {prefCode && cities && cities.length > 0 && (
           <div>
-            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
               {t.search.city}
             </label>
             <select
               value={city || ""}
               onChange={(e) => navigate({ city: e.target.value || null })}
-              className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:border-slate-700"
+              className="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             >
               <option value="">{t.search.allCities}</option>
               {cities.map((c) => (
@@ -324,18 +324,18 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 
         {/* Filter by Industry */}
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
             {t.search.industry}
           </label>
           <select
             value={indCode || ""}
             onChange={(e) => navigate({ industry: e.target.value || null })}
-            className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:border-slate-700 font-sans"
+            className="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 font-sans"
           >
             <option value="">{t.search.allIndustries}</option>
             {industries.map((major) => (
               <React.Fragment key={major.code}>
-                <option value={major.code} className="font-extrabold text-slate-900 dark:text-white">
+                <option value={major.code} className="font-semibold text-slate-900 dark:text-white">
                   {major.code} {(t.majorIndustries as Record<string, string>)?.[major.code] || major.name} ({locale === 'en' ? 'Total' : locale === 'vi' ? 'Tổng cộng' : '計'} {major.totalCount.toLocaleString()}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
                 </option>
                 {major.children.map((medium) => (
@@ -350,7 +350,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 
         {/* Filter by Employee Count */}
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
             {t.search.employees}
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -370,7 +370,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   navigate({ min_employees: val || null });
                 }
               }}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+              className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             />
             <input
               type="number"
@@ -388,14 +388,14 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   navigate({ max_employees: val || null });
                 }
               }}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+              className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             />
           </div>
         </div>
 
         {/* Filter by Capital */}
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
             {t.search.capital}
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -415,7 +415,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   navigate({ min_capital: processCapitalInput(val) });
                 }
               }}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+              className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             />
             <input
               type="number"
@@ -433,14 +433,14 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   navigate({ max_capital: processCapitalInput(val) });
                 }
               }}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+              className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             />
           </div>
         </div>
 
         {/* Filter by Sales */}
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
             {t.search.sales}
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -460,7 +460,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   navigate({ min_sales: processSalesInput(val) });
                 }
               }}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+              className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             />
             <input
               type="number"
@@ -478,14 +478,14 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   navigate({ max_sales: processSalesInput(val) });
                 }
               }}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+              className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             />
           </div>
         </div>
 
         {/* Growth & Financial Indicators */}
         <div className="border-t border-slate-100 dark:border-slate-800/60 pt-4">
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
             {t.search.financials}
           </label>
           <div className="flex flex-col gap-4">
@@ -493,7 +493,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 
             {/* Operating Income */}
             <div>
-              <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+              <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
                 {t.search.operatingIncome}
               </span>
               <div className="grid grid-cols-2 gap-2">
@@ -513,7 +513,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                       navigate({ min_operating_income: processSalesInput(val) });
                     }
                   }}
-                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                  className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                 />
                 <input
                   type="number"
@@ -531,14 +531,14 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                       navigate({ max_operating_income: processSalesInput(val) });
                     }
                   }}
-                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                  className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                 />
               </div>
             </div>
 
             {/* Ordinary Income */}
             <div>
-              <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+              <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
                 {t.search.ordinaryIncome}
               </span>
               <div className="grid grid-cols-2 gap-2">
@@ -558,7 +558,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                       navigate({ min_ordinary_income: processSalesInput(val) });
                     }
                   }}
-                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                  className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                 />
                 <input
                   type="number"
@@ -576,14 +576,14 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                       navigate({ max_ordinary_income: processSalesInput(val) });
                     }
                   }}
-                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                  className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                 />
               </div>
             </div>
 
             {/* Net Income */}
             <div>
-              <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">
+              <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mb-1">
                 {t.search.netIncome}
               </span>
               <div className="grid grid-cols-2 gap-2">
@@ -603,7 +603,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                       navigate({ min_net_income: processSalesInput(val) });
                     }
                   }}
-                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                  className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                 />
                 <input
                   type="number"
@@ -621,7 +621,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                       navigate({ max_net_income: processSalesInput(val) });
                     }
                   }}
-                  className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+                  className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                 />
               </div>
             </div>
@@ -630,7 +630,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 
         {/* Filter by Establishment Year */}
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
             {t.search.establishmentYear}
           </label>
           <div className="grid grid-cols-2 gap-2">
@@ -650,7 +650,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   navigate({ min_establishment_year: val || null });
                 }
               }}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+              className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             />
             <input
               type="number"
@@ -668,20 +668,20 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   navigate({ max_establishment_year: val || null });
                 }
               }}
-              className="text-xs bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none dark:bg-slate-800 dark:border-slate-700"
+              className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             />
           </div>
         </div>
 
         {/* Filter by Status */}
         <div>
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">
+          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
             {t.search.status}
           </label>
           <select
             value={companyStatus || ""}
             onChange={(e) => navigate({ status: e.target.value || null })}
-            className="w-full text-sm bg-slate-50 border border-slate-200 rounded-xl px-3 py-2.5 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:border-slate-700"
+            className="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
           >
             <option value="">{t.search.allStatuses}</option>
             <option value="活動中">{t.search.active}</option>
@@ -691,11 +691,11 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 
         {/* Intent Signal Filters */}
         <div className="relative">
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
             {t.search.signals}
           </label>
-          <div className={`${!isLoggedIn ? "blur-[2.5px] pointer-events-none select-none opacity-60" : ""} flex flex-col gap-2.5`}>
-            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+          <div className={`${!isLoggedIn ? "blur-[2.5px] pointer-events-none select-none opacity-60" : ""} flex flex-col gap-2`}>
+            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
               <input
                 type="checkbox"
                 checked={hasHiring}
@@ -705,7 +705,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               />
               <span>{t.search.hiring}</span>
             </label>
-            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
               <input
                 type="checkbox"
                 checked={hasSubsidy}
@@ -715,7 +715,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               />
               <span>{t.search.subsidy}</span>
             </label>
-            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
               <input
                 type="checkbox"
                 checked={hasBidding}
@@ -725,7 +725,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               />
               <span>{t.search.bidding}</span>
             </label>
-            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
               <input
                 type="checkbox"
                 checked={hasAward}
@@ -735,7 +735,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               />
               <span className="flex items-center gap-1">{t.search.award}</span>
             </label>
-            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
               <input
                 type="checkbox"
                 checked={hasCertification}
@@ -745,7 +745,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               />
               <span className="flex items-center gap-1">{t.search.certification}</span>
             </label>
-            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
               <input
                 type="checkbox"
                 checked={hasPatent}
@@ -755,7 +755,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               />
               <span className="flex items-center gap-1">{t.search.patent}</span>
             </label>
-            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
               <input
                 type="checkbox"
                 checked={hasFinancials}
@@ -782,11 +782,11 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 
         {/* Contact Presence Filters */}
         <div className="relative">
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
             {t.search.contactPresence}
           </label>
-          <div className={`${!isProOrHigher ? "blur-[2.5px] pointer-events-none select-none opacity-60" : ""} flex flex-col gap-2.5`}>
-            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+          <div className={`${!isProOrHigher ? "blur-[2.5px] pointer-events-none select-none opacity-60" : ""} flex flex-col gap-2`}>
+            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
               <input
                 type="checkbox"
                 checked={hasEmail}
@@ -796,7 +796,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               />
               <span>{t.search.emailLabel}</span>
             </label>
-            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
               <input
                 type="checkbox"
                 checked={hasPhone}
@@ -806,7 +806,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               />
               <span>{t.search.phoneLabel}</span>
             </label>
-            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
               <input
                 type="checkbox"
                 checked={hasWebsite}
@@ -816,7 +816,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               />
               <span>{t.search.websiteLabel}</span>
             </label>
-            <label className="flex items-center gap-2.5 text-xs text-slate-600 dark:text-slate-300 cursor-pointer">
+            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
               <input
                 type="checkbox"
                 checked={hasFax}
