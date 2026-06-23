@@ -307,6 +307,7 @@ export interface Company {
   updated_at: string;
   industries?: CompanyIndustryDetail[];
   has_financials?: boolean; // true if company has financial records in company_financial_status
+  ordinary_income?: number | null;
 }
 
 export interface Industry {
@@ -737,6 +738,46 @@ export async function getRelatedCompanies(
     }
   } catch (error) {
     console.error(`Error in getRelatedCompanies(${corpNum}):`, error);
+  }
+
+  try {
+    const allIds = [...sameIndustry, ...nearby].map(c => c.corporate_number);
+    if (allIds.length > 0) {
+      // deduplicate
+      const uniqueIds = Array.from(new Set(allIds));
+      const placeholders = uniqueIds.map(() => '?').join(',');
+      const finSql = `
+        SELECT corporate_number, ordinary_income 
+        FROM financial_records 
+        WHERE corporate_number IN (${placeholders})
+        ORDER BY fiscal_year DESC
+      `;
+      let finRows;
+      if (isPG) {
+        finRows = await getPGPool().query(convertSqlForPG(finSql), uniqueIds);
+        finRows = finRows.rows;
+      } else {
+        finRows = getSQLiteDB().prepare(finSql).all(...uniqueIds) as any[];
+      }
+      
+      if (finRows && finRows.length > 0) {
+        const finMap = new Map<string, number>();
+        for (const row of finRows) {
+          if (!finMap.has(row.corporate_number) && row.ordinary_income != null) {
+            finMap.set(row.corporate_number, Number(row.ordinary_income));
+          }
+        }
+        
+        for (const c of sameIndustry) {
+          if (finMap.has(c.corporate_number)) c.ordinary_income = finMap.get(c.corporate_number);
+        }
+        for (const c of nearby) {
+          if (finMap.has(c.corporate_number)) c.ordinary_income = finMap.get(c.corporate_number);
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`Error fetching financials for related companies:`, error);
   }
 
   return { sameIndustry, nearby };

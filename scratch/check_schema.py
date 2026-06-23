@@ -1,38 +1,9 @@
-import sqlite3
-import sys
-
-def main():
-    try:
-        sys.stdout.reconfigure(encoding='utf-8')
-    except Exception:
-        pass
-
-    conn = sqlite3.connect('kigyou-list.db')
-    cur = conn.cursor()
-    
-    # Get table info
-    cur.execute("PRAGMA table_info(companies);")
-    print("Table columns:")
-    for col in cur.fetchall():
-        print(col)
-        
-    # Get indexes
-    cur.execute("PRAGMA index_list(companies);")
-    print("\nIndexes list:")
-    for idx in cur.fetchall():
-        print(idx)
-        idx_name = idx[1]
-        cur.execute(f"PRAGMA index_info({idx_name});")
-        print(f"Index info for {idx_name}:", cur.fetchall())
-        
-    # Get CREATE TABLE statement
-    cur.execute("SELECT sql FROM sqlite_master WHERE type='table' and name='companies';")
-    print("\nCREATE TABLE statement:")
-    sql = cur.fetchone()
-    if sql:
-        print(sql[0])
-    
-    conn.close()
-
-if __name__ == '__main__':
-    main()
+import psycopg2
+conn = psycopg2.connect('postgresql://kigyou:kigyou_pass_2024@163.44.116.98:5432/kigyou_db')
+cur = conn.cursor()
+cur.execute("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'company_financial_status';")
+for row in cur.fetchall():
+    print(row)
+cur.execute("SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'financial_records';")
+for row in cur.fetchall():
+    print(row)

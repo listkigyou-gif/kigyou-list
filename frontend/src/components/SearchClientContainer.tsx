@@ -145,7 +145,7 @@ const SearchSkeletonCard: React.FC = () => {
 // ContactTeaserBadge — replaces inline FAX/Email on list cards to prevent bulk copying
 const ContactTeaserBadge: React.FC<{ corporateNumber: string }> = ({ corporateNumber }) => {
   const { isLoggedIn, setAuthModalOpen } = useAuth();
-  const { t } = useLanguage();
+  const { locale, t } = useLanguage();
 
   if (!isLoggedIn) {
     return (
@@ -156,7 +156,8 @@ const ContactTeaserBadge: React.FC<{ corporateNumber: string }> = ({ corporateNu
         title={t.search.contactUnlockTooltip}
       >
         <Lock className="w-3 h-3 shrink-0 group-hover:rotate-6 transition-transform duration-200" />
-        {t.search.contactUnlockBadge}
+        <span className="hidden sm:inline">{t.search.contactUnlockBadge}</span>
+        <span className="inline sm:hidden">{locale === 'ja' ? '(FAX・メール) →' : locale === 'vi' ? '(FAX/Email) →' : '(FAX/Email) →'}</span>
       </button>
     );
   }
@@ -169,7 +170,8 @@ const ContactTeaserBadge: React.FC<{ corporateNumber: string }> = ({ corporateNu
       onClick={(e) => e.stopPropagation()}
     >
       <ExternalLink className="w-3 h-3 shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform duration-200" />
-      {t.search.contactUnlockBadge}
+      <span className="hidden sm:inline">{t.search.contactUnlockBadge}</span>
+      <span className="inline sm:hidden">{locale === 'ja' ? '(FAX・メール) →' : locale === 'vi' ? '(FAX/Email) →' : '(FAX/Email) →'}</span>
     </Link>
   );
 };
@@ -1095,7 +1097,8 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     href={`/company/${company.corporate_number}`}
                     className="px-4 py-1.5 text-xs font-medium text-slate-700 hover:text-slate-900 border border-slate-200 hover:border-slate-300 dark:text-slate-300 dark:border-slate-800 dark:hover:border-slate-700 rounded-xl transition-all"
                   >
-                    {locale === 'vi' ? 'Chi tiết →' : locale === 'en' ? 'Details →' : '詳細プロフィール →'}
+                    <span className="hidden sm:inline">{locale === 'vi' ? 'Chi tiết →' : locale === 'en' ? 'Details →' : '詳細プロフィール →'}</span>
+                    <span className="inline sm:hidden">{locale === 'vi' ? 'Chi tiết →' : locale === 'en' ? 'Details →' : '詳細 →'}</span>
                   </Link>
                 </div>
               </div>

@@ -629,9 +629,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 {sameIndustry.length > 0 ? (
                   <div className="w-full">
                     {/* Column header */}
-                    <div className="grid grid-cols-[1fr_auto] gap-x-2 px-1 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800">
+                    <div className="grid grid-cols-[1fr_auto_auto] gap-x-2 px-1 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800">
                       <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">{locale === 'en' ? 'Company' : locale === 'vi' ? 'Công ty' : '企業名'}</span>
-                      <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500 text-right">{locale === 'en' ? 'Revenue' : locale === 'vi' ? 'Doanh thu' : '売上高'}</span>
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500 text-right w-16 sm:w-20">{locale === 'en' ? 'Revenue' : locale === 'vi' ? 'Doanh thu' : '売上高'}</span>
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500 text-right w-16 sm:w-20">{locale === 'en' ? 'Ord. Profit' : locale === 'vi' ? 'Lợi nhuận' : '経常利益'}</span>
                     </div>
                     {sameIndustry.map(item => {
                       const name = locale === 'en' && item.company_name_en ? item.company_name_en : item.company_name;
@@ -649,17 +650,34 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                             : sales >= 100_000_000 ? `${(sales / 100_000_000).toFixed(0)}億円`
                             : `${(sales / 10_000).toFixed(0)}万円`
                         : '—';
+                      const ordInc = item.ordinary_income;
+                      const ordIncStr = ordInc
+                        ? locale === 'en'
+                          ? ordInc >= 1_000_000_000_000 ? `¥${(ordInc / 1_000_000_000_000).toFixed(1)}T`
+                            : ordInc >= 1_000_000_000 ? `¥${(ordInc / 1_000_000_000).toFixed(1)}B`
+                            : `¥${(ordInc / 1_000_000).toFixed(0)}M`
+                          : locale === 'vi'
+                          ? ordInc >= 1_000_000_000_000 ? `${(ordInc / 1_000_000_000_000).toFixed(1)}兆円`
+                            : ordInc >= 100_000_000 ? `${(ordInc / 100_000_000).toFixed(0)}億円`
+                            : `${(ordInc / 10_000).toFixed(0)}万円`
+                          : ordInc >= 1_000_000_000_000 ? `${(ordInc / 1_000_000_000_000).toFixed(1)}兆円`
+                            : ordInc >= 100_000_000 ? `${(ordInc / 100_000_000).toFixed(0)}億円`
+                            : `${(ordInc / 10_000).toFixed(0)}万円`
+                        : '—';
                       return (
                         <Link
                           key={item.corporate_number}
                           href={`/${locale}/company/${item.corporate_number}`}
-                          className="grid grid-cols-[1fr_auto] gap-x-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 group transition-colors items-center"
+                          className="grid grid-cols-[1fr_auto_auto] gap-x-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 group transition-colors items-center"
                         >
                           <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary dark:group-hover:text-secondary truncate min-w-0" title={name}>
                             {name}
                           </span>
-                          <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right">
+                          <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right w-16 sm:w-20">
                             {salesStr}
+                          </span>
+                          <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right w-16 sm:w-20">
+                            {ordIncStr}
                           </span>
                         </Link>
                       );
@@ -679,9 +697,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 {nearby.length > 0 ? (
                   <div className="w-full">
                     {/* Column header */}
-                    <div className="grid grid-cols-[1fr_auto] gap-x-2 px-1 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800">
+                    <div className="grid grid-cols-[1fr_auto_auto] gap-x-2 px-1 pb-1.5 mb-1 border-b border-slate-100 dark:border-slate-800">
                       <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500">{locale === 'en' ? 'Company' : locale === 'vi' ? 'Công ty' : '企業名'}</span>
-                      <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500 text-right">{locale === 'en' ? 'Revenue' : locale === 'vi' ? 'Doanh thu' : '売上高'}</span>
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500 text-right w-16 sm:w-20">{locale === 'en' ? 'Revenue' : locale === 'vi' ? 'Doanh thu' : '売上高'}</span>
+                      <span className="text-[10px] font-medium uppercase tracking-wider text-slate-500 text-right w-16 sm:w-20">{locale === 'en' ? 'Ord. Profit' : locale === 'vi' ? 'Lợi nhuận' : '経常利益'}</span>
                     </div>
                     {nearby.map(item => {
                       const name = locale === 'en' && item.company_name_en ? item.company_name_en : item.company_name;
@@ -699,17 +718,34 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                             : sales >= 100_000_000 ? `${(sales / 100_000_000).toFixed(0)}億円`
                             : `${(sales / 10_000).toFixed(0)}万円`
                         : '—';
+                      const ordInc = item.ordinary_income;
+                      const ordIncStr = ordInc
+                        ? locale === 'en'
+                          ? ordInc >= 1_000_000_000_000 ? `¥${(ordInc / 1_000_000_000_000).toFixed(1)}T`
+                            : ordInc >= 1_000_000_000 ? `¥${(ordInc / 1_000_000_000).toFixed(1)}B`
+                            : `¥${(ordInc / 1_000_000).toFixed(0)}M`
+                          : locale === 'vi'
+                          ? ordInc >= 1_000_000_000_000 ? `${(ordInc / 1_000_000_000_000).toFixed(1)}兆円`
+                            : ordInc >= 100_000_000 ? `${(ordInc / 100_000_000).toFixed(0)}億円`
+                            : `${(ordInc / 10_000).toFixed(0)}万円`
+                          : ordInc >= 1_000_000_000_000 ? `${(ordInc / 1_000_000_000_000).toFixed(1)}兆円`
+                            : ordInc >= 100_000_000 ? `${(ordInc / 100_000_000).toFixed(0)}億円`
+                            : `${(ordInc / 10_000).toFixed(0)}万円`
+                        : '—';
                       return (
                         <Link
                           key={item.corporate_number}
                           href={`/${locale}/company/${item.corporate_number}`}
-                          className="grid grid-cols-[1fr_auto] gap-x-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 group transition-colors items-center"
+                          className="grid grid-cols-[1fr_auto_auto] gap-x-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 group transition-colors items-center"
                         >
                           <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary dark:group-hover:text-secondary truncate min-w-0" title={name}>
                             {name}
                           </span>
-                          <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right">
+                          <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right w-16 sm:w-20">
                             {salesStr}
+                          </span>
+                          <span className="text-[11px] font-mono font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right w-16 sm:w-20">
+                            {ordIncStr}
                           </span>
                         </Link>
                       );
