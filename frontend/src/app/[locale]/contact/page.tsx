@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { ShieldAlert, Loader2, CheckCircle2, Building2, FileText, Mail, Info } from "lucide-react";
+import { ShieldAlert, Loader2, CheckCircle2, Building2, FileText, Mail, Info, User, Phone } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
 export default function ContactPage() {
@@ -12,33 +12,78 @@ export default function ContactPage() {
   const [formData, setFormData] = useState({
     corporate_number: "",
     company_name: "",
-    requester_email: "",
+    person_in_charge: "",
+    mobile_number: "",
     type: "hide",
     message: "",
     website_url: "" // Honeypot field
   });
   
-  // Math CAPTCHA states
-  const [num1, setNum1] = useState(0);
-  const [num2, setNum2] = useState(0);
-  const [captchaInput, setCaptchaInput] = useState("");
+  // Turnstile CAPTCHA state
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const turnstileContainerId = "contact-turnstile-container";
   
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Generate simple math question on mount
-    setNum1(Math.floor(Math.random() * 10) + 1);
-    setNum2(Math.floor(Math.random() * 10) + 1);
+    // Inject Turnstile script
+    const scriptId = "cloudflare-turnstile-script";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+      script.async = true;
+      script.defer = true;
+      document.body.appendChild(script);
+    }
+  }, []);
+
+  useEffect(() => {
+    let widgetId: any = null;
+    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "1x00000000000000000000AA";
+    
+    const renderTurnstile = () => {
+      const container = document.getElementById(turnstileContainerId);
+      if (container && (window as any).turnstile) {
+        try {
+          widgetId = (window as any).turnstile.render(`#${turnstileContainerId}`, {
+            sitekey: siteKey,
+            theme: 'light',
+            language: locale,
+            callback: (token: string) => setTurnstileToken(token),
+            'expired-callback': () => setTurnstileToken(""),
+            'error-callback': () => setTurnstileToken("")
+          });
+        } catch (e) {
+          console.error("Turnstile render error", e);
+        }
+      }
+    };
+
+    // Retry render if script is still loading
+    const interval = setInterval(() => {
+      if ((window as any).turnstile) {
+        clearInterval(interval);
+        renderTurnstile();
+      }
+    }, 100);
+
+    return () => {
+      clearInterval(interval);
+      if (widgetId !== null && (window as any).turnstile) {
+        (window as any).turnstile.remove(widgetId);
+      }
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Verify CAPTCHA
-    if (parseInt(captchaInput) !== num1 + num2) {
-      setError(t.contact.captchaError);
+    if (!turnstileToken && process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY !== "") {
+      setError(locale === "vi" ? "Vui lòng xác minh CAPTCHA" : locale === "en" ? "Please verify CAPTCHA" : "スパム対策の認証を完了してください。");
       return;
     }
 
@@ -51,9 +96,7 @@ export default function ContactPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          num1,
-          num2,
-          captchaInput: parseInt(captchaInput, 10)
+          turnstileToken
         })
       });
       const data = await res.json();
@@ -211,6 +254,46 @@ export default function ContactPage() {
                   <p className="text-[10px] text-slate-500 mt-1">{t.contact.emailHint}</p>
                 </div>
 
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      {locale === "vi" ? "Người phụ trách" : locale === "en" ? "Person in charge" : "担当者"} <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <User className="w-4 h-4 text-slate-400" />
+                      </div>
+                      <input 
+                        type="text" 
+                        required 
+                        value={formData.person_in_charge}
+                        onChange={(e) => setFormData({ ...formData, person_in_charge: e.target.value })}
+                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                        placeholder={locale === "vi" ? "Ví dụ: Nguyễn Văn A" : locale === "en" ? "e.g., John Doe" : "例：山田 太郎"}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      {locale === "vi" ? "Số điện thoại di động" : locale === "en" ? "Mobile Number" : "携帯番号"} <span className="text-rose-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Phone className="w-4 h-4 text-slate-400" />
+                      </div>
+                      <input 
+                        type="tel" 
+                        required 
+                        value={formData.mobile_number}
+                        onChange={(e) => setFormData({ ...formData, mobile_number: e.target.value })}
+                        className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:ring-2 focus:ring-primary focus:border-primary outline-none transition-all"
+                        placeholder={locale === "vi" ? "Ví dụ: 090-1234-5678" : locale === "en" ? "e.g., 090-1234-5678" : "例：090-1234-5678"}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="space-y-1.5">
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                     {t.contact.message} <span className="text-rose-500">*</span>
@@ -243,24 +326,9 @@ export default function ContactPage() {
                   />
                 </div>
 
-                {/* Math CAPTCHA */}
-                <div className="space-y-1.5 p-4 border border-rose-100 bg-rose-50/50 dark:border-rose-900/30 dark:bg-rose-950/20 rounded-xl">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    {t.contact.captchaTitle} <span className="text-rose-500">*</span>
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <span className="text-lg font-black bg-white dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700">
-                      {num1} + {num2} = 
-                    </span>
-                    <input 
-                      type="number" 
-                      required 
-                      value={captchaInput}
-                      onChange={(e) => setCaptchaInput(e.target.value)}
-                      className="w-24 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-bold focus:ring-2 focus:ring-primary focus:border-primary outline-none text-center"
-                      placeholder="?"
-                    />
-                  </div>
+                {/* Turnstile CAPTCHA */}
+                <div className="flex justify-center mt-4">
+                  <div id={turnstileContainerId}></div>
                 </div>
               </div>
 

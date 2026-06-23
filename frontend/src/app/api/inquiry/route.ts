@@ -3,7 +3,7 @@ import { createInquiry, checkRateLimit } from "@/lib/db";
 
 export async function POST(request: Request) {
   try {
-    const { corporate_number, company_name, type, requester_email, message, website_url, num1, num2, captchaInput } = await request.json();
+    const { corporate_number, company_name, type, requester_email, person_in_charge, mobile_number, message, website_url, turnstileToken } = await request.json();
 
     // 1. Honeypot check
     // If 'website_url' is filled, it's a bot. Silently pretend success.
@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     }
 
     // 3. Validation
-    if (!corporate_number || !company_name || !type || !requester_email || !message) {
+    if (!corporate_number || !company_name || !type || !requester_email || !person_in_charge || !mobile_number || !message) {
       return NextResponse.json({ error: "必須項目をご入力ください。" }, { status: 400 });
     }
 
@@ -42,15 +42,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "お問い合わせ種別が正しくありません。" }, { status: 400 });
     }
 
-    // Validate CAPTCHA
-    if (typeof num1 !== "number" || typeof num2 !== "number" || typeof captchaInput !== "number") {
-      return NextResponse.json({ error: "計算問題の入力値が正しくありません。" }, { status: 400 });
-    }
-    if (num1 + num2 !== captchaInput) {
-      return NextResponse.json({ error: "計算問題の答えが正しくありません。" }, { status: 400 });
+    // Verify Cloudflare Turnstile CAPTCHA if configured
+    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+    if (turnstileSecret) {
+      if (!turnstileToken) {
+        return NextResponse.json({ error: "スパム対策の認証を完了してください。" }, { status: 400 });
+      }
+      const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          secret: turnstileSecret,
+          response: turnstileToken,
+        }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyData.success) {
+        console.error("Turnstile verification failed in inquiry:", verifyData);
+        return NextResponse.json({ error: "スパム対策の認証に失敗しました。ページを更新して再度お試しください。" }, { status: 400 });
+      }
     }
 
-    const success = await createInquiry(corporate_number, company_name, type, requester_email, message, ip);
+    const success = await createInquiry(corporate_number, company_name, type, requester_email, person_in_charge, mobile_number, message, ip);
     
     if (success) {
       // NOTE: Security Upgrades: Automatic hiding has been removed to prevent unauthorized company opt-outs.
