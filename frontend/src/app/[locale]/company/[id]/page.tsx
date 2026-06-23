@@ -400,7 +400,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
               {/* Dynamic Summary/Overview paragraph for SEO and users */}
               <div className="mb-6 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/80">
-                <p className="text-xs sm:text-sm leading-relaxed text-slate-650 dark:text-slate-350 font-semibold">
+                <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-400 italic">
                   {onPageSummary}
                 </p>
               </div>

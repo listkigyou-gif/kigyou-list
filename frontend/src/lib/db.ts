@@ -1347,6 +1347,7 @@ export async function searchCompanies(
       params.push(limit, offset);
     }
     
+    console.log(`[DB.ts searchCompanies] EXECUTING SQL (isPG: ${isPG}, hasComplexFilters: ${hasComplexFilters}): \n${sql}\n`);
     const results = await runQuery(sql, params);
     const companies = results.map(mapCompanyRow);
 

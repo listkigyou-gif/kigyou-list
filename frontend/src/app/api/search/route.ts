@@ -203,7 +203,10 @@ export async function GET(request: NextRequest) {
       offset = 0;
     }
     
+    const startTime = Date.now();
     const result = await searchCompanies(keyword, filters, limit, offset);
+    console.log(`[API Search] searchCompanies took ${Date.now() - startTime}ms for filters:`, JSON.stringify(filters));
+
     
     // Dynamically fetch cities with counts if prefecture is selected
     let cities: any[] = [];
