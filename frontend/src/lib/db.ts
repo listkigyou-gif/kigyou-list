@@ -1273,6 +1273,16 @@ export async function searchCompanies(
     if (filters.min_ordinary_income !== undefined || filters.max_ordinary_income !== undefined) activeFiltersList.push('ordinary_income');
     if (filters.min_net_income !== undefined || filters.max_net_income !== undefined) activeFiltersList.push('net_income');
 
+    const isDefaultSearch = !keyword && activeFiltersList.length === 0 && offset === 0 && limit === 20;
+    const defaultSearchCacheKey = 'search_default_page_0';
+    if (isDefaultSearch) {
+      const cachedResult = getCachedData<{ companies: Company[]; totalCount: number }>(defaultSearchCacheKey);
+      if (cachedResult) {
+        console.log('[DB.ts searchCompanies] CACHE HIT for default search page');
+        return cachedResult;
+      }
+    }
+
     let totalCount = 0;
     
     if (activeFiltersList.length === 0) {
@@ -1427,10 +1437,16 @@ export async function searchCompanies(
       }
     }
 
-    return {
+    const finalResult = {
       companies,
       totalCount
     };
+
+    if (isDefaultSearch) {
+      setCachedData(defaultSearchCacheKey, finalResult);
+    }
+
+    return finalResult;
   } catch (error) {
     console.error('Error in searchCompanies:', error, filters);
     return { companies: [], totalCount: 0 };
