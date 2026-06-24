@@ -602,16 +602,34 @@ export async function getRelatedCompanies(
       const placeholders = industryCodes.map(() => '?').join(',');
 
       if (isPG) {
-        // PostgreSQL: Dynamic Split Query using explicit JOINs to bypass LIMIT trap
+        // PostgreSQL: Two-pass query using index on has_financials + capital_amount
         const rows1 = await runQuery(`
           SELECT c.*
           FROM companies c
           JOIN company_industries ci ON c.corporate_number = ci.corporate_number
           WHERE ci.industry_code IN (${placeholders}) AND c.corporate_number != ?
-          ORDER BY c.has_financials DESC NULLS LAST, c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+            AND c.has_financials = true
+          ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
           LIMIT 10
         `, [...industryCodes, corpNum]);
         sameIndustry.push(...rows1.map(mapCompanyRow));
+
+        if (sameIndustry.length < 10) {
+          const remaining = 10 - sameIndustry.length;
+          const excludeIds = [corpNum, ...sameIndustry.map(c => c.corporate_number)];
+          const excludePlaceholders = excludeIds.map(() => '?').join(',');
+          const rows2 = await runQuery(`
+            SELECT c.*
+            FROM companies c
+            JOIN company_industries ci ON c.corporate_number = ci.corporate_number
+            WHERE ci.industry_code IN (${placeholders}) 
+              AND c.corporate_number NOT IN (${excludePlaceholders})
+              AND c.has_financials = false
+            ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+            LIMIT ?
+          `, [...industryCodes, ...excludeIds, remaining]);
+          sameIndustry.push(...rows2.map(mapCompanyRow));
+        }
       } else {
         // SQLite: Dynamic Split Query
         // Determine whether to use INDEXED BY based on industry size
@@ -659,16 +677,33 @@ export async function getRelatedCompanies(
       const excludePlaceholders = excludeIds.map(() => '?').join(',');
 
       if (isPG) {
-        // PostgreSQL: Dynamic Split Query using explicit JOINs
+        // PostgreSQL: Two-pass query using index on has_financials + capital_amount
         const rows1 = await runQuery(`
           SELECT c.*
           FROM companies c
           WHERE c.prefecture_code = ? 
-          AND c.corporate_number NOT IN (${excludePlaceholders})
-          ORDER BY c.has_financials DESC NULLS LAST, c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+            AND c.corporate_number NOT IN (${excludePlaceholders})
+            AND c.has_financials = true
+          ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
           LIMIT 10
         `, [prefectureCode, ...excludeIds]);
         nearby.push(...rows1.map(mapCompanyRow));
+
+        if (nearby.length < 10) {
+          const remaining = 10 - nearby.length;
+          const excludeIds2 = [corpNum, ...sameIndustry.map(c => c.corporate_number), ...nearby.map(c => c.corporate_number)];
+          const excludePlaceholders2 = excludeIds2.map(() => '?').join(',');
+          const rows2 = await runQuery(`
+            SELECT c.*
+            FROM companies c
+            WHERE c.prefecture_code = ? 
+              AND c.corporate_number NOT IN (${excludePlaceholders2})
+              AND c.has_financials = false
+            ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+            LIMIT ?
+          `, [prefectureCode, ...excludeIds2, remaining]);
+          nearby.push(...rows2.map(mapCompanyRow));
+        }
       } else {
         // SQLite: Dynamic Split Query
         const prefCount = await getPrefectureCount(prefectureCode);
