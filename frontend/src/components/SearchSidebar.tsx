@@ -304,25 +304,24 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         </div>
 
         {/* Filter by City (市区町村) - Lọc phân cấp dưới Tỉnh */}
-        {prefCode && cities && cities.length > 0 && (
-          <div>
-            <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
-              {t.search.city}
-            </label>
-            <select
-              value={city || ""}
-              onChange={(e) => navigate({ city: e.target.value || null })}
-              className="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
-            >
-              <option value="">{t.search.allCities}</option>
-              {cities.map((c) => (
-                <option key={c.cityName} value={c.cityName}>
-                  {c.cityName} ({c.count.toLocaleString()}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+        <div>
+          <label className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+            {t.search.city}
+          </label>
+          <select
+            value={city || ""}
+            onChange={(e) => navigate({ city: e.target.value || null })}
+            disabled={!prefCode}
+            className="w-full text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-1 focus:ring-primary dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-900"
+          >
+            <option value="">{t.search.allCities}</option>
+            {prefCode && cities && cities.map((c) => (
+              <option key={c.cityName} value={c.cityName}>
+                {c.cityName} ({c.count.toLocaleString()}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
+              </option>
+            ))}
+          </select>
+        </div>
 
         {/* Filter by Industry */}
         <div>
