@@ -59,9 +59,9 @@ interface SearchSidebarProps {
   maxOpIncome?: number;
   minOrdIncome?: number;
   maxOrdIncome?: number;
-  minNetIncome?: number;
   maxNetIncome?: number;
   onFilterChange?: (updates: Record<string, any>) => void;
+  onApplyFilters?: () => void;
   className?: string;
   onCloseMobile?: () => void;
 }
@@ -100,6 +100,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   minNetIncome,
   maxNetIncome,
   onFilterChange,
+  onApplyFilters,
   className,
   onCloseMobile,
 }) => {
@@ -846,7 +847,22 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             </div>
           )}
         </div>
+        </div>
       </div>
+
+      {/* Apply Filters Button */}
+      {onApplyFilters && (
+        <div className="sticky bottom-0 left-0 right-0 p-4 bg-white dark:bg-[#1C2128] border-t border-slate-200 dark:border-slate-800 z-20 mt-4">
+          <button
+            type="button"
+            onClick={onApplyFilters}
+            className="w-full py-3 px-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow-sm transition-all transform active:scale-95 flex items-center justify-center gap-2"
+          >
+            <Filter className="w-4 h-4" />
+            {locale === 'en' ? 'Apply Filters' : locale === 'vi' ? 'Áp dụng bộ lọc' : '検索する'}
+          </button>
+        </div>
+      )}
     </aside>
   );
 };

@@ -368,165 +368,131 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   };
 
   // 3. Callback handlers for Sidebar and inputs
-  const handleFilterChange = (updates: Record<string, any>) => {
+  const handleFilterChange = async (updates: Record<string, any>) => {
     // Determine and update individual states
-    const resolvedUpdates: Record<string, any> = {};
     
     if (updates.keyword !== undefined) {
       setKeyword(updates.keyword || "");
-      resolvedUpdates.keyword = updates.keyword || "";
     }
     if (updates.prefecture !== undefined) {
-      setPrefCode(updates.prefecture || undefined);
-      resolvedUpdates.prefCode = updates.prefecture || null;
+      const newPref = updates.prefecture || undefined;
+      setPrefCode(newPref);
       // Reset city filter when prefecture changes
       setCity(undefined);
-      resolvedUpdates.city = null;
+      
+      // Fetch cities dynamically without triggering a full search
+      if (newPref) {
+        try {
+          const res = await fetch(`/api/metadata/cities?prefecture=${newPref}`);
+          if (res.ok) {
+            const data = await res.json();
+            setCities(data);
+          }
+        } catch (e) {
+          console.error("Error fetching cities", e);
+        }
+      } else {
+        setCities([]);
+      }
     }
     if (updates.city !== undefined) {
       setCity(updates.city || undefined);
-      resolvedUpdates.city = updates.city || null;
     }
     if (updates.industry !== undefined) {
       setIndCode(updates.industry || undefined);
-      resolvedUpdates.indCode = updates.industry || null;
     }
     if (updates.min_employees !== undefined) {
-      const val = updates.min_employees ? parseInt(updates.min_employees, 10) : undefined;
-      setMinEmp(val);
-      resolvedUpdates.minEmp = val || null;
+      setMinEmp(updates.min_employees ? parseInt(updates.min_employees, 10) : undefined);
     }
     if (updates.max_employees !== undefined) {
-      const val = updates.max_employees ? parseInt(updates.max_employees, 10) : undefined;
-      setMaxEmp(val);
-      resolvedUpdates.maxEmp = val || null;
+      setMaxEmp(updates.max_employees ? parseInt(updates.max_employees, 10) : undefined);
     }
     if (updates.min_capital !== undefined) {
-      const val = updates.min_capital ? parseInt(updates.min_capital, 10) : undefined;
-      setMinCap(val);
-      resolvedUpdates.minCap = val || null;
+      setMinCap(updates.min_capital ? parseInt(updates.min_capital, 10) : undefined);
     }
     if (updates.max_capital !== undefined) {
-      const val = updates.max_capital ? parseInt(updates.max_capital, 10) : undefined;
-      setMaxCap(val);
-      resolvedUpdates.maxCap = val || null;
+      setMaxCap(updates.max_capital ? parseInt(updates.max_capital, 10) : undefined);
     }
     if (updates.hiring !== undefined) {
-      const val = !!updates.hiring;
-      setHasHiring(val);
-      resolvedUpdates.hasHiring = val;
+      setHasHiring(!!updates.hiring);
     }
     if (updates.subsidy !== undefined) {
-      const val = !!updates.subsidy;
-      setHasSubsidy(val);
-      resolvedUpdates.hasSubsidy = val;
+      setHasSubsidy(!!updates.subsidy);
     }
     if (updates.bidding !== undefined) {
-      const val = !!updates.bidding;
-      setHasBidding(val);
-      resolvedUpdates.hasBidding = val;
+      setHasBidding(!!updates.bidding);
     }
     if (updates.min_establishment_year !== undefined) {
-      const val = updates.min_establishment_year ? parseInt(updates.min_establishment_year, 10) : undefined;
-      setMinEstYear(val);
-      resolvedUpdates.minEstYear = val || null;
+      setMinEstYear(updates.min_establishment_year ? parseInt(updates.min_establishment_year, 10) : undefined);
     }
     if (updates.max_establishment_year !== undefined) {
-      const val = updates.max_establishment_year ? parseInt(updates.max_establishment_year, 10) : undefined;
-      setMaxEstYear(val);
-      resolvedUpdates.maxEstYear = val || null;
+      setMaxEstYear(updates.max_establishment_year ? parseInt(updates.max_establishment_year, 10) : undefined);
     }
     if (updates.award !== undefined) {
-      const val = !!updates.award;
-      setHasAward(val);
-      resolvedUpdates.hasAward = val;
+      setHasAward(!!updates.award);
     }
     if (updates.certification !== undefined) {
-      const val = !!updates.certification;
-      setHasCertification(val);
-      resolvedUpdates.hasCertification = val;
+      setHasCertification(!!updates.certification);
     }
     if (updates.patent !== undefined) {
-      const val = !!updates.patent;
-      setHasPatent(val);
-      resolvedUpdates.hasPatent = val;
+      setHasPatent(!!updates.patent);
     }
     if (updates.financials !== undefined) {
-      const val = !!updates.financials;
-      setHasFinancials(val);
-      resolvedUpdates.hasFinancials = val;
+      setHasFinancials(!!updates.financials);
     }
     if (updates.min_sales !== undefined) {
-      const val = updates.min_sales ? parseInt(updates.min_sales, 10) : undefined;
-      setMinSales(val);
-      resolvedUpdates.minSales = val || null;
+      setMinSales(updates.min_sales ? parseInt(updates.min_sales, 10) : undefined);
     }
     if (updates.max_sales !== undefined) {
-      const val = updates.max_sales ? parseInt(updates.max_sales, 10) : undefined;
-      setMaxSales(val);
-      resolvedUpdates.maxSales = val || null;
+      setMaxSales(updates.max_sales ? parseInt(updates.max_sales, 10) : undefined);
     }
     if (updates.email !== undefined) {
-      const val = !!updates.email;
-      setHasEmail(val);
-      resolvedUpdates.hasEmail = val;
+      setHasEmail(!!updates.email);
     }
     if (updates.phone !== undefined) {
-      const val = !!updates.phone;
-      setHasPhone(val);
-      resolvedUpdates.hasPhone = val;
+      setHasPhone(!!updates.phone);
     }
     if (updates.website !== undefined) {
-      const val = !!updates.website;
-      setHasWebsite(val);
-      resolvedUpdates.hasWebsite = val;
+      setHasWebsite(!!updates.website);
     }
     if (updates.fax !== undefined) {
-      const val = !!updates.fax;
-      setHasFax(val);
-      resolvedUpdates.hasFax = val;
+      setHasFax(!!updates.fax);
     }
     if (updates.status !== undefined) {
       setCompanyStatus(updates.status || undefined);
-      resolvedUpdates.companyStatus = updates.status || null;
     }
     if (updates.min_operating_income !== undefined) {
-      const val = updates.min_operating_income ? parseFloat(updates.min_operating_income) : undefined;
-      setMinOpIncome(val);
-      resolvedUpdates.minOpIncome = val || null;
+      setMinOpIncome(updates.min_operating_income ? parseFloat(updates.min_operating_income) : undefined);
     }
     if (updates.max_operating_income !== undefined) {
-      const val = updates.max_operating_income ? parseFloat(updates.max_operating_income) : undefined;
-      setMaxOpIncome(val);
-      resolvedUpdates.maxOpIncome = val || null;
+      setMaxOpIncome(updates.max_operating_income ? parseFloat(updates.max_operating_income) : undefined);
     }
     if (updates.min_ordinary_income !== undefined) {
-      const val = updates.min_ordinary_income ? parseFloat(updates.min_ordinary_income) : undefined;
-      setMinOrdIncome(val);
-      resolvedUpdates.minOrdIncome = val || null;
+      setMinOrdIncome(updates.min_ordinary_income ? parseFloat(updates.min_ordinary_income) : undefined);
     }
     if (updates.max_ordinary_income !== undefined) {
-      const val = updates.max_ordinary_income ? parseFloat(updates.max_ordinary_income) : undefined;
-      setMaxOrdIncome(val);
-      resolvedUpdates.maxOrdIncome = val || null;
+      setMaxOrdIncome(updates.max_ordinary_income ? parseFloat(updates.max_ordinary_income) : undefined);
     }
     if (updates.min_net_income !== undefined) {
-      const val = updates.min_net_income ? parseFloat(updates.min_net_income) : undefined;
-      setMinNetIncome(val);
-      resolvedUpdates.minNetIncome = val || null;
+      setMinNetIncome(updates.min_net_income ? parseFloat(updates.min_net_income) : undefined);
     }
     if (updates.max_net_income !== undefined) {
-      const val = updates.max_net_income ? parseFloat(updates.max_net_income) : undefined;
-      setMaxNetIncome(val);
-      resolvedUpdates.maxNetIncome = val || null;
+      setMaxNetIncome(updates.max_net_income ? parseFloat(updates.max_net_income) : undefined);
     }
 
     // Always reset to page 1 on filter changes
     setPage(1);
-    resolvedUpdates.page = 1;
-    resolvedUpdates.forceOffset = true;
 
-    executeSearch(resolvedUpdates);
+    // Note: executeSearch is no longer called here.
+    // User must click Apply Filters button.
+  };
+
+  const handleApplyFilters = () => {
+    setPage(1);
+    executeSearch({ page: 1, forceOffset: true });
+    if (isMobileDrawerOpen) {
+      setIsMobileDrawerOpen(false);
+    }
   };
 
   const handleKeywordSearch = (e: React.FormEvent<HTMLFormElement>) => {
@@ -654,13 +620,12 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             minNetIncome={minNetIncome}
             maxNetIncome={maxNetIncome}
             onFilterChange={handleFilterChange}
+            onApplyFilters={handleApplyFilters}
             onCloseMobile={() => setIsMobileDrawerOpen(false)}
           />
         </div>
       </div>
 
-      {/* Sidebar Filters */}
-      <SearchSidebar
         prefectures={prefectures}
         industries={industries}
         cities={cities}
@@ -694,6 +659,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
         minNetIncome={minNetIncome}
         maxNetIncome={maxNetIncome}
         onFilterChange={handleFilterChange}
+        onApplyFilters={handleApplyFilters}
       />
 
       {/* Main Results Column */}
