@@ -625,7 +625,6 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
           />
         </div>
       </div>
-      </div>
 
       {/* Desktop Sidebar (hidden on mobile) */}
       <div className="hidden lg:block w-72 shrink-0">
