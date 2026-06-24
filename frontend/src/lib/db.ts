@@ -1544,19 +1544,41 @@ export async function getSitemapCompanies(limit?: number, offset?: number): Prom
     `;
     const params: any[] = [];
     if (limit !== undefined) {
-      sql += ' LIMIT ?';
+      sql += ' LIMIT $1';
       params.push(limit);
     }
     if (offset !== undefined) {
-      sql += ' OFFSET ?';
+      sql += ' OFFSET $2';
       params.push(offset);
     }
-    const rows = await runQuery(sql, params);
-    return rows ? rows.map(r => ({
-      corporate_number: r.corporate_number,
-      updated_at: r.updated_at ? String(r.updated_at) : '',
-      employee_count: r.employee_count !== null && r.employee_count !== undefined ? Number(r.employee_count) : null,
-    })) : [];
+
+    const isPG = !!DATABASE_URL;
+    if (isPG) {
+      const pool = getPGPool();
+      const client = await pool.connect();
+      try {
+        await client.query('SET statement_timeout = 30000'); // Increase timeout to 30s
+        const result = await client.query(sql, params);
+        return result.rows.map(r => ({
+          corporate_number: r.corporate_number,
+          updated_at: r.updated_at ? String(r.updated_at) : '',
+          employee_count: r.employee_count !== null && r.employee_count !== undefined ? Number(r.employee_count) : null,
+        }));
+      } finally {
+        client.release();
+      }
+    } else {
+      const db = getSQLiteDB();
+      // SQLite parameter binding uses ? instead of $1
+      const sqliteSql = sql.replace(/\$\d+/g, '?');
+      const stmt = db.prepare(sqliteSql);
+      const rows = stmt.all(...params);
+      return rows ? rows.map((r: any) => ({
+        corporate_number: r.corporate_number,
+        updated_at: r.updated_at ? String(r.updated_at) : '',
+        employee_count: r.employee_count !== null && r.employee_count !== undefined ? Number(r.employee_count) : null,
+      })) : [];
+    }
   } catch (error) {
     console.error('Error in getSitemapCompanies:', error);
     return [];
