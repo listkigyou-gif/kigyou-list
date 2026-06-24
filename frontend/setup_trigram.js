@@ -16,7 +16,7 @@ async function setupTrigram() {
     // Create GIN index using gin_trgm_ops
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_companies_name_trgm 
-      ON companies USING gin (name gin_trgm_ops);
+      ON companies USING gin (company_name gin_trgm_ops);
     `);
     
     console.log("✅ Successfully created Trigram Index idx_companies_name_trgm!");
