@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getCitiesInPrefecture } from "@/lib/db";
+import { getCitiesWithCounts } from "@/lib/db";
 
 export async function GET(request: Request) {
   try {
@@ -10,7 +10,7 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Missing prefecture code" }, { status: 400 });
     }
 
-    const cities = await getCitiesInPrefecture(prefectureCode);
+    const cities = await getCitiesWithCounts(prefectureCode);
     
     return NextResponse.json(cities);
   } catch (error) {

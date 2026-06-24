@@ -625,42 +625,49 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
           />
         </div>
       </div>
+      </div>
 
-        prefectures={prefectures}
-        industries={industries}
-        cities={cities}
-        prefCode={prefCode}
-        city={city}
-        indCode={indCode}
-        minEmp={minEmp}
-        maxEmp={maxEmp}
-        minCap={minCap}
-        maxCap={maxCap}
-        hasHiring={hasHiring}
-        hasSubsidy={hasSubsidy}
-        hasBidding={hasBidding}
-        minEstYear={minEstYear}
-        maxEstYear={maxEstYear}
-        hasAward={hasAward}
-        hasCertification={hasCertification}
-        hasPatent={hasPatent}
-        hasFinancials={hasFinancials}
-        minSales={minSales}
-        maxSales={maxSales}
-        hasEmail={hasEmail}
-        hasPhone={hasPhone}
-        hasWebsite={hasWebsite}
-        hasFax={hasFax}
-        companyStatus={companyStatus}
-        minOpIncome={minOpIncome}
-        maxOpIncome={maxOpIncome}
-        minOrdIncome={minOrdIncome}
-        maxOrdIncome={maxOrdIncome}
-        minNetIncome={minNetIncome}
-        maxNetIncome={maxNetIncome}
-        onFilterChange={handleFilterChange}
-        onApplyFilters={handleApplyFilters}
-      />
+      {/* Desktop Sidebar (hidden on mobile) */}
+      <div className="hidden lg:block w-72 shrink-0">
+        <div className="sticky top-24">
+          <SearchSidebar
+            prefectures={prefectures}
+            industries={industries}
+            cities={cities}
+            prefCode={prefCode}
+            city={city}
+            indCode={indCode}
+            minEmp={minEmp}
+            maxEmp={maxEmp}
+            minCap={minCap}
+            maxCap={maxCap}
+            hasHiring={hasHiring}
+            hasSubsidy={hasSubsidy}
+            hasBidding={hasBidding}
+            minEstYear={minEstYear}
+            maxEstYear={maxEstYear}
+            hasAward={hasAward}
+            hasCertification={hasCertification}
+            hasPatent={hasPatent}
+            hasFinancials={hasFinancials}
+            minSales={minSales}
+            maxSales={maxSales}
+            hasEmail={hasEmail}
+            hasPhone={hasPhone}
+            hasWebsite={hasWebsite}
+            hasFax={hasFax}
+            companyStatus={companyStatus}
+            minOpIncome={minOpIncome}
+            maxOpIncome={maxOpIncome}
+            minOrdIncome={minOrdIncome}
+            maxOrdIncome={maxOrdIncome}
+            minNetIncome={minNetIncome}
+            maxNetIncome={maxNetIncome}
+            onFilterChange={handleFilterChange}
+            onApplyFilters={handleApplyFilters}
+          />
+        </div>
+      </div>
 
       {/* Main Results Column */}
       <main ref={resultsTopRef} className="flex-1 min-w-0 flex flex-col gap-6 relative">
