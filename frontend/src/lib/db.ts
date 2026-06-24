@@ -1380,9 +1380,10 @@ export async function searchCompanies(
     // If complex filters (signals, industry, keyword) are active on PostgreSQL, wrap in Materialized CTE
     // to prevent the DB optimizer from choosing a slow nested loop index scan with LIMIT optimization.
     const isPG = !!DATABASE_URL;
+    // We consider filters "complex" (needing CTE) only if they involve things other than just prefecture and city
     const hasComplexFilters = !!(
-      activeFiltersList.length > 1 || 
-      (activeFiltersList.length === 1 && activeFiltersList[0] !== 'prefecture')
+      activeFiltersList.length > 0 && 
+      !activeFiltersList.every(f => f === 'prefecture' || f === 'city')
     );
     if (isPG) {
       if (hasComplexFilters) {
