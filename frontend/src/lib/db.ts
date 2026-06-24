@@ -1568,9 +1568,11 @@ export async function getSitemapCompanies(limit?: number, offset?: number): Prom
  */
 export async function getSitemapCompaniesCount(): Promise<number> {
   try {
-    const result = await runGetQuery(`
-      SELECT COUNT(*) as count FROM sitemap_companies
-    `);
+    const isPG = !!DATABASE_URL;
+    const query = isPG
+      ? `SELECT reltuples::bigint AS count FROM pg_class WHERE relname = 'sitemap_companies'`
+      : `SELECT COUNT(*) as count FROM sitemap_companies`;
+    const result = await runGetQuery(query);
     return result ? Number(result.count) : 0;
   } catch (error) {
     console.error('Error in getSitemapCompaniesCount:', error);
