@@ -847,7 +847,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             </div>
           )}
         </div>
-        </div>
       </div>
 
       {/* Apply Filters Button */}
