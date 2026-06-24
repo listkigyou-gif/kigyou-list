@@ -604,39 +604,14 @@ export async function getRelatedCompanies(
       if (isPG) {
         // PostgreSQL: Dynamic Split Query using explicit JOINs to bypass LIMIT trap
         const rows1 = await runQuery(`
-          SELECT c.*, matches.corporate_number AS has_financials
+          SELECT c.*
           FROM companies c
-          JOIN (
-            SELECT ci.corporate_number
-            FROM company_industries ci
-            JOIN company_financial_status cfs ON ci.corporate_number = cfs.corporate_number
-            WHERE ci.industry_code IN (${placeholders}) AND ci.corporate_number != ?
-          ) AS matches ON c.corporate_number = matches.corporate_number
-          ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+          JOIN company_industries ci ON c.corporate_number = ci.corporate_number
+          WHERE ci.industry_code IN (${placeholders}) AND c.corporate_number != ?
+          ORDER BY c.has_financials DESC NULLS LAST, c.capital_amount DESC NULLS LAST, c.corporate_number ASC
           LIMIT 10
         `, [...industryCodes, corpNum]);
-        sameIndustry.push(...rows1.map(r => mapCompanyRow({ ...r, has_financials: r.has_financials })));
-
-        if (sameIndustry.length < 10) {
-          const remaining = 10 - sameIndustry.length;
-          const excludeIds = [corpNum, ...sameIndustry.map(c => c.corporate_number)];
-          const excludePlaceholders = excludeIds.map(() => '?').join(',');
-          const rows2 = await runQuery(`
-            SELECT c.*, NULL AS has_financials
-            FROM companies c
-            JOIN (
-              SELECT ci.corporate_number
-              FROM company_industries ci
-              LEFT JOIN company_financial_status cfs ON ci.corporate_number = cfs.corporate_number
-              WHERE ci.industry_code IN (${placeholders}) 
-                AND ci.corporate_number NOT IN (${excludePlaceholders})
-                AND cfs.corporate_number IS NULL
-            ) AS matches ON c.corporate_number = matches.corporate_number
-            ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
-            LIMIT ?
-          `, [...industryCodes, ...excludeIds, remaining]);
-          sameIndustry.push(...rows2.map(mapCompanyRow));
-        }
+        sameIndustry.push(...rows1.map(mapCompanyRow));
       } else {
         // SQLite: Dynamic Split Query
         // Determine whether to use INDEXED BY based on industry size
@@ -686,32 +661,14 @@ export async function getRelatedCompanies(
       if (isPG) {
         // PostgreSQL: Dynamic Split Query using explicit JOINs
         const rows1 = await runQuery(`
-          SELECT c.*, cfs.corporate_number AS has_financials
+          SELECT c.*
           FROM companies c
-          JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number
           WHERE c.prefecture_code = ? 
           AND c.corporate_number NOT IN (${excludePlaceholders})
-          ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+          ORDER BY c.has_financials DESC NULLS LAST, c.capital_amount DESC NULLS LAST, c.corporate_number ASC
           LIMIT 10
         `, [prefectureCode, ...excludeIds]);
-        nearby.push(...rows1.map(r => mapCompanyRow({ ...r, has_financials: r.has_financials })));
-
-        if (nearby.length < 10) {
-          const remaining = 10 - nearby.length;
-          const excludeIds2 = [...excludeIds, ...nearby.map(c => c.corporate_number)];
-          const excludePlaceholders2 = excludeIds2.map(() => '?').join(',');
-          const rows2 = await runQuery(`
-            SELECT c.*, NULL AS has_financials
-            FROM companies c
-            LEFT JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number
-            WHERE c.prefecture_code = ?
-            AND c.corporate_number NOT IN (${excludePlaceholders2})
-            AND cfs.corporate_number IS NULL
-            ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
-            LIMIT ?
-          `, [prefectureCode, ...excludeIds2, remaining]);
-          nearby.push(...rows2.map(mapCompanyRow));
-        }
+        nearby.push(...rows1.map(mapCompanyRow));
       } else {
         // SQLite: Dynamic Split Query
         const prefCount = await getPrefectureCount(prefectureCode);
