@@ -363,7 +363,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       if (newMaxNetIncome != null) browserParams.set("max_net_income", String(newMaxNetIncome));
       if (newPage > 1) browserParams.set("page", String(newPage));
       
-      const newUrl = browserParams.toString() ? `/search?${browserParams.toString()}` : "/search";
+      const newUrl = browserParams.toString() ? `/${locale}/search?${browserParams.toString()}` : `/${locale}/search`;
       window.history.replaceState(window.history.state, "", newUrl);
 
       // Scroll to search results on desktop/mobile

@@ -1201,9 +1201,9 @@ function buildSearchQuery(
     // 3. No financials tier (cursor had financials)
     if (isPG) {
       whereClauses.push(`(
-        (c.has_financials::int < ?) OR
-        (c.has_financials::int = ? AND (c.capital_amount < ? OR (c.capital_amount IS NULL AND ? > 0))) OR
-        (c.has_financials::int = ? AND COALESCE(c.capital_amount, 0) = ? AND c.corporate_number > ?)
+        (COALESCE(c.has_financials::int, 0) < ?) OR
+        (COALESCE(c.has_financials::int, 0) = ? AND (c.capital_amount < ? OR (c.capital_amount IS NULL AND ? > 0))) OR
+        (COALESCE(c.has_financials::int, 0) = ? AND COALESCE(c.capital_amount, 0) = ? AND c.corporate_number > ?)
       )`);
     } else {
       whereClauses.push(`(
@@ -1397,12 +1397,12 @@ export async function searchCompanies(
             ${selectPart} ${wherePart}
           )
           SELECT * FROM filtered_companies
-          ORDER BY has_financials DESC, capital_amount DESC NULLS LAST, corporate_number ASC`;
+          ORDER BY has_financials DESC NULLS LAST, capital_amount DESC NULLS LAST, corporate_number ASC`;
         } else {
-          sql = originalSql + ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+          sql = originalSql + ' ORDER BY c.has_financials DESC NULLS LAST, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
         }
       } else {
-        sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+        sql += ' ORDER BY c.has_financials DESC NULLS LAST, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
       }
     } else {
       // SQLite: NULL is sorted last automatically in DESC order
