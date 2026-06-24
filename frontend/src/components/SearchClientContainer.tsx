@@ -972,35 +972,48 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
 
 
                 {/* Matrix Details */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 py-2 border-t border-b border-slate-100 dark:border-slate-850 text-xs">
-                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
-                    <span className="block text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-medium">{t.company.capital}</span>
-                    <strong className="text-slate-800 dark:text-slate-200 font-semibold text-sm">
-                      {company.capital_amount ? (locale === 'en' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1})}M JPY` : locale === 'vi' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1})}tr JPY` : `${(company.capital_amount / 10000).toLocaleString()}万円`) : t.company.unregistered}
-                    </strong>
+                <div className="flex flex-col gap-2 py-2 border-t border-b border-slate-100 dark:border-slate-850 text-xs">
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+                    <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex items-center gap-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium whitespace-nowrap">{locale === 'vi' ? 'Tên phiên âm' : locale === 'en' ? 'Furigana' : 'フリガナ'}:</span>
+                      <strong className="text-slate-800 dark:text-slate-200 font-semibold text-[13px] truncate">
+                        {company.company_name_kana || t.company.unregistered}
+                      </strong>
+                    </div>
+                    
+                    <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex items-center gap-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium whitespace-nowrap">{t.company.capital}:</span>
+                      <strong className="text-slate-800 dark:text-slate-200 font-semibold text-[13px] truncate">
+                        {company.capital_amount ? (locale === 'en' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1})}M JPY` : locale === 'vi' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1})}tr JPY` : `${(company.capital_amount / 10000).toLocaleString()}万円`) : t.company.unregistered}
+                      </strong>
+                    </div>
+                    
+                    <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex items-center gap-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium whitespace-nowrap">{t.company.employees}:</span>
+                      <strong className="text-slate-800 dark:text-slate-200 font-semibold text-[13px] truncate">
+                        {company.employee_count ? `${company.employee_count.toLocaleString()}${locale === 'en' ? ' employees' : locale === 'vi' ? ' nhân viên' : '名'}` : t.company.unregistered}
+                      </strong>
+                    </div>
+                    
+                    <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex items-center gap-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium whitespace-nowrap">{t.search.establishmentYear}:</span>
+                      <strong className="text-slate-800 dark:text-slate-200 font-semibold text-[13px] truncate">
+                        {company.establishment_date ? (locale === 'en' ? `Est. ${company.establishment_date.substring(0, 4)}` : locale === 'vi' ? `Năm ${company.establishment_date.substring(0, 4)}` : `${company.establishment_date.substring(0, 4)}年`) : t.company.unregistered}
+                      </strong>
+                    </div>
                   </div>
-                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
-                    <span className="block text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-medium">{t.company.employees}</span>
-                    <strong className="text-slate-800 dark:text-slate-200 font-semibold text-sm">
-                      {company.employee_count ? `${company.employee_count.toLocaleString()}${locale === 'en' ? ' employees' : locale === 'vi' ? ' nhân viên' : '名'}` : t.company.unregistered}
-                    </strong>
-                  </div>
-                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
-                    <span className="block text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-medium">{t.search.establishmentYear}</span>
-                    <strong className="text-slate-800 dark:text-slate-200 font-semibold text-sm">
-                      {company.establishment_date ? (locale === 'en' ? `Est. ${company.establishment_date.substring(0, 4)}` : locale === 'vi' ? `Năm ${company.establishment_date.substring(0, 4)}` : `${company.establishment_date.substring(0, 4)}年`) : t.company.unregistered}
-                    </strong>
-                  </div>
-                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-between transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
-                    <span className="block text-slate-500 dark:text-slate-400 mb-1 text-[11px] font-medium">{t.company.tags}</span>
-                    <div className="flex flex-wrap gap-1 mt-1 max-h-[48px] overflow-y-auto scrollbar-thin">
+                  
+                  {/* Tags Row - Full Width */}
+                  <div className="bg-slate-50/50 dark:bg-[#1e2430]/40 p-1.5 sm:p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex items-center flex-wrap gap-1.5 transition-colors hover:bg-slate-50 dark:hover:bg-[#1e2430]/60 min-w-0">
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium whitespace-nowrap">{t.company.tags}:</span>
+                    <div className="flex flex-wrap items-center gap-1 max-h-[48px] overflow-y-auto scrollbar-thin">
                       {(() => {
                         const mediumInds = company.industries?.filter(ind => ind.classification_level === '中分類') || [];
                         if (mediumInds.length > 0) {
                           return mediumInds.map((ind, idx) => (
                             <span 
                               key={idx} 
-                              className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-700/80"
+                              className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60"
                             >
                               {ind.industry_code}.{getIndustryName(ind.industry_name, locale)}
                             </span>
@@ -1014,13 +1027,13 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                           tags.map((tag, idx) => (
                             <span 
                               key={idx} 
-                              className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60 transition-colors hover:bg-slate-200/60 dark:hover:bg-slate-700/80"
+                              className="text-[11px] font-medium px-1.5 py-0.5 rounded bg-slate-100 text-slate-600 dark:bg-slate-800/50 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60"
                             >
                               {getIndustryName(tag.trim(), locale)}
                             </span>
                           ))
                         ) : (
-                          <span className="text-slate-400 text-[11px] font-medium">{t.company.unregistered}</span>
+                          <span className="text-slate-400 text-[13px] font-medium">{t.company.unregistered}</span>
                         );
                       })()}
                     </div>

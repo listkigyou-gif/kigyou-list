@@ -733,7 +733,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
   };
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-4 sm:gap-6">
       {/* Tab Controls */}
       <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-2">
         <div className="flex gap-2">
@@ -767,7 +767,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
       </div>
 
       {/* Tab Contents */}
-      <div className="min-h-[280px]">
+      <div className="min-h-[160px] sm:min-h-[280px]">
         {activeTab === 'trend' ? renderTrendChart() : renderBalanceSheet()}
       </div>
 
@@ -775,7 +775,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
 
       {/* Shareholders Section */}
       {shareholders.length > 0 && (
-        <div className="mt-4 border border-slate-100 rounded-2xl p-5 md:p-6 dark:border-slate-800 bg-white dark:bg-[#1C2128]/40 shadow-sm">
+        <div className="mt-2 sm:mt-4 border border-slate-100 rounded-2xl p-5 md:p-6 dark:border-slate-800 bg-white dark:bg-[#1C2128]/40 shadow-sm">
           <h3 className="text-xs font-black text-slate-900 dark:text-white mb-4 flex items-center gap-2 pb-2 border-b border-slate-50 dark:border-slate-800/50">
             <Users className="w-4.5 h-4.5 text-primary" />
             {t.company.shareholdersTitle}

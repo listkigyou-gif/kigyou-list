@@ -334,12 +334,12 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
         {/* Company Title Banner */}
         <section className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 dark:from-[#1C2128] dark:to-[#171B21] dark:border-slate-800 rounded-3xl p-4 md:p-5 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4 hover:shadow-md transition-shadow duration-300">
-          <div className="flex flex-col md:flex-row gap-5 items-start">
-            <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-secondary flex items-center justify-center shrink-0 shadow-md shadow-primary/10 border border-white/20">
-              <Building2 className="w-8 h-8 text-white" />
+          <div className="flex flex-row gap-4 md:gap-5 items-start">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-tr from-primary to-secondary flex items-center justify-center shrink-0 shadow-md shadow-primary/10 border border-white/20">
+              <Building2 className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
             </div>
             
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
                 <span className={`text-[10px] font-medium px-2.5 py-0.5 rounded-full border shadow-sm ${
                   company.status === '閉鎖' || company.status === '解散'
@@ -357,6 +357,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                     {ind.industry_code}.{(t.majorIndustries as Record<string, string>)?.[ind.industry_code] || ind.industry_name}
                   </Link>
                 ))}
+                <span className="inline-flex items-center text-[10px] font-medium text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-400 px-2.5 py-0.5 rounded-full border border-slate-200/50 dark:border-slate-700/50 shadow-sm font-mono">
+                  {t.company.corporateNumber.replace('{number}', company.corporate_number)}
+                </span>
+                
                 {/* Data freshness trust signal — design system: accent gold (#F2A30F) */}
                 <span className="inline-flex items-center gap-1.5 text-[10px] font-medium text-[#B07500] bg-amber-50 dark:bg-amber-950/20 dark:text-amber-400 px-2.5 py-0.5 rounded-full border border-amber-200/70 dark:border-amber-900/40 shadow-sm">
                   <Clock className="w-3.5 h-3.5 text-[#F2A30F] animate-pulse" />
@@ -368,18 +372,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 {companyName}
               </h1>
               
-              <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-500 font-medium">
-                <span className="font-mono">
-                  {t.company.corporateNumber.replace('{number}', company.corporate_number)}
-                </span>
-                <time
-                  dateTime={toISOStringLocal(company.updated_at)}
-                  className="flex items-center gap-1 font-medium"
-                >
-                  <Calendar className="w-3.5 h-3.5" />
-                  {t.company.updatedAt.replace('{date}', formatShortDate(company.updated_at))}
-                </time>
-              </div>
+
             </div>
           </div>
 
@@ -406,22 +399,20 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3 text-sm">
-                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
-                  <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-1">{t.company.companyName}</span>
-                  <strong className="text-sm font-semibold text-slate-800 dark:text-slate-200">{companyName}</strong>
-                </div>
-                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
+              <div className="grid grid-cols-2 gap-x-4 md:gap-x-6 gap-y-3 text-sm">
+
+                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30 col-span-2 md:col-span-1">
                   <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-1">{t.company.kana}</span>
                   <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">{company.company_name_kana || t.company.unregistered}</span>
                 </div>
-                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
+                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30 col-span-2 md:col-span-1">
                   <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-1">{t.company.address}</span>
                   <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                     {company.full_address || t.company.unregistered}
                   </span>
                 </div>
-                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
+                
+                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30 col-span-1">
                   <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-1">{t.company.representative}</span>
                   <strong className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                     {company.representative_name 
@@ -429,25 +420,26 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                       : t.company.unregistered}
                   </strong>
                 </div>
-                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
-                  <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-1">{t.company.capital}</span>
-                  <strong className="text-sm font-semibold text-slate-800 dark:text-slate-200">
-                    {company.capital_amount ? (locale === 'en' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2})} Million JPY` : locale === 'vi' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2})} triệu JPY` : `${(company.capital_amount / 10000).toLocaleString()}万円`) : t.company.unregistered}
-                  </strong>
-                </div>
-                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
+                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30 col-span-1">
                   <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-1">{t.company.employees}</span>
                   <strong className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                     {company.employee_count ? (locale === 'en' ? `${company.employee_count.toLocaleString()} employees` : locale === 'vi' ? `${company.employee_count.toLocaleString()} nhân viên` : `${company.employee_count}名`) : t.company.unregistered}
                   </strong>
                 </div>
-                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30">
+                
+                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30 col-span-1">
+                  <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-1">{t.company.capital}</span>
+                  <strong className="text-sm font-semibold text-slate-800 dark:text-slate-200">
+                    {company.capital_amount ? (locale === 'en' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2})} Million JPY` : locale === 'vi' ? `¥${(company.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 2})} triệu JPY` : `${(company.capital_amount / 10000).toLocaleString()}万円`) : t.company.unregistered}
+                  </strong>
+                </div>
+                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30 col-span-1">
                   <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-1">{t.company.establishmentDate}</span>
                   <span className="text-sm font-semibold text-slate-800 dark:text-slate-200">
                     {locale === 'en' && company.establishment_date ? formatEnglishDate(company.establishment_date) : (company.establishment_date || t.company.unregistered)}
                   </span>
                 </div>
-                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30 col-span-1 md:col-span-2">
+                <div className="pb-3 border-b border-slate-50 dark:border-slate-800/30 col-span-2">
                   <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-1">{t.company.tags}</span>
                   <div className="flex flex-wrap gap-1.5 mt-1 max-h-[120px] overflow-y-auto scrollbar-thin">
                     {(() => {
