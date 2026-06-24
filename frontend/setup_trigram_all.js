@@ -13,14 +13,14 @@ async function setupTrigramAll() {
 
     console.log("2. Starting Trigram index creation on jigyo_shumoku (This may take 5-10 minutes)...");
     await pool.query(`
-      CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_companies_jigyo_trgm 
+      CREATE INDEX IF NOT EXISTS idx_companies_jigyo_trgm 
       ON companies USING gin (jigyo_shumoku gin_trgm_ops);
     `);
     console.log("✅ Successfully created Trigram Index on jigyo_shumoku!");
 
     console.log("3. Starting Trigram index creation on full_address (This may take 5-10 minutes)...");
     await pool.query(`
-      CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_companies_address_trgm 
+      CREATE INDEX IF NOT EXISTS idx_companies_address_trgm 
       ON companies USING gin (full_address gin_trgm_ops);
     `);
     console.log("✅ Successfully created Trigram Index on full_address!");
