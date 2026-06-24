@@ -1372,32 +1372,8 @@ export async function searchCompanies(
     // If complex filters (signals, industry, keyword) are active on PostgreSQL, wrap in Materialized CTE
     // to prevent the DB optimizer from choosing a slow nested loop index scan with LIMIT optimization.
     const isPG = !!DATABASE_URL;
-    // We consider filters "complex" (needing CTE) only if they involve things other than just prefecture and city
-    const hasComplexFilters = !!(
-      activeFiltersList.length > 0 && 
-      !activeFiltersList.every(f => f === 'prefecture' || f === 'city')
-    );
     if (isPG) {
-      if (hasComplexFilters) {
-        // Wrap the standard query in a Materialized CTE to bypass the PostgreSQL LIMIT optimization trap
-        const selectColumnsPattern = /SELECT\s+[\s\S]+?\s+FROM\s+companies\s+c/i;
-        const originalSql = dataQuery.sql;
-        const selectMatch = originalSql.match(selectColumnsPattern);
-        
-        if (selectMatch) {
-          const selectPart = selectMatch[0];
-          const wherePart = originalSql.substring(selectPart.length);
-          sql = `WITH filtered_companies AS MATERIALIZED (
-            ${selectPart} ${wherePart}
-          )
-          SELECT * FROM filtered_companies
-          ORDER BY has_financials DESC, capital_amount DESC, corporate_number ASC`;
-        } else {
-          sql = originalSql + ' ORDER BY c.has_financials DESC, c.capital_amount DESC, c.corporate_number ASC';
-        }
-      } else {
-        sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC, c.corporate_number ASC';
-      }
+      sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC, c.corporate_number ASC';
     } else {
       // SQLite: NULL is sorted last automatically in DESC order
       sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
