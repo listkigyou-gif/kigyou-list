@@ -20,7 +20,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 2. Rate limiting check (Max 40/min)
+    // 2. Identify Good Bots to bypass rate limiting
+    const userAgent = request.headers.get("user-agent") || "";
+    const isGoodBot = /Googlebot|Bingbot|YandexBot|Slurp|DuckDuckBot|Baiduspider/i.test(userAgent);
+
+    // 3. Rate limiting check (Max 40/min) - Bypass for Good Bots
     const now = Date.now();
 
     // Periodically clean up expired entries from memory to prevent leaks
@@ -40,17 +44,26 @@ export async function GET(request: NextRequest) {
       limitInfo.count++;
     }
 
-    if (limitInfo.count > MAX_REQUESTS_PER_WINDOW) {
-      console.warn(`[Rate Limit Exceeded] IP: ${ip} hit search rate limit.`);
-      return NextResponse.json(
-        { error: "Too Many Requests: Rate limit exceeded (Max 40/min). Please slow down." },
-        { status: 429 }
-      );
+    if (!isGoodBot) {
+      if (limitInfo.count > MAX_REQUESTS_PER_WINDOW) {
+        console.warn(`[Rate Limit Exceeded] IP: ${ip} hit search rate limit.`);
+        return NextResponse.json(
+          { error: "Too Many Requests: Rate limit exceeded (Max 40/min). Please slow down." },
+          { status: 429 }
+        );
+      }
     }
 
     const { searchParams } = request.nextUrl;
     
-    const keyword = searchParams.get("q") || "";
+    let keyword = searchParams.get("q") || "";
+    
+    // 4. Sanitize Input: Limit length and remove dangerous characters
+    if (keyword.length > 50) {
+      return NextResponse.json({ error: "Keyword too long. Please keep it under 50 characters." }, { status: 400 });
+    }
+    // Remove special characters that are useless for search but could cause DB stress
+    keyword = keyword.replace(/[!@#$%^&*()_+={}\[\]|\\:;"'<>,.?/~`]/g, ' ').trim();
     
     // Parse filters
     const filters: SearchFilters = {};
