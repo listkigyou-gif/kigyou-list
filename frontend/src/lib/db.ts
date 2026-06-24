@@ -898,8 +898,7 @@ export async function getIndustriesHierarchy(): Promise<MajorIndustry[]> {
         })
         .map(m => ({ code: m.code, name: m.name, count: Number(m.count) }));
 
-      const childrenSum = children.reduce((sum, child) => sum + child.count, 0);
-      const totalCount = Number(major.count) + childrenSum;
+      const totalCount = Number(major.count);
 
       return {
         code: major.code,
