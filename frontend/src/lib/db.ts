@@ -1397,12 +1397,12 @@ export async function searchCompanies(
             ${selectPart} ${wherePart}
           )
           SELECT * FROM filtered_companies
-          ORDER BY has_financials DESC, capital_amount DESC NULLS LAST, corporate_number ASC`;
+          ORDER BY has_financials DESC, capital_amount DESC, corporate_number ASC`;
         } else {
-          sql = originalSql + ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+          sql = originalSql + ' ORDER BY c.has_financials DESC, c.capital_amount DESC, c.corporate_number ASC';
         }
       } else {
-        sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+        sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC, c.corporate_number ASC';
       }
     } else {
       // SQLite: NULL is sorted last automatically in DESC order
