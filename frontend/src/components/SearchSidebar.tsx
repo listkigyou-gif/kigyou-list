@@ -59,6 +59,7 @@ interface SearchSidebarProps {
   maxOpIncome?: number;
   minOrdIncome?: number;
   maxOrdIncome?: number;
+  minNetIncome?: number;
   maxNetIncome?: number;
   onFilterChange?: (updates: Record<string, any>) => void;
   onApplyFilters?: () => void;
