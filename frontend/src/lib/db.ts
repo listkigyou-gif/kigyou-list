@@ -121,61 +121,8 @@ export async function parseKeywordIntent(
   // Normalize half-width English letters to full-width (keep digits half-width for numeric query routing)
   kw = kw.replace(/[A-Za-z]/g, (s) => String.fromCharCode(s.charCodeAt(0) + 0xFEE0));
 
-  // 1. Check if the keyword contains a prefecture name
-  let matchedPrefCode: string | null = null;
-  let matchedPrefName = '';
-  for (const [name, code] of Object.entries(prefectureNameToCode)) {
-    if (kw.includes(name)) {
-      matchedPrefCode = code;
-      matchedPrefName = name;
-      break;
-    }
-  }
-
-  if (matchedPrefCode) {
-    f.prefecture_code = matchedPrefCode;
-    kw = kw.replace(matchedPrefName, '').trim();
-  }
-
-  // 2. Check if the keyword contains a city name (requires prefecture code to query cities)
-  if (f.prefecture_code) {
-    try {
-      const cities = await getCitiesWithCounts(f.prefecture_code);
-      // Sort cities by length descending to match longer names first
-      const sortedCities = [...cities].sort((a, b) => b.cityName.length - a.cityName.length);
-      for (const city of sortedCities) {
-        if (kw.includes(city.cityName)) {
-          f.city_name = city.cityName;
-          kw = kw.replace(city.cityName, '').trim();
-          break;
-        }
-      }
-    } catch (e) {
-      console.error('Failed to get cities in parseKeywordIntent:', e);
-    }
-  }
-
-  // 3. Check if the remaining keyword exactly matches or contains an industry name
-  try {
-    const industryMap = await getIndustryMap();
-    for (const [code, name] of Object.entries(industryMap)) {
-      const normalizedName = name.replace(/[\s,，、]/g, '');
-      const normalizedKw = kw.replace(/[\s,，、]/g, '');
-      
-      if (normalizedKw && normalizedName) {
-        // Match exactly or with high confidence
-        if (normalizedKw === normalizedName ||
-            (normalizedKw.length >= 3 && normalizedName.includes(normalizedKw)) ||
-            (normalizedName.length >= 3 && normalizedKw.includes(normalizedName))) {
-          f.industry_code = code;
-          kw = kw.replace(name, '').trim();
-          break;
-        }
-      }
-    }
-  } catch (e) {
-    console.error('Failed to get industry map in parseKeywordIntent:', e);
-  }
+  // Note: We no longer parse locations and industries from the keyword to optimize database performance.
+  // Users must use the dedicated dropdown filters for Prefecture/City/Industry.
 
   return { parsedKeyword: kw, parsedFilters: f };
 }
@@ -193,7 +140,7 @@ function getPGPool(): Pool {
       max: 20,
       idleTimeoutMillis: 1000,
       connectionTimeoutMillis: 5000,
-      options: "-c statement_timeout=3000"
+      options: "-c statement_timeout=10000"
     });
   }
   return pgPool;
@@ -609,7 +556,7 @@ export async function getRelatedCompanies(
           JOIN company_industries ci ON c.corporate_number = ci.corporate_number
           WHERE ci.industry_code IN (${placeholders}) AND c.corporate_number != ?
             AND c.has_financials = true
-          ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+          ORDER BY (c.capital_amount + 0) DESC NULLS LAST, c.corporate_number ASC
           LIMIT 10
         `, [...industryCodes, corpNum]);
         sameIndustry.push(...rows1.map(mapCompanyRow));
@@ -625,7 +572,7 @@ export async function getRelatedCompanies(
             WHERE ci.industry_code IN (${placeholders}) 
               AND c.corporate_number NOT IN (${excludePlaceholders})
               AND c.has_financials = false
-            ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+            ORDER BY (c.capital_amount + 0) DESC NULLS LAST, c.corporate_number ASC
             LIMIT ?
           `, [...industryCodes, ...excludeIds, remaining]);
           sameIndustry.push(...rows2.map(mapCompanyRow));
@@ -684,7 +631,7 @@ export async function getRelatedCompanies(
           WHERE c.prefecture_code = ? 
             AND c.corporate_number NOT IN (${excludePlaceholders})
             AND c.has_financials = true
-          ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+          ORDER BY (c.capital_amount + 0) DESC NULLS LAST, c.corporate_number ASC
           LIMIT 10
         `, [prefectureCode, ...excludeIds]);
         nearby.push(...rows1.map(mapCompanyRow));
@@ -699,7 +646,7 @@ export async function getRelatedCompanies(
             WHERE c.prefecture_code = ? 
               AND c.corporate_number NOT IN (${excludePlaceholders2})
               AND c.has_financials = false
-            ORDER BY c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+            ORDER BY (c.capital_amount + 0) DESC NULLS LAST, c.corporate_number ASC
             LIMIT ?
           `, [prefectureCode, ...excludeIds2, remaining]);
           nearby.push(...rows2.map(mapCompanyRow));
@@ -927,7 +874,8 @@ function buildSearchQuery(
   useForcedIndex = false
 ): { sql: string; params: any[] } {
   const isPG = !!DATABASE_URL;
-  const likeOperator = isPG ? 'ILIKE' : 'LIKE';
+  const likeOperator = 'LIKE'; // MUST be LIKE for Postgres to use varchar_pattern_ops indexes
+
 
   const selectColumns = `
     c.corporate_number, c.company_name, c.company_name_kana, c.company_name_en, 
@@ -976,54 +924,34 @@ function buildSearchQuery(
     const trimmedVal = keyword.trim();
     const isDigits = /^\d+$/.test(trimmedVal);
 
-    if (isDigits) {
-      if (trimmedVal.length === 13) {
-        // Exact match for 13-digit Corporate Number ONLY (uses half-width digits)
-        whereClauses.push('c.corporate_number = ?');
-        params.push(trimmedVal);
-      } else {
-        // Prefix match for shorter digit sequence, e.g. "123%" OR LIKE match for name/address
-        // Convert digits in the name/address search pattern to full-width
-        const fullWidthVal = trimmedVal.replace(/[A-Za-z0-9]/g, (s) => String.fromCharCode(s.charCodeAt(0) + 0xFEE0));
-        const likePatternFull = `%${fullWidthVal}%`;
-        
-        whereClauses.push(`(c.corporate_number LIKE ? OR c.company_name ${likeOperator} ? OR c.jigyo_shumoku ${likeOperator} ? OR c.full_address ${likeOperator} ?)`);
-        params.push(`${trimmedVal}%`, likePatternFull, likePatternFull, likePatternFull);
-      }
+    if (isDigits && trimmedVal.length === 13) {
+      // Exact match for 13-digit Corporate Number ONLY
+      whereClauses.push('c.corporate_number = ?');
+      params.push(trimmedVal);
     } else {
-      // Non-digit keywords: convert all letters and digits to full-width for name/address search
+      // Prefix search on cleaned company name and kana
+      const prefixSearchPattern = isPG 
+        ? "regexp_replace(c.company_name, '^(株式会社|有限会社|合同会社|合名会社|合資会社|社団法人|財団法人|医療法人|学校法人|NPO法人)', '')" 
+        : "REPLACE(REPLACE(REPLACE(c.company_name, '株式会社', ''), '有限会社', ''), '合同会社', '')"; // Simplified for SQLite
+        
+      const prefixKanaPattern = isPG
+        ? "regexp_replace(c.company_name_kana, '^(カブシキガイシャ|ユウゲンガイシャ|ゴウドウガイシャ|ゴウメイガイシャ|ゴウシガイシャ|シャダンホウジン|ザイダンホウジン|イリョウホウジン|ガッコウホウジン|エヌピーオーホウジン)', '')"
+        : "c.company_name_kana"; // Simplified for SQLite
+
+      // Normalize search term (convert half-width letters to full-width to match DB)
       const fullWidthVal = trimmedVal.replace(/[A-Za-z0-9]/g, (s) => String.fromCharCode(s.charCodeAt(0) + 0xFEE0));
       const fullWidthUpper = fullWidthVal.toUpperCase();
       const fullWidthLower = fullWidthVal.toLowerCase();
-      
-      const hasCompanySuffix = /(株式会社|有限会社|合同会社|合名会社|合資会社|社団法人|財団法人|医療法人|学校法人|NPO法人|会社|組合|法人)/.test(fullWidthVal);
-      
-      if (hasCompanySuffix) {
-        if (fullWidthUpper === fullWidthLower) {
-          whereClauses.push(`c.company_name ${likeOperator} ?`);
-          params.push(`%${fullWidthVal}%`);
-        } else {
-          // Case-insensitive fallback for full-width letters: search both upper and lower case variants
-          whereClauses.push(`(c.company_name ${likeOperator} ? OR c.company_name ${likeOperator} ?)`);
-          params.push(`%${fullWidthUpper}%`, `%${fullWidthLower}%`);
-        }
+
+      if (isPG) {
+        // Postgres MUST have literal strings for LIKE prefix to use varchar_pattern_ops indexes.
+        // If we use parameters (LIKE $1), the planner assumes $1 might start with a wildcard and does a full Seq Scan!
+        const safeUpper = fullWidthUpper.replace(/'/g, "''").replace(/\\/g, "\\\\");
+        const safeLower = fullWidthLower.replace(/'/g, "''").replace(/\\/g, "\\\\");
+        whereClauses.push(`(${prefixSearchPattern} LIKE '${safeUpper}%' OR ${prefixSearchPattern} LIKE '${safeLower}%' OR ${prefixKanaPattern} LIKE '${safeUpper}%' OR ${prefixKanaPattern} LIKE '${safeLower}%')`);
       } else {
-        if (fullWidthUpper === fullWidthLower) {
-          whereClauses.push(`(c.company_name ${likeOperator} ? OR c.jigyo_shumoku ${likeOperator} ? OR c.full_address ${likeOperator} ?)`);
-          params.push(`%${fullWidthVal}%`, `%${fullWidthVal}%`, `%${fullWidthVal}%`);
-        } else {
-          // Case-insensitive fallback for 3 columns (company name, industry, and address)
-          whereClauses.push(`(
-            c.company_name ${likeOperator} ? OR c.company_name ${likeOperator} ? OR 
-            c.jigyo_shumoku ${likeOperator} ? OR c.jigyo_shumoku ${likeOperator} ? OR 
-            c.full_address ${likeOperator} ? OR c.full_address ${likeOperator} ?
-          )`);
-          params.push(
-            `%${fullWidthUpper}%`, `%${fullWidthLower}%`,
-            `%${fullWidthUpper}%`, `%${fullWidthLower}%`,
-            `%${fullWidthUpper}%`, `%${fullWidthLower}%`
-          );
-        }
+        whereClauses.push(`(${prefixSearchPattern} LIKE ? OR ${prefixSearchPattern} LIKE ? OR ${prefixKanaPattern} LIKE ? OR ${prefixKanaPattern} LIKE ?)`);
+        params.push(`${fullWidthUpper}%`, `${fullWidthLower}%`, `${fullWidthUpper}%`, `${fullWidthLower}%`);
       }
     }
   }
@@ -1156,13 +1084,9 @@ function buildSearchQuery(
     let subquery = '';
     if (isPG) {
       subquery = `c.corporate_number IN (
-        SELECT fr.corporate_number
-        FROM (
-          SELECT DISTINCT ON (corporate_number) corporate_number, operating_income, ordinary_income, net_income
-          FROM financial_records
-          ORDER BY corporate_number, fiscal_year DESC
-        ) fr
-        WHERE ${financialClauses.join(' AND ')}
+        SELECT cfl.corporate_number
+        FROM company_financial_latest cfl
+        WHERE ${financialClauses.join(' AND ').replace(/fr\./g, 'cfl.')}
       )`;
     } else {
       let sqliteSubquery = `c.corporate_number IN (
@@ -1337,23 +1261,19 @@ export async function searchCompanies(
         totalCount = row ? Number(row.count) : 0;
       } else {
         // Not directly cached -> execute count query
-        if (!!DATABASE_URL && activeFiltersList.length > 1) {
-          totalCount = 10000; // Skip slow count query on partitioned DB for complex queries
-        } else {
-          const countQuery = buildSearchQuery(keyword, filters, true);
-          const countResult = await runGetQuery(countQuery.sql, countQuery.params);
-          totalCount = countResult ? Number(countResult.count) : 0;
-        }
+        const countQuery = buildSearchQuery(keyword, filters, true);
+        const innerSql = countQuery.sql.replace('SELECT COUNT(*) as count', 'SELECT 1');
+      const boundedCountSql = `SELECT COUNT(*) as count FROM (${innerSql} LIMIT 10000) as subquery`;
+        const countResult = await runGetQuery(boundedCountSql, countQuery.params);
+        totalCount = countResult ? Number(countResult.count) : 0;
       }
     } else {
       // Multiple active filters -> execute count query
-      if (!!DATABASE_URL) {
-        totalCount = 10000; // Skip slow count query on partitioned DB for complex queries
-      } else {
-        const countQuery = buildSearchQuery(keyword, filters, true);
-        const countResult = await runGetQuery(countQuery.sql, countQuery.params);
-        totalCount = countResult ? Number(countResult.count) : 0;
-      }
+      const countQuery = buildSearchQuery(keyword, filters, true);
+      const innerSql = countQuery.sql.replace('SELECT COUNT(*) as count', 'SELECT 1');
+      const boundedCountSql = `SELECT COUNT(*) as count FROM (${innerSql} LIMIT 10000) as subquery`;
+      const countResult = await runGetQuery(boundedCountSql, countQuery.params);
+      totalCount = countResult ? Number(countResult.count) : 0;
     }
 
     if (totalCount === 0) {
@@ -1361,9 +1281,9 @@ export async function searchCompanies(
     }
 
     // 2. Fetch page of results
-    // We only force the sorting index if we have 0 or 1 active filters and no keyword text search.
-    // This is because multiple filter combinations are highly selective, and forcing the index causes SQLite to scan the entire 5M row index.
-    const useForcedIndex = !keyword && activeFiltersList.length <= 1;
+    // We only force the sorting index if we have NO active filters and no keyword text search.
+    // If any filter is active, forcing the index causes Postgres to use a Nested Loop scan which is a performance trap.
+    const useForcedIndex = !keyword;
     const dataQuery = buildSearchQuery(keyword, filters, false, useForcedIndex);
     let sql = dataQuery.sql;
     
@@ -1372,7 +1292,12 @@ export async function searchCompanies(
     // to prevent the DB optimizer from choosing a slow nested loop index scan with LIMIT optimization.
     const isPG = !!DATABASE_URL;
     if (isPG) {
-      sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC, c.corporate_number ASC';
+      if (useForcedIndex) {
+        sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+      } else {
+        // Trick Postgres into evaluating filters before sorting by using an expression in ORDER BY
+        sql += ' ORDER BY c.has_financials DESC, (c.capital_amount + 0) DESC NULLS LAST, c.corporate_number ASC';
+      }
     } else {
       // SQLite: NULL is sorted last automatically in DESC order
       sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
