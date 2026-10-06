@@ -10,7 +10,8 @@ import { LocaleLink } from "@/components/LocaleLink";
 import { 
   Check, Info, Sparkles, ShieldCheck, CreditCard, 
   HelpCircle, Coins, ArrowRight, Loader2, Star, Clock, ChevronRight,
-  Database, Send
+  Database, Send, ChevronDown, Target, BarChart3, FileText, Zap, CheckCircle2,
+  Users, Building2
 } from "lucide-react";
 
 interface PlanDetails {
@@ -81,6 +82,80 @@ export default function PricingPage() {
   const [couponDiscount, setCouponDiscount] = useState<number | null>(null);
   const [couponError, setCouponError] = useState<string | null>(null);
   const [verifyingCoupon, setVerifyingCoupon] = useState(false);
+
+  const [pricingTab, setPricingTab] = useState<"data" | "form">("data");
+  const [openFormFaq, setOpenFormFaq] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const urlParams = new URLSearchParams(window.location.search);
+      const tabParam = urlParams.get("tab");
+      const hash = window.location.hash;
+      if (tabParam === "form" || hash.includes("form") || hash.includes("pricing-form")) {
+        setPricingTab("form");
+      }
+    }
+  }, []);
+
+  const handleTabChange = (tab: "data" | "form") => {
+    setPricingTab(tab);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      window.history.replaceState(null, "", url.toString());
+    }
+  };
+
+  const formFaqs = [
+    {
+      q: isEn
+        ? "Is contact form outreach compliant with Japanese anti-spam regulations?"
+        : isVi
+        ? "Gửi Form DM có vi phạm luật chống spam hay luật Tokushoho tại Nhật không?"
+        : "問い合わせフォーム営業は特定商取引法などの法律上問題ありませんか？",
+      a: isEn
+        ? "Yes, fully compliant with Japanese laws. Every message contains complete sender corporate disclosure and an explicit opt-out notice. Additionally, our AI automatically filters out forms with anti-sales disclaimers."
+        : isVi
+        ? "Hoàn toàn hợp pháp và tuân thủ đúng Luật giao dịch thương mại đặc định (特定商取引法) của Nhật Bản. Mỗi thông điệp gửi đi đều ghi rõ thông tin pháp nhân người gửi và câu hướng dẫn từ chối nhận tin (Opt-out). Đặc biệt, hệ thống AI của chúng tôi tự động quét và bỏ qua các công ty có ghi chú 'Cấm chào hàng' (営業お断り)."
+        : "はい、法令を遵守した設計を行っております。送信文面には特定商取引法に基づく発信者情報（会社名・担当者名・連絡先）および送信停止（オプトアウト）案内を必ず明記します。また、当社のAIシステムにより「営業目的の連絡お断り」と明記されている企業を自動除外するため、クレームリスクを最小化しています。"
+    },
+    {
+      q: isEn
+        ? "How does this compare to Cold Email and Telesales?"
+        : isVi
+        ? "Điểm khác biệt lớn nhất so với Telesales và Cold Email là gì?"
+        : "テレアポやメール営業（メルマガ）と何が違うのですか？",
+      a: isEn
+        ? "Unlike general info@ inboxes that get flooded with spam, corporate contact forms are designated inquiry channels actively monitored by executives and managers, resulting in 50%-90% read rates."
+        : isVi
+        ? "Email gửi hòm thư chung (info@) thường bị lễ tân bỏ qua hoặc rơi vào mục Spam. Ngược lại, Form liên hệ trên website là kênh đón khách hàng nên luôn được Ban Giám đốc, Trưởng phòng Kinh doanh hoặc CSKH kiểm tra kỹ lưỡng. Tỷ lệ mở thực tế đạt 50% - 90%, mang lại số lượng cuộc hẹn cao gấp nhiều lần."
+        : "メルマガや代表メール（info@宛）はスパムフィルターや受付で埋もれがちですが、Webサイトのお問い合わせフォームは【見込み客からの連絡窓口】であるため、社内の担当部署や決裁者（役員・部長クラス）が必ず目を通します。そのため閲覧率が50%〜90%と圧倒的に高く、アポイント獲得単価を大幅に削減できます。"
+    },
+    {
+      q: isEn
+        ? "What if we don't have a Japanese outreach script prepared?"
+        : isVi
+        ? "Chúng tôi chưa có kịch bản chào hàng tiếng Nhật chuẩn thì có được hỗ trợ không?"
+        : "文面がまだ完成していないのですが、どうすればよいですか？",
+      a: isEn
+        ? "Our dashboard provides pre-built Japanese business etiquette (Keigo) templates. All submitted scripts undergo compliance verification prior to dispatch."
+        : isVi
+        ? "Trong trang quản trị (Dashboard) có sẵn thư viện mẫu kịch bản Kính ngữ (Keigo) chuẩn theo từng ngành nghề. Bạn chỉ cần điền tên sản phẩm là có thể kích hoạt. Ngoài ra, đội ngũ quản trị sẽ rà soát tuân thủ luật Tokushoho và từ khóa cấm trước khi hệ thống bắt đầu phát hành."
+        : "管理画面内に日本のビジネスマナーに対応した「業種別テンプレート」を複数ご用意しております。自社のサービス概要や会社名を当てはめるだけで、誰でも効果的なアプローチ文面を簡単に作成いただけます。また、作成された文面は配信開始前に運営スタッフが特定商取引法やNGワードの事前審査を行いますので、安心してご利用いただけます。"
+    },
+    {
+      q: isEn
+        ? "How can we verify the delivery proof and logs?"
+        : isVi
+        ? "Sau khi gửi xong, báo cáo kết quả được cung cấp như thế nào?"
+        : "送信結果やレポートはどのように確認できますか？",
+      a: isEn
+        ? "Live progress updates are shown directly on your dashboard. Upon completion, download full CSV reports containing corporate numbers, company names, form URLs, exact timestamps, and delivery logs."
+        : isVi
+        ? "Ngay khi bắt đầu gửi, tiến độ sẽ cập nhật trực tiếp trên Dashboard. Khi hoàn tất, bạn có thể tải về file Excel/CSV chi tiết gồm: Tên doanh nghiệp, Mã số thuế, Thời gian gửi, URL form và trạng thái gửi thành công."
+        : "配信開始後、管理画面のダッシュボード上でリアルタイムに送信進捗が反映されます。配信完了後は、送信企業名、法人番号、送信日時、対象フォームURL、送信ステータスを記載した詳細なエクセル/CSVレポートをワンクリックでダウンロード可能です。"
+    }
+  ];
 
   useEffect(() => {
     if (isLoggedIn && user?.email) {
@@ -390,56 +465,74 @@ export default function PricingPage() {
         {/* Service Type Switcher Tabs */}
         <section className="max-w-xl mx-auto w-full">
           <div className="p-1 bg-slate-200/80 dark:bg-slate-800/80 rounded-2xl flex items-center gap-1 border border-slate-300/60 dark:border-slate-700/60 shadow-inner">
-            <div className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-center bg-white dark:bg-[#1C2128] text-slate-900 dark:text-white shadow-xs flex items-center justify-center gap-2">
-              <Database className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span>{isEn ? "Corporate Data & CSV" : isVi ? "Dữ liệu & Xuất CSV" : "企業データ・CSV抽出"}</span>
-            </div>
-            <LocaleLink
-              href="/form-marketing#pricing"
-              className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs sm:text-sm text-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all flex items-center justify-center gap-2 hover:bg-white/50 dark:hover:bg-slate-750"
+            <button
+              type="button"
+              onClick={() => handleTabChange("data")}
+              className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                pricingTab === "data"
+                  ? "bg-white dark:bg-[#1C2128] text-slate-900 dark:text-white shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750"
+              }`}
             >
-              <Send className="w-4 h-4 text-indigo-500" />
+              <Database className={`w-4 h-4 ${pricingTab === "data" ? "text-blue-600 dark:text-blue-400" : "text-slate-400"}`} />
+              <span>{isEn ? "Corporate Data & CSV" : isVi ? "Dữ liệu & Xuất CSV" : "企業データ・CSV抽出"}</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleTabChange("form")}
+              className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                pricingTab === "form"
+                  ? "bg-white dark:bg-[#1C2128] text-slate-900 dark:text-white shadow-xs"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750"
+              }`}
+            >
+              <Send className={`w-4 h-4 ${pricingTab === "form" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}`} />
               <span>{isEn ? "Form Outreach" : isVi ? "Gửi Form Tiếp Cận" : "フォーム営業 (配信)"}</span>
-              <span className="text-[9px] px-1 py-0.2 rounded font-extrabold bg-indigo-600 text-white">NEW</span>
-            </LocaleLink>
+            </button>
           </div>
         </section>
 
-        {/* Month-End Countdown urgence timer */}
-        <section className="max-w-4xl mx-auto w-full">
-          <CountdownTimer />
-        </section>
+        {/* ======================================================== */}
+        {/* ================== DATA & CSV PRICING TAB ============== */}
+        {/* ======================================================== */}
+        {pricingTab === "data" && (
+          <>
+            {/* Month-End Countdown urgence timer */}
+            <section className="max-w-4xl mx-auto w-full">
+              <CountdownTimer />
+            </section>
 
-        {/* Form Outreach Service SaaS Callout in Pricing */}
-        <section className="max-w-5xl mx-auto w-full">
-          <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-indigo-900/60">
-            <div className="flex-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[10px] font-black uppercase tracking-wider mb-3">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-                <span>{isEn ? "SELF-SERVE OUTBOUND SAAS" : isVi ? "NỀN TẢNG TIẾP CẬN TỰ ĐỘNG" : "セルフサービス型 フォーム営業"}</span>
+            {/* Form Outreach Service SaaS Callout in Pricing */}
+            <section className="max-w-5xl mx-auto w-full">
+              <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-indigo-900/60">
+                <div className="flex-1">
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[10px] font-black uppercase tracking-wider mb-3">
+                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                    <span>{isEn ? "SELF-SERVE OUTBOUND SAAS" : isVi ? "NỀN TẢNG TIẾP CẬN TỰ ĐỘNG" : "セルフサービス型 フォーム営業"}</span>
+                  </div>
+                  <h2 className="text-xl sm:text-2xl font-black mb-2">
+                    {isEn ? "Automated Contact Form Outreach SaaS" : isVi ? "Tự Động Gửi Form Marketing Trực Tuyến" : "問い合わせフォーム営業配信プラットフォーム"}
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-350 leading-relaxed max-w-2xl">
+                    {isEn
+                      ? "Looking to pitch decision-makers directly? Filter hyper-targeted prospects from our 5M+ database and dispatch your pitch directly to verified corporate contact forms starting at 20 JPY/form."
+                      : isVi
+                      ? "Muốn chào hàng trực tiếp đến ban lãnh đạo công ty? Lọc tệp khách hàng từ 5 triệu doanh nghiệp và tự động gửi thông điệp chào hàng vào Form liên hệ ngay trên hệ thống (chỉ từ 20 JPY/form)."
+                      : "自社でリストを精査し、手動でフォーム送信する工数はもう不要。500万社DBからターゲットを抽出し、管理画面から自社の営業文面を即時オンライン配信（1件20円〜）。"}
+                  </p>
+                </div>
+                <div className="shrink-0 flex flex-col sm:flex-row items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleTabChange("form")}
+                    className="px-6 py-3 rounded-xl font-bold text-xs text-slate-900 bg-white hover:bg-slate-100 shadow-md transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+                  >
+                    <span>{isEn ? "View Form Outreach Plans" : isVi ? "Xem Bảng Giá Gửi Form" : "フォーム営業プランを見る"}</span>
+                    <ArrowRight className="w-4 h-4 text-indigo-600" />
+                  </button>
+                </div>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black mb-2">
-                {isEn ? "Automated Contact Form Outreach SaaS" : isVi ? "Tự Động Gửi Form Marketing Trực Tuyến" : "問い合わせフォーム営業配信プラットフォーム"}
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-350 leading-relaxed max-w-2xl">
-                {isEn
-                  ? "Looking to pitch decision-makers directly? Filter hyper-targeted prospects from our 5M+ database and dispatch your pitch directly to verified corporate contact forms starting at 20 JPY/form."
-                  : isVi
-                  ? "Muốn chào hàng trực tiếp đến ban lãnh đạo công ty? Lọc tệp khách hàng từ 5 triệu doanh nghiệp và tự động gửi thông điệp chào hàng vào Form liên hệ ngay trên hệ thống (chỉ từ 20 JPY/form)."
-                  : "自社でリストを精査し、手動でフォーム送信する工数はもう不要。500万社DBからターゲットを抽出し、管理画面から自社の営業文面を即時オンライン配信（1件20円〜）。"}
-              </p>
-            </div>
-            <div className="shrink-0 flex flex-col sm:flex-row items-center gap-3">
-              <LocaleLink
-                href="/form-marketing#pricing"
-                className="px-6 py-3 rounded-xl font-bold text-xs text-slate-900 bg-white hover:bg-slate-100 shadow-md transition-all active:scale-[0.98] flex items-center gap-2"
-              >
-                <span>{isEn ? "View Form Outreach Plans" : isVi ? "Xem Bảng Giá Gửi Form" : "フォーム営業プランを見る"}</span>
-                <ArrowRight className="w-4 h-4 text-indigo-600" />
-              </LocaleLink>
-            </div>
-          </div>
-        </section>
+            </section>
 
         <section className="flex flex-col items-center gap-4">
           <div className="p-2 bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 rounded-xl flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200 px-4 py-2 shadow-xs">
@@ -912,6 +1005,404 @@ export default function PricingPage() {
             </div>
           </div>
         </section>
+      </>
+    )}
+
+    {/* ======================================================== */}
+    {/* =================== FORM OUTREACH TAB ================== */}
+    {/* ======================================================== */}
+    {pricingTab === "form" && (
+      <div className="flex flex-col gap-12 w-full animate-in fade-in duration-300">
+        {/* Form DM Hero / Value Prop Banner */}
+        <section className="max-w-5xl mx-auto w-full">
+          <div className="p-7 sm:p-9 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-indigo-900/60">
+            <div className="flex-1">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[10px] font-black uppercase tracking-wider mb-3">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                <span>{isEn ? "SELF-SERVE OUTBOUND SAAS" : isVi ? "NỀN TẢNG TIẾP CẬN TỰ ĐỘNG B2B" : "セルフサービス型 フォーム営業"}</span>
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black mb-2 tracking-tight">
+                {isEn ? "Automated Contact Form Outreach SaaS" : isVi ? "Nền Tảng Tự Động Gửi Form Marketing" : "問い合わせフォーム営業配信プラットフォーム"}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-350 leading-relaxed max-w-2xl">
+                {isEn
+                  ? "Zero setup fee, zero monthly commitments. Filter hyper-targeted prospects from our 5M+ database and dispatch your pitch directly to verified corporate contact forms starting at 20 JPY/form."
+                  : isVi
+                  ? "Không phí khởi tạo, không phí duy trì. Lọc khách hàng từ 5 triệu doanh nghiệp và tự động gửi thông điệp chào hàng vào Form liên hệ ngay trên hệ thống (chỉ từ 20 JPY/form)."
+                  : "初期費用・月額固定費0円。自社でリストを精査し、手動でフォーム送信する工数はもう不要。500万社DBからターゲットを抽出し、管理画面から自社の営業文面を即時オンライン配信（1件20円〜）。"}
+              </p>
+            </div>
+            <div className="shrink-0 flex flex-col sm:flex-row items-center gap-3">
+              <LocaleLink
+                href="/dashboard?tab=formCampaigns"
+                className="px-6 py-3.5 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 transition-all active:scale-[0.98] flex items-center gap-2"
+              >
+                <span>{isEn ? "Create Campaign in Dashboard" : isVi ? "Tạo chiến dịch trên Dashboard" : "管理画面でキャンペーン作成"}</span>
+                <ArrowRight className="w-4 h-4" />
+              </LocaleLink>
+            </div>
+          </div>
+        </section>
+
+        {/* Form DM 3 Pricing Cards */}
+        <section className="max-w-6xl mx-auto w-full">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold mb-3">
+              <Coins className="w-3.5 h-3.5" />
+              <span>{isEn ? "Pay-As-You-Go Volume Plans" : isVi ? "Bảng Giá Gửi Form Minh Bạch" : "送信ボリューム別プラン（都度課金）"}</span>
+            </div>
+            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-2">
+              {isEn ? "Select Your Outreach Volume" : isVi ? "Chọn Quy Mô Gửi Phù Hợp" : "成果に直結する配信プラン"}
+            </h3>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              {isEn ? "Pure pay-per-delivery. Free targeting, free template library, AI disclaimer skipping included." : isVi ? "Chỉ tính phí trên số form gửi thành công. Miễn phí lọc đối tượng, kịch bản mẫu và thuật toán AI bỏ qua cấm quảng cáo." : "初期費用・月額固定費ゼロ。送信完了件数に応じた完全都度課金制。ターゲット抽出も管理画面から即時行えます。"}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
+            {/* 1,000 Plan */}
+            <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-7 shadow-xs flex flex-col justify-between">
+              <div>
+                <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+                  {isEn ? "Starter (1,000 Forms)" : isVi ? "Gói Starter 1.000 Form" : "1,000 件プラン"}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
+                  {isEn ? "Ideal for testing product-market fit" : isVi ? "Thử nghiệm phản hồi thị trường" : "まずは効果検証・テスト送信に最適"}
+                </p>
+
+                <div className="flex items-baseline gap-1.5 mb-1.5">
+                  <span className="text-3xl font-black text-slate-900 dark:text-white">¥28,000</span>
+                  <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
+                </div>
+                <div className="text-xs text-slate-500 font-semibold mb-6">
+                  {isEn ? "Unit rate: 28 JPY / form" : isVi ? "Đơn giá: 28 JPY / form" : "単価: 28円 / 送信完了"}
+                </div>
+
+                <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "5M+ target list filtering" : isVi ? "Lọc tệp khách hàng từ 5M DB" : "ターゲット企業リスト抽出"}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "AI anti-sales disclaimer skip" : isVi ? "AI quét bỏ qua form cấm quảng cáo" : "AI営業お断り自動除外"}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "Industry templates library" : isVi ? "Thư viện mẫu kịch bản chuẩn Keigo" : "業種別テンプレート活用"}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "Pre-dispatch compliance check" : isVi ? "Kiểm duyệt tuân thủ Tokushoho" : "運営による事前法令・NGワード審査"}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "Realtime logs & CSV report" : isVi ? "Báo cáo CSV và theo dõi trực tiếp" : "リアルタイム進捗 ＆ CSVレポート"}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <LocaleLink
+                href="/dashboard?tab=formCampaigns"
+                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors block active:scale-[0.98]"
+              >
+                {isEn ? "Configure Starter" : isVi ? "Cấu hình gói 1.000 Form" : "このプランで配信設定する"}
+              </LocaleLink>
+            </div>
+
+            {/* 3,000 Plan (RECOMMENDED) */}
+            <div className="bg-white dark:bg-[#1C2128] border-2 border-indigo-600 dark:border-indigo-500 rounded-2xl p-6 sm:p-7 shadow-lg shadow-indigo-500/10 flex flex-col justify-between relative">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10px] font-black uppercase tracking-wider shadow-xs whitespace-nowrap">
+                {isEn ? "★ MOST POPULAR & BEST VALUE" : isVi ? "★ Phổ biến & Tối ưu nhất" : "★ 一番人気・推奨プラン"}
+              </div>
+
+              <div>
+                <h4 className="text-lg font-bold text-indigo-700 dark:text-indigo-400 mb-1">
+                  {isEn ? "Standard (3,000 Forms)" : isVi ? "Gói Standard 3.000 Form" : "3,000 件プラン"}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
+                  {isEn ? "Optimal for scalable lead generation" : isVi ? "Đạt lượng chuyển đổi cuộc hẹn ổn định" : "本格的なリード獲得・商談創出に"}
+                </p>
+
+                <div className="flex items-baseline gap-1.5 mb-1.5">
+                  <span className="text-3xl font-black text-indigo-700 dark:text-indigo-300">¥69,000</span>
+                  <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
+                </div>
+                <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6">
+                  {isEn ? "Unit rate: 23 JPY / form (Save 18%)" : isVi ? "Đơn giá: 23 JPY / form (Tiết kiệm 18%)" : "単価: 23円 / 送信完了 (約18%お得)"}
+                </div>
+
+                <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "5M+ target list filtering" : isVi ? "Lọc tệp khách hàng từ 5M DB" : "ターゲット企業リスト抽出"}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "AI anti-sales disclaimer skip" : isVi ? "AI quét bỏ qua form cấm quảng cáo" : "AI営業お断り自動除外"}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {isEn ? "Dynamic placeholder tags ({company_name})" : isVi ? "Tự động chèn {company_name}, {address}" : "企業名・住所などの自動差し込みタグ対応"}
+                    </span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "Priority 2-hour compliance check" : isVi ? "Ưu tiên kiểm duyệt trong 2 giờ" : "優先スピード審査（最短2時間）"}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "Realtime logs & CSV report" : isVi ? "Báo cáo CSV và theo dõi trực tiếp" : "リアルタイム進捗 ＆ CSVレポート"}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <LocaleLink
+                href="/dashboard?tab=formCampaigns"
+                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-500/20 text-center transition-all block active:scale-[0.98]"
+              >
+                {isEn ? "Launch Standard" : isVi ? "Bắt đầu với gói 3.000 Form" : "このプランで今すぐ始める"}
+              </LocaleLink>
+            </div>
+
+            {/* 5,000+ Plan */}
+            <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-7 shadow-xs flex flex-col justify-between">
+              <div>
+                <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+                  {isEn ? "Enterprise (5,000 Forms)" : isVi ? "Gói Enterprise 5.000 Form" : "5,000 件プラン"}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
+                  {isEn ? "Maximum appointment pipeline volume" : isVi ? "Quy mô lớn, chi phí trên mỗi form rẻ nhất" : "大量アプローチで商談数を最大化"}
+                </p>
+
+                <div className="flex items-baseline gap-1.5 mb-1.5">
+                  <span className="text-3xl font-black text-slate-900 dark:text-white">¥99,000</span>
+                  <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
+                </div>
+                <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6">
+                  {isEn ? "Unit rate: 19.8 JPY / form (Best rate)" : isVi ? "Đơn giá: 19.8 JPY / form (Tốt nhất)" : "単価: 19.8円 / 送信完了 (最安値レート)"}
+                </div>
+
+                <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "5M+ target list filtering" : isVi ? "Lọc tệp khách hàng từ 5M DB" : "ターゲット企業リスト抽出"}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "AI anti-sales disclaimer skip" : isVi ? "AI quét bỏ qua form cấm quảng cáo" : "AI営業お断り自動除外"}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "Advanced filter & tags" : isVi ? "Hỗ trợ tùy biến nâng cao" : "自動差し込みタグ＆高度な除外設定"}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "Priority scheduling & staggered dispatch" : isVi ? "Chia lịch gửi tối ưu theo ngày" : "最優先審査 ＆ 分割配信スケジュール対応"}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isEn ? "Realtime logs & CSV report" : isVi ? "Báo cáo CSV và theo dõi trực tiếp" : "リアルタイム進捗 ＆ CSVレポート"}</span>
+                  </li>
+                </ul>
+              </div>
+
+              <LocaleLink
+                href="/dashboard?tab=formCampaigns"
+                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors block active:scale-[0.98]"
+              >
+                {isEn ? "Configure 5,000 Forms" : isVi ? "Cấu hình gói 5.000 Form" : "このプランで配信設定する"}
+              </LocaleLink>
+            </div>
+          </div>
+
+          {/* Large Volume / Enterprise Notice */}
+          <div className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1.5">
+            <p>
+              {isEn
+                ? "※ 10,000+ volume, custom list delivery, or API integrations are also available."
+                : isVi
+                ? "※ Các nhu cầu gửi từ 10.000 form trở lên, gửi theo danh sách riêng hoặc tích hợp API vui lòng liên hệ tư vấn."
+                : "※ 10,000件以上の大口配信、貴社保有ハウスリストへの配信代行、API連携などのご相談も承っております。"}
+            </p>
+            <LocaleLink href="/contact" className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold inline-flex items-center gap-1">
+              <span>{isEn ? "Inquire about Enterprise / Bulk Outreach" : isVi ? "Liên hệ tư vấn gói Doanh nghiệp lớn" : "大口・エンタープライズ配信のご相談はこちら"}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+            </LocaleLink>
+          </div>
+        </section>
+
+        {/* 4-Step Process Section */}
+        <section className="max-w-5xl mx-auto w-full py-4">
+          <div className="text-center max-w-2xl mx-auto mb-8">
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              {isEn ? "How It Works: 4 Simple Steps" : isVi ? "Quy Trình 4 Bước Đơn Giản" : "配信開始までのカンタン4ステップ"}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {isEn ? "Launch your outreach campaign completely self-serve in minutes." : isVi ? "Thiết lập và khởi chạy chiến dịch hoàn toàn trực tuyến trong vài phút." : "管理画面からオンライン完結。最短即日でターゲット企業へのアプローチを開始できます。"}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-5 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2 shadow-xs">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 font-mono font-bold text-xs flex items-center justify-center">01</div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">{isEn ? "Target Filtering" : isVi ? "Lọc đối tượng" : "ターゲット抽出"}</h4>
+              <p className="text-xs text-slate-500 leading-relaxed">{isEn ? "Filter target companies from 5M+ database by industry, capital, and headcount." : isVi ? "Lọc doanh nghiệp mục tiêu theo ngành nghề, vốn, nhân sự từ hệ thống." : "500万社DBから業種・資本金・従業員数・地域でアプローチ先を絞り込み。"}</p>
+            </div>
+            <div className="p-5 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2 shadow-xs">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 font-mono font-bold text-xs flex items-center justify-center">02</div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">{isEn ? "Pitch Template" : isVi ? "Soạn kịch bản" : "営業文面の作成"}</h4>
+              <p className="text-xs text-slate-500 leading-relaxed">{isEn ? "Choose from Keigo templates or input your customized pitch copy." : isVi ? "Dùng mẫu kịch bản kính ngữ có sẵn hoặc nhập nội dung tùy chỉnh của bạn." : "業種別テンプレートを活用し、自社サービスの特徴を当てはめて作成。"}</p>
+            </div>
+            <div className="p-5 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2 shadow-xs">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 font-mono font-bold text-xs flex items-center justify-center">03</div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">{isEn ? "Review & Payment" : isVi ? "Thanh toán & Duyệt" : "決済＆事前審査"}</h4>
+              <p className="text-xs text-slate-500 leading-relaxed">{isEn ? "Online credit card payment and fast Tokushoho compliance review by staff." : isVi ? "Thanh toán trực tuyến và đội ngũ duyệt tuân thủ Tokushoho trong 2-4h." : "カード決済完了後、運営スタッフが特商法表記とNGワードを迅速審査。"}</p>
+            </div>
+            <div className="p-5 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2 shadow-xs">
+              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 font-mono font-bold text-xs flex items-center justify-center">04</div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">{isEn ? "Dispatch & CSV Logs" : isVi ? "Gửi & Tải báo cáo" : "自動配信＆レポート"}</h4>
+              <p className="text-xs text-slate-500 leading-relaxed">{isEn ? "Automated delivery runs with AI skips; download complete CSV logs anytime." : isVi ? "Hệ thống tự động gửi form và cho phép tải file báo cáo CSV bất cứ lúc nào." : "AI除外を適用して自動配信。完了後は送信証跡CSVを即座にダウンロード。"}</p>
+            </div>
+          </div>
+        </section>
+
+        {/* 4 Core Features / Safeguards */}
+        <section className="max-w-5xl mx-auto w-full">
+          <div className="text-center max-w-2xl mx-auto mb-8">
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2">
+              {isEn ? "Why Choose Kigyou-list Form Outreach" : isVi ? "4 Lợi Thế Vượt Trội Của Hệ Thống" : "Kigyou-list が選ばれる4つの強み"}
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {isEn ? "Ensuring high response rates with legal compliance safeguards." : isVi ? "Đảm bảo tỷ lệ phản hồi cao song hành với bảo vệ thương hiệu tuyệt đối." : "高い反響率と法令遵守の両立を支えるセルフサービステクノロジー。"}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex items-start gap-4 shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1">
+                  {isEn ? "AI Anti-Sales Disclaimer Detector" : isVi ? "AI Bỏ qua Form Cấm Chào Hàng" : "AI「営業お断り」自動検知・除外フィルター"}
+                </h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {isEn ? "Scans page DOM for anti-sales keywords before submitting to prevent complaints." : isVi ? "Tự động phát hiện các ghi chú cấm quảng cáo trên trang để bỏ qua, ngăn ngừa khiếu nại." : "「営業目的の連絡はお断り」等の文言をAIが検知。該当企業を自動スキップしブランド価値を守ります。"}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex items-start gap-4 shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <FileText className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1">
+                  {isEn ? "Pre-Dispatch Compliance Review" : isVi ? "Duyệt Kịch Bản Tuân Thủ Tokushoho" : "運営スタッフによる事前法令・NGワード審査"}
+                </h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {isEn ? "Human verification of Tokushoho sender disclosure and opt-out clauses within 2-4 hours." : isVi ? "Đội ngũ chuyên trách kiểm tra thông tin pháp nhân và câu từ chối nhận tin trong 2-4 giờ." : "特定商取引法に基づく発信者情報やオプトアウト表記を専任スタッフが迅速に事前確認（最短2時間）。"}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex items-start gap-4 shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 flex items-center justify-center shrink-0">
+                <Target className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1">
+                  {isEn ? "Hyper-Targeting from 5M+ Companies" : isVi ? "Nhắm Chọn Chuẩn Xác Từ 5M+ Công Ty" : "500万社DBから高精度ターゲティング"}
+                </h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {isEn ? "Filter by industry code, capital, employee size, and hiring signals." : isVi ? "Lọc theo mã ngành JSIC, quy mô vốn, nhân viên và các tín hiệu tuyển dụng." : "JSIC業界分類、資本金、従業員数、都道府県などの条件で真の見込み客だけを抽出。"}
+                </p>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex items-start gap-4 shadow-xs">
+              <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 flex items-center justify-center shrink-0">
+                <BarChart3 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-1">
+                  {isEn ? "Live Dashboard & CSV Audit Logs" : isVi ? "Báo Cáo Minh Bạch & File CSV" : "リアルタイム管理画面 & CSV証跡レポート"}
+                </h4>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  {isEn ? "Track delivery status live and export complete CSV audit files with timestamps and URLs." : isVi ? "Theo dõi tiến độ trực tiếp và xuất file báo cáo đầy đủ link form, thời điểm gửi." : "送信進捗をダッシュボードで確認。完了後は送信先URLや日時を網羅したCSVをダウンロード可能。"}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Form Outreach FAQs */}
+        <section className="max-w-4xl mx-auto w-full">
+          <div className="text-center mb-6">
+            <HelpCircle className="w-7 h-7 text-indigo-600 dark:text-indigo-400 mx-auto mb-2" />
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white">
+              {isEn ? "Frequently Asked Questions (Form Outreach)" : isVi ? "Câu Hỏi Thường Gặp (Form Outreach)" : "フォーム営業に関するよくあるご質問"}
+            </h3>
+          </div>
+
+          <div className="space-y-3">
+            {formFaqs.map((faq, idx) => (
+              <div
+                key={idx}
+                className="p-5 bg-white border border-slate-200/80 dark:bg-[#161B22] dark:border-slate-800 rounded-2xl shadow-xs"
+              >
+                <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-start gap-2.5 mb-2">
+                  <span className="w-5 h-5 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono mt-0.5">Q</span>
+                  <span>{faq.q}</span>
+                </h5>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5">
+                  {faq.a}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Bottom Form DM CTA */}
+        <section className="max-w-5xl mx-auto w-full">
+          <div className="relative overflow-hidden rounded-3xl bg-slate-900 text-white p-8 sm:p-10 border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+            <div className="space-y-2 max-w-xl">
+              <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full w-fit mx-auto md:mx-0 block">
+                {isEn ? "READY TO LAUNCH" : isVi ? "BẮT ĐẦU NGAY" : "最短即日オンライン配信"}
+              </span>
+              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+                {isEn ? "Start Your Form Outreach Campaign" : isVi ? "Khởi Tạo Chiến Dịch Tiếp Cận B2B Ngay" : "自社の営業文面を管理画面で即時配信"}
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+                {isEn
+                  ? "Zero setup fees. Filter prospects and create your campaign draft in dashboard right now."
+                  : isVi
+                  ? "Không phí khởi tạo. Chọn tệp khách hàng và lên kịch bản nháp trên Dashboard ngay bây giờ."
+                  : "初期費用ゼロ。管理画面から500万社DBを絞り込み、下書き文面を作成してお試しいただけます。"}
+              </p>
+            </div>
+            <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
+              <LocaleLink
+                href="/dashboard?tab=formCampaigns"
+                className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
+              >
+                <span>{isEn ? "Go to Form DM Dashboard" : isVi ? "Đến Dashboard Gửi Form" : "管理画面でキャンペーン作成"}</span>
+                <ArrowRight className="w-4 h-4" />
+              </LocaleLink>
+              <button
+                type="button"
+                onClick={() => handleTabChange("data")}
+                className="w-full sm:w-auto px-5 py-3.5 bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>{isEn ? "View Data Plans" : isVi ? "Xem bảng giá Dữ liệu" : "企業データプランを見る"}</span>
+              </button>
+            </div>
+          </div>
+        </section>
+      </div>
+    )}
       </main>
 
       <Footer />

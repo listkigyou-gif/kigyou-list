@@ -98,10 +98,6 @@ export const Header: React.FC = () => {
           <LocaleLink href="/directory" prefetch={true} className="text-slate-600 hover:text-[#1B4F8A] dark:text-slate-350 dark:hover:text-blue-400 transition-colors">
             {t.header.directory}
           </LocaleLink>
-          <LocaleLink href="/form-marketing" prefetch={true} className="text-slate-600 hover:text-[#1B4F8A] dark:text-slate-350 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5">
-            <span>{t.header.formDm}</span>
-            <span className="text-[9px] px-1.5 py-0.2 rounded font-extrabold bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 border border-amber-500/20">NEW</span>
-          </LocaleLink>
           <LocaleLink href="/pricing" prefetch={true} className="text-slate-600 hover:text-[#1B4F8A] dark:text-slate-350 dark:hover:text-blue-400 transition-colors">
             {t.header.pricing}
           </LocaleLink>
@@ -335,15 +331,6 @@ export const Header: React.FC = () => {
             className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1"
           >
             {t.header.directory}
-          </LocaleLink>
-          <LocaleLink 
-            href="/form-marketing" 
-            prefetch={true}
-            onClick={() => setMobileMenuOpen(false)}
-            className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1 flex items-center justify-between"
-          >
-            <span>{t.header.formDm}</span>
-            <span className="text-[10px] px-2 py-0.5 rounded font-extrabold bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 border border-amber-500/20">NEW</span>
           </LocaleLink>
           <LocaleLink 
             href="/pricing" 
