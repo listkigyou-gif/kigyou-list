@@ -23,11 +23,17 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Email is required" }, { status: 400 });
     }
 
-    const quota = await getUserQuota(email);
+    const { searchParams } = new URL(request.url);
+    const includeHistory = searchParams.get("include_history") === "true";
+
+    // Fast parallel execution; skip heavy export history unless requested
+    const [quota, history] = await Promise.all([
+      getUserQuota(email),
+      includeHistory ? getExportJobs(email) : Promise.resolve([])
+    ]);
+
     const isFreePlan = (quota.plan === 'free');
     const remaining = (quota.monthly_base_allowance - quota.monthly_base_used) + (isFreePlan ? 0 : quota.purchased_add_on_balance);
-    
-    const history = await getExportJobs(email);
 
     return NextResponse.json({
       quota: {

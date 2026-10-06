@@ -42,14 +42,14 @@ export const UnlockCTA: React.FC = () => {
 
   // Logged in but not Pro (i.e. Free/Trial)
   return (
-    <div className="mt-4 p-4 rounded-xl border border-amber-200 bg-amber-50/50 dark:bg-amber-955/20 dark:border-amber-900/30 text-center flex flex-col gap-3">
+    <div className="mt-4 p-4 rounded-xl border border-amber-200/80 bg-amber-50/60 dark:bg-amber-950/20 dark:border-amber-900/40 text-center flex flex-col gap-3">
       <span 
-        className="text-[11px] text-amber-800 dark:text-amber-300 font-medium leading-relaxed block"
+        className="text-[11px] text-amber-900 dark:text-amber-300 font-medium leading-relaxed block"
         dangerouslySetInnerHTML={{ __html: t.auth.unlockCTAUpgradePro }}
       />
       <Link
         href={`/${locale}/pricing`}
-        className="inline-flex items-center justify-center gap-1.5 w-full py-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white text-[11px] font-medium rounded-lg shadow-sm transition-all duration-300 active:scale-[0.98]"
+        className="inline-flex items-center justify-center gap-1.5 w-full py-2 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold rounded-lg shadow-xs transition-colors duration-150 active:scale-[0.99]"
       >
         <Sparkles className="w-3.5 h-3.5" />
         {t.auth.unlockCTAUpgradeBtn}

@@ -82,30 +82,34 @@ export const Header: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         {/* Logo */}
         <LocaleLink href="/" className="flex items-center gap-3 active:scale-98 transition-transform">
-          <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center shadow-md shadow-primary/20">
+          <div className="w-9 h-9 rounded-xl bg-[#1B4F8A] flex items-center justify-center shadow-xs">
             <LogoIcon className="w-5 h-5 text-white" />
           </div>
           <span className="text-lg font-extrabold tracking-tight text-slate-900 dark:text-white">
-            Kigyou<span className="text-secondary">-list</span>
+            Kigyou<span className="text-[#1B4F8A] dark:text-blue-400">-list</span>
           </span>
         </LocaleLink>
 
         {/* Desktop Nav */}
-        <nav className="hidden md:flex items-center gap-8 text-xs font-bold">
-          <LocaleLink href="/search" className="text-slate-600 hover:text-primary dark:text-slate-350 dark:hover:text-secondary transition-colors">
+        <nav className="hidden md:flex items-center gap-8 text-xs font-semibold">
+          <LocaleLink href="/search" prefetch={true} className="text-slate-600 hover:text-[#1B4F8A] dark:text-slate-350 dark:hover:text-blue-400 transition-colors">
             {t.header.search}
           </LocaleLink>
-          <LocaleLink href="/directory" className="text-slate-600 hover:text-primary dark:text-slate-350 dark:hover:text-secondary transition-colors">
+          <LocaleLink href="/directory" prefetch={true} className="text-slate-600 hover:text-[#1B4F8A] dark:text-slate-350 dark:hover:text-blue-400 transition-colors">
             {t.header.directory}
           </LocaleLink>
-          <LocaleLink href="/pricing" className="text-slate-600 hover:text-primary dark:text-slate-350 dark:hover:text-secondary transition-colors">
+          <LocaleLink href="/form-marketing" prefetch={true} className="text-slate-600 hover:text-[#1B4F8A] dark:text-slate-350 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5">
+            <span>{t.header.formDm}</span>
+            <span className="text-[9px] px-1.5 py-0.2 rounded font-extrabold bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 border border-amber-500/20">NEW</span>
+          </LocaleLink>
+          <LocaleLink href="/pricing" prefetch={true} className="text-slate-600 hover:text-[#1B4F8A] dark:text-slate-350 dark:hover:text-blue-400 transition-colors">
             {t.header.pricing}
           </LocaleLink>
-          <LocaleLink href="/blog" className="text-slate-600 hover:text-primary dark:text-slate-350 dark:hover:text-secondary transition-colors">
+          <LocaleLink href="/blog" prefetch={true} className="text-slate-600 hover:text-[#1B4F8A] dark:text-slate-350 dark:hover:text-blue-400 transition-colors">
             {t.header.blog}
           </LocaleLink>
           {isLoggedIn && (
-            <LocaleLink href="/dashboard" className="text-slate-600 hover:text-primary dark:text-slate-300 dark:hover:text-secondary transition-colors flex items-center gap-1.5">
+            <LocaleLink href="/dashboard" prefetch={true} className="text-slate-600 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5">
               <LayoutDashboard className="w-3.5 h-3.5" />
               {t.header.dashboard}
             </LocaleLink>
@@ -245,7 +249,7 @@ export const Header: React.FC = () => {
           ) : (
             <button
               onClick={() => setAuthModalOpen(true)}
-              className="inline-flex items-center justify-center px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-lg shadow-primary/10 hover:shadow-primary/20 transition-all scale-100 hover:scale-[1.02] active:scale-98"
+              className="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-white bg-[#1B4F8A] hover:bg-[#163e6d] rounded-xl shadow-xs transition-colors"
             >
               {t.header.loginOrRegister}
             </button>
@@ -318,6 +322,7 @@ export const Header: React.FC = () => {
         <div className="md:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0D1117] transition-all py-4 px-6 flex flex-col gap-4 shadow-inner">
           <LocaleLink 
             href="/search" 
+            prefetch={true}
             onClick={() => setMobileMenuOpen(false)}
             className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1"
           >
@@ -325,13 +330,24 @@ export const Header: React.FC = () => {
           </LocaleLink>
           <LocaleLink 
             href="/directory" 
+            prefetch={true}
             onClick={() => setMobileMenuOpen(false)}
             className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1"
           >
             {t.header.directory}
           </LocaleLink>
           <LocaleLink 
+            href="/form-marketing" 
+            prefetch={true}
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1 flex items-center justify-between"
+          >
+            <span>{t.header.formDm}</span>
+            <span className="text-[10px] px-2 py-0.5 rounded font-extrabold bg-amber-500/10 text-amber-600 dark:bg-amber-400/20 dark:text-amber-300 border border-amber-500/20">NEW</span>
+          </LocaleLink>
+          <LocaleLink 
             href="/pricing" 
+            prefetch={true}
             onClick={() => setMobileMenuOpen(false)}
             className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1"
           >
@@ -339,6 +355,7 @@ export const Header: React.FC = () => {
           </LocaleLink>
           <LocaleLink 
             href="/blog" 
+            prefetch={true}
             onClick={() => setMobileMenuOpen(false)}
             className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1"
           >
@@ -347,6 +364,7 @@ export const Header: React.FC = () => {
           {isLoggedIn && (
             <LocaleLink 
               href="/dashboard" 
+              prefetch={true}
               onClick={() => setMobileMenuOpen(false)}
               className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1"
             >

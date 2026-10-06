@@ -97,7 +97,8 @@ def rebuild_metadata():
             SELECT materialized_path 
             FROM m_industries 
             WHERE m_industries.industry_code = company_industries.industry_code
-        );
+        )
+        WHERE industry_path IS NULL OR industry_path = '';
     """)
     
     # 2. Create Indexes

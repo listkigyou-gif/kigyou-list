@@ -4,6 +4,7 @@ const en: Translations = {
   header: {
     search: "Company Search",
     directory: "Directory",
+    formDm: "Form Outreach",
     pricing: "Pricing",
     blog: "Blog",
     dashboard: "ABM Dashboard",

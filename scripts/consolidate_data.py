@@ -580,6 +580,15 @@ def consolidate_data(incremental=False):
         print("[*] Migrating SQLite companies table: adding yahoo_last_crawled_at column...")
         cursor.execute("ALTER TABLE companies ADD COLUMN yahoo_last_crawled_at TEXT NULL;")
         conn.commit()
+    if "sns_links" not in columns:
+        print("[*] Migrating SQLite companies table: adding sns_links column...")
+        cursor.execute("ALTER TABLE companies ADD COLUMN sns_links TEXT NULL;")
+        conn.commit()
+    cursor.execute("PRAGMA table_info(raw_website);")
+    raw_w_cols = [row[1] for row in cursor.fetchall()]
+    if "sns_links" not in raw_w_cols:
+        cursor.execute("ALTER TABLE raw_website ADD COLUMN sns_links TEXT NULL;")
+        conn.commit()
     
     # Run Entity Resolution first to link raw records
     resolve_entities(conn, incremental=incremental)
@@ -639,7 +648,8 @@ def consolidate_data(incremental=False):
             SELECT corporate_number, company_name, phone_number, fax_number, website_url, 
                    email_address, representative_name, capital_amount, employee_count, 
                    business_summary, jigyo_shumoku, branch_phone_numbers, establishment_date,
-                   website_last_crawled_at, website_crawl_status, yahoo_last_crawled_at
+                   website_last_crawled_at, website_crawl_status, yahoo_last_crawled_at, sns_links,
+                   contact_form_url, email_type
             FROM companies WHERE corporate_number = ?;
         """, (corp_num,))
         existing_comp = cursor.fetchone()
@@ -657,7 +667,7 @@ def consolidate_data(incremental=False):
         
         # B. Official Website
         cursor.execute("""
-            SELECT phone_number, fax_number, email_address, website_url, representative_name, capital_amount, employee_count, business_summary
+            SELECT phone_number, fax_number, email_address, website_url, representative_name, capital_amount, employee_count, business_summary, sns_links, contact_form_url
             FROM raw_website WHERE corporate_number = ?;
         """, (corp_num,))
         website_records = cursor.fetchall()
@@ -721,6 +731,26 @@ def consolidate_data(incremental=False):
             email_candidates.append(normalize_email(existing_comp[5]))
             
         final_email = next((e for e in email_candidates if e), None)
+        final_email_type = None
+        if final_email:
+            em_low = final_email.lower()
+            if re.search(r'(saiyo|jinji|recruit|shinsotsu|career|entry|kyujin)', em_low):
+                final_email_type = "RECRUIT"
+            elif re.search(r'(pr|press|media|kouhou)', em_low):
+                final_email_type = "PR"
+            elif re.search(r'(sales|eigyo|biz|customer|support|inquiry|otoiawase)', em_low):
+                final_email_type = "SALES"
+            else:
+                final_email_type = "GENERAL"
+
+        # 4b. CONTACT FORM URL (Website -> Master)
+        form_candidates = []
+        for r in website_records:
+            if len(r) > 9 and r[9]:
+                form_candidates.append(normalize_url(r[9]))
+        if existing_comp and len(existing_comp) > 17 and existing_comp[17]:
+            form_candidates.append(normalize_url(existing_comp[17]))
+        final_form_url = next((f for f in form_candidates if f), None)
         
         # 5. REPRESENTATIVE NAME (Master -> HelloWork -> Website)
         rep_candidates = []
@@ -795,6 +825,26 @@ def consolidate_data(incremental=False):
         yahoo_scraped_ats = [r[5] for r in yahoo_records if len(r) > 5 and r[5]]
         latest_yahoo_scraped_at = max(yahoo_scraped_ats) if yahoo_scraped_ats else None
 
+        # 10. SNS LINKS (Merge raw_website sns_links with existing master sns_links)
+        master_sns_raw = existing_comp[16] if existing_comp and len(existing_comp) > 16 else None
+        merged_sns = {}
+        if master_sns_raw:
+            try:
+                parsed_master = json.loads(master_sns_raw)
+                if isinstance(parsed_master, dict):
+                    merged_sns.update(parsed_master)
+            except Exception:
+                pass
+        for r in website_records:
+            if len(r) > 8 and r[8]:
+                try:
+                    w_sns = json.loads(r[8])
+                    if isinstance(w_sns, dict):
+                        merged_sns.update(w_sns)
+                except Exception:
+                    pass
+        final_sns = json.dumps(merged_sns, ensure_ascii=False) if merged_sns else None
+
         # --- UPDATE OR INSERT MASTER ---
         if existing_comp:
             # Check if any changes are present compared to the old Master record
@@ -811,6 +861,9 @@ def consolidate_data(incremental=False):
             master_last_crawled = existing_comp[13] if len(existing_comp) > 13 else None
             master_crawl_status = existing_comp[14] if len(existing_comp) > 14 else None
             master_yahoo_last_crawled = existing_comp[15] if len(existing_comp) > 15 else None
+            master_sns = existing_comp[16] if len(existing_comp) > 16 else None
+            master_form_url = existing_comp[17] if len(existing_comp) > 17 else None
+            master_email_type = existing_comp[18] if len(existing_comp) > 18 else None
             
             # Reset website crawl status if URL changed
             if final_url != master_url:
@@ -833,7 +886,10 @@ def consolidate_data(incremental=False):
                 final_establishment != master_establishment or
                 final_last_crawled != master_last_crawled or
                 final_crawl_status != master_crawl_status or
-                final_yahoo_last_crawled != master_yahoo_last_crawled):
+                final_yahoo_last_crawled != master_yahoo_last_crawled or
+                final_sns != master_sns or
+                final_form_url != master_form_url or
+                final_email_type != master_email_type):
                 
                 cursor.execute("""
                     UPDATE companies
@@ -850,9 +906,12 @@ def consolidate_data(incremental=False):
                         website_last_crawled_at = ?,
                         website_crawl_status = ?,
                         yahoo_last_crawled_at = ?,
+                        sns_links = ?,
+                        contact_form_url = ?,
+                        email_type = ?,
                         updated_at = CURRENT_TIMESTAMP
                     WHERE corporate_number = ?;
-                """, (final_phone, final_fax, final_url, final_email, final_rep, final_capital, final_employee, final_summary, final_branch_phones, final_establishment, final_last_crawled, final_crawl_status, final_yahoo_last_crawled, corp_num))
+                """, (final_phone, final_fax, final_url, final_email, final_rep, final_capital, final_employee, final_summary, final_branch_phones, final_establishment, final_last_crawled, final_crawl_status, final_yahoo_last_crawled, final_sns, final_form_url, final_email_type, corp_num))
                 stats_updated += 1
         else:
             # Company Name priority: HelloWork office_name -> Yahoo company_name -> Yahoo yahoo_name -> Fallback
@@ -881,9 +940,10 @@ def consolidate_data(incremental=False):
                     corporate_number, company_name, postal_code, prefecture_code, prefecture_name,
                     city_name, street_address, full_address, representative_name, establishment_date,
                     capital_amount, employee_count, phone_number, fax_number, website_url,
-                    email_address, business_summary, branch_phone_numbers, yahoo_last_crawled_at, status, created_at, updated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '活動中', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-            """, (corp_num, final_company_name, postal_code, pref_code, pref_name, city_name, street_address, full_address, final_rep, final_establishment, final_capital, final_employee, final_phone, final_fax, final_url, final_email, final_summary, final_branch_phones, latest_yahoo_scraped_at))
+                    email_address, business_summary, branch_phone_numbers, yahoo_last_crawled_at, sns_links,
+                    contact_form_url, email_type, status, created_at, updated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '活動中', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+            """, (corp_num, final_company_name, postal_code, pref_code, pref_name, city_name, street_address, full_address, final_rep, final_establishment, final_capital, final_employee, final_phone, final_fax, final_url, final_email, final_summary, final_branch_phones, latest_yahoo_scraped_at, final_sns, final_form_url, final_email_type))
             stats_inserted += 1
             
         # --- RECRUITMENT SIGNAL INTEGRATION ---

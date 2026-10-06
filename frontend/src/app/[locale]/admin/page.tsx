@@ -1,11 +1,16 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
+import Link from "next/link";
 import { useAuth } from "@/context/AuthContext";
+import { useLanguage } from "@/context/LanguageContext";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { ShieldAlert, Plus, Ticket, Loader2, RefreshCcw, Users, MessageSquareWarning, CheckCircle, Ban, Download, CreditCard, History, Building2, Terminal, Database } from "lucide-react";
+import { ShieldAlert, Plus, Ticket, Loader2, RefreshCcw, Users, MessageSquareWarning, CheckCircle, Ban, Download, CreditCard, History, Building2, Terminal, Database, Eye, X, Copy, Check, Mail, ExternalLink, Undo2, ShieldCheck, Send } from "lucide-react";
 import { parseUTCDate } from "@/lib/dateUtils";
+import { MarketingTab } from "@/components/admin/MarketingTab";
+import { ClaimsReviewTab } from "@/components/admin/ClaimsReviewTab";
+import { FormCampaignsAdminTab } from "@/components/admin/FormCampaignsAdminTab";
 
 interface Coupon {
   code: string;
@@ -88,6 +93,7 @@ interface BackupLog {
 
 export default function AdminPage() {
   const { isLoggedIn, user, setAuthModalOpen } = useAuth();
+  const { locale } = useLanguage();
 
   const getAdminHeaders = useCallback(() => {
     const secret = typeof window !== "undefined" ? localStorage.getItem("kigyou_admin_secret") || "" : "";
@@ -97,7 +103,7 @@ export default function AdminPage() {
     };
   }, [user?.email]);
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"coupons" | "users" | "inquiries" | "exports" | "payments" | "logs" | "partners" | "apiKeys" | "backups">("logs");
+  const [activeTab, setActiveTab] = useState<"coupons" | "users" | "inquiries" | "exports" | "payments" | "logs" | "partners" | "apiKeys" | "backups" | "marketing" | "claims" | "formCampaigns">("logs");
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -143,6 +149,46 @@ export default function AdminPage() {
   } | null>(null);
   const [apiKeyStatusReason, setApiKeyStatusReason] = useState("");
   const [submittingApiKeyStatus, setSubmittingApiKeyStatus] = useState(false);
+
+  // Inquiry Detail Modal States
+  const [selectedInquiry, setSelectedInquiry] = useState<Inquiry | null>(null);
+  const [copiedInquiryMsg, setCopiedInquiryMsg] = useState(false);
+  const [copiedRequesterEmail, setCopiedRequesterEmail] = useState(false);
+
+  const copyToClipboard = async (text: string, type: "msg" | "email") => {
+    try {
+      await navigator.clipboard.writeText(text);
+      if (type === "msg") {
+        setCopiedInquiryMsg(true);
+        setTimeout(() => setCopiedInquiryMsg(false), 2000);
+      } else {
+        setCopiedRequesterEmail(true);
+        setTimeout(() => setCopiedRequesterEmail(false), 2000);
+      }
+    } catch {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "-9999px";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      try {
+        document.execCommand("copy");
+        if (type === "msg") {
+          setCopiedInquiryMsg(true);
+          setTimeout(() => setCopiedInquiryMsg(false), 2000);
+        } else {
+          setCopiedRequesterEmail(true);
+          setTimeout(() => setCopiedRequesterEmail(false), 2000);
+        }
+      } catch (e) {
+        console.error("Copy failed: ", e);
+      }
+      document.body.removeChild(textArea);
+    }
+  };
 
   const fetchDataRef = useRef<() => void>(undefined);
 
@@ -272,6 +318,11 @@ export default function AdminPage() {
 
   useEffect(() => {
     setMounted(true);
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get("tab");
+    if (tab) {
+      setActiveTab(tab as any);
+    }
     if (isLoggedIn && user?.email) {
       const email = user.email.toLowerCase().trim();
       const adminEmailsEnv = process.env.NEXT_PUBLIC_ADMIN_EMAILS || "trungkim8694@gmail.com";
@@ -418,8 +469,36 @@ export default function AdminPage() {
       if (res.ok) {
         alert("処理が完了しました。");
         fetchData();
+        setSelectedInquiry(prev => prev && prev.id === id ? { ...prev, status: action === "unhide" ? "pending" : "resolved" } : prev);
       } else {
         alert("処理エラーが発生しました。");
+      }
+    } catch {
+      alert("接続エラーが発生しました。");
+    }
+  };
+
+  const handleRollbackInquiry = async (corporateNumber: string, inquiryId?: string) => {
+    if (!user?.email) return;
+    if (!window.confirm("この変更を取り消し、元の状態に戻しますか？（非公開の場合は再公開されます）")) return;
+
+    try {
+      const res = await fetch("/api/admin/rollback", {
+        method: "POST",
+        headers: { ...getAdminHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          corporate_number: corporateNumber,
+          action_type: "unhide",
+          history_id: inquiryId
+        })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert(data.message || "ロールバック処理が完了しました。");
+        fetchData();
+        setSelectedInquiry(null);
+      } else {
+        alert(data.error || "ロールバック処理に失敗しました。");
       }
     } catch {
       alert("接続エラーが発生しました。");
@@ -524,89 +603,377 @@ export default function AdminPage() {
     );
   }
 
+  const getTabTitle = (tab: typeof activeTab) => {
+    switch (tab) {
+      case "inquiries": return "非公開・修正依頼一覧";
+      case "users": return "ユーザー・プラン管理";
+      case "logs": return "管理者操作ログ";
+      case "payments": return "決済・インボイス履歴";
+      case "coupons": return "クーポン発行・管理";
+      case "marketing": return "Email Marketing キャンペーン";
+      case "exports": return "CSV出力履歴・ジョブ管理";
+      case "apiKeys": return "B2B APIキー管理";
+      case "backups": return "データベース・バックアップ履歴";
+      case "partners": return "パートナーロゴ管理";
+      case "claims": return "企業公式オーナー認証 審査管理";
+      case "formCampaigns": return "フォーム営業審査・管理";
+    }
+  };
+
+  const getTabDescription = (tab: typeof activeTab) => {
+    switch (tab) {
+      case "inquiries": return "企業からの掲載取り下げ・情報修正の申請を確認・審査します。";
+      case "claims": return "名刺・登記簿等の書類審査申請の確認、承認、および却下処理を行います。";
+      case "users": return "登録ユーザーのプラン変更、月間CSV枠や追加容量の直接調整を行います。";
+      case "logs": return "システム内で実行された全管理操作の監査ログ（IP、日時、詳細）です。";
+      case "payments": return "Stripe経由でのプラン契約およびスポット容量購入の決済記録と領収書です。";
+      case "coupons": return "プロモーション用割引クーポンの新規発行および利用実績の監視を行います。";
+      case "marketing": return "特定ターゲット層へのメール配信キャンペーンを作成・管理します。";
+      case "exports": return "ユーザーが実行したCSVエクスポートの生成状況およびダウンロード期限を管理します。";
+      case "apiKeys": return "外部連携用APIキーのアクティブ状態および接続ログの管理を行います。";
+      case "backups": return "VPSおよびPostgreSQLデータベースのバックアップ実行ログです。";
+      case "partners": return "トップページに掲載するパートナー企業ロゴの審査・公開設定を行います。";
+      case "formCampaigns": return "顧客が自作・保存した問い合わせフォーム営業の文面審査、特商法・オプトアウトの遵守チェック、承認・却下を行います。";
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
       <Header />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 py-8 flex flex-col gap-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-black text-slate-900 dark:text-white flex items-center gap-2">
-              <ShieldAlert className="w-6 h-6 text-primary" />
-              Admin Dashboard
-            </h1>
-            <p className="text-sm text-slate-500 mt-2">システムの統合管理を行います。</p>
-          </div>
-          <button onClick={fetchData} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-full transition-colors" title="Refresh">
-            <RefreshCcw className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-          </button>
-        </div>
+      <div className="flex-1 flex flex-col lg:flex-row w-full max-w-[1680px] mx-auto min-h-[calc(100vh-64px)]">
+        {/* Left Sidebar Navigation */}
+        <aside className="w-full lg:w-72 shrink-0 bg-white dark:bg-[#151B22] border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 p-4 sm:p-5 flex flex-col justify-between gap-6">
+          <div className="flex flex-col gap-5">
+            {/* Sidebar Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 border border-blue-200/60 flex items-center justify-center shadow-xs">
+                  <ShieldAlert className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-black text-sm text-slate-900 dark:text-white tracking-tight">Admin Console</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Super Administrator</span>
+                </div>
+              </div>
+              <button
+                onClick={fetchData}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                title="データを再読み込み"
+              >
+                <RefreshCcw className="w-4 h-4" />
+              </button>
+            </div>
 
-        {/* Tabs */}
-        <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-800 overflow-x-auto">
-          <button
-            onClick={() => setActiveTab("logs")}
-            className={`py-3 px-4 font-bold text-sm border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'logs' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            <History className="w-4 h-4" /> 操作ログ
-          </button>
-          <button
-            onClick={() => setActiveTab("users")}
-            className={`py-3 px-4 font-bold text-sm border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'users' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            <Users className="w-4 h-4" /> ユーザー管理
-          </button>
-          <button
-            onClick={() => setActiveTab("coupons")}
-            className={`py-3 px-4 font-bold text-sm border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'coupons' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            <Ticket className="w-4 h-4" /> クーポン管理
-          </button>
-          <button
-            onClick={() => setActiveTab("exports")}
-            className={`py-3 px-4 font-bold text-sm border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'exports' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            <Download className="w-4 h-4" /> CSV出力履歴
-          </button>
-          <button
-            onClick={() => setActiveTab("payments")}
-            className={`py-3 px-4 font-bold text-sm border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'payments' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            <CreditCard className="w-4 h-4" /> 決済・インボイス履歴
-          </button>
-          <button
-            onClick={() => setActiveTab("inquiries")}
-            className={`py-3 px-4 font-bold text-sm border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'inquiries' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            <MessageSquareWarning className="w-4 h-4" /> 非公開・修正依頼
-            {inquiries.filter(i => i.status === 'pending').length > 0 && (
-              <span className="bg-rose-500 text-white text-[10px] px-2 py-0.5 rounded-full">{inquiries.filter(i => i.status === 'pending').length}</span>
-            )}
-          </button>
-          <button
-            onClick={() => setActiveTab("partners")}
-            className={`py-3 px-4 font-bold text-sm border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'partners' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            <Building2 className="w-4 h-4" /> パートナーロゴ
-          </button>
-          <button
-            onClick={() => setActiveTab("apiKeys")}
-            className={`py-3 px-4 font-bold text-sm border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'apiKeys' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            <Terminal className="w-4 h-4" /> APIキー管理
-          </button>
-          <button
-            onClick={() => setActiveTab("backups")}
-            className={`py-3 px-4 font-bold text-sm border-b-2 flex items-center gap-2 whitespace-nowrap ${activeTab === 'backups' ? 'border-primary text-primary' : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-          >
-            <Database className="w-4 h-4" /> バックアップ履歴
-          </button>
-        </div>
+            {/* Navigation Groups */}
+            <nav className="flex flex-col gap-4 text-xs font-semibold" aria-label="Admin Navigation">
+              {/* Group 1: Operations & Support */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                  運用・サポート (Operations)
+                </span>
+
+                {/* Inquiries */}
+                <button
+                  onClick={() => setActiveTab("inquiries")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "inquiries"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <MessageSquareWarning className={`w-4 h-4 shrink-0 ${activeTab === "inquiries" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>非公開・修正依頼</span>
+                  </div>
+                  {inquiries.filter(i => i.status === 'pending').length > 0 && (
+                    <span className="bg-rose-500 text-white text-[10px] px-2 py-0.2 rounded-full font-bold animate-pulse">
+                      {inquiries.filter(i => i.status === 'pending').length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Company Claims Review */}
+                <button
+                  onClick={() => setActiveTab("claims")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "claims"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ShieldCheck className={`w-4 h-4 shrink-0 ${activeTab === "claims" ? "text-slate-900 dark:text-white" : "text-emerald-600"}`} />
+                    <span>企業認証審査</span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.2 rounded-full font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    審査
+                  </span>
+                </button>
+
+                {/* Users */}
+                <button
+                  onClick={() => setActiveTab("users")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "users"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Users className={`w-4 h-4 shrink-0 ${activeTab === "users" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>ユーザー管理</span>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "users" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  }`}>
+                    {usersList.length}
+                  </span>
+                </button>
+
+                {/* Logs */}
+                <button
+                  onClick={() => setActiveTab("logs")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "logs"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <History className={`w-4 h-4 shrink-0 ${activeTab === "logs" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>操作ログ</span>
+                  </div>
+                </button>
+              </div>
+
+              {/* Group 2: Commerce & Growth */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                  ビジネス・収益 (Commerce)
+                </span>
+
+                {/* Payments */}
+                <button
+                  onClick={() => setActiveTab("payments")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "payments"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <CreditCard className={`w-4 h-4 shrink-0 ${activeTab === "payments" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>決済・インボイス履歴</span>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "payments" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  }`}>
+                    {paymentHistory.length}
+                  </span>
+                </button>
+
+                {/* Coupons */}
+                <button
+                  onClick={() => setActiveTab("coupons")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "coupons"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Ticket className={`w-4 h-4 shrink-0 ${activeTab === "coupons" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>クーポン管理</span>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "coupons" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  }`}>
+                    {coupons.length}
+                  </span>
+                </button>
+
+                {/* Marketing */}
+                <button
+                  onClick={() => setActiveTab("marketing")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "marketing"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Mail className={`w-4 h-4 shrink-0 ${activeTab === "marketing" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>Email Marketing</span>
+                  </div>
+                </button>
+
+                {/* Form Outreach Moderation */}
+                <button
+                  onClick={() => setActiveTab("formCampaigns")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "formCampaigns"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Send className={`w-4 h-4 shrink-0 ${activeTab === "formCampaigns" ? "text-slate-900 dark:text-white" : "text-indigo-500"}`} />
+                    <span>フォーム営業審査</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                    要審査
+                  </span>
+                </button>
+              </div>
+
+              {/* Group 3: Technical & Data */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                  データ・システム (Technical)
+                </span>
+
+                {/* Exports */}
+                <button
+                  onClick={() => setActiveTab("exports")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "exports"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Download className={`w-4 h-4 shrink-0 ${activeTab === "exports" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>CSV出力履歴</span>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "exports" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  }`}>
+                    {exportJobs.length}
+                  </span>
+                </button>
+
+                {/* API Keys */}
+                <button
+                  onClick={() => setActiveTab("apiKeys")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "apiKeys"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Terminal className={`w-4 h-4 shrink-0 ${activeTab === "apiKeys" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>APIキー管理</span>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "apiKeys" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  }`}>
+                    {apiKeys.length}
+                  </span>
+                </button>
+
+                {/* Backups */}
+                <button
+                  onClick={() => setActiveTab("backups")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "backups"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Database className={`w-4 h-4 shrink-0 ${activeTab === "backups" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>バックアップ履歴</span>
+                  </div>
+                </button>
+
+                {/* Partners */}
+                <button
+                  onClick={() => setActiveTab("partners")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "partners"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Building2 className={`w-4 h-4 shrink-0 ${activeTab === "partners" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>パートナーロゴ</span>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "partners" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  }`}>
+                    {partners.length}
+                  </span>
+                </button>
+              </div>
+            </nav>
+          </div>
+
+          {/* Sidebar Footer: Admin profile card */}
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+            <div className="flex flex-col truncate pr-2">
+              <span className="text-[10px] text-slate-400 font-semibold">管理者</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200 truncate" title={user?.email || ""}>
+                {user?.email}
+              </span>
+            </div>
+            <Link
+              href={`/${locale}/dashboard`}
+              className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors"
+              title="ユーザーダッシュボードへ戻る"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 flex flex-col gap-6 overflow-y-auto">
+          {/* Section Title Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800/80">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+                <span>Admin Console</span>
+                <span>/</span>
+                <span className="text-slate-800 dark:text-slate-200 font-bold">{getTabTitle(activeTab)}</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
+                {getTabTitle(activeTab)}
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {getTabDescription(activeTab)}
+              </p>
+            </div>
+          </div>
+
+        {/* Marketing Tab */}
+        {activeTab === "marketing" && (
+          <MarketingTab adminEmail={user?.email || ""} getAdminHeaders={getAdminHeaders} />
+        )}
+
+        {/* Claims Review Tab */}
+        {activeTab === "claims" && (
+          <ClaimsReviewTab adminEmail={user?.email || ""} getAdminHeaders={getAdminHeaders} />
+        )}
+
+        {/* Form Marketing Moderation Tab */}
+        {activeTab === "formCampaigns" && (
+          <FormCampaignsAdminTab adminEmail={user?.email || ""} getAdminHeaders={getAdminHeaders} />
+        )}
 
         {/* Inquiries Tab */}
         {activeTab === "inquiries" && (
           <section className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-            <h2 className="text-lg font-bold mb-4">非公開・修正依頼一覧</h2>
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+              <div>
+                <h2 className="text-lg font-bold">非公開・修正依頼一覧</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  全 {inquiries.length} 件（未対応: {inquiries.filter(i => i.status === 'pending').length} 件）
+                </p>
+              </div>
+            </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm whitespace-nowrap">
                 <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold text-xs">
@@ -614,7 +981,7 @@ export default function AdminPage() {
                     <th className="px-4 py-3 rounded-tl-lg">送信日時</th>
                     <th className="px-4 py-3">企業名 / 法人番号</th>
                     <th className="px-4 py-3">申請者</th>
-                    <th className="px-4 py-3">お問い合わせ理由・内容</th>
+                    <th className="px-4 py-3 min-w-[320px] max-w-md">お問い合わせ理由・内容</th>
                     <th className="px-4 py-3">ステータス</th>
                     <th className="px-4 py-3 rounded-tr-lg">操作</th>
                   </tr>
@@ -623,54 +990,115 @@ export default function AdminPage() {
                   {inquiries.length === 0 ? (
                     <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-500">お問い合わせはまだありません。</td></tr>
                   ) : inquiries.map((inq) => (
-                    <tr key={inq.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20">
-                      <td className="px-4 py-3">
-                        {parseUTCDate(inq.created_at).toLocaleString("ja-JP", {
-                          timeZone: "Asia/Tokyo",
-                          year: "numeric",
-                          month: "2-digit",
-                          day: "2-digit",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })} (JST)
+                    <tr key={inq.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/20 transition-colors">
+                      <td className="px-4 py-3 align-top">
+                        <div className="text-xs font-medium">
+                          {parseUTCDate(inq.created_at).toLocaleString("ja-JP", {
+                            timeZone: "Asia/Tokyo",
+                            year: "numeric",
+                            month: "2-digit",
+                            day: "2-digit",
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })} (JST)
+                        </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="font-bold">{inq.company_name}</div>
-                        <div className="text-xs text-slate-500">{inq.corporate_number}</div>
+                      <td className="px-4 py-3 align-top">
+                        <div className="font-bold text-slate-900 dark:text-white">{inq.company_name}</div>
+                        <div className="text-xs text-slate-500 font-mono mt-0.5">{inq.corporate_number}</div>
                       </td>
-                      <td className="px-4 py-3">
-                        {inq.requester_email}
-                        <div className="text-xs bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded inline-block mt-1">
+                      <td className="px-4 py-3 align-top">
+                        <div className="text-xs font-medium text-slate-700 dark:text-slate-300">{inq.requester_email}</div>
+                        <div className="text-xs bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-1.5 py-0.5 rounded inline-block mt-1 font-semibold">
                           {inq.type === 'hide' ? '非公開申請' : '修正・その他'}
                         </div>
                       </td>
-                      <td className="px-4 py-3 max-w-xs truncate" title={inq.message}>{inq.message}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 align-top whitespace-normal min-w-[320px] max-w-md">
+                        <div className="flex flex-col gap-1.5">
+                          <div 
+                            onClick={() => setSelectedInquiry(inq)}
+                            className="text-xs text-slate-800 dark:text-slate-200 line-clamp-2 leading-relaxed hover:text-primary dark:hover:text-secondary cursor-pointer transition-colors break-words"
+                            title="クリックして全文を表示"
+                          >
+                            {inq.message || "---"}
+                          </div>
+                          {inq.message && (
+                            <button
+                              type="button"
+                              onClick={() => setSelectedInquiry(inq)}
+                              className="inline-flex items-center gap-1 text-[11px] font-bold text-primary hover:text-primary-hover dark:text-secondary hover:underline cursor-pointer self-start"
+                            >
+                              <Eye className="w-3 h-3" />
+                              全文・詳細を見る
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 align-top">
                         {inq.status === 'pending' ? (
                           <span className="px-2 py-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 text-[10px] font-bold rounded-full">未対応</span>
+                        ) : inq.status === 'auto_approved' ? (
+                          <span className="px-2 py-1 bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 text-[10px] font-bold rounded-full flex items-center gap-1 w-fit shadow-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            自動承認済
+                          </span>
                         ) : inq.status === 'rejected' ? (
                           <span className="px-2 py-1 bg-rose-100 text-rose-700 dark:bg-rose-900/30 text-[10px] font-bold rounded-full">非公開却下 (再公開済み)</span>
                         ) : (
                           <span className="px-2 py-1 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 text-[10px] font-bold rounded-full">解決済み</span>
                         )}
                       </td>
-                      <td className="px-4 py-3 flex gap-2">
-                        {inq.status === 'pending' && (
-                          <>
-                            {inq.type === 'hide' ? (
-                              <button onClick={() => handleResolveInquiry(inq.id, inq.corporate_number, "unhide")} className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-xs font-bold rounded transition-colors flex items-center gap-1">
-                                <CheckCircle className="w-3 h-3" /> 再公開
-                              </button>
-                            ) : (
-                              <button onClick={() => handleResolveInquiry(inq.id, inq.corporate_number, "hide")} className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 text-xs font-bold rounded transition-colors flex items-center gap-1">
-                                <Ban className="w-3 h-3" /> 企業を非公開にする
-                              </button>
-                            )}
-                            <button onClick={() => handleResolveInquiry(inq.id, inq.corporate_number, "resolve")} className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-xs font-bold rounded transition-colors flex items-center gap-1">
-                              <CheckCircle className="w-3 h-3" /> 解決とする
+                      <td className="px-4 py-3 align-top">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedInquiry(inq)}
+                            className="px-2.5 py-1.5 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-lg transition-all flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs"
+                            title="詳細内容を確認"
+                          >
+                            <Eye className="w-3.5 h-3.5 text-slate-500" />
+                            詳細
+                          </button>
+                          {inq.status === 'auto_approved' && (
+                            <button
+                              type="button"
+                              onClick={() => handleRollbackInquiry(inq.corporate_number, inq.id)}
+                              className="px-2.5 py-1.5 bg-amber-50 hover:bg-amber-100 text-amber-700 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer active:scale-95 shadow-xs"
+                              title="変更を取り消して元の状態に戻す（または再公開）"
+                            >
+                              <Undo2 className="w-3 h-3 text-amber-600" />
+                              ロールバック
                             </button>
-                          </>
-                        )}
+                          )}
+                          {inq.status === 'pending' && (
+                            <>
+                              {inq.type === 'hide' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => handleResolveInquiry(inq.id, inq.corporate_number, "unhide")}
+                                  className="px-2.5 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer active:scale-95"
+                                >
+                                  <CheckCircle className="w-3 h-3" /> 再公開
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleResolveInquiry(inq.id, inq.corporate_number, "hide")}
+                                  className="px-2.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 dark:bg-rose-900/30 border border-rose-200 dark:border-rose-800 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer active:scale-95"
+                                >
+                                  <Ban className="w-3 h-3" /> 企業非公開
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => handleResolveInquiry(inq.id, inq.corporate_number, "resolve")}
+                                className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer active:scale-95"
+                              >
+                                <CheckCircle className="w-3 h-3" /> 解決とする
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1797,7 +2225,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => setApiKeyStatusModal(null)}
-                  className="w-full py-2 text-xs font-bold text-slate-450 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                  className="w-full py-2 text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors cursor-pointer"
                 >
                   キャンセル
                 </button>
@@ -1806,7 +2234,206 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* Inquiry Detail Modal */}
+        {selectedInquiry && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div 
+              className="fixed inset-0 cursor-default" 
+              onClick={() => setSelectedInquiry(null)} 
+            />
+            <div className="relative bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl z-10 flex flex-col gap-5 max-h-[90vh] overflow-y-auto">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                    <MessageSquareWarning className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                      お問い合わせ・依頼の詳細
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      送信日時: {parseUTCDate(selectedInquiry.created_at).toLocaleString("ja-JP", {
+                        timeZone: "Asia/Tokyo",
+                        year: "numeric",
+                        month: "2-digit",
+                        day: "2-digit",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })} (JST)
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedInquiry(null)}
+                  className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Overview Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Company Info */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 flex flex-col gap-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">対象企業</span>
+                  <div className="font-bold text-slate-900 dark:text-white text-sm break-words">
+                    {selectedInquiry.company_name}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs font-mono text-slate-500 dark:text-slate-400">
+                      {selectedInquiry.corporate_number}
+                    </span>
+                    <Link
+                      href={`/${locale || "ja"}/company/${selectedInquiry.corporate_number}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] font-bold text-primary dark:text-secondary hover:underline"
+                    >
+                      企業ページを開く
+                      <ExternalLink className="w-3 h-3" />
+                    </Link>
+                  </div>
+                </div>
+
+                {/* Requester & Status */}
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/70 dark:border-slate-800 flex flex-col justify-between gap-2">
+                  <div>
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">申請者 (メールアドレス)</span>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 select-all break-all">
+                        {selectedInquiry.requester_email}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(selectedInquiry.requester_email, "email")}
+                          className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors cursor-pointer"
+                          title="メールアドレスをコピー"
+                        >
+                          {copiedRequesterEmail ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                        <a
+                          href={`mailto:${selectedInquiry.requester_email}?subject=${encodeURIComponent(`【Kigyou-list】お問い合わせについて（${selectedInquiry.company_name}）`)}`}
+                          className="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 text-primary dark:text-secondary transition-colors"
+                          title="メールを作成"
+                        >
+                          <Mail className="w-3.5 h-3.5" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1 border-t border-slate-200/50 dark:border-slate-700/50">
+                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                      selectedInquiry.type === 'hide'
+                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
+                        : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
+                    }`}>
+                      {selectedInquiry.type === 'hide' ? '非公開申請' : '修正・その他'}
+                    </span>
+                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${
+                      selectedInquiry.status === 'pending'
+                        ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30'
+                        : selectedInquiry.status === 'auto_approved'
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                        : selectedInquiry.status === 'rejected'
+                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30'
+                        : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30'
+                    }`}>
+                      {selectedInquiry.status === 'pending' ? '未対応' : selectedInquiry.status === 'auto_approved' ? '自動承認済' : selectedInquiry.status === 'rejected' ? '非公開却下 (再公開済み)' : '解決済み'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Message Full Text Box */}
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    お問い合わせ理由・内容 (全文)
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => copyToClipboard(selectedInquiry.message, "msg")}
+                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
+                  >
+                    {copiedInquiryMsg ? (
+                      <>
+                        <Check className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-emerald-600 dark:text-emerald-400">コピー完了</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3.5 h-3.5 text-slate-500" />
+                        <span>内容をコピー</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 text-xs sm:text-sm text-slate-800 dark:text-slate-200 whitespace-pre-wrap break-words leading-relaxed select-text font-sans max-h-64 overflow-y-auto">
+                  {selectedInquiry.message || "（内容の記載がありません）"}
+                </div>
+              </div>
+
+              {/* Action Footer */}
+              <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {selectedInquiry.status === 'auto_approved' && (
+                    <button
+                      type="button"
+                      onClick={() => handleRollbackInquiry(selectedInquiry.corporate_number, selectedInquiry.id)}
+                      className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95"
+                    >
+                      <Undo2 className="w-4 h-4" /> ロールバック (元に戻す・再公開)
+                    </button>
+                  )}
+                  {selectedInquiry.status === 'pending' && (
+                    <>
+                      {selectedInquiry.type === 'hide' ? (
+                        <button
+                          type="button"
+                          onClick={() => handleResolveInquiry(selectedInquiry.id, selectedInquiry.corporate_number, "unhide")}
+                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95"
+                        >
+                          <CheckCircle className="w-4 h-4" /> 再公開
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleResolveInquiry(selectedInquiry.id, selectedInquiry.corporate_number, "hide")}
+                          className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95"
+                        >
+                          <Ban className="w-4 h-4" /> 企業を非公開にする
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleResolveInquiry(selectedInquiry.id, selectedInquiry.corporate_number, "resolve")}
+                        className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white dark:bg-slate-700 dark:hover:bg-slate-600 text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer active:scale-95"
+                      >
+                        <CheckCircle className="w-4 h-4" /> 解決とする
+                      </button>
+                    </>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedInquiry(null)}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-colors cursor-pointer ml-auto"
+                >
+                  閉じる
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
       </main>
+      </div>
       <Footer />
     </div>
   );
@@ -1933,7 +2560,7 @@ const formatLogDetails = (log: AdminActionLog) => {
       case "HIDE_COMPANY":
         return (
           <div className="text-xs text-slate-655 dark:text-slate-400 truncate max-w-xs" title={details.reason}>
-            理由: <span className="italic">"{details.reason}"</span>
+            理由: <span className="italic">&quot;{details.reason}&quot;</span>
           </div>
         );
       case "UNHIDE_COMPANY":
@@ -1948,14 +2575,14 @@ const formatLogDetails = (log: AdminActionLog) => {
         return (
           <div className="text-xs text-rose-600 font-semibold flex flex-col gap-0.5">
             <span>APIキーを無効化しました ({details.keyPreview})</span>
-            {details.reason && <span className="text-slate-500 font-normal italic">理由: "{details.reason}"</span>}
+            {details.reason && <span className="text-slate-500 font-normal italic">理由: &quot;{details.reason}&quot;</span>}
           </div>
         );
       case "ACTIVATE_API_KEY":
         return (
           <div className="text-xs text-emerald-600 font-semibold flex flex-col gap-0.5">
             <span>APIキーを有効化しました ({details.keyPreview})</span>
-            {details.reason && <span className="text-slate-500 font-normal italic">理由: "{details.reason}"</span>}
+            {details.reason && <span className="text-slate-500 font-normal italic">理由: &quot;{details.reason}&quot;</span>}
           </div>
         );
       default:
@@ -1985,25 +2612,25 @@ const getActionLabel = (type: string) => {
 const getActionBadgeColor = (type: string) => {
   switch (type) {
     case "UPDATE_USER_PLAN":
-      return "bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-955/20 dark:border-blue-900/40 dark:text-blue-400";
+      return "bg-blue-50 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:border-blue-900/40 dark:text-blue-400";
     case "UPDATE_USER_QUOTA":
-      return "bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-955/20 dark:border-indigo-900/40 dark:text-indigo-400";
+      return "bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/40 dark:border-indigo-900/40 dark:text-indigo-400";
     case "CREATE_COUPON":
-      return "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-955/20 dark:border-emerald-900/40 dark:text-emerald-400";
+      return "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-900/40 dark:text-emerald-400";
     case "HIDE_COMPANY":
-      return "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-955/20 dark:border-rose-900/40 dark:text-rose-400";
+      return "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:border-rose-900/40 dark:text-rose-400";
     case "UNHIDE_COMPANY":
-      return "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-955/20 dark:border-amber-900/40 dark:text-amber-400";
+      return "bg-amber-50 text-amber-800 border-amber-200 dark:bg-amber-950/40 dark:border-amber-900/40 dark:text-amber-400";
     case "RESOLVE_INQUIRY":
-      return "bg-teal-50 text-teal-800 border-teal-200 dark:bg-teal-955/20 dark:border-teal-900/40 dark:text-teal-400";
+      return "bg-teal-50 text-teal-800 border-teal-200 dark:bg-teal-950/40 dark:border-teal-900/40 dark:text-teal-400";
     case "APPROVE_PARTNER_LOGO":
-      return "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-955/20 dark:border-emerald-900/40 dark:text-emerald-400";
+      return "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-900/40 dark:text-emerald-400";
     case "REJECT_PARTNER_LOGO":
-      return "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-955/20 dark:border-rose-900/40 dark:text-rose-455";
+      return "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:border-rose-900/40 dark:text-rose-400";
     case "REVOKE_API_KEY":
-      return "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-955/20 dark:border-rose-900/40 dark:text-rose-400";
+      return "bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:border-rose-900/40 dark:text-rose-400";
     case "ACTIVATE_API_KEY":
-      return "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-955/20 dark:border-emerald-900/40 dark:text-emerald-400";
+      return "bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-900/40 dark:text-emerald-400";
     default:
       return "bg-slate-50 text-slate-800 border-slate-200 dark:bg-slate-800/40 dark:border-slate-700/60 dark:text-slate-400";
   }

@@ -5,7 +5,6 @@ import { useAuth } from "@/context/AuthContext";
 import { X, Lock, CheckCircle2, ShieldCheck, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useLanguage } from "@/context/LanguageContext";
-import { signIn } from "next-auth/react";
 import { checkEmailTypo } from "@/lib/emailCorrection";
 
 export const AuthModal: React.FC = () => {
@@ -88,12 +87,12 @@ export const AuthModal: React.FC = () => {
       if (widgetId !== null && (window as any).turnstile) {
         try {
           (window as any).turnstile.remove(widgetId);
-        } catch (err) {
+        } catch {
           // ignore
         }
       }
     };
-  }, [authModalOpen]);
+  }, [authModalOpen, locale]);
 
   const handleEmailInputChange = (val: string) => {
     setEmailInput(val);
@@ -149,44 +148,43 @@ export const AuthModal: React.FC = () => {
     <div data-nosnippet className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm dark:bg-black/80 transition-all duration-300"
+        className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm dark:bg-black/80 transition-all duration-200"
         onClick={() => setAuthModalOpen(false)}
       />
 
       {/* Modal Card */}
-      <div className="relative w-full max-w-md overflow-hidden bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-3xl shadow-2xl transition-all duration-300 z-10 scale-100 flex flex-col">
+      <div className="relative w-full max-w-md overflow-hidden bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xl transition-all duration-200 z-10 flex flex-col">
         {/* Close Button */}
         <button
           onClick={() => setAuthModalOpen(false)}
-          className="absolute top-4 right-4 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+          className="absolute top-4 right-4 p-1.5 rounded-xl hover:bg-slate-200/60 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors z-20 cursor-pointer"
         >
           <X className="w-5 h-5" />
         </button>
 
         <div className="flex flex-col">
-          {/* Gradient Top Banner */}
-          <div className="bg-gradient-to-r from-primary to-secondary p-6 text-white text-left relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-white/10 text-white text-[10px] font-bold mb-2 backdrop-blur-md">
+          {/* Institutional Top Header */}
+          <div className="p-6 pb-5 text-left border-b border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-[#12161E]">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-50 text-[#1B4F8A] border border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/50 text-[10px] font-bold mb-2">
               <ShieldCheck className="w-3.5 h-3.5" />
               <span>{t.auth.freeRegisterTenSec}</span>
             </div>
-            <h3 className="text-lg font-black tracking-tight flex items-center gap-2">
-              <Lock className="w-4.5 h-4.5" />
+            <h3 className="text-base font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+              <Lock className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
               {t.auth.premiumFeaturesTitle}
             </h3>
-            <p className="text-xs text-slate-100/80 mt-1">
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-1 leading-relaxed">
               {t.auth.premiumFeaturesDesc}
             </p>
           </div>
 
           {/* Google Sign In Container */}
-          <div className="p-6 flex flex-col gap-6">
+          <div className="p-6 flex flex-col gap-5">
             <div className="text-center">
-              <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-1">
+              <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                 {t.auth.loginOrCreateTitle}
               </h4>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400">
                 {t.auth.loginOrCreateDesc}
               </p>
             </div>
@@ -195,9 +193,9 @@ export const AuthModal: React.FC = () => {
             <button
               type="button"
               onClick={loginWithGoogle}
-              className="w-full py-3.5 px-4 text-xs font-bold border border-slate-200 dark:border-slate-800 rounded-xl bg-white hover:bg-slate-50 dark:bg-[#1C2128] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-sm hover:shadow transition-all flex items-center justify-center gap-3 cursor-pointer"
+              className="w-full py-2.5 px-4 text-xs font-bold border border-slate-200/90 dark:border-slate-700/80 rounded-xl bg-white hover:bg-slate-50 dark:bg-[#1C2128] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 shadow-xs hover:border-slate-300 transition-colors flex items-center justify-center gap-2.5 cursor-pointer"
             >
-              <svg className="w-4.5 h-4.5 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                 <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
                 <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
@@ -207,18 +205,18 @@ export const AuthModal: React.FC = () => {
             </button>
 
             {/* Or Divider */}
-            <div className="flex items-center my-1">
-              <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+            <div className="flex items-center my-0.5">
+              <div className="flex-grow border-t border-slate-200/80 dark:border-slate-800"></div>
               <span className="px-3 text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">
                 {t.auth.magicLinkOr}
               </span>
-              <div className="flex-grow border-t border-slate-100 dark:border-slate-800"></div>
+              <div className="flex-grow border-t border-slate-200/80 dark:border-slate-800"></div>
             </div>
 
             {/* Magic Link Email Form */}
-            <form onSubmit={handleSendMagicLink} className="flex flex-col gap-2 -mt-2">
+            <form onSubmit={handleSendMagicLink} className="flex flex-col gap-2 -mt-1">
               <div className="text-left">
-                <label className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-1">
+                <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1">
                   {t.auth.magicLinkTitle}
                 </label>
                 <input
@@ -227,11 +225,11 @@ export const AuthModal: React.FC = () => {
                   placeholder={t.auth.magicLinkPlaceholder}
                   value={emailInput}
                   onChange={(e) => handleEmailInputChange(e.target.value)}
-                  className="w-full px-3 py-3 text-xs border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50/50 focus:bg-white dark:bg-[#1C2128] text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all"
+                  className="w-full px-3.5 py-2.5 text-xs border border-slate-200/90 dark:border-slate-700/80 rounded-xl bg-white dark:bg-[#0D1117] text-slate-800 dark:text-slate-200 focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A] transition-colors"
                 />
                 
                 {emailSuggestion && (
-                  <div className="text-[10px] text-amber-600 dark:text-amber-400 mt-1.5 font-semibold leading-relaxed">
+                  <div className="text-[10px] text-amber-700 dark:text-amber-400 mt-1.5 font-medium leading-relaxed">
                     {locale === "vi" ? (
                       <>
                         Có phải ý bạn là:{" "}
@@ -241,7 +239,7 @@ export const AuthModal: React.FC = () => {
                             setEmailInput(emailSuggestion);
                             setEmailSuggestion(null);
                           }}
-                          className="text-primary hover:underline font-bold cursor-pointer"
+                          className="text-[#1B4F8A] dark:text-blue-400 hover:underline font-bold cursor-pointer"
                         >
                           {emailSuggestion}
                         </button>{" "}
@@ -256,7 +254,7 @@ export const AuthModal: React.FC = () => {
                             setEmailInput(emailSuggestion);
                             setEmailSuggestion(null);
                           }}
-                          className="text-primary hover:underline font-bold cursor-pointer"
+                          className="text-[#1B4F8A] dark:text-blue-400 hover:underline font-bold cursor-pointer"
                         >
                           {emailSuggestion}
                         </button>{" "}
@@ -271,7 +269,7 @@ export const AuthModal: React.FC = () => {
                             setEmailInput(emailSuggestion);
                             setEmailSuggestion(null);
                           }}
-                          className="text-primary hover:underline font-bold cursor-pointer"
+                          className="text-[#1B4F8A] dark:text-blue-400 hover:underline font-bold cursor-pointer"
                         >
                           {emailSuggestion}
                         </button>{" "}
@@ -283,14 +281,14 @@ export const AuthModal: React.FC = () => {
               </div>
 
               {/* Cloudflare Turnstile CAPTCHA Widget */}
-              <div className="flex justify-center my-2 select-none">
+              <div className="flex justify-center my-1.5 select-none">
                 <div id={turnstileContainerId}></div>
               </div>
 
               <button
                 type="submit"
                 disabled={magicLinkStatus === "sending"}
-                className="w-full py-3.5 px-4 text-xs font-bold rounded-xl bg-primary hover:bg-primary/90 text-white shadow-sm hover:shadow transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 px-4 text-xs font-bold rounded-xl bg-[#1B4F8A] hover:bg-[#153e6d] text-white shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {magicLinkStatus === "sending" ? (
                   <>
@@ -303,20 +301,19 @@ export const AuthModal: React.FC = () => {
               </button>
               
               {magicLinkStatus === "success" && (
-                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 text-left mt-1 font-semibold">
+                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 text-left mt-1 font-medium">
                   {t.auth.magicLinkSuccess}
                 </p>
               )}
               {magicLinkStatus === "error" && (
-                <p className="text-[11px] text-red-500 dark:text-red-400 text-left mt-1 font-semibold">
+                <p className="text-[11px] text-rose-600 dark:text-rose-400 text-left mt-1 font-medium">
                   {magicLinkError}
                 </p>
               )}
             </form>
 
-
             {/* Legal Consent Notice */}
-            <p className="text-[10px] text-slate-400 dark:text-slate-500 text-center leading-relaxed -mt-2">
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 text-center leading-relaxed -mt-2">
               {(() => {
                 const parts = t.auth.consentNotice.split(/(\{terms\}|\{privacy\})/);
                 return parts.map((part, idx) => {
@@ -325,7 +322,7 @@ export const AuthModal: React.FC = () => {
                       <Link 
                         key={idx} 
                         href={`/${locale}/terms`} 
-                        className="text-primary hover:underline dark:text-secondary font-bold mx-0.5"
+                        className="text-[#1B4F8A] hover:underline dark:text-blue-400 font-bold mx-0.5"
                       >
                         {t.auth.terms}
                       </Link>
@@ -336,7 +333,7 @@ export const AuthModal: React.FC = () => {
                       <Link 
                         key={idx} 
                         href={`/${locale}/privacy`} 
-                        className="text-primary hover:underline dark:text-secondary font-bold mx-0.5"
+                        className="text-[#1B4F8A] hover:underline dark:text-blue-400 font-bold mx-0.5"
                       >
                         {t.auth.privacy}
                       </Link>
@@ -348,25 +345,25 @@ export const AuthModal: React.FC = () => {
             </p>
 
             {/* Value Propositions */}
-            <div className="pt-6 border-t border-slate-100 dark:border-slate-800 flex flex-col gap-3">
-              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block text-left">
+            <div className="pt-4 border-t border-slate-200/80 dark:border-slate-800 flex flex-col gap-2.5">
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider block text-left">
                 {t.auth.unlockedFeaturesTitle}
               </span>
-              <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-500 dark:text-slate-400 text-left">
+              <div className="grid grid-cols-2 gap-2 text-[10px] text-slate-600 dark:text-slate-400 text-left">
                 <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>{t.auth.featureFaxEmail}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>{t.auth.featureSignalDetails}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>{t.auth.featureMylist}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>{t.auth.featureKanban}</span>
                 </div>
               </div>

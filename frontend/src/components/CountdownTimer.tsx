@@ -6,7 +6,6 @@ import { useLanguage } from "@/context/LanguageContext";
 
 export const CountdownTimer: React.FC = () => {
   const { locale } = useLanguage();
-  const isEn = locale === "en";
 
   const [timeLeft, setTimeLeft] = useState({
     days: 0,
@@ -99,25 +98,23 @@ export const CountdownTimer: React.FC = () => {
   const formatNum = (num: number) => String(num).padStart(2, "0");
 
   return (
-    <div className="relative overflow-hidden w-full py-4.5 px-6 bg-gradient-to-r from-slate-900/95 via-rose-950/80 to-slate-900/95 border border-rose-500/20 rounded-3xl shadow-xl shadow-rose-950/10 flex flex-col md:flex-row md:items-center justify-between gap-4 select-none">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,rgba(244,63,94,0.1),transparent_40%)] pointer-events-none" />
-      
+    <div className="relative overflow-hidden w-full p-4 sm:p-5 bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 select-none">
       {/* Campaign Intro Message */}
       <div className="flex items-center gap-3 relative shrink-0">
-        <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-rose-500 to-amber-500 flex items-center justify-center shadow-lg shadow-rose-500/20 text-white shrink-0 animate-pulse">
-          <Flame className="w-5 h-5 fill-rose-100/10" />
+        <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200/60 dark:border-rose-900/40 flex items-center justify-center shrink-0">
+          <Flame className="w-4.5 h-4.5" />
         </div>
         <div className="text-left">
-          <div className="flex items-center gap-1.5">
-            <span className="text-[10px] font-black text-rose-450 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20 uppercase tracking-wider">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/30 px-2 py-0.5 rounded-md border border-rose-200/60 dark:border-rose-900/40 uppercase tracking-wider">
               {d.limitedOffer}
             </span>
-            <span className="text-[10px] font-black text-amber-450 bg-amber-500/10 px-2 py-0.5 rounded-md border border-amber-500/20 uppercase tracking-wider flex items-center gap-0.5">
-              <Sparkles className="w-2.5 h-2.5 animate-spin-slow" />
+            <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 px-2 py-0.5 rounded-md border border-amber-200/60 dark:border-amber-900/40 uppercase tracking-wider flex items-center gap-1">
+              <Sparkles className="w-2.5 h-2.5 text-amber-500" />
               {d.discount}
             </span>
           </div>
-          <h4 className="text-xs sm:text-sm font-black text-white mt-1 tracking-tight leading-relaxed">
+          <h4 className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 mt-1 tracking-tight leading-snug">
             {d.hurry}
           </h4>
         </div>
@@ -127,44 +124,44 @@ export const CountdownTimer: React.FC = () => {
       <div className="flex items-center gap-2 relative justify-start md:justify-end shrink-0">
         {/* Days */}
         <div className="flex flex-col items-center">
-          <div className="min-w-[40px] sm:min-w-[46px] h-10 sm:h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center shadow-inner">
-            <span className="text-sm sm:text-base font-black text-rose-450 font-mono tracking-tight text-white">
+          <div className="min-w-[42px] sm:min-w-[48px] h-10 sm:h-11 bg-slate-50 dark:bg-[#0D1117] border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center">
+            <span className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">
               {formatNum(timeLeft.days)}
             </span>
           </div>
           <span className="text-[9px] font-bold text-slate-400 mt-1">DAYS</span>
         </div>
         
-        <span className="text-sm font-black text-slate-500 select-none pb-4 font-mono">:</span>
+        <span className="text-xs font-bold text-slate-300 dark:text-slate-700 select-none pb-3 font-mono">:</span>
 
         {/* Hours */}
         <div className="flex flex-col items-center">
-          <div className="min-w-[40px] sm:min-w-[46px] h-10 sm:h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center shadow-inner">
-            <span className="text-sm sm:text-base font-black text-white font-mono tracking-tight">
+          <div className="min-w-[42px] sm:min-w-[48px] h-10 sm:h-11 bg-slate-50 dark:bg-[#0D1117] border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center">
+            <span className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">
               {formatNum(timeLeft.hours)}
             </span>
           </div>
           <span className="text-[9px] font-bold text-slate-400 mt-1">HOURS</span>
         </div>
 
-        <span className="text-sm font-black text-slate-500 select-none pb-4 font-mono">:</span>
+        <span className="text-xs font-bold text-slate-300 dark:text-slate-700 select-none pb-3 font-mono">:</span>
 
         {/* Minutes */}
         <div className="flex flex-col items-center">
-          <div className="min-w-[40px] sm:min-w-[46px] h-10 sm:h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center shadow-inner">
-            <span className="text-sm sm:text-base font-black text-white font-mono tracking-tight">
+          <div className="min-w-[42px] sm:min-w-[48px] h-10 sm:h-11 bg-slate-50 dark:bg-[#0D1117] border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-center">
+            <span className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 font-mono tracking-tight">
               {formatNum(timeLeft.minutes)}
             </span>
           </div>
           <span className="text-[9px] font-bold text-slate-400 mt-1">MINUTES</span>
         </div>
 
-        <span className="text-sm font-black text-slate-500 select-none pb-4 font-mono">:</span>
+        <span className="text-xs font-bold text-slate-300 dark:text-slate-700 select-none pb-3 font-mono">:</span>
 
         {/* Seconds */}
         <div className="flex flex-col items-center">
-          <div className="min-w-[40px] sm:min-w-[46px] h-10 sm:h-12 bg-rose-500/10 border border-rose-500/35 rounded-xl flex items-center justify-center shadow-inner relative overflow-hidden group">
-            <span className="text-sm sm:text-base font-black text-rose-450 font-mono tracking-tight text-rose-450 dark:text-rose-400 animate-pulse">
+          <div className="min-w-[42px] sm:min-w-[48px] h-10 sm:h-11 bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 rounded-xl flex items-center justify-center">
+            <span className="text-sm sm:text-base font-bold text-rose-600 dark:text-rose-400 font-mono tracking-tight">
               {formatNum(timeLeft.seconds)}
             </span>
           </div>

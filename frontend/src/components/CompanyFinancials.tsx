@@ -136,17 +136,13 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
             {/* Gradients */}
             <defs>
               <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#1B4F8A" />
-                <stop offset="100%" stopColor="#00A896" />
+                <stop offset="0%" stopColor="#2563EB" />
+                <stop offset="100%" stopColor="#1B4F8A" />
               </linearGradient>
               <linearGradient id="incomeAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#F2A30F" stopOpacity="0.18" />
-                <stop offset="100%" stopColor="#F2A30F" stopOpacity="0.0" />
+                <stop offset="0%" stopColor="#D97706" stopOpacity="0.12" />
+                <stop offset="100%" stopColor="#D97706" stopOpacity="0.0" />
               </linearGradient>
-              {/* Drop Shadow for bars */}
-              <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
-                <feDropShadow dx="0" dy="2" stdDeviation="2" floodColor="#000" floodOpacity="0.06" />
-              </filter>
             </defs>
 
             {/* Y Gridlines */}
@@ -215,13 +211,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                       y={bar.y} 
                       width={bar.w} 
                       height={bar.h} 
-                      fill="url(#salesGrad)" 
-                      filter="url(#shadow)"
-                      rx="4"
-                      className="transition-all duration-300"
-                      fillOpacity={isHovered ? 0.9 : 0.75}
-                      stroke={isHovered ? "#00A896" : "transparent"}
-                      strokeWidth="1"
+                      fill={isHovered ? "#1B4F8A" : "#2563EB"} 
+                      rx="3"
+                      className="transition-all duration-200"
+                      fillOpacity={isHovered ? 1 : 0.85}
                     />
                   ) : (
                     <text x={bar.cx} y={height - paddingBottom - 10} textAnchor="middle" className="text-[8px] font-bold fill-slate-400 dark:fill-slate-600">
@@ -236,7 +229,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     textAnchor="middle" 
                     className={`text-[10px] font-bold transition-colors ${
                       isHovered 
-                        ? 'fill-primary dark:fill-secondary' 
+                        ? 'fill-primary dark:fill-slate-200' 
                         : 'fill-slate-400 dark:fill-slate-500'
                     }`}
                   >
@@ -260,15 +253,15 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
               <path 
                 d={`M ${points.join(' L ')}`} 
                 fill="none" 
-                stroke="#F2A30F" 
-                strokeWidth="3" 
+                stroke="#D97706" 
+                strokeWidth="2.5" 
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                className="pointer-events-none shadow-sm"
+                className="pointer-events-none"
               />
             )}
 
-            {/* Income dots with glowing effects */}
+            {/* Income dots with clean hover circle */}
             {salesBars.map((bar, idx) => {
               const isHovered = hoveredIndex === idx;
               return (
@@ -277,26 +270,24 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                   className="cursor-pointer"
                   onMouseEnter={() => setHoveredIndex(idx)}
                 >
-                  {/* Outer halo for hovered dot */}
                   {isHovered && (
                     <circle
                       cx={bar.cx}
                       cy={bar.cy}
-                      r="8"
-                      fill="#F2A30F"
-                      fillOpacity="0.25"
-                      className="animate-pulse"
+                      r="7"
+                      fill="#D97706"
+                      fillOpacity="0.2"
                     />
                   )}
                   
                   <circle 
                     cx={bar.cx} 
                     cy={bar.cy} 
-                    r={isHovered ? "6" : "4.5"} 
-                    fill="#F2A30F" 
+                    r={isHovered ? "5" : "3.5"} 
+                    fill="#D97706" 
                     stroke="white" 
                     strokeWidth="1.5"
-                    className="transition-all duration-300 shadow-sm"
+                    className="transition-all duration-200"
                   />
                 </g>
               );
@@ -304,10 +295,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
           </svg>
         </div>
 
-        {/* Premium Floating Interactive Tooltip */}
+        {/* Clean Interactive Tooltip */}
         {hoveredIndex !== null && sortedFinancials[hoveredIndex] && (
           <div 
-            className="absolute bg-slate-900/90 dark:bg-slate-950/95 text-white p-3 rounded-2xl border border-slate-700/50 shadow-2xl backdrop-blur-md text-xs pointer-events-none transition-all duration-300"
+            className="absolute bg-slate-900 text-white p-3 rounded-xl border border-slate-800 shadow-xl backdrop-blur-md text-xs pointer-events-none transition-all duration-200"
             style={{
               left: `${(paddingLeft + (chartWidth / sortedFinancials.length) * (hoveredIndex + 0.5)) / width * 100}%`,
               top: '12px',
@@ -315,9 +306,9 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
               zIndex: 10
             }}
           >
-            <div className="font-black text-[10px] text-slate-400 mb-1.5 border-b border-slate-800 pb-1.5 flex items-center justify-between gap-4">
+            <div className="font-bold text-[10px] text-slate-400 mb-1.5 border-b border-slate-800 pb-1.5 flex items-center justify-between gap-4">
               <span>{t.company.fiscalYearTrend.replace("{year}", sortedFinancials[hoveredIndex].fiscal_year)}</span>
-              <span className="text-amber-500 font-bold bg-amber-500/10 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider">
+              <span className="text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider">
                 {t.company.confirmedStatus}
               </span>
             </div>
@@ -325,20 +316,20 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
             <div className="flex flex-col gap-1.5 text-[11px] min-w-[150px]">
               <div className="flex items-center justify-between gap-6">
                 <span className="flex items-center gap-1.5 text-slate-400">
-                  <span className="w-2.5 h-2.5 rounded-sm bg-gradient-to-r from-[#1B4F8A] to-[#00A896]" />
+                  <span className="w-2.5 h-2.5 rounded-xs bg-[#1B4F8A]" />
                   {t.company.revenue}
                 </span>
-                <span className="font-extrabold font-mono text-emerald-400">
+                <span className="font-bold font-mono text-emerald-400">
                   {formatAmount(sortedFinancials[hoveredIndex].revenue || sortedFinancials[hoveredIndex].sales_amount, true)}
                 </span>
               </div>
               
               <div className="flex items-center justify-between gap-6">
                 <span className="flex items-center gap-1.5 text-slate-400">
-                  <span className="w-2.5 h-0.5 bg-[#F2A30F]" />
+                  <span className="w-2.5 h-0.5 bg-[#D97706]" />
                   {t.company.ordinaryIncome}
                 </span>
-                <span className={`font-extrabold font-mono ${ (sortedFinancials[hoveredIndex].ordinary_income || 0) >= 0 ? 'text-amber-400' : 'text-rose-450' }`}>
+                <span className={`font-bold font-mono ${ (sortedFinancials[hoveredIndex].ordinary_income || 0) >= 0 ? 'text-amber-400' : 'text-rose-450' }`}>
                   {formatAmount(sortedFinancials[hoveredIndex].ordinary_income, true)}
                 </span>
               </div>
@@ -384,14 +375,14 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
           </div>
         )}
 
-        {/* Custom Legend */}
-        <div className="flex items-center justify-center gap-6 text-xs font-bold text-slate-500 dark:text-slate-400">
-          <span className="flex items-center gap-2 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">
-            <span className="w-3.5 h-3.5 bg-gradient-to-r from-[#1B4F8A] to-[#00A896] rounded-sm" />
+        {/* Clean Corporate Legend */}
+        <div className="flex items-center justify-center gap-6 text-xs font-semibold text-slate-600 dark:text-slate-400">
+          <span className="flex items-center gap-2">
+            <span className="w-3.5 h-3.5 bg-[#1B4F8A] rounded-xs" />
             {t.company.trendChartLegendRevenue}
           </span>
-          <span className="flex items-center gap-2 cursor-pointer hover:text-slate-700 dark:hover:text-slate-200">
-            <span className="w-4 h-1 bg-[#F2A30F] rounded-full inline-block relative -top-[1px]" />
+          <span className="flex items-center gap-2">
+            <span className="w-4 h-1 bg-[#D97706] rounded-full inline-block relative -top-[1px]" />
             {t.company.trendChartLegendOrdinary}
           </span>
         </div>
@@ -570,10 +561,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     y={bar.assets.liquidY}
                     width={barWidth}
                     height={Math.max(1.5, bar.assets.liquidH)}
-                    fill="url(#liquidAssetsGrad)"
+                    fill="#0D9488"
                     rx="1.5"
-                    fillOpacity={isHovered ? 0.95 : 0.8}
-                    className="transition-all duration-300"
+                    fillOpacity={isHovered ? 1 : 0.85}
+                    className="transition-all duration-200"
                   />
                   {/* Fixed Assets (Top) */}
                   <rect 
@@ -581,10 +572,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     y={bar.assets.fixedY}
                     width={barWidth}
                     height={Math.max(1.5, bar.assets.fixedH)}
-                    fill="url(#fixedAssetsGrad)"
+                    fill="#1B4F8A"
                     rx="1.5"
-                    fillOpacity={isHovered ? 0.95 : 0.8}
-                    className="transition-all duration-300"
+                    fillOpacity={isHovered ? 1 : 0.85}
+                    className="transition-all duration-200"
                   />
 
                   {/* 2. LIABILITIES & EQUITY COLUMN */}
@@ -594,10 +585,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     y={bar.liabilitiesEquity.equityY}
                     width={barWidth}
                     height={Math.max(1.5, bar.liabilitiesEquity.equityH)}
-                    fill="url(#equityGrad)"
+                    fill="#7C3AED"
                     rx="1.5"
-                    fillOpacity={isHovered ? 0.95 : 0.8}
-                    className="transition-all duration-300"
+                    fillOpacity={isHovered ? 1 : 0.85}
+                    className="transition-all duration-200"
                   />
                   {/* Liquid Liabilities (Middle) */}
                   <rect 
@@ -605,10 +596,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     y={bar.liabilitiesEquity.liquidLiabY}
                     width={barWidth}
                     height={Math.max(1.5, bar.liabilitiesEquity.liquidLiabH)}
-                    fill="url(#liquidLiabGrad)"
+                    fill="#E11D48"
                     rx="1.5"
-                    fillOpacity={isHovered ? 0.95 : 0.8}
-                    className="transition-all duration-300"
+                    fillOpacity={isHovered ? 1 : 0.85}
+                    className="transition-all duration-200"
                   />
                   {/* Fixed Liabilities (Top) */}
                   <rect 
@@ -616,10 +607,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     y={bar.liabilitiesEquity.fixedLiabY}
                     width={barWidth}
                     height={Math.max(1.5, bar.liabilitiesEquity.fixedLiabH)}
-                    fill="url(#fixedLiabGrad)"
+                    fill="#0284C7"
                     rx="1.5"
-                    fillOpacity={isHovered ? 0.95 : 0.8}
-                    className="transition-all duration-300"
+                    fillOpacity={isHovered ? 1 : 0.85}
+                    className="transition-all duration-200"
                   />
 
                   {/* Axis Labels */}
@@ -628,7 +619,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     y={height - paddingBottom + 18} 
                     textAnchor="middle" 
                     className={`text-[10px] font-bold transition-colors ${
-                      isHovered ? 'fill-primary dark:fill-secondary' : 'fill-slate-600 dark:fill-slate-400'
+                      isHovered ? 'fill-primary dark:fill-slate-200' : 'fill-slate-600 dark:fill-slate-400'
                     }`}
                   >
                     {bar.yearStr}
@@ -706,25 +697,25 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
         )}
 
         {/* Legend Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5 text-[10px] text-slate-500 dark:text-slate-400 font-bold bg-slate-50 dark:bg-[#1C2128]/25 p-4 rounded-2xl border border-slate-100 dark:border-slate-850/80 shadow-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[10px] text-slate-600 dark:text-slate-400 font-semibold bg-slate-50 dark:bg-[#1C2128]/25 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800/80 shadow-xs">
           <div className="flex items-center gap-2 justify-center">
-            <span className="w-3.5 h-3.5 bg-gradient-to-tr from-[#00A896] to-[#028090] rounded-sm shadow-sm" />
+            <span className="w-3 h-3 bg-[#0D9488] rounded-xs shadow-xs" />
             <span>{t.company.bsLiquidAssets}</span>
           </div>
           <div className="flex items-center gap-2 justify-center">
-            <span className="w-3.5 h-3.5 bg-gradient-to-tr from-[#028090] to-[#1B4F8A] rounded-sm shadow-sm" />
+            <span className="w-3 h-3 bg-[#1B4F8A] rounded-xs shadow-xs" />
             <span>{t.company.bsFixedAssets}</span>
           </div>
           <div className="flex items-center gap-2 justify-center">
-            <span className="w-3.5 h-3.5 bg-gradient-to-tr from-[#F72585] to-[#B5179E] rounded-sm shadow-sm" />
+            <span className="w-3 h-3 bg-[#E11D48] rounded-xs shadow-xs" />
             <span>{t.company.bsLiquidLiabilities}</span>
           </div>
           <div className="flex items-center gap-2 justify-center">
-            <span className="w-3.5 h-3.5 bg-gradient-to-tr from-[#4CC9F0] to-[#4895EF] rounded-sm shadow-sm" />
+            <span className="w-3 h-3 bg-[#0284C7] rounded-xs shadow-xs" />
             <span>{t.company.bsFixedLiabilities}</span>
           </div>
           <div className="flex items-center gap-2 justify-center">
-            <span className="w-3.5 h-3.5 bg-gradient-to-tr from-[#7209B7] to-[#560BAD] rounded-sm shadow-sm" />
+            <span className="w-3 h-3 bg-[#7C3AED] rounded-xs shadow-xs" />
             <span>{t.company.bsNetAssets}</span>
           </div>
         </div>
@@ -735,14 +726,14 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
   return (
     <div className="flex flex-col gap-4 sm:gap-6">
       {/* Tab Controls */}
-      <div className="flex items-center justify-between border-b border-slate-150 dark:border-slate-800 pb-2">
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-2">
+        <div className="flex gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl">
           <button 
             onClick={() => setActiveTab('trend')}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-black rounded-xl transition-all duration-300 ${
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 ${
               activeTab === 'trend' 
-                ? 'bg-primary text-white shadow-sm dark:bg-secondary' 
-                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/50 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white'
+                ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-white' 
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5" />
@@ -750,10 +741,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
           </button>
           <button 
             onClick={() => setActiveTab('balance')}
-            className={`inline-flex items-center gap-1.5 px-4 py-2 text-xs font-black rounded-xl transition-all duration-300 ${
+            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 ${
               activeTab === 'balance' 
-                ? 'bg-primary text-white shadow-sm dark:bg-secondary' 
-                : 'text-slate-500 hover:text-slate-900 hover:bg-slate-100/50 dark:text-slate-400 dark:hover:bg-slate-800/40 dark:hover:text-white'
+                ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-white' 
+                : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
             <PieChart className="w-3.5 h-3.5" />

@@ -4,6 +4,7 @@ const vi: Translations = {
   header: {
     search: "Tìm kiếm doanh nghiệp",
     directory: "Thư mục doanh nghiệp",
+    formDm: "Gửi Form B2B",
     pricing: "Bảng giá",
     blog: "Blog",
     dashboard: "Trực quan ABM",

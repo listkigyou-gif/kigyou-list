@@ -90,6 +90,10 @@ export async function POST(request: Request) {
       if (filters.has_phone === true) sanitizedFilters.has_phone = true;
       if (filters.has_website === true) sanitizedFilters.has_website = true;
       if (filters.has_fax === true) sanitizedFilters.has_fax = true;
+      if (filters.has_contact_form === true) sanitizedFilters.has_contact_form = true;
+      if (filters.email_type && ["RECRUIT", "PR", "SALES", "GENERAL"].includes(filters.email_type)) {
+        sanitizedFilters.email_type = filters.email_type;
+      }
       
       if (filters.company_status && ["活動中", "閉鎖", "解散"].includes(filters.company_status)) {
         sanitizedFilters.company_status = filters.company_status;
@@ -150,7 +154,7 @@ export async function POST(request: Request) {
     const headers = [
       "法人番号", "企業名", "都道府県", "郵便番号", "住所", 
       "代表者名", "資本金", "従業員数", "売上高", 
-      "電話番号", "FAX番号", "メールアドレス", "Website", "ステータス"
+      "電話番号", "FAX番号", "メールアドレス", "メール種別", "問い合わせフォームURL", "Website", "ステータス"
     ];
 
     const jobId = `job_${Date.now()}`;
@@ -186,6 +190,8 @@ export async function POST(request: Request) {
           c.phone_number || "",
           c.fax_number || "",
           c.email_address || "",
+          c.email_type || "",
+          c.contact_form_url || "",
           c.website_url || "",
           c.status
         ].map(escapeCSVField).join(",");
@@ -247,6 +253,8 @@ export async function POST(request: Request) {
             c.phone_number || "",
             c.fax_number || "",
             c.email_address || "",
+            c.email_type || "",
+            c.contact_form_url || "",
             c.website_url || "",
             c.status
           ].map(escapeCSVField).join(",");

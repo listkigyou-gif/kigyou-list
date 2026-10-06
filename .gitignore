@@ -13,6 +13,12 @@ out/
 .env*
 .DS_Store
 importdata/
-scratch/
 __pycache__/
 *.pyc
+scratch/
+scratch_*
+qc
+*.tar.gz
+crawlers/website/pass2_progress.json
+frontend/test*
+frontend/scratch*

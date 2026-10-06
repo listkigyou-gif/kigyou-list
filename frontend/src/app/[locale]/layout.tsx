@@ -8,6 +8,8 @@ import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
 import { getTranslations } from "@/lib/i18n";
 import { LanguageProvider } from "@/context/LanguageContext";
+import { Suspense } from "react";
+import { TopProgressBar } from "@/components/TopProgressBar";
 import Script from "next/script";
 
 const notoSansJP = Noto_Sans_JP({
@@ -115,6 +117,9 @@ export default async function LocalizedLayout({
         </>
       )}
       <body className="min-h-full flex flex-col font-sans bg-bg-light text-slate-900 dark:bg-[#0D1117] dark:text-slate-100">
+        <Suspense fallback={null}>
+          <TopProgressBar />
+        </Suspense>
         <SessionProvider session={session}>
           <LanguageProvider locale={locale} translations={translations}>
             <AuthProvider>

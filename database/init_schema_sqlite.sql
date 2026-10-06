@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS companies (
     business_summary TEXT NULL,
     jigyo_shumoku TEXT NULL, -- 事業種目
     branch_phone_numbers TEXT NULL, -- 支店電話番号
+    sns_links TEXT NULL, -- ソーシャルメディア (JSON: twitter, facebook, wantedly, note, linkedin...)
     yahoo_last_crawled_at TEXT NULL, -- Yahoo最終検索日 (Chu kỳ 2 năm)
     website_last_crawled_at TEXT NULL, -- 公式ウェブサイト最終収集日 (Chu kỳ 2 năm)
     website_crawl_status TEXT NULL, -- 公式ウェブサイト収集ステータス
@@ -142,6 +143,7 @@ CREATE TABLE IF NOT EXISTS raw_website (
     employee_count TEXT NULL,            -- Số lượng nhân viên cào thô
     representative_name TEXT NULL,       -- Tên đại diện cào thô
     business_summary TEXT NULL,          -- Mô tả hoạt động / text thô để AI phân loại ngành nghề
+    sns_links TEXT NULL,                 -- Link mạng xã hội (JSON string)
     scraped_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

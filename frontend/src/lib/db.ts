@@ -184,7 +184,9 @@ function convertSqlForPG(sql: string): string {
  * Executes a SELECT query returning multiple rows, supporting both PostgreSQL and SQLite.
  */
 export async function runQuery(sql: string, params: any[] = []): Promise<any[]> {
-  await ensureAllTablesInitialized();
+  if (!allTablesInitialized) {
+    ensureAllTablesInitialized().catch(err => console.error("Background table init error:", err));
+  }
   const isPG = !!DATABASE_URL;
   if (isPG) {
     const pool = getPGPool();
@@ -203,7 +205,9 @@ export async function runQuery(sql: string, params: any[] = []): Promise<any[]> 
  * Executes a SELECT query returning a single row, supporting both PostgreSQL and SQLite.
  */
 export async function runGetQuery(sql: string, params: any[] = []): Promise<any | null> {
-  await ensureAllTablesInitialized();
+  if (!allTablesInitialized) {
+    ensureAllTablesInitialized().catch(err => console.error("Background table init error:", err));
+  }
   const isPG = !!DATABASE_URL;
   if (isPG) {
     const pool = getPGPool();
@@ -256,6 +260,18 @@ export interface Company {
   industries?: CompanyIndustryDetail[];
   has_financials?: boolean; // true if company has financial records in company_financial_status
   ordinary_income?: number | null;
+  sns_links?: string | null;
+  logo_url?: string | null;
+  is_claimed?: boolean | null;
+  claimed_at?: string | null;
+  claimed_by_name?: string | null;
+  claimed_by_email?: string | null;
+  claimed_by_phone?: string | null;
+  claimed_by_department?: string | null;
+  pr_title?: string | null;
+  pr_message?: string | null;
+  contact_form_url?: string | null;
+  email_type?: string | null;
 }
 
 export interface Industry {
@@ -322,6 +338,8 @@ export interface SearchFilters {
   has_phone?: boolean;
   has_website?: boolean;
   has_fax?: boolean;
+  has_contact_form?: boolean;
+  email_type?: string;
   company_status?: string;
   min_operating_income?: number;
   max_operating_income?: number;
@@ -333,6 +351,21 @@ export interface SearchFilters {
   cursor_corp?: string; // Keyset cursor: corporate number of last item
   cursor_has_fin?: number; // Keyset cursor: 1 if last item has financials, 0 otherwise
   cursor_cap?: number;     // Keyset cursor: capital_amount of last item
+}
+
+function sanitizeCapitalAmount(val: any): number | null {
+  if (val === null || val === undefined) return null;
+  const num = Number(val);
+  if (isNaN(num)) return null;
+  if (num > 1_000_000_000_000_000) {
+    // Handle database legacy concatenated edge case (e.g. "1000000017300000000")
+    const s = String(val);
+    const match = s.match(/^(100000000|200000000|300000000|500000000|[1-9]\d{6,7})/);
+    if (match) {
+      return Number(match[0]);
+    }
+  }
+  return num;
 }
 
 /**
@@ -353,7 +386,7 @@ function mapCompanyRow(row: any): Company {
     representative_name: row.representative_name || null,
     representative_position: row.representative_position || null,
     establishment_date: row.establishment_date || null,
-    capital_amount: row.capital_amount !== null && row.capital_amount !== undefined ? Number(row.capital_amount) : null,
+    capital_amount: sanitizeCapitalAmount(row.capital_amount),
     employee_count: row.employee_count !== null && row.employee_count !== undefined ? Number(row.employee_count) : null,
     sales_amount: row.sales_amount !== null && row.sales_amount !== undefined ? Number(row.sales_amount) : null,
     phone_number: row.phone_number || null,
@@ -368,6 +401,10 @@ function mapCompanyRow(row: any): Company {
     created_at: row.created_at ? String(row.created_at) : '',
     updated_at: row.updated_at ? String(row.updated_at) : '',
     has_financials: row.has_financials != null ? true : false,
+    sns_links: row.sns_links || null,
+    logo_url: row.logo_url || null,
+    contact_form_url: row.contact_form_url || null,
+    email_type: row.email_type || null,
   };
 }
 
@@ -415,6 +452,33 @@ export async function getCompanyByNumber(corpNum: string): Promise<Company | nul
   } catch (error) {
     console.error(`Error in getCompanyByNumber(${corpNum}):`, error);
     return null;
+  }
+}
+
+/**
+ * Fetch multiple companies by an array of corporate_numbers in a single batch query
+ */
+export async function getCompaniesByNumbers(corpNums: string[]): Promise<Company[]> {
+  if (!corpNums || corpNums.length === 0) return [];
+  const uniqueNums = Array.from(new Set(corpNums.map(n => String(n).trim()))).filter(n => /^\d{13}$/.test(n));
+  if (uniqueNums.length === 0) return [];
+
+  try {
+    const isPG = !!DATABASE_URL;
+    let rows: any[] = [];
+    if (isPG) {
+      const pool = getPGPool();
+      const res = await pool.query('SELECT * FROM companies WHERE corporate_number = ANY($1)', [uniqueNums]);
+      rows = res.rows;
+    } else {
+      const db = getSQLiteDB();
+      const placeholders = uniqueNums.map(() => '?').join(',');
+      rows = db.prepare(`SELECT * FROM companies WHERE corporate_number IN (${placeholders})`).all(...uniqueNums);
+    }
+    return rows ? rows.map(mapCompanyRow) : [];
+  } catch (error) {
+    console.error('Error in getCompaniesByNumbers:', error);
+    return [];
   }
 }
 
@@ -882,7 +946,7 @@ function buildSearchQuery(
     c.postal_code, c.prefecture_code, c.prefecture_name, c.city_name, 
     c.street_address, c.full_address, c.representative_name, c.representative_position, 
     c.establishment_date, c.capital_amount, c.employee_count, c.sales_amount, 
-    c.phone_number, c.fax_number, c.website_url, c.email_address, 
+    c.phone_number, c.fax_number, c.website_url, c.email_address, c.contact_form_url, c.email_type, NULL AS logo_url,
     c.jigyo_shumoku, c.branch_phone_numbers, c.status, c.is_detailed, c.created_at, c.updated_at,
     ${isPG ? 'c.has_financials' : 'cfs.corporate_number AS has_financials'}
   `;
@@ -929,29 +993,17 @@ function buildSearchQuery(
       whereClauses.push('c.corporate_number = ?');
       params.push(trimmedVal);
     } else {
-      // Prefix search on cleaned company name and kana
-      const prefixSearchPattern = isPG 
-        ? "regexp_replace(c.company_name, '^(株式会社|有限会社|合同会社|合名会社|合資会社|社団法人|財団法人|医療法人|学校法人|NPO法人)', '')" 
-        : "REPLACE(REPLACE(REPLACE(c.company_name, '株式会社', ''), '有限会社', ''), '合同会社', '')"; // Simplified for SQLite
-        
-      const prefixKanaPattern = isPG
-        ? "regexp_replace(c.company_name_kana, '^(カブシキガイシャ|ユウゲンガイシャ|ゴウドウガイシャ|ゴウメイガイシャ|ゴウシガイシャ|シャダンホウジン|ザイダンホウジン|イリョウホウジン|ガッコウホウジン|エヌピーオーホウジン)', '')"
-        : "c.company_name_kana"; // Simplified for SQLite
-
-      // Normalize search term (convert half-width letters to full-width to match DB)
-      const fullWidthVal = trimmedVal.replace(/[A-Za-z0-9]/g, (s) => String.fromCharCode(s.charCodeAt(0) + 0xFEE0));
-      const fullWidthUpper = fullWidthVal.toUpperCase();
-      const fullWidthLower = fullWidthVal.toLowerCase();
-
       if (isPG) {
-        // Postgres MUST have literal strings for LIKE prefix to use varchar_pattern_ops indexes.
-        // If we use parameters (LIKE $1), the planner assumes $1 might start with a wildcard and does a full Seq Scan!
-        const safeUpper = fullWidthUpper.replace(/'/g, "''").replace(/\\/g, "\\\\");
-        const safeLower = fullWidthLower.replace(/'/g, "''").replace(/\\/g, "\\\\");
-        whereClauses.push(`(${prefixSearchPattern} LIKE '${safeUpper}%' OR ${prefixSearchPattern} LIKE '${safeLower}%' OR ${prefixKanaPattern} LIKE '${safeUpper}%' OR ${prefixKanaPattern} LIKE '${safeLower}%')`);
+        // PostgreSQL: Use high-performance pg_trgm GIN index (supports arbitrary substring search in 10-50ms)
+        whereClauses.push('(c.company_name ILIKE ? OR c.company_name_kana ILIKE ?)');
+        params.push(`%${trimmedVal}%`, `%${trimmedVal}%`);
       } else {
+        // SQLite prefix fallback
+        const prefixSearchPattern = "REPLACE(REPLACE(REPLACE(c.company_name, '株式会社', ''), '有限会社', ''), '合同会社', '')";
+        const prefixKanaPattern = "c.company_name_kana";
+        const fullWidthVal = trimmedVal.replace(/[A-Za-z0-9]/g, (s) => String.fromCharCode(s.charCodeAt(0) + 0xFEE0));
         whereClauses.push(`(${prefixSearchPattern} LIKE ? OR ${prefixSearchPattern} LIKE ? OR ${prefixKanaPattern} LIKE ? OR ${prefixKanaPattern} LIKE ?)`);
-        params.push(`${fullWidthUpper}%`, `${fullWidthLower}%`, `${fullWidthUpper}%`, `${fullWidthLower}%`);
+        params.push(`${fullWidthVal.toUpperCase()}%`, `${fullWidthVal.toLowerCase()}%`, `${fullWidthVal.toUpperCase()}%`, `${fullWidthVal.toLowerCase()}%`);
       }
     }
   }
@@ -986,27 +1038,39 @@ function buildSearchQuery(
     params.push(filters.max_capital * 10000);
   }
 
-  // Signal filters (rewritten to IN subqueries to utilize indexed search on signal_type)
+  // Signal filters (optimized with company_signal_flags partial indexes and direct column)
   if (filters.has_hiring) {
-    whereClauses.push("c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '求人あり')");
+    whereClauses.push(isPG 
+      ? "c.corporate_number IN (SELECT csf.corporate_number FROM company_signal_flags csf WHERE csf.has_hiring = true)"
+      : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '求人あり')");
   }
   if (filters.has_subsidy) {
-    whereClauses.push("c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '補助金受給')");
+    whereClauses.push(isPG
+      ? "c.corporate_number IN (SELECT csf.corporate_number FROM company_signal_flags csf WHERE csf.has_subsidy = true)"
+      : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '補助金受給')");
   }
   if (filters.has_bidding) {
-    whereClauses.push("c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '調達案件')");
+    whereClauses.push(isPG
+      ? "c.corporate_number IN (SELECT csf.corporate_number FROM company_signal_flags csf WHERE csf.has_bidding = true)"
+      : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '調達案件')");
   }
   if (filters.has_award) {
-    whereClauses.push("c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '表彰')");
+    whereClauses.push(isPG
+      ? "c.corporate_number IN (SELECT csf.corporate_number FROM company_signal_flags csf WHERE csf.has_award = true)"
+      : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '表彰')");
   }
   if (filters.has_certification) {
-    whereClauses.push("c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '届出認定')");
+    whereClauses.push(isPG
+      ? "c.corporate_number IN (SELECT csf.corporate_number FROM company_signal_flags csf WHERE csf.has_certification = true)"
+      : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '届出認定')");
   }
   if (filters.has_patent) {
-    whereClauses.push("c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '特許')");
+    whereClauses.push(isPG
+      ? "c.corporate_number IN (SELECT csf.corporate_number FROM company_signal_flags csf WHERE csf.has_patent = true)"
+      : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '特許')");
   }
   if (filters.has_financials) {
-    whereClauses.push("c.corporate_number IN (SELECT fr.corporate_number FROM financial_records fr)");
+    whereClauses.push(isPG ? "c.has_financials = true" : "c.corporate_number IN (SELECT fr.corporate_number FROM financial_records fr)");
   }
 
   // Founding year range filters
@@ -1041,6 +1105,13 @@ function buildSearchQuery(
   }
   if (filters.has_fax === true) {
     whereClauses.push("c.fax_number IS NOT NULL AND c.fax_number != ''");
+  }
+  if (filters.has_contact_form === true) {
+    whereClauses.push("c.contact_form_url IS NOT NULL AND c.contact_form_url != ''");
+  }
+  if (filters.email_type) {
+    whereClauses.push("c.email_type = ?");
+    params.push(filters.email_type);
   }
 
   // Status filter
@@ -1195,6 +1266,8 @@ export async function searchCompanies(
     if (filters.has_phone) activeFiltersList.push('phone');
     if (filters.has_website) activeFiltersList.push('website');
     if (filters.has_fax) activeFiltersList.push('fax');
+    if (filters.has_contact_form) activeFiltersList.push('contact_form');
+    if (filters.email_type) activeFiltersList.push('email_type');
     if (filters.company_status) activeFiltersList.push('status');
 
     if (filters.min_operating_income !== undefined || filters.max_operating_income !== undefined) activeFiltersList.push('operating_income');
@@ -1211,95 +1284,84 @@ export async function searchCompanies(
       }
     }
 
-    let totalCount = 0;
-    
-    if (activeFiltersList.length === 0) {
-      // No active filters -> read total companies count from cache
-      const stats = await getDatabaseStats();
-      totalCount = stats.totalCompanies;
-    } else if (activeFiltersList.length === 2 && activeFiltersList.includes('prefecture') && activeFiltersList.includes('city') && filters.prefecture_code && filters.city_name) {
-      // Prefecture + City filter -> read from city_counts table (0ms)
-      const row = await runGetQuery('SELECT company_count FROM city_counts WHERE prefecture_code = ? AND city_name = ?', [filters.prefecture_code, filters.city_name]);
-      totalCount = row ? Number(row.company_count) : 0;
-    } else if (activeFiltersList.length === 1) {
-      // Exactly one filter -> read from metadata/stats tables if possible (0ms query)
-      const singleFilter = activeFiltersList[0];
-      
-      if (singleFilter === 'prefecture' && filters.prefecture_code) {
-        const row = await runGetQuery('SELECT company_count FROM prefecture_counts WHERE prefecture_code = ?', [filters.prefecture_code]);
-        totalCount = row ? Number(row.company_count) : 0;
-      } else if (singleFilter === 'city' && filters.prefecture_code && filters.city_name) {
-        const row = await runGetQuery('SELECT company_count FROM city_counts WHERE prefecture_code = ? AND city_name = ?', [filters.prefecture_code, filters.city_name]);
-        totalCount = row ? Number(row.company_count) : 0;
-      } else if (singleFilter === 'industry' && filters.industry_code) {
-        const row = await runGetQuery('SELECT company_count FROM industry_counts WHERE industry_code = ?', [filters.industry_code]);
-        totalCount = row ? Number(row.company_count) : 0;
-      } else if (singleFilter === 'hiring') {
+    const fetchTotalCount = async (): Promise<number> => {
+      if (activeFiltersList.length === 0) {
         const stats = await getDatabaseStats();
-        totalCount = stats.signalHiring;
-      } else if (singleFilter === 'subsidy') {
-        const stats = await getDatabaseStats();
-        totalCount = stats.signalSubsidy;
-      } else if (singleFilter === 'bidding') {
-        const stats = await getDatabaseStats();
-        totalCount = stats.signalBidding;
-      } else if (singleFilter === 'award') {
-        const stats = await getDatabaseStats();
-        totalCount = stats.signalAward;
-      } else if (singleFilter === 'certification') {
-        const stats = await getDatabaseStats();
-        totalCount = stats.signalCertification;
-      } else if (singleFilter === 'patent') {
-        const stats = await getDatabaseStats();
-        totalCount = stats.signalPatent;
-      } else if (singleFilter === 'financials') {
-        const row = await runGetQuery(`
-          SELECT COUNT(DISTINCT fr.corporate_number) as count 
-          FROM financial_records fr 
-          WHERE fr.corporate_number NOT IN (SELECT corporate_number FROM hidden_companies)
-        `);
-        totalCount = row ? Number(row.count) : 0;
-      } else {
-        // Not directly cached -> execute count query
-        const countQuery = buildSearchQuery(keyword, filters, true);
-        const innerSql = countQuery.sql.replace('SELECT COUNT(*) as count', 'SELECT 1');
-      const boundedCountSql = `SELECT COUNT(*) as count FROM (${innerSql} LIMIT 10000) as subquery`;
-        const countResult = await runGetQuery(boundedCountSql, countQuery.params);
-        totalCount = countResult ? Number(countResult.count) : 0;
+        return stats.totalCompanies;
       }
-    } else {
-      // Multiple active filters -> execute count query
+      if (activeFiltersList.length === 2 && activeFiltersList.includes('prefecture') && activeFiltersList.includes('city') && filters.prefecture_code && filters.city_name) {
+        const row = await runGetQuery('SELECT company_count FROM city_counts WHERE prefecture_code = ? AND city_name = ?', [filters.prefecture_code, filters.city_name]);
+        return row ? Number(row.company_count) : 0;
+      }
+      if (activeFiltersList.length === 1) {
+        const singleFilter = activeFiltersList[0];
+        if (singleFilter === 'prefecture' && filters.prefecture_code) {
+          const row = await runGetQuery('SELECT company_count FROM prefecture_counts WHERE prefecture_code = ?', [filters.prefecture_code]);
+          return row ? Number(row.company_count) : 0;
+        }
+        if (singleFilter === 'city' && filters.prefecture_code && filters.city_name) {
+          const row = await runGetQuery('SELECT company_count FROM city_counts WHERE prefecture_code = ? AND city_name = ?', [filters.prefecture_code, filters.city_name]);
+          return row ? Number(row.company_count) : 0;
+        }
+        if (singleFilter === 'industry' && filters.industry_code) {
+          const row = await runGetQuery('SELECT company_count FROM industry_counts WHERE industry_code = ?', [filters.industry_code]);
+          return row ? Number(row.company_count) : 0;
+        }
+        if (singleFilter === 'hiring') {
+          const stats = await getDatabaseStats();
+          return stats.signalHiring;
+        }
+        if (singleFilter === 'subsidy') {
+          const stats = await getDatabaseStats();
+          return stats.signalSubsidy;
+        }
+        if (singleFilter === 'bidding') {
+          const stats = await getDatabaseStats();
+          return stats.signalBidding;
+        }
+        if (singleFilter === 'award') {
+          const stats = await getDatabaseStats();
+          return stats.signalAward;
+        }
+        if (singleFilter === 'certification') {
+          const stats = await getDatabaseStats();
+          return stats.signalCertification;
+        }
+        if (singleFilter === 'patent') {
+          const stats = await getDatabaseStats();
+          return stats.signalPatent;
+        }
+        if (singleFilter === 'financials') {
+          const isPG = !!DATABASE_URL;
+          if (isPG) {
+            const row = await runGetQuery('SELECT COUNT(*) as count FROM companies WHERE has_financials = true');
+            return row ? Number(row.count) : 0;
+          }
+          const row = await runGetQuery(`
+            SELECT COUNT(DISTINCT fr.corporate_number) as count 
+            FROM financial_records fr 
+            WHERE fr.corporate_number NOT IN (SELECT corporate_number FROM hidden_companies)
+          `);
+          return row ? Number(row.count) : 0;
+        }
+      }
+
+      // Dynamic bounded count query
       const countQuery = buildSearchQuery(keyword, filters, true);
       const innerSql = countQuery.sql.replace('SELECT COUNT(*) as count', 'SELECT 1');
-      const boundedCountSql = `SELECT COUNT(*) as count FROM (${innerSql} LIMIT 10000) as subquery`;
+      const boundedCountSql = `SELECT COUNT(*) as count FROM (${innerSql} LIMIT 2000) as subquery`;
       const countResult = await runGetQuery(boundedCountSql, countQuery.params);
-      totalCount = countResult ? Number(countResult.count) : 0;
-    }
+      return countResult ? Number(countResult.count) : 0;
+    };
 
-    if (totalCount === 0) {
-      return { companies: [], totalCount: 0 };
-    }
-
-    // 2. Fetch page of results
-    // We only force the sorting index if we have NO active filters and no keyword text search.
-    // If any filter is active, forcing the index causes Postgres to use a Nested Loop scan which is a performance trap.
+    // 2. Prepare data query
     const useForcedIndex = !keyword;
     const dataQuery = buildSearchQuery(keyword, filters, false, useForcedIndex);
     let sql = dataQuery.sql;
-    
-    // Sort: 1st = has financial reports (DESC), 2nd = capital_amount (DESC), 3rd = corporate_number (ASC tie-breaker)
-    // If complex filters (signals, industry, keyword) are active on PostgreSQL, wrap in Materialized CTE
-    // to prevent the DB optimizer from choosing a slow nested loop index scan with LIMIT optimization.
     const isPG = !!DATABASE_URL;
     if (isPG) {
-      if (useForcedIndex) {
-        sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
-      } else {
-        // Trick Postgres into evaluating filters before sorting by using an expression in ORDER BY
-        sql += ' ORDER BY c.has_financials DESC, (c.capital_amount + 0) DESC NULLS LAST, c.corporate_number ASC';
-      }
+      sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
     } else {
-      // SQLite: NULL is sorted last automatically in DESC order
       sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
     }
     
@@ -1313,7 +1375,12 @@ export async function searchCompanies(
     }
     
     console.log(`[DB.ts searchCompanies] EXECUTING SQL (isPG: ${isPG}): \n${sql}\n`);
-    const results = await runQuery(sql, params);
+
+    // 3. Execute count and data query in parallel via Promise.all
+    const [totalCount, results] = await Promise.all([
+      fetchTotalCount(),
+      runQuery(sql, params)
+    ]);
     const companies = results.map(mapCompanyRow);
 
     if (companies.length > 0) {
@@ -1614,6 +1681,7 @@ export interface UserQuota {
   stripe_subscription_id?: string | null;
   stripe_customer_id?: string | null;
   subscription_status?: string | null;
+  is_verified_partner?: boolean;
 }
 
 export interface ExportJob {
@@ -1652,9 +1720,10 @@ async function initQuotaTables(): Promise<void> {
   
   const isPG = !!DATABASE_URL;
   if (isPG) {
-    const pool = getPGPool();
-    const client = await pool.connect();
     try {
+      const pool = getPGPool();
+      const client = await pool.connect();
+      try {
       await client.query(`
         CREATE TABLE IF NOT EXISTS user_export_quotas (
           user_email VARCHAR(255) PRIMARY KEY,
@@ -1798,10 +1867,28 @@ async function initQuotaTables(): Promise<void> {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_magic_link_tokens_email ON magic_link_tokens(email);`);
       } catch {}
 
+      } finally {
+        client.release();
+      }
     } catch (e) {
-      console.error('Error initializing PG quota tables:', e);
-    } finally {
-      client.release();
+      console.warn('Error initializing PG quota tables, falling back to SQLite:', e);
+      try {
+        const db = getSQLiteDB();
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS user_export_quotas (
+            user_email TEXT PRIMARY KEY,
+            monthly_base_allowance INTEGER DEFAULT 20,
+            monthly_base_used INTEGER DEFAULT 0,
+            purchased_add_on_balance INTEGER DEFAULT 0,
+            last_reset_date TEXT,
+            plan TEXT DEFAULT 'free',
+            stripe_subscription_id TEXT,
+            stripe_customer_id TEXT,
+            subscription_status TEXT DEFAULT 'inactive',
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          );
+        `);
+      } catch {}
     }
   } else {
     try {
@@ -2058,6 +2145,122 @@ export async function verifyAndConsumeMagicLinkToken(email: string, token: strin
   return true;
 }
 
+export async function isUserVerifiedBusinessPartner(email: string): Promise<boolean> {
+  try {
+    const sql = `
+      SELECT COUNT(*) AS active_count
+      FROM user_companies uc
+      JOIN companies c ON uc.corporate_number = c.corporate_number
+      WHERE LOWER(uc.user_email) = LOWER(?)
+        AND uc.status = 'active'
+        AND c.is_claimed = TRUE
+        AND uc.corporate_number NOT IN (SELECT corporate_number FROM hidden_companies)
+    `;
+    const res = await runGetQuery(sql, [email]);
+    return Number(res?.active_count || 0) > 0;
+  } catch (e) {
+    return false;
+  }
+}
+
+export async function isUserCompanyOwner(email: string, corporateNumber: string): Promise<boolean> {
+  if (!email || !corporateNumber) return false;
+  try {
+    const cleanEmail = email.trim().toLowerCase();
+    const cleanCorp = corporateNumber.trim();
+
+    // 1. Check user_companies table
+    const sql = `
+      SELECT COUNT(*) AS owner_count
+      FROM user_companies
+      WHERE LOWER(user_email) = LOWER(?)
+        AND corporate_number = ?
+        AND status = 'active'
+    `;
+    const res = await runGetQuery(sql, [cleanEmail, cleanCorp]);
+    if (Number(res?.owner_count || 0) > 0) return true;
+
+    // 2. Check companies table fallback (claimed_by_email)
+    const compSql = `
+      SELECT claimed_by_email, is_claimed
+      FROM companies
+      WHERE corporate_number = ?
+    `;
+    const compRes = await runGetQuery(compSql, [cleanCorp]);
+    if (compRes?.is_claimed && compRes?.claimed_by_email && compRes.claimed_by_email.toLowerCase() === cleanEmail) {
+      return true;
+    }
+    return false;
+  } catch (e) {
+    console.error(`Error in isUserCompanyOwner(${email}, ${corporateNumber}):`, e);
+    return false;
+  }
+}
+
+export async function getUserClaimedCompanies(email: string): Promise<any[]> {
+  try {
+    const sql = `
+      SELECT 
+        uc.id AS claim_id,
+        uc.corporate_number,
+        uc.role,
+        uc.verification_method,
+        uc.verified_at,
+        uc.status AS claim_status,
+        c.company_name,
+        c.postal_code,
+        c.prefecture_name,
+        c.phone_number,
+        c.email_address,
+        c.website_url,
+        c.is_claimed,
+        c.claimed_at,
+        c.pr_title,
+        c.pr_message,
+        c.claimed_by_name,
+        CASE WHEN hc.corporate_number IS NOT NULL THEN true ELSE false END AS is_hidden
+      FROM user_companies uc
+      JOIN companies c ON uc.corporate_number = c.corporate_number
+      LEFT JOIN hidden_companies hc ON uc.corporate_number = hc.corporate_number
+      WHERE LOWER(uc.user_email) = LOWER(?)
+      ORDER BY uc.verified_at DESC
+    `;
+    return await runQuery(sql, [email]);
+  } catch (e) {
+    console.error(`Error in getUserClaimedCompanies(${email}):`, e);
+    return [];
+  }
+}
+
+export async function getUserClaimRequests(email: string): Promise<any[]> {
+  try {
+    const sql = `
+      SELECT 
+        r.id,
+        r.corporate_number,
+        COALESCE(r.company_name, c.company_name, '企業名未取得') AS company_name,
+        r.applicant_name,
+        r.applicant_phone,
+        r.department,
+        r.document_type,
+        r.document_url,
+        r.notes,
+        r.status,
+        r.rejection_reason,
+        r.created_at,
+        r.reviewed_at
+      FROM company_claim_requests r
+      LEFT JOIN companies c ON r.corporate_number = c.corporate_number
+      WHERE LOWER(r.user_email) = LOWER(?)
+      ORDER BY r.created_at DESC
+    `;
+    return await runQuery(sql, [email]);
+  } catch (e) {
+    console.error(`Error in getUserClaimRequests(${email}):`, e);
+    return [];
+  }
+}
+
 /**
  * Get or create the export quota for a user.
  */
@@ -2067,6 +2270,9 @@ export async function getUserQuota(email: string): Promise<UserQuota & { last_re
     const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' });
     const currentJstDate = formatter.format(new Date()); // YYYY-MM-DD
 
+    const isPartner = await isUserVerifiedBusinessPartner(email);
+    const expectedBaseAllowance = isPartner ? 50 : 20;
+
     const sql = 'SELECT * FROM user_export_quotas WHERE user_email = ?';
     const row = await runGetQuery(sql, [email]);
     
@@ -2074,6 +2280,20 @@ export async function getUserQuota(email: string): Promise<UserQuota & { last_re
       let used = Number(row.monthly_base_used);
       let lastReset = row.last_reset_date;
       const plan = row.plan || 'free';
+      let currentAllowance = Number(row.monthly_base_allowance);
+
+      // Dynamically sync allowance for free tier based on enterprise verification status
+      if (plan === 'free' && currentAllowance !== expectedBaseAllowance) {
+        currentAllowance = expectedBaseAllowance;
+        const syncAllowanceSql = 'UPDATE user_export_quotas SET monthly_base_allowance = ? WHERE user_email = ?';
+        if (DATABASE_URL) {
+          const pool = getPGPool();
+          await pool.query(convertSqlForPG(syncAllowanceSql), [expectedBaseAllowance, email]);
+        } else {
+          const db = getSQLiteDB();
+          db.prepare(syncAllowanceSql).run(expectedBaseAllowance, email);
+        }
+      }
 
       // Lazy Reset Logic: 
       // - For 'free' plan: resets DAILY based on JST date.
@@ -2124,39 +2344,41 @@ export async function getUserQuota(email: string): Promise<UserQuota & { last_re
 
       return {
         user_email: row.user_email,
-        monthly_base_allowance: Number(row.monthly_base_allowance),
+        monthly_base_allowance: currentAllowance,
         monthly_base_used: used,
         purchased_add_on_balance: Number(row.purchased_add_on_balance),
         plan: row.plan || 'free',
         stripe_subscription_id: row.stripe_subscription_id || null,
         stripe_customer_id: row.stripe_customer_id || null,
         subscription_status: row.subscription_status || 'inactive',
-        last_reset_date: lastReset
+        last_reset_date: lastReset,
+        is_verified_partner: isPartner
       };
     }
     
-    // Create default quota for new user: 20 rows, reset today
-    const insertSql = 'INSERT INTO user_export_quotas (user_email, monthly_base_allowance, monthly_base_used, purchased_add_on_balance, last_reset_date, plan, subscription_status) VALUES (?, 20, 0, 0, ?, \'free\', \'inactive\')';
+    // Create default quota for new user: 20 or 50 rows, reset today
+    const insertSql = 'INSERT INTO user_export_quotas (user_email, monthly_base_allowance, monthly_base_used, purchased_add_on_balance, last_reset_date, plan, subscription_status) VALUES (?, ?, 0, 0, ?, \'free\', \'inactive\')';
     
     if (DATABASE_URL) {
       const pool = getPGPool();
-      await pool.query(convertSqlForPG(insertSql), [email, currentJstDate]);
+      await pool.query(convertSqlForPG(insertSql), [email, expectedBaseAllowance, currentJstDate]);
     } else {
       const db = getSQLiteDB();
       const stmt = db.prepare(insertSql);
-      stmt.run(email, currentJstDate);
+      stmt.run(email, expectedBaseAllowance, currentJstDate);
     }
     
     return {
       user_email: email,
-      monthly_base_allowance: 20,
+      monthly_base_allowance: expectedBaseAllowance,
       monthly_base_used: 0,
       purchased_add_on_balance: 0,
       plan: 'free',
       stripe_subscription_id: null,
       stripe_customer_id: null,
       subscription_status: 'inactive',
-      last_reset_date: currentJstDate
+      last_reset_date: currentJstDate,
+      is_verified_partner: isPartner
     };
   } catch (error) {
     console.error(`Error in getUserQuota(${email}):`, error);
@@ -2168,7 +2390,8 @@ export async function getUserQuota(email: string): Promise<UserQuota & { last_re
       plan: 'free',
       stripe_subscription_id: null,
       stripe_customer_id: null,
-      subscription_status: 'inactive'
+      subscription_status: 'inactive',
+      is_verified_partner: false
     };
   }
 }
@@ -2616,7 +2839,7 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
     // Same sort order as searchCompanies: has_financials first, then capital DESC
     const isPG_all = !!DATABASE_URL;
     if (isPG_all) {
-      sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+      sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
     } else {
       sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
     }
@@ -3228,6 +3451,25 @@ export async function initAdminTables(): Promise<void> {
           reason TEXT,
           hidden_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+        CREATE TABLE IF NOT EXISTS verification_otps (
+          email VARCHAR(255) PRIMARY KEY,
+          otp_code VARCHAR(10) NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          verified BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS company_edit_history (
+          id VARCHAR(100) PRIMARY KEY,
+          corporate_number VARCHAR(50) NOT NULL,
+          company_name VARCHAR(255),
+          field_name VARCHAR(50) NOT NULL,
+          old_value TEXT,
+          new_value TEXT,
+          requester_email VARCHAR(255) NOT NULL,
+          inquiry_id VARCHAR(100),
+          status VARCHAR(50) DEFAULT 'auto_approved',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
       `);
     } catch (e) {
       console.error('Error initializing PG admin tables:', e);
@@ -3268,6 +3510,25 @@ export async function initAdminTables(): Promise<void> {
           corporate_number TEXT PRIMARY KEY,
           reason TEXT,
           hidden_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS verification_otps (
+          email TEXT PRIMARY KEY,
+          otp_code TEXT NOT NULL,
+          expires_at TIMESTAMP NOT NULL,
+          verified BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        CREATE TABLE IF NOT EXISTS company_edit_history (
+          id TEXT PRIMARY KEY,
+          corporate_number TEXT NOT NULL,
+          company_name TEXT,
+          field_name TEXT NOT NULL,
+          old_value TEXT,
+          new_value TEXT,
+          requester_email TEXT NOT NULL,
+          inquiry_id TEXT,
+          status TEXT DEFAULT 'auto_approved',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
     } catch (e) {
@@ -3340,6 +3601,10 @@ export async function adminUpdateUserQuota(email: string, allowance: number, add
 
 // Inquiries & Hide Companies
 export async function checkRateLimit(ip: string): Promise<boolean> {
+  // Allow localhost/development
+  if (!ip || ip === 'unknown_ip' || ip === '127.0.0.1' || ip === '::1' || ip === 'localhost') {
+    return true;
+  }
   await initAdminTables();
   try {
     const isPG = !!DATABASE_URL;
@@ -3358,11 +3623,11 @@ export async function checkRateLimit(ip: string): Promise<boolean> {
       count = row ? row.cnt : 0;
     }
     
-    // Max 3 requests per 24 hours per IP
-    return count < 3;
+    // Allow up to 20 requests per 24 hours per external IP
+    return count < 20;
   } catch (error) {
     console.error('Error in checkRateLimit:', error);
-    return false; // Fail safe
+    return true;
   }
 }
 
@@ -3374,26 +3639,27 @@ export async function createInquiry(
   person_in_charge: string,
   mobile_number: string,
   message: string,
-  ip_address: string = ''
-): Promise<boolean> {
+  ip_address: string = '',
+  status: string = 'pending'
+): Promise<{ success: boolean; id: string }> {
   await initAdminTables();
+  const id = `inq_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
   try {
-    const id = `inq_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
     const sql = `
-      INSERT INTO inquiries (id, corporate_number, company_name, type, requester_email, person_in_charge, mobile_number, message, ip_address)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO inquiries (id, corporate_number, company_name, type, requester_email, person_in_charge, mobile_number, message, ip_address, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
     if (DATABASE_URL) {
       const pool = getPGPool();
-      await pool.query(convertSqlForPG(sql), [id, corporate_number, company_name, type, requester_email, person_in_charge, mobile_number, message, ip_address]);
+      await pool.query(convertSqlForPG(sql), [id, corporate_number, company_name, type, requester_email, person_in_charge, mobile_number, message, ip_address, status]);
     } else {
       const db = getSQLiteDB();
-      db.prepare(sql).run(id, corporate_number, company_name, type, requester_email, person_in_charge, mobile_number, message, ip_address);
+      db.prepare(sql).run(id, corporate_number, company_name, type, requester_email, person_in_charge, mobile_number, message, ip_address, status);
     }
-    return true;
+    return { success: true, id };
   } catch (error) {
     console.error('Error in createInquiry:', error);
-    return false;
+    return { success: false, id: '' };
   }
 }
 
@@ -3473,6 +3739,214 @@ export async function resolveInquiry(id: string, newStatus: string = 'resolved')
   } catch (error) {
     console.error(`Error in resolveInquiry(${id}):`, error);
     return false;
+  }
+}
+
+// ==========================================
+// OTP Verification & Company Edits
+// ==========================================
+
+export async function saveOtp(email: string, otp: string, _expiresAt?: Date): Promise<boolean> {
+  await initAdminTables();
+  const normalizedEmail = email.trim().toLowerCase();
+  try {
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      await pool.query(`
+        INSERT INTO verification_otps (email, otp_code, expires_at, verified, created_at)
+        VALUES ($1, $2, CURRENT_TIMESTAMP + INTERVAL '10 MINUTES', false, CURRENT_TIMESTAMP)
+        ON CONFLICT (email) DO UPDATE SET 
+          otp_code = $2, 
+          expires_at = CURRENT_TIMESTAMP + INTERVAL '10 MINUTES', 
+          verified = false, 
+          created_at = CURRENT_TIMESTAMP
+      `, [normalizedEmail, otp]);
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(`
+        INSERT OR REPLACE INTO verification_otps (email, otp_code, expires_at, verified, created_at)
+        VALUES (?, ?, datetime('now', '+10 minutes'), 0, CURRENT_TIMESTAMP)
+      `).run(normalizedEmail, otp);
+    }
+    return true;
+  } catch (error) {
+    console.error('Error in saveOtp:', error);
+    return false;
+  }
+}
+
+export async function verifyOtp(email: string, otp: string): Promise<boolean> {
+  await initAdminTables();
+  const normalizedEmail = email.trim().toLowerCase();
+  const cleanOtp = otp.trim();
+  try {
+    let matched = false;
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      const res = await pool.query(`
+        SELECT * FROM verification_otps 
+        WHERE email = $1 AND otp_code = $2 AND expires_at > CURRENT_TIMESTAMP
+      `, [normalizedEmail, cleanOtp]);
+      if (res.rows.length > 0) {
+        matched = true;
+        await pool.query(`DELETE FROM verification_otps WHERE email = $1`, [normalizedEmail]);
+      }
+    } else {
+      const db = getSQLiteDB();
+      const row = db.prepare(`
+        SELECT * FROM verification_otps 
+        WHERE email = ? AND otp_code = ? AND expires_at > CURRENT_TIMESTAMP
+      `).get(normalizedEmail, cleanOtp);
+      if (row) {
+        matched = true;
+        db.prepare(`DELETE FROM verification_otps WHERE email = ?`).run(normalizedEmail);
+      }
+    }
+    return matched;
+  } catch (error) {
+    console.error('Error in verifyOtp:', error);
+    return false;
+  }
+}
+
+export const ALLOWED_EDIT_FIELDS = [
+  'phone_number', 
+  'website_url', 
+  'email_address', 
+  'fax_number', 
+  'representative_name', 
+  'jigyo_shumoku'
+];
+
+export async function updateCompanyField(corporate_number: string, field_name: string, new_value: string): Promise<boolean> {
+  if (!ALLOWED_EDIT_FIELDS.includes(field_name)) {
+    throw new Error(`Field ${field_name} is not allowed to be edited.`);
+  }
+  try {
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      await pool.query(
+        `UPDATE companies SET ${field_name} = $1, updated_at = CURRENT_TIMESTAMP WHERE corporate_number = $2`,
+        [new_value, corporate_number]
+      );
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(`UPDATE companies SET ${field_name} = ?, updated_at = CURRENT_TIMESTAMP WHERE corporate_number = ?`)
+        .run(new_value, corporate_number);
+    }
+    return true;
+  } catch (error) {
+    console.error(`Error in updateCompanyField(${corporate_number}, ${field_name}):`, error);
+    return false;
+  }
+}
+
+export async function saveCompanyEditHistory(
+  corporate_number: string,
+  company_name: string,
+  field_name: string,
+  old_value: string | null,
+  new_value: string | null,
+  requester_email: string,
+  inquiry_id: string = '',
+  status: string = 'auto_approved'
+): Promise<string> {
+  await initAdminTables();
+  const id = `hist_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  try {
+    const sql = `
+      INSERT INTO company_edit_history 
+      (id, corporate_number, company_name, field_name, old_value, new_value, requester_email, inquiry_id, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      await pool.query(convertSqlForPG(sql), [
+        id, corporate_number, company_name, field_name, old_value, new_value, requester_email, inquiry_id, status
+      ]);
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(sql).run(
+        id, corporate_number, company_name, field_name, old_value, new_value, requester_email, inquiry_id, status
+      );
+    }
+    return id;
+  } catch (error) {
+    console.error('Error in saveCompanyEditHistory:', error);
+    return id;
+  }
+}
+
+export async function rollbackCompanyEdit(historyId: string): Promise<boolean> {
+  await initAdminTables();
+  try {
+    let history: any = null;
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      const res = await pool.query(`SELECT * FROM company_edit_history WHERE id = $1`, [historyId]);
+      history = res.rows[0];
+    } else {
+      const db = getSQLiteDB();
+      history = db.prepare(`SELECT * FROM company_edit_history WHERE id = ?`).get(historyId);
+    }
+
+    if (!history) {
+      return false;
+    }
+
+    // Rollback action
+    if (history.field_name === 'status' && history.new_value === '非公開') {
+      // Re-publish the company
+      await unhideCompany(history.corporate_number);
+    } else if (ALLOWED_EDIT_FIELDS.includes(history.field_name)) {
+      // Revert field back to old_value
+      await updateCompanyField(history.corporate_number, history.field_name, history.old_value || '');
+    }
+
+    // Mark history as rolled_back
+    const updateSql = `UPDATE company_edit_history SET status = 'rolled_back' WHERE id = ?`;
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      await pool.query(convertSqlForPG(updateSql), [historyId]);
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(updateSql).run(historyId);
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Error in rollbackCompanyEdit(${historyId}):`, error);
+    return false;
+  }
+}
+
+export async function getCompanyEditHistory(corporate_number?: string): Promise<any[]> {
+  await initAdminTables();
+  try {
+    let sql = `SELECT * FROM company_edit_history`;
+    let params: any[] = [];
+    if (corporate_number) {
+      sql += ` WHERE corporate_number = ?`;
+      params.push(corporate_number);
+    }
+    sql += ` ORDER BY created_at DESC LIMIT 100`;
+
+    const rows = await runQuery(sql, params);
+    return rows ? rows.map(r => ({
+      id: String(r.id),
+      corporate_number: String(r.corporate_number),
+      company_name: String(r.company_name || ''),
+      field_name: String(r.field_name),
+      old_value: r.old_value !== null ? String(r.old_value) : null,
+      new_value: r.new_value !== null ? String(r.new_value) : null,
+      requester_email: String(r.requester_email),
+      inquiry_id: r.inquiry_id ? String(r.inquiry_id) : undefined,
+      status: String(r.status),
+      created_at: String(r.created_at)
+    })) : [];
+  } catch (error) {
+    console.error('Error in getCompanyEditHistory:', error);
+    return [];
   }
 }
 

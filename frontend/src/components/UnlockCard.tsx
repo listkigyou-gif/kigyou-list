@@ -102,26 +102,24 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
         {children}
       </div>
       
-      {/* Locked Overlay Card with Glassmorphic Premium Style */}
-      <div className="absolute inset-0 bg-gradient-to-b from-white/70 via-white/85 to-white/95 dark:from-[#0D1117]/70 dark:via-[#0D1117]/85 dark:to-[#0D1117]/95 backdrop-blur-[2px] flex flex-col items-center justify-center p-6 text-center transition-all duration-300">
-        <div className="relative mb-3.5 flex items-center justify-center">
-          {/* Outer glowing pulsing ring */}
-          <span className="absolute inline-flex h-12 w-12 rounded-full bg-amber-400/25 dark:bg-amber-400/15 animate-ping"></span>
-          <div className="relative w-11 h-11 rounded-full bg-gradient-to-tr from-amber-400 to-amber-550 text-white flex items-center justify-center shadow-md group-hover:scale-110 group-hover:from-amber-450 group-hover:to-amber-600 transition-all duration-300 border border-white/20">
-            <Lock className="w-5 h-5 group-hover:rotate-6 transition-transform duration-300" />
+      {/* Locked Overlay Card with Clean Enterprise Style */}
+      <div className="absolute inset-0 bg-white/85 dark:bg-[#0D1117]/85 backdrop-blur-[3px] flex flex-col items-center justify-center p-6 text-center transition-all duration-200">
+        <div className="mb-3 flex items-center justify-center">
+          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 text-amber-700 dark:text-amber-400 flex items-center justify-center shadow-xs">
+            <Lock className="w-4.5 h-4.5" />
           </div>
         </div>
         
-        <h4 className="text-xs sm:text-sm font-bold text-slate-850 dark:text-white mb-2 flex items-center gap-1.5 tracking-tight">
-          <Sparkles className="w-4 h-4 text-amber-500 fill-amber-550/40 animate-pulse" />
+        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5 flex items-center gap-1.5 tracking-tight">
+          <Sparkles className="w-3.5 h-3.5 text-amber-600" />
           {requiredPlan === "pro" ? t.auth.unlockCardProTitle : t.auth.unlockCardFreeTitle}
         </h4>
         
-        <p className="text-[10px] text-slate-500 dark:text-slate-400 max-w-[320px] leading-relaxed mb-4">
+        <p className="text-[11px] text-slate-600 dark:text-slate-400 max-w-[320px] leading-relaxed mb-4">
           {fallbackText || (requiredPlan === "pro" ? t.auth.unlockCardProDesc : t.auth.unlockCardFreeDesc)}
         </p>
         
-        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-gradient-to-r from-primary via-primary-hover to-secondary text-white text-[11px] font-bold shadow-sm hover:shadow-md group-hover:scale-105 group-hover:shadow-primary/10 transition-all duration-300 select-none">
+        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary hover:bg-[#153e6d] text-white text-[11px] font-semibold shadow-xs transition-colors duration-150 select-none">
           {requiredPlan === "pro" ? t.auth.unlockCardProBtn : t.auth.unlockCardFreeBtn}
         </span>
       </div>

@@ -129,13 +129,13 @@ export async function GET(request: NextRequest) {
 
     const min_sales = searchParams.get("min_sales");
     if (min_sales) {
-      const val = parseInt(min_sales, 10);
+      const val = parseFloat(min_sales);
       if (!isNaN(val) && val >= 0) filters.min_sales = val;
     }
     
     const max_sales = searchParams.get("max_sales");
     if (max_sales) {
-      const val = parseInt(max_sales, 10);
+      const val = parseFloat(max_sales);
       if (!isNaN(val) && val >= 0) filters.max_sales = val;
     }
     
@@ -143,6 +143,11 @@ export async function GET(request: NextRequest) {
     if (searchParams.get("phone") === "true") filters.has_phone = true;
     if (searchParams.get("website") === "true") filters.has_website = true;
     if (searchParams.get("fax") === "true") filters.has_fax = true;
+    if (searchParams.get("contact_form") === "true") filters.has_contact_form = true;
+    const emailTypeParam = searchParams.get("email_type");
+    if (emailTypeParam && ["RECRUIT", "PR", "SALES", "GENERAL"].includes(emailTypeParam)) {
+      filters.email_type = emailTypeParam;
+    }
     
     const company_status = searchParams.get("status");
     if (company_status && ["活動中", "閉鎖", "解散"].includes(company_status)) {
@@ -227,11 +232,18 @@ export async function GET(request: NextRequest) {
       cities = await getCitiesWithCounts(filters.prefecture_code);
     }
     
-    return NextResponse.json({
-      companies: result.companies,
-      totalCount: result.totalCount,
-      cities
-    });
+    return NextResponse.json(
+      {
+        companies: result.companies,
+        totalCount: result.totalCount,
+        cities
+      },
+      {
+        headers: {
+          "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        },
+      }
+    );
   } catch (error) {
     console.error("Error in /api/search route:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });

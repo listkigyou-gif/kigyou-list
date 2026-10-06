@@ -3,7 +3,7 @@ import { getPaymentRecordById, getUserBillingInfo } from "@/lib/db";
 import { getFileFromR2 } from "@/lib/r2";
 import { isAdmin, isAdminEmail } from "@/lib/adminAuth";
 import { auth } from "@/auth";
-import { generateInvoiceHtml } from "@/app/api/stripe/webhook/route";
+import { generateInvoiceHtml } from "@/lib/invoice";
 
 export async function GET(request: Request) {
   try {

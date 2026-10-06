@@ -95,12 +95,12 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
 
   let minSales: number | undefined;
   if (searchParamsVal.min_sales) {
-    const val = parseInt(searchParamsVal.min_sales as string, 10);
+    const val = parseFloat(searchParamsVal.min_sales as string);
     if (!isNaN(val) && val >= 0) minSales = val;
   }
   let maxSales: number | undefined;
   if (searchParamsVal.max_sales) {
-    const val = parseInt(searchParamsVal.max_sales as string, 10);
+    const val = parseFloat(searchParamsVal.max_sales as string);
     if (!isNaN(val) && val >= 0) maxSales = val;
   }
 
@@ -108,6 +108,8 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
   const hasPhone = searchParamsVal.phone === 'true';
   const hasWebsite = searchParamsVal.website === 'true';
   const hasFax = searchParamsVal.fax === 'true';
+  const hasContactForm = searchParamsVal.contact_form === 'true';
+  const emailType = typeof searchParamsVal.email_type === 'string' ? searchParamsVal.email_type : undefined;
 
   const companyStatus = typeof searchParamsVal.status === 'string' && ["活動中", "閉鎖", "解散"].includes(searchParamsVal.status) ? searchParamsVal.status : undefined;
 
@@ -181,6 +183,8 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
     has_phone: hasPhone,
     has_website: hasWebsite,
     has_fax: hasFax,
+    has_contact_form: hasContactForm,
+    email_type: emailType,
     company_status: companyStatus,
     min_operating_income: minOpIncome,
     max_operating_income: maxOpIncome,
@@ -260,6 +264,8 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
     hasPhone,
     hasWebsite,
     hasFax,
+    hasContactForm,
+    emailType,
     companyStatus,
     minOpIncome,
     maxOpIncome,

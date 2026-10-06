@@ -6,13 +6,17 @@ import { useLanguage } from "@/context/LanguageContext";
 import { prefectureJaToEn, industryJaToEn } from "@/lib/locale-mapping";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import DashboardLoading from "./loading";
 import { 
   Building2, Trash2, Download, ArrowRight, Kanban, ListFilter, 
   Sparkles, CheckCircle2, ChevronRight, Lock, Phone, MoveLeft, MoveRight,
-  AlertTriangle, Settings, Loader2, X, ShieldAlert, Upload, Key, Terminal, Copy, Check
+  AlertTriangle, Settings, Loader2, X, ShieldAlert, Upload, Key, Terminal, Copy, Check,
+  Search, FileText, ExternalLink, RefreshCw, Eye, ShieldCheck, Send
 } from "lucide-react";
 import Link from "next/link";
 import { parseUTCDate } from "@/lib/dateUtils";
+import { CompaniesTab } from "@/components/dashboard/CompaniesTab";
+import { FormCampaignsTab } from "@/components/dashboard/FormCampaignsTab";
 
 interface DbCompany {
   corporate_number: string;
@@ -84,7 +88,7 @@ const compressImage = (file: File, maxWidth: number, maxHeight: number, quality:
 
 export default function DashboardPage() {
   const { 
-    isLoggedIn, user, setAuthModalOpen,
+    isLoggedIn, isAuthLoading, user, quota: authQuota, refreshQuota, setAuthModalOpen,
     savedCompanies, toggleSaveCompany, kanbanStages, updateKanbanStage 
   } = useAuth();
   const { locale, t } = useLanguage();
@@ -106,10 +110,17 @@ export default function DashboardPage() {
   };
   
   const [mounted, setMounted] = useState(false);
-  const [activeTab, setActiveTab] = useState<"list" | "kanban" | "exports" | "payments" | "settings" | "developer">("list");
+  const [activeTab, setActiveTab] = useState<"list" | "kanban" | "exports" | "payments" | "settings" | "developer" | "companies" | "formCampaigns">("list");
   const [companies, setCompanies] = useState<DbCompany[]>([]);
   const [loading, setLoading] = useState(true);
   const [showUpsellModal, setShowUpsellModal] = useState(false);
+
+  // My List filters
+  const [listSearchQuery, setListSearchQuery] = useState("");
+  const [listFilterStage, setListFilterStage] = useState<string>("all");
+
+  // Code snippet tab in developer console
+  const [codeTab, setCodeTab] = useState<"curl" | "python" | "node">("curl");
 
   // API Key states
   const [apiKeys, setApiKeys] = useState<any[]>([]);
@@ -143,8 +154,8 @@ export default function DashboardPage() {
   const [contactPerson, setContactPerson] = useState("");
   const [contactPhone, setContactPhone] = useState("");
 
-  // Quota indicators state
-  const [quota, setQuota] = useState<{
+  // Quota indicators state (shared from AuthContext to prevent duplicate queries)
+  const [localQuota, setLocalQuota] = useState<{
     monthly_base_allowance: number;
     monthly_base_used: number;
     purchased_add_on_balance: number;
@@ -153,6 +164,8 @@ export default function DashboardPage() {
     last_reset_date?: string;
     subscription_status?: string;
   } | null>(null);
+  const quota = localQuota || authQuota;
+  const setQuota = setLocalQuota;
 
   // Helper to get subscription contract or reset period text
   const getSubscriptionPeriodText = (lastResetStr: string | undefined, plan: string | undefined) => {
@@ -191,15 +204,11 @@ export default function DashboardPage() {
   const fetchQuota = useCallback(async () => {
     if (!user?.email) return;
     try {
-      const res = await fetch(`/api/export/quota-check?email=${encodeURIComponent(user.email)}`);
-      if (res.ok) {
-        const data = await res.json();
-        setQuota(data.quota);
-      }
+      await refreshQuota(user.email);
     } catch (e) {
       console.error("Failed to fetch quota", e);
     }
-  }, [user]);
+  }, [user?.email, refreshQuota]);
 
   const fetchExportJobs = useCallback(async () => {
     if (!user?.email) return;
@@ -416,26 +425,26 @@ export default function DashboardPage() {
     setMounted(true);
     const params = new URLSearchParams(window.location.search);
     const tab = params.get("tab");
-    if (tab === "exports" || tab === "list" || tab === "kanban" || tab === "payments" || tab === "settings" || tab === "developer") {
+    if (tab === "exports" || tab === "list" || tab === "kanban" || tab === "payments" || tab === "settings" || tab === "developer" || tab === "companies" || tab === "formCampaigns") {
       setActiveTab(tab as any);
     }
   }, []);
 
   useEffect(() => {
-    if (user?.email) {
+    if (user?.email && !quota) {
       fetchQuota();
     }
-  }, [user?.email, fetchQuota]);
+  }, [user?.email, quota, fetchQuota]);
 
   useEffect(() => {
     const handleQuotaUpdated = () => {
-      fetchQuota();
+      refreshQuota();
     };
     window.addEventListener("quotaUpdated", handleQuotaUpdated);
     return () => {
       window.removeEventListener("quotaUpdated", handleQuotaUpdated);
     };
-  }, [fetchQuota]);
+  }, [refreshQuota]);
 
   // Handle Stripe subscription success redirection & simulation
   useEffect(() => {
@@ -536,7 +545,7 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    if (!mounted) return;
+    if (!mounted || isAuthLoading) return;
     
     const fetchSavedCompanies = async () => {
       if (savedCompanies.length === 0) {
@@ -566,46 +575,89 @@ export default function DashboardPage() {
     };
 
     fetchSavedCompanies();
-  }, [savedCompanies, mounted]);
+  }, [savedCompanies, mounted, isAuthLoading]);
 
-  if (!mounted) {
-    return (
-      <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100">
-        <Header />
-        <div className="flex-grow flex items-center justify-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
-        </div>
-      </div>
-    );
+  // While initializing or checking NextAuth session, display instant seamless skeleton matching layout
+  if (!mounted || isAuthLoading) {
+    return <DashboardLoading />;
   }
 
-  // If not logged in, show beautiful registration required gate
+  // If not logged in, show calm registration preview gate
   if (!isLoggedIn) {
     return (
       <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
         <Header />
-        <main className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto gap-6 py-20">
-          <div className="w-16 h-16 rounded-3xl bg-primary/10 text-primary flex items-center justify-center shadow-lg">
-            <Lock className="w-8 h-8" />
+        <main className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-2xl mx-auto gap-8 py-16 sm:py-24">
+          <div className="w-16 h-16 rounded-3xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 border border-blue-100 dark:border-blue-900 flex items-center justify-center shadow-xs">
+            <Lock className="w-7 h-7" />
           </div>
-          <div>
-            <h2 className="text-2xl font-black tracking-tight mb-2">
+
+          <div className="flex flex-col gap-3">
+            <div className="inline-flex items-center justify-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] font-extrabold uppercase tracking-wider rounded-full shadow-2xs mx-auto">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+              {locale === 'en' ? "MEMBER WORKSPACE ONLY" : "会員専用営業管理ボード"}
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
               {locale === 'en' ? t.dashboard.memberOnlyTitle : 'ABMダッシュボードは会員専用機能です'}
-            </h2>
-            <p className="text-xs text-slate-500 leading-relaxed max-w-sm mx-auto">
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg mx-auto">
               {locale === 'en' ? t.dashboard.memberOnlyDesc : '無料会員登録をしていただくと、気になる企業をブックマークする「マイリスト」や、案件化プロセスを管理する「かんばん営業管理ボード」をご利用いただけます。'}
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs justify-center">
+
+          {/* 4 Feature Value Props */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full text-left">
+            <div className="p-4 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-start gap-3 shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 flex items-center justify-center shrink-0">
+                <ListFilter className="w-4 h-4" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">マイリスト保存・分類</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">ターゲット企業を即時ブックマークし、営業進捗を一元管理</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-start gap-3 shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 flex items-center justify-center shrink-0">
+                <Kanban className="w-4 h-4" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">かんばんパイプライン</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">未連絡から商談中、成約までアプローチ進捗を可視化</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-start gap-3 shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400 flex items-center justify-center shrink-0">
+                <Download className="w-4 h-4" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">CSV一括ダウンロード</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">電話番号・メール・財務データをCSVで即時出力</span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-start gap-3 shadow-2xs">
+              <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400 flex items-center justify-center shrink-0">
+                <FileText className="w-4 h-4" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-900 dark:text-white">インボイス領収書対応</span>
+                <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">適格請求書番号T+13桁記載のPDF領収書を発行</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm justify-center">
             <button
               onClick={() => setAuthModalOpen(true)}
-              className="px-6 py-3 font-bold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-lg shadow-primary/15 transition-all"
+              className="flex-1 px-6 py-3 font-bold text-xs sm:text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all cursor-pointer"
             >
               {locale === 'en' ? t.dashboard.registerFreeBtn : '無料会員登録 (10秒)'}
             </button>
             <Link
               href="/search"
-              className="px-6 py-3 font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200"
+              className="flex-1 px-6 py-3 font-bold text-xs sm:text-sm text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 text-center"
             >
               {locale === 'en' ? t.dashboard.backToSearch : '企業検索に戻る'}
             </Link>
@@ -688,14 +740,17 @@ export default function DashboardPage() {
       }
 
       // 2. Build CSV columns (email only for Pro+)
-      const headers = locale === 'en' ? [
-        "Corporate Number", "Company Name", "Postal Code", "Prefecture", "Phone Number",
-        "FAX Number", "Website", "Employees Count", "Capital", "Business Summary",
-        ...(isPro ? ["Email Address"] : []),
-        "Sales Stage"
-      ] : [
-        "法人番号", "企業名", "郵便番号", "都道府県", "電話番号",
-        "FAX番号", "ホームページ", "従業員数", "資本金", "事業概要",
+      const headers = [
+        "法人番号",
+        "企業名",
+        "郵便番号",
+        "都道府県",
+        "代表電話番号",
+        "FAX番号",
+        "ウェブサイトURL",
+        "従業員数",
+        "資本金",
+        "事業種目",
         ...(isPro ? ["メールアドレス"] : []),
         "営業ステージ",
       ];
@@ -744,10 +799,10 @@ export default function DashboardPage() {
   
   const getStageColor = (stage: KanbanStage) => {
     switch (stage) {
-      case "未連絡": return "border-l-slate-400 bg-slate-50/50 dark:bg-slate-800/10";
-      case "連絡済み": return "border-l-blue-400 bg-blue-50/20 dark:bg-blue-950/5";
-      case "商談中": return "border-l-amber-400 bg-amber-50/20 dark:bg-amber-950/5";
-      case "成約": return "border-l-emerald-400 bg-emerald-50/20 dark:bg-emerald-950/5";
+      case "未連絡": return "border-l-slate-400 bg-white dark:bg-slate-900/60";
+      case "連絡済み": return "border-l-blue-500 bg-blue-50/20 dark:bg-blue-950/10";
+      case "商談中": return "border-l-amber-500 bg-amber-50/20 dark:bg-amber-950/10";
+      case "成約": return "border-l-emerald-500 bg-emerald-50/20 dark:bg-emerald-950/10";
     }
   };
 
@@ -767,219 +822,458 @@ export default function DashboardPage() {
     }
   };
 
+  // Counts for KPI
+  const dealsInProgressCount = companies.filter(
+    (c) => (kanbanStages[c.corporate_number] === "商談中" || kanbanStages[c.corporate_number] === "成約")
+  ).length;
+
+  // Filtered companies for MyList
+  const filteredCompanies = companies.filter((c) => {
+    const stage = kanbanStages[c.corporate_number] || "未連絡";
+    if (listFilterStage !== "all" && stage !== listFilterStage) return false;
+    if (listSearchQuery.trim()) {
+      const q = listSearchQuery.toLowerCase();
+      const matchName = c.company_name.toLowerCase().includes(q);
+      const matchPref = c.prefecture_name?.toLowerCase().includes(q);
+      const matchIndustry = c.jigyo_shumoku?.toLowerCase().includes(q);
+      if (!matchName && !matchPref && !matchIndustry) return false;
+    }
+    return true;
+  });
+
+  const getTabTitle = (tab: typeof activeTab) => {
+    switch (tab) {
+      case "list": return locale === 'en' ? "My Saved Companies" : "マイリスト・保存企業一覧";
+      case "kanban": return locale === 'en' ? "Sales Kanban Pipeline" : "かんばん営業管理ボード";
+      case "exports": return locale === 'en' ? "CSV Export History" : "CSVダウンロード履歴";
+      case "payments": return locale === 'en' ? "Billing & Receipts" : "購入履歴・インボイス領収書";
+      case "settings": return locale === 'en' ? "Receipt & Profile Settings" : "領収書・企業情報設定";
+      case "developer": return locale === 'en' ? "Developer Console & API" : "API連携・開発者コンソール";
+      case "companies": return locale === 'en' ? "Managed Companies" : locale === 'vi' ? "Quản lý Doanh nghiệp" : "自社プロファイル管理";
+      case "formCampaigns": return locale === 'en' ? "Form DM Outreach Campaigns" : locale === 'vi' ? "Chiến dịch & Mẫu gửi Form Tiếp cận B2B" : "問い合わせフォーム営業・キャンペーン";
+    }
+  };
+
+  const getTabDescription = (tab: typeof activeTab) => {
+    switch (tab) {
+      case "list": return locale === 'en' ? "Manage your target companies, sales stages, and export them directly to CSV." : "ターゲット企業の連絡先、規模、営業進捗を一元管理し、CSVで即時出力できます。";
+      case "kanban": return locale === 'en' ? "Visualize and advance your sales deals from uncontacted to closed won." : "未連絡から商談中、成約までアプローチ進捗を可視化し、パイプラインを前進させます。";
+      case "exports": return locale === 'en' ? "Review past data exports, monitor generation status, and download CSV files." : "これまでに実行した企業データCSVエクスポートのジョブ状況とダウンロードリンクです。";
+      case "payments": return locale === 'en' ? "View subscription records, credit card transactions, and download Qualified Invoice receipts." : "有料プランの定期契約および追加容量の決済記録、適格請求書（インボイス制度対応）のPDFを発行します。";
+      case "settings": return locale === 'en' ? "Configure company billing details and Qualified Invoice Registration Number (T+13 digits)." : "インボイス領収書に記載する企業名、適格請求書発行事業者番号（T+13桁）、住所を設定します。";
+      case "developer": return locale === 'en' ? "Integrate B2B company data with your internal CRM, ERP, and outreach tools via REST API." : "REST APIを利用した企業データのシステム間自動連携、APIキーの発行と接続テストを行います。";
+      case "companies": return locale === 'en' ? "Manage verified company profiles, update PR details, and track document reviews." : locale === 'vi' ? "Quản lý hồ sơ công ty chính chủ, thông điệp PR và tiến độ xét duyệt." : "公式オーナー認証済み企業の管理、PRメッセージの更新、および審査状況を確認できます。";
+      case "formCampaigns": return locale === 'en' ? "Create custom pitch templates, configure outreach parameters, save campaign drafts, and track delivery reports." : locale === 'vi' ? "Tự tạo mẫu kịch bản tiếp cận, cấu hình bộ lọc mục tiêu, lưu chiến dịch và theo dõi tiến độ gửi tự động." : "独自の営業テンプレート作成、送信対象の絞り込み、キャンペーンの下書き保存および配信レポートの確認を行えます。";
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
       <Header />
 
-      {/* Main ABM Body */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
-        
+      <div className="flex-1 flex flex-col lg:flex-row w-full max-w-[1680px] mx-auto min-h-[calc(100vh-64px)]">
+        {/* Left Sidebar Navigation */}
+        <aside className="w-full lg:w-72 shrink-0 bg-white dark:bg-[#151B22] border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 p-4 sm:p-5 flex flex-col justify-between gap-6">
+          <div className="flex flex-col gap-5">
+            {/* Sidebar Header */}
+            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800/80">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 border border-blue-200/60 flex items-center justify-center shadow-xs">
+                  <Building2 className="w-5 h-5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-black text-sm text-slate-900 dark:text-white tracking-tight">Sales Workspace</span>
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{user?.name || "ABM 営業ボード"}</span>
+                </div>
+              </div>
+              <Link
+                href={`/${locale}/search`}
+                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-slate-500 hover:text-slate-800 dark:hover:text-white cursor-pointer"
+                title="企業データ検索へ"
+              >
+                <Search className="w-4 h-4" />
+              </Link>
+            </div>
 
-        {/* Dashboard Status Banner */}
-        <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-6 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/3 rounded-full blur-3xl" />
-          
-          <div className="flex flex-col gap-2 relative">
-            <span className="text-[10px] font-bold text-primary dark:text-secondary uppercase tracking-wider block">
-              ABM SALES DASHBOARD
-            </span>
-            <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight">
-              {locale === 'en' ? `${user?.name || 'User'}'s Sales Management Board` : `${user?.name} 様の営業管理ボード`}
-            </h1>
-            <p className="text-xs text-slate-400">
-              {locale === 'en' ? <span>My List: <strong className="text-slate-850 dark:text-slate-200 font-bold">{savedCompanies.length} companies</strong></span> : <span>マイリスト保存件数: <strong className="text-slate-850 dark:text-slate-200 font-bold">{savedCompanies.length}社</strong></span>}
-            </p>
-          </div>
+            {/* Quick Shortcut to Search */}
+            <Link
+              href={`/${locale}/search`}
+              className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:hover:bg-slate-800 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold transition-all shadow-2xs group"
+            >
+              <div className="flex items-center gap-2">
+                <Search className="w-3.5 h-3.5 text-slate-500" />
+                <span>企業データ検索</span>
+              </div>
+              <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform text-slate-400" />
+            </Link>
 
-          {/* Right Section: Quota & Download Actions */}
-          <div className="flex flex-col sm:flex-row items-center gap-4 relative shrink-0 w-full sm:w-auto">
-            {/* Subscription & Quota Group */}
-            <div className="flex flex-col gap-2 w-full sm:w-[290px] shrink-0">
-              {quota ? (
-                <div className="flex flex-col gap-2.5 p-4 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-250/50 dark:border-emerald-900/50 rounded-2xl shadow-sm">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-extrabold text-emerald-800 dark:text-emerald-400 uppercase tracking-wide flex items-center gap-1.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                      {currentPlanInfo.label}
-                    </span>
-                    <span className="font-mono text-slate-500 dark:text-slate-400 font-bold">
-                      {locale === 'en' ? `Remaining: ${quota.remaining.toLocaleString()} rows` : `残り ${quota.remaining.toLocaleString()} 行`}
-                    </span>
+            {/* Categorized Navigation Groups */}
+            <nav className="flex flex-col gap-4 text-xs font-semibold" aria-label="Dashboard Navigation">
+              {/* Group 1: Sales & Pipeline */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                  営業・パイプライン (Sales)
+                </span>
+
+                {/* My List */}
+                <button
+                  onClick={() => setActiveTab("list")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "list"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ListFilter className={`w-4 h-4 shrink-0 ${activeTab === "list" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>マイリスト</span>
                   </div>
-                  
-                  <div className="flex flex-col gap-1.5 mt-1">
-                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
-                      <div 
-                        className="bg-emerald-500 h-full rounded-full transition-all duration-500" 
-                        style={{ width: `${Math.min(100, (quota.monthly_base_used / quota.monthly_base_allowance) * 100)}%` }}
-                      />
-                    </div>
-                    <div className="flex justify-between text-[10px] text-slate-400 font-medium">
-                      <span>
-                        {quota.plan === "free" ? (locale === 'en' ? "Today's usage" : "本日使用量") : (locale === 'en' ? "Monthly usage" : "月間枠使用量")}: {quota.monthly_base_used.toLocaleString()} / {quota.monthly_base_allowance.toLocaleString()} {locale === 'en' ? "rows" : "行"}
-                      </span>
-                      {quota.purchased_add_on_balance > 0 && (
-                        <span className="text-secondary font-bold">
-                          {locale === 'en' ? `Add-on: +${quota.purchased_add_on_balance.toLocaleString()} rows` : `追加容量: +${quota.purchased_add_on_balance.toLocaleString()} 行`}
-                          {quota.plan === "free" && (locale === 'en' ? " (Frozen)" : " (凍結中)")}
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "list" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  }`}>
+                    {companies.length}
+                  </span>
+                </button>
 
+                {/* Kanban */}
+                <button
+                  onClick={() => setActiveTab("kanban")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "kanban"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Kanban className={`w-4 h-4 shrink-0 ${activeTab === "kanban" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>かんばん営業管理</span>
+                  </div>
+                  {dealsInProgressCount > 0 && (
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                      activeTab === "kanban" ? "bg-white text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900" : "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
+                    }`}>
+                      {dealsInProgressCount}
+                    </span>
+                  )}
+                </button>
+
+                {/* Form Outreach Campaigns */}
+                <button
+                  onClick={() => setActiveTab("formCampaigns")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "formCampaigns"
+                      ? "bg-indigo-50 text-indigo-950 font-bold border border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Send className={`w-4 h-4 shrink-0 ${activeTab === "formCampaigns" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500"}`} />
+                    <span>フォーム営業・下書き</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300">
+                    NEW
+                  </span>
+                </button>
+              </div>
+
+              {/* Group 2: Data & Developer */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                  データ・連携 (Data & API)
+                </span>
+
+                {/* Exports */}
+                <button
+                  onClick={() => setActiveTab("exports")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "exports"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Download className={`w-4 h-4 shrink-0 ${activeTab === "exports" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>CSVエクスポート履歴</span>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "exports" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  }`}>
+                    {exportJobs.length}
+                  </span>
+                </button>
+
+                {/* Developer */}
+                <button
+                  onClick={() => setActiveTab("developer")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "developer"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Terminal className={`w-4 h-4 shrink-0 ${activeTab === "developer" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>API連携 (API Keys)</span>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "developer" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  }`}>
+                    {apiKeys.length}
+                  </span>
+                </button>
+              </div>
+
+              {/* Group 3: Billing & Profile */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                  請求・プラン (Billing)
+                </span>
+
+                {/* Payments */}
+                <button
+                  onClick={() => setActiveTab("payments")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "payments"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileText className={`w-4 h-4 shrink-0 ${activeTab === "payments" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>購入履歴・インボイス</span>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    activeTab === "payments" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  }`}>
+                    {paymentHistory.length}
+                  </span>
+                </button>
+
+                {/* Settings */}
+                <button
+                  onClick={() => setActiveTab("settings")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "settings"
+                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Settings className={`w-4 h-4 shrink-0 ${activeTab === "settings" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <span>領収書・企業情報設定</span>
+                  </div>
+                </button>
+              </div>
+
+              {/* Group 4: Company Profile & Claim Management */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                  自社・公式認証 (Enterprise)
+                </span>
+
+                <button
+                  onClick={() => setActiveTab("companies")}
+                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                    activeTab === "companies"
+                      ? "bg-emerald-50 text-emerald-950 font-bold border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 shadow-2xs"
+                      : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ShieldCheck className={`w-4 h-4 shrink-0 ${activeTab === "companies" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500"}`} />
+                    <span>自社プロファイル管理</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
+                    50件/日
+                  </span>
+                </button>
+              </div>
+            </nav>
+
+            {/* Sidebar Plan & Quota Card */}
+            <div className="flex flex-col gap-2.5 p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xs text-xs">
+              <div className="flex items-center justify-between">
+                <span className="font-extrabold text-blue-700 dark:text-blue-400 uppercase tracking-wide flex items-center gap-1.5 text-[11px]">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                  {currentPlanInfo.label}
+                </span>
+                <span className="font-mono text-slate-700 dark:text-slate-300 font-bold text-[11px]">
+                  {quota ? `残り ${quota.remaining.toLocaleString()} 行` : `${currentPlanInfo.quota}`}
+                </span>
+              </div>
+
+              {quota && (
+                <div className="flex flex-col gap-1.5">
+                  <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div 
+                      className="bg-blue-600 h-full rounded-full transition-all duration-500" 
+                      style={{ width: `${Math.min(100, (quota.monthly_base_used / quota.monthly_base_allowance) * 100)}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between text-[10px] text-slate-400">
+                    <span>使用量: {quota.monthly_base_used.toLocaleString()} / {quota.monthly_base_allowance.toLocaleString()} 行</span>
+                  </div>
                   {quota.last_reset_date && (
-                    <div className="border-t border-emerald-250/30 dark:border-emerald-900/30 pt-2 mt-1 text-[10px] text-slate-400 dark:text-slate-500 font-medium flex justify-between items-center tracking-tight">
-                      <span>{getSubscriptionPeriodText(quota.last_reset_date, quota.plan)}</span>
-                      {quota.plan !== "free" && (
-                        quota.subscription_status === "active" ? (
-                          <span className="px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[8px] font-extrabold tracking-wider">{locale === 'en' ? "Auto-renew" : "自動更新"}</span>
-                        ) : quota.subscription_status === "canceled" ? (
-                          <span className="px-1.5 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-[8px] font-extrabold tracking-wider">{locale === 'en' ? "Cancelling" : "解約予定"}</span>
-                        ) : null
-                      )}
+                    <div className="text-[10px] text-slate-400 border-t border-slate-200/60 dark:border-slate-800 pt-1.5 flex justify-between items-center">
+                      <span className="truncate">{getSubscriptionPeriodText(quota.last_reset_date, quota.plan)}</span>
                     </div>
                   )}
                 </div>
-              ) : (
-                <div className="flex items-center gap-2.5 px-4 py-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-250 dark:border-emerald-900/50 rounded-2xl">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  <div className="text-left">
-                    <span className="text-xs font-black text-emerald-800 dark:text-emerald-400 uppercase block">{currentPlanInfo.label} {locale === 'en' ? "Active" : "有効"}</span>
-                    <span className="text-[10px] text-slate-500 dark:text-slate-400">{locale === 'en' ? "CSV Limit" : "CSV出力枠"}: {currentPlanInfo.quota}</span>
-                  </div>
-                </div>
               )}
 
-              {/* Plan Action Buttons (Equal width block) */}
-              {isPro ? (
-                <div className="flex items-center gap-2 w-full">
-                  <Link
-                    href="/pricing"
-                    className="flex-1 py-2 text-[10px] font-extrabold text-center text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all shadow-md shadow-amber-600/10 flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap"
-                  >
-                    <Sparkles className="w-3 h-3" />
-                    {locale === 'en' ? 'Change Plan' : 'プランを変更'}
-                  </Link>
+              <div className="flex items-center gap-1.5 pt-1">
+                <Link
+                  href={`/${locale}/pricing`}
+                  className="flex-1 py-1.5 text-[11px] font-bold text-center text-slate-800 dark:text-slate-100 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 rounded-lg transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-3 h-3 text-amber-500" />
+                  <span>{isPro ? "プラン変更" : "アップグレード"}</span>
+                </Link>
+                {isPro && (
                   <button
                     onClick={() => setShowCancelModal(true)}
-                    className="flex-1 py-2 text-[10px] font-extrabold text-center border border-rose-200 hover:bg-rose-600 hover:text-white dark:border-rose-900/40 dark:hover:bg-rose-900/30 text-rose-600 rounded-xl transition-all active:scale-95 whitespace-nowrap"
+                    className="py-1.5 px-2 text-[10px] font-bold text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
+                    title="解約手続き"
                   >
-                    {locale === 'en' ? 'Cancel Subscription' : 'プランを解約'}
+                    解約
                   </button>
-                </div>
-              ) : (
-                <Link
-                  href="/pricing"
-                  className="w-full py-2 text-[10px] font-extrabold text-center text-white bg-amber-600 hover:bg-amber-700 rounded-xl transition-all shadow-md shadow-amber-600/10 flex items-center justify-center gap-1 active:scale-95 whitespace-nowrap"
-                >
-                  <Sparkles className="w-3 h-3" />
-                  {locale === 'en' ? 'Upgrade Plan' : 'プランをアップグレード'}
-                </Link>
-              )}
+                )}
+              </div>
             </div>
-
-
-
           </div>
-        </section>
 
-        {quota?.subscription_status === 'suspended' && (
-          <div className="bg-rose-50 border border-rose-200/60 dark:bg-rose-955/20 dark:border-rose-900/30 rounded-2xl p-4 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2 animate-in fade-in duration-300">
-            <ShieldAlert className="w-4.5 h-4.5 shrink-0 text-rose-500 mt-0.5" />
-            <div className="flex flex-col gap-0.5">
-              <span className="font-extrabold text-[11px] uppercase tracking-wider block">{locale === 'en' ? "Account Suspended" : "アカウントが一時停止されています"}</span>
-              <p className="leading-relaxed">
-                {locale === 'en' ? 'This account has been temporarily suspended due to billing issues or policy violations. Search and download features are restricted. If you believe this is an error, please contact support at ' : 'お支払いの問題またはポリシー規約への違反が検出されたため、このアカウントは一時停止されています。データの検索やダウンロードなどの機能が制限されています。エラーと思われる場合は、サポート（'}<a href="mailto:trungkim8694@gmail.com" className="underline hover:text-rose-600 dark:hover:text-rose-400 font-bold">trungkim8694@gmail.com</a>{locale === 'en' ? ') for assistance.' : '）までご連絡ください。'}
+          {/* Sidebar Footer: User profile info */}
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+            <div className="flex flex-col truncate pr-2">
+              <span className="text-[10px] text-slate-400 font-semibold">{user?.role ? user.role.toUpperCase() : "MEMBER"}</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200 truncate" title={user?.email || ""}>
+                {user?.email}
+              </span>
+            </div>
+            {user?.email?.toLowerCase().trim() === "trungkim8694@gmail.com" && (
+              <Link
+                href={`/${locale}/admin`}
+                className="p-1.5 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white transition-colors shrink-0"
+                title="Admin Consoleへ移動"
+              >
+                <ShieldAlert className="w-3.5 h-3.5 text-rose-500" />
+              </Link>
+            )}
+          </div>
+        </aside>
+
+        {/* Main Content Area */}
+        <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 flex flex-col gap-6 overflow-y-auto">
+          {/* Section Title Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800/80">
+            <div>
+              <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+                <Link href={`/${locale}`} className="hover:text-slate-600 dark:hover:text-slate-200">ホーム</Link>
+                <span>/</span>
+                <span>営業管理ダッシュボード</span>
+                <span>/</span>
+                <span className="text-slate-800 dark:text-slate-200 font-bold">{getTabTitle(activeTab)}</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
+                {getTabTitle(activeTab)}
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                {getTabDescription(activeTab)}
               </p>
             </div>
+
+            {/* Header Right Action Buttons */}
+            <div className="flex items-center gap-2 self-start sm:self-auto">
+              {activeTab === "list" && (
+                <button
+                  onClick={handleCSVDownload}
+                  disabled={csvExporting || companies.length === 0}
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 rounded-xl shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  {csvExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" /> : <Download className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />}
+                  <span>マイリスト出力 (CSV)</span>
+                </button>
+              )}
+              <Link
+                href={`/${locale}/search`}
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl shadow-2xs transition-all cursor-pointer"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span>企業検索</span>
+              </Link>
+            </div>
           </div>
-        )}
 
-        {/* Dashboard Tabs Selector */}
-        <div className="flex flex-wrap border-b border-slate-200 dark:border-slate-800 text-sm font-bold gap-y-2">
-          <button
-            onClick={() => setActiveTab("list")}
-            className={`pb-3 px-6 border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === "list"
-                ? "border-primary text-primary dark:border-secondary dark:text-secondary"
-                : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            }`}
-          >
-            <ListFilter className="w-4.5 h-4.5" />
-            {locale === 'en' ? `My List (${companies.length})` : `マイリスト (${companies.length})`}
-          </button>
-          <button
-            onClick={() => setActiveTab("kanban")}
-            className={`pb-3 px-6 border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === "kanban"
-                ? "border-primary text-primary dark:border-secondary dark:text-secondary"
-                : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            }`}
-          >
-            <Kanban className="w-4.5 h-4.5" />
-            {locale === 'en' ? 'Kanban Board' : 'かんばんボード営業管理'}
-          </button>
-          <button
-            onClick={() => setActiveTab("exports")}
-            className={`pb-3 px-6 border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === "exports"
-                ? "border-primary text-primary dark:border-secondary dark:text-secondary"
-                : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            }`}
-          >
-            <Download className="w-4.5 h-4.5" />
-            {locale === 'en' ? 'Export History' : 'エクスポート履歴'}
-          </button>
-          <button
-            onClick={() => setActiveTab("payments")}
-            className={`pb-3 px-6 border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === "payments"
-                ? "border-primary text-primary dark:border-secondary dark:text-secondary"
-                : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            }`}
-          >
-            <Sparkles className="w-4.5 h-4.5" />
-            {locale === 'en' ? 'Purchase History & Receipts' : '購入履歴・領収書'}
-          </button>
-          <button
-            onClick={() => setActiveTab("settings")}
-            className={`pb-3 px-6 border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === "settings"
-                ? "border-primary text-primary dark:border-secondary dark:text-secondary"
-                : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            }`}
-          >
-            <Settings className="w-4.5 h-4.5" />
-            {locale === 'en' ? 'Receipt Settings' : '領収書情報設定'}
-          </button>
-          <button
-            onClick={() => setActiveTab("developer")}
-            className={`pb-3 px-6 border-b-2 flex items-center gap-2 transition-all ${
-              activeTab === "developer"
-                ? "border-primary text-primary dark:border-secondary dark:text-secondary"
-                : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-            }`}
-          >
-            <Terminal className="w-4.5 h-4.5" />
-            {locale === 'en' ? 'API Integration' : 'API連携 (API Keys)'}
-          </button>
-        </div>
+          {/* 4 Quick KPI Stat Cards */}
+          <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 border border-blue-100 dark:border-blue-900 flex items-center justify-center shrink-0">
+                <Building2 className="w-4.5 h-4.5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-semibold text-slate-400">マイリスト保存数</span>
+                <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{companies.length} <span className="text-xs font-bold text-slate-400">社</span></span>
+              </div>
+            </div>
 
-        {/* Tab Contents: MyList */}
+            <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
+              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 border border-amber-100 dark:border-amber-900 flex items-center justify-center shrink-0">
+                <Kanban className="w-4.5 h-4.5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-semibold text-slate-400">商談中・成約案件</span>
+                <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{dealsInProgressCount} <span className="text-xs font-bold text-slate-400">件</span></span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
+              <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 border border-emerald-100 dark:border-emerald-900 flex items-center justify-center shrink-0">
+                <Download className="w-4.5 h-4.5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-semibold text-slate-400">残CSV出力可能枠</span>
+                <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{quota?.remaining.toLocaleString() ?? "-"} <span className="text-xs font-bold text-slate-400">行</span></span>
+              </div>
+            </div>
+
+            <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
+              <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 border border-purple-100 dark:border-purple-900 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4.5 h-4.5" />
+              </div>
+              <div className="flex flex-col">
+                <span className="text-[10px] font-semibold text-slate-400">契約プラン</span>
+                <span className="text-xs font-black text-slate-900 dark:text-white mt-1 uppercase">{currentPlanInfo.label}</span>
+              </div>
+            </div>
+          </section>
+
+          {quota?.subscription_status === 'suspended' && (
+            <div className="bg-rose-50 border border-rose-200 dark:bg-rose-950/20 dark:border-rose-900/30 rounded-2xl p-4 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2.5 animate-in fade-in duration-300">
+              <ShieldAlert className="w-5 h-5 shrink-0 text-rose-500 mt-0.5" />
+              <div className="flex flex-col gap-0.5">
+                <span className="font-extrabold text-[11px] uppercase tracking-wider block">{locale === 'en' ? "Account Suspended" : "アカウントが一時停止されています"}</span>
+                <p className="leading-relaxed text-slate-700 dark:text-slate-300">
+                  {locale === 'en' ? 'This account has been temporarily suspended due to billing issues or policy violations. Search and download features are restricted. If you believe this is an error, please contact support at ' : 'お支払いの問題またはポリシー規約への違反が検出されたため、このアカウントは一時停止されています。データの検索やダウンロードなどの機能が制限されています。エラーと思われる場合は、サポート（'}<a href="mailto:trungkim8694@gmail.com" className="underline hover:text-rose-600 dark:hover:text-rose-400 font-bold">trungkim8694@gmail.com</a>{locale === 'en' ? ') for assistance.' : '）までご連絡ください。'}
+                </p>
+              </div>
+            </div>
+          )}
+
+        {/* Tab 1 Contents: MyList */}
         {/* CSV Confirm Modal */}
         {showCSVConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-250">
+            <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-250">
               <button
                 onClick={() => setShowCSVConfirm(false)}
-                className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl"
+                className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
 
               <div className="text-center">
-                <div className="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center mx-auto mb-4">
-                  <Download className="w-6 h-6 text-primary" />
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 border border-blue-200/60 flex items-center justify-center mx-auto mb-4">
+                  <Download className="w-6 h-6" />
                 </div>
 
                 <h4 className="font-extrabold text-slate-900 dark:text-white text-base mb-2">
@@ -987,14 +1281,14 @@ export default function DashboardPage() {
                 </h4>
 
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-1 leading-relaxed">
-                  {locale === 'en' ? <span>Export CSV data for <strong className="text-slate-800 dark:text-slate-200">{companies.length} companies</strong> from your My List.</span> : <span>マイリストの <strong className="text-slate-800 dark:text-slate-200">{companies.length}{locale === 'en' ? ' companies' : '社'}</strong> の企業データをCSVに出力します。</span>}
+                  {locale === 'en' ? <span>Export CSV data for <strong className="text-slate-800 dark:text-slate-200">{companies.length} companies</strong> from your My List.</span> : <span>マイリストの <strong className="text-slate-800 dark:text-slate-200">{companies.length} 社</strong> の企業データをCSVに出力します。</span>}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
-                  {locale === 'en' ? <span>This will deduct <strong className="text-slate-800 dark:text-slate-200">{companies.length} rows</strong> of export quota from your account.</span> : <span>この操作により、アカウントから <strong className="text-slate-800 dark:text-slate-200">{companies.length}行分</strong> のエクスポート容量が差し引かれます。</span>}
+                  {locale === 'en' ? <span>This will deduct <strong className="text-slate-800 dark:text-slate-200">{companies.length} rows</strong> of export quota from your account.</span> : <span>この操作により、アカウントから <strong className="text-slate-800 dark:text-slate-200">{companies.length} 行分</strong> のエクスポート容量が差し引かれます。</span>}
                 </p>
 
                 {csvQuota && (
-                  <div className="mb-4 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/30 rounded-xl text-[10px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center gap-2">
+                  <div className="mb-4 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-200/80 dark:border-slate-800 rounded-xl text-[10px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center gap-2">
                     <span>
                       {locale === 'en' ? "Current remaining: " : "現在の残容量: "}
                       <strong className="text-slate-800 dark:text-slate-200">
@@ -1003,8 +1297,8 @@ export default function DashboardPage() {
                     </span>
                     <span className="text-slate-300 dark:text-slate-600">→</span>
                     <span>
-                      {locale === 'en' ? "Remaining after: " : "エクスポート後: "}
-                      <strong className="text-primary dark:text-secondary">
+                      {locale === 'en' ? "After export: " : "出力後: "}
+                      <strong className="text-blue-600 dark:text-blue-400">
                         {(csvQuota.remaining - companies.length).toLocaleString()} {locale === 'en' ? "rows" : "行"}
                       </strong>
                     </span>
@@ -1012,22 +1306,22 @@ export default function DashboardPage() {
                 )}
 
                 {!isPro && (
-                  <div className="mb-4 px-3 py-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/60 dark:border-amber-900/40 rounded-xl text-[10px] text-amber-700 dark:text-amber-400 font-medium text-left">
-                    {locale === 'en' ? '* Email addresses are not included in the FREE plan. Upgrade to PRO to export all columns.' : '※ FREEプランではメールアドレス列は含まれません。Proプランにアップグレードすると全列が出力されます。'}
+                  <div className="mb-4 px-3 py-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/80 rounded-xl text-[10px] text-amber-700 dark:text-amber-400 font-medium text-left">
+                    {locale === 'en' ? '* Email addresses are not included in the FREE plan. Upgrade to PRO to export all columns.' : '※ FREEプランではメールアドレス列は含まれません。PROプランにアップグレードすると全列が出力されます。'}
                   </div>
                 )}
 
                 <div className="flex gap-3">
                   <button
                     onClick={() => setShowCSVConfirm(false)}
-                    className="flex-1 px-4 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/50 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700/80 dark:border-slate-700 rounded-xl transition-all"
+                    className="flex-1 px-4 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/60 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-all cursor-pointer"
                   >
                     {locale === 'en' ? 'Cancel' : 'キャンセル'}
                   </button>
                   <button
                     disabled={quota?.subscription_status === 'suspended'}
                     onClick={executeCSVDownload}
-                    className="flex-1 px-4 py-2.5 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md shadow-primary/10 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 px-4 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-xl shadow-xs active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {quota?.subscription_status === 'suspended' ? (locale === 'en' ? 'Blocked' : 'ブロック中') : (locale === 'en' ? 'Export CSV' : 'エクスポート実行')}
                   </button>
@@ -1038,156 +1332,194 @@ export default function DashboardPage() {
         )}
 
         {activeTab === "list" && (
-          <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+          <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs">
             {loading ? (
               <div className="py-20 text-center flex flex-col items-center justify-center gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
                 <span className="text-xs text-slate-400">{locale === 'en' ? "Syncing list..." : "リストを同期中..."}</span>
               </div>
             ) : companies.length === 0 ? (
               <div className="py-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-                <Building2 className="w-12 h-12 text-slate-300" />
+                <Building2 className="w-12 h-12 text-slate-300 dark:text-slate-600" />
                 <div>
                   <h4 className="font-extrabold text-slate-800 dark:text-white text-sm mb-1">{locale === 'en' ? 'No Saved Companies' : '保存された企業はありません'}</h4>
-                  <p className="text-xs max-w-sm mx-auto leading-relaxed">
-                    {locale === 'en' ? 'Use search to find companies you want to approach, then click "Save to My List".' : 'データベース検索を利用してアプローチしたい企業を探し, 「マイリストに保存」ボタンを押してください。'}
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                    {locale === 'en' ? 'Use search to find companies you want to approach, then click "Save to My List".' : 'データベース検索を利用してアプローチしたい企業を探し、「マイリストに保存」ボタンを押してください。'}
                   </p>
                 </div>
                 <Link
-                  href="/search"
-                  className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-sm"
+                  href={`/${locale}/search`}
+                  className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 rounded-xl shadow-2xs transition-all"
                 >
-                  {locale === 'en' ? 'Search Companies' : '企業を検索する'}
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  <Search className="w-3.5 h-3.5 text-slate-500" />
+                  <span>{locale === 'en' ? 'Search Companies' : '企業を検索する'}</span>
                 </Link>
               </div>
             ) : (
               <>
-                {/* Action Header at the top of the My List card */}
-                <div className="p-6 border-b border-slate-100 dark:border-slate-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/30 dark:bg-slate-800/10">
-                  <div className="flex items-center gap-2">
-                    <span className="font-black text-sm text-slate-900 dark:text-white tracking-tight">{locale === 'en' ? "My List" : "マイリスト"}</span>
-                    <span className="text-[10px] font-bold bg-slate-100 text-slate-500 dark:bg-slate-800/50 dark:text-slate-400 px-2.5 py-1 rounded-full font-mono">
-                      {companies.length}{locale === 'en' ? ' companies' : '社'}
-                    </span>
+                {/* Search & Action Bar on top of table */}
+                <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/30">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
+                    {/* Filter by stage */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {[
+                        { id: "all", label: "すべて" },
+                        { id: "未連絡", label: "未連絡" },
+                        { id: "連絡済み", label: "連絡済み" },
+                        { id: "商談中", label: "商談中" },
+                        { id: "成約", label: "成約" }
+                      ].map(st => (
+                        <button
+                          key={st.id}
+                          onClick={() => setListFilterStage(st.id)}
+                          className={`px-3 py-1 text-2xs font-bold rounded-lg transition-all cursor-pointer ${
+                            listFilterStage === st.id
+                              ? "bg-slate-100 text-slate-900 font-bold border border-slate-300 dark:bg-slate-800 dark:text-white dark:border-slate-600 shadow-2xs"
+                              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400"
+                          }`}
+                        >
+                          {st.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Quick search input */}
+                    <div className="relative w-full sm:w-64">
+                      <input
+                        type="text"
+                        value={listSearchQuery}
+                        onChange={(e) => setListSearchQuery(e.target.value)}
+                        placeholder="マイリスト内を検索..."
+                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    </div>
                   </div>
                   
                   <button
                     onClick={handleCSVDownload}
                     disabled={csvExporting || companies.length === 0}
-                    className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs font-black text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md shadow-primary/10 hover:shadow-primary/20 transition-all duration-300 active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100 whitespace-nowrap"
+                    className="inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 rounded-xl shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap self-start sm:self-auto"
                   >
                     {csvExporting ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
                     ) : (
-                      <Download className="w-4 h-4" />
+                      <Download className="w-4 h-4 text-slate-600 dark:text-slate-400" />
                     )}
-                    <span>{csvExporting ? (locale === 'en' ? "Checking..." : "確認中...") : (locale === 'en' ? "Download CSV" : "マイリストダウンロード")}</span>
+                    <span>{csvExporting ? (locale === 'en' ? "Checking..." : "確認中...") : (locale === 'en' ? "Export CSV" : "マイリスト出力 (CSV)")}</span>
                   </button>
                 </div>
 
                 <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
-                      <th className="py-4 px-6">{locale === 'en' ? "Company Name" : "企業名"}</th>
-                      <th className="py-4 px-4">{locale === 'en' ? "Phone / Location" : "代表電話 / 所在地"}</th>
-                      <th className="py-4 px-4">{locale === 'en' ? "Scale (Employees / Capital)" : "規模 (従業員数 / 資本金)"}</th>
-                      <th className="py-4 px-4">{locale === 'en' ? "Sales Stage" : "営業進捗ステータス"}</th>
-                      <th className="py-4 px-6 text-right">{locale === 'en' ? "Actions" : "操作"}</th>
+                    <tr className="bg-slate-50/80 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[11px]">
+                      <th className="py-3.5 px-6">{locale === 'en' ? "Company Name" : "企業名"}</th>
+                      <th className="py-3.5 px-4">{locale === 'en' ? "Phone / Location" : "代表電話 / 所在地"}</th>
+                      <th className="py-3.5 px-4">{locale === 'en' ? "Scale (Employees / Capital)" : "規模 (従業員数 / 資本金)"}</th>
+                      <th className="py-3.5 px-4">{locale === 'en' ? "Sales Stage" : "営業進捗ステータス"}</th>
+                      <th className="py-3.5 px-6 text-right">{locale === 'en' ? "Actions" : "操作"}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                    {companies.map((comp) => {
-                      const stage = kanbanStages[comp.corporate_number] || "未連絡";
-                      return (
-                        <tr 
-                          key={comp.corporate_number}
-                          className="hover:bg-slate-50/50 dark:hover:bg-[#151B22] transition-colors"
-                        >
-                          {/* Name & JSIC */}
-                          <td className="py-4.5 px-6">
-                            <div className="flex flex-col gap-1 max-w-[280px]">
-                              <Link 
-                                href={`/company/${comp.corporate_number}`}
-                                className="font-bold text-slate-900 hover:text-primary dark:text-white dark:hover:text-secondary text-sm transition-colors truncate block"
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                    {filteredCompanies.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} className="py-12 text-center text-xs text-slate-400">
+                          該当する企業は見つかりませんでした。
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredCompanies.map((comp) => {
+                        const stage = kanbanStages[comp.corporate_number] || "未連絡";
+                        return (
+                          <tr 
+                            key={comp.corporate_number}
+                            className="hover:bg-slate-50/60 dark:hover:bg-[#151B22] transition-colors"
+                          >
+                            {/* Name & JSIC */}
+                            <td className="py-4 px-6">
+                              <div className="flex flex-col gap-1 max-w-[280px]">
+                                <Link 
+                                  href={`/company/${comp.corporate_number}`}
+                                  className="font-bold text-slate-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 text-sm transition-colors truncate block"
+                                >
+                                  {comp.company_name}
+                                </Link>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {comp.jigyo_shumoku?.split(",")[0].replace(' (AI確認済)', '') || (locale === 'en' ? "Services" : "サービス")}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Phone / Location */}
+                            <td className="py-4 px-4 text-slate-600 dark:text-slate-300">
+                              <div className="flex flex-col gap-1">
+                                <span className="font-semibold flex items-center gap-1">
+                                  <Phone className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                  {comp.phone_number || (locale === 'en' ? "Unregistered" : "未登録")}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {comp.prefecture_name || ""}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Scale */}
+                            <td className="py-4 px-4 text-slate-700 dark:text-slate-300">
+                              <div className="flex flex-col gap-1 font-mono">
+                                <span>
+                                  {comp.employee_count ? (locale === 'en' ? `${comp.employee_count.toLocaleString()} employees` : `${comp.employee_count.toLocaleString()}名`) : (locale === 'en' ? "Unregistered" : "未登録")}
+                                </span>
+                                <span className="text-[10px] text-slate-400">
+                                  {comp.capital_amount ? (locale === 'en' ? `¥${(comp.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1})}M JPY` : `${Math.round(comp.capital_amount / 10000).toLocaleString()}万円`) : (locale === 'en' ? "Unregistered" : "未登録")}
+                                </span>
+                              </div>
+                            </td>
+
+                            {/* Status */}
+                            <td className="py-4 px-4">
+                              <select
+                                value={stage}
+                                onChange={(e) => updateKanbanStage(comp.corporate_number, e.target.value as KanbanStage)}
+                                className={`text-[10px] font-bold px-2.5 py-1.5 border rounded-lg focus:outline-none cursor-pointer ${
+                                  stage === "未連絡" 
+                                    ? "bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+                                    : stage === "連絡済み"
+                                    ? "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-900/50 dark:text-blue-300"
+                                    : stage === "商談中"
+                                    ? "bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/40 dark:border-amber-900/50 dark:text-amber-300"
+                                    : "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-900/50 dark:text-emerald-300"
+                                }`}
                               >
-                                {comp.company_name}
-                              </Link>
-                              <span className="text-[10px] text-slate-400 font-mono">
-                                {comp.jigyo_shumoku?.split(",")[0].replace(' (AI確認済)', '') || (locale === 'en' ? "Services" : "サービス")}
-                              </span>
-                            </div>
-                          </td>
+                                {stages.map((st) => (
+                                  <option key={st} value={st}>{stageLabels[st] || st}</option>
+                                ))}
+                              </select>
+                            </td>
 
-                          {/* Phone / Location */}
-                          <td className="py-4.5 px-4 text-slate-600 dark:text-slate-300">
-                            <div className="flex flex-col gap-1">
-                              <span className="font-semibold flex items-center gap-1">
-                                <Phone className="w-3 h-3 text-primary shrink-0" />
-                                {comp.phone_number || (locale === 'en' ? "Unregistered" : "未登録")}
-                              </span>
-                              <span className="text-[10px] text-slate-400">
-                                {comp.prefecture_name || ""}
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* Scale */}
-                          <td className="py-4.5 px-4 text-slate-700 dark:text-slate-300">
-                            <div className="flex flex-col gap-1 font-mono">
-                              <span>
-                                {comp.employee_count ? (locale === 'en' ? `${comp.employee_count.toLocaleString()} employees` : `${comp.employee_count.toLocaleString()}名`) : (locale === 'en' ? "Unregistered" : "未登録")}
-                              </span>
-                              <span className="text-[10px] text-slate-400">
-                                {comp.capital_amount ? (locale === 'en' ? `¥${(comp.capital_amount / 1000000).toLocaleString(undefined, {maximumFractionDigits: 1})}M JPY` : `${Math.round(comp.capital_amount / 10000).toLocaleString()}万円`) : (locale === 'en' ? "Unregistered" : "未登録")}
-                              </span>
-                            </div>
-                          </td>
-
-                          {/* Status */}
-                          <td className="py-4.5 px-4">
-                            <select
-                              value={stage}
-                              onChange={(e) => updateKanbanStage(comp.corporate_number, e.target.value as KanbanStage)}
-                              className={`text-[10px] font-bold px-2.5 py-1.5 border rounded-lg focus:outline-none ${
-                                stage === "未連絡" 
-                                  ? "bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
-                                  : stage === "連絡済み"
-                                  ? "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-900/50 dark:text-blue-300"
-                                  : stage === "商談中"
-                                  ? "bg-amber-50 border-amber-250 text-amber-800 dark:bg-amber-950/40 dark:border-amber-900/50 dark:text-amber-300"
-                                  : "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-900/50 dark:text-emerald-300"
-                              }`}
-                            >
-                              {stages.map((st) => (
-                                <option key={st} value={st}>{stageLabels[st] || st}</option>
-                              ))}
-                            </select>
-                          </td>
-
-                          {/* Actions */}
-                          <td className="py-4.5 px-6 text-right">
-                            <div className="flex items-center justify-end gap-2.5">
-                              <Link
-                                href={`/company/${comp.corporate_number}`}
-                                className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-white transition-all active:scale-95"
-                                title={locale === 'en' ? "View Profile" : "プロフィール詳細"}
-                              >
-                                <ArrowRight className="w-3.5 h-3.5" />
-                              </Link>
-                              <button
-                                onClick={() => toggleSaveCompany(comp.corporate_number)}
-                                className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 dark:border-slate-800 dark:hover:bg-rose-955/20 dark:hover:border-rose-900/40 dark:hover:text-rose-400 text-slate-400 transition-all active:scale-95"
-                                title={locale === 'en' ? "Remove from My List" : "マイリストから削除"}
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                            {/* Actions */}
+                            <td className="py-4 px-6 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <Link
+                                  href={`/company/${comp.corporate_number}`}
+                                  className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200 hover:border-blue-400 hover:text-blue-600 dark:border-slate-800 dark:hover:border-slate-700 text-slate-500 dark:text-slate-400 transition-all active:scale-95"
+                                  title={locale === 'en' ? "View Profile" : "企業プロフィール詳細"}
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                </Link>
+                                <button
+                                  onClick={() => toggleSaveCompany(comp.corporate_number)}
+                                  className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 dark:border-slate-800 dark:hover:bg-rose-950/20 dark:hover:border-rose-900/40 dark:hover:text-rose-400 text-slate-400 transition-all active:scale-95 cursor-pointer"
+                                  title={locale === 'en' ? "Remove from My List" : "マイリストから削除"}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -1196,32 +1528,123 @@ export default function DashboardPage() {
           </section>
         )}
 
-        {/* Tab Contents: Export History */}
+        {/* Tab 2 Contents: Kanban Board */}
+        {activeTab === "kanban" && (
+          <section className="grid grid-cols-1 md:grid-cols-4 gap-5 items-start">
+            {stages.map((stage) => {
+              const stageCompanies = companies.filter(
+                (comp) => (kanbanStages[comp.corporate_number] || "未連絡") === stage
+              );
+
+              return (
+                <div 
+                  key={stage}
+                  className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-4 shadow-xs flex flex-col gap-4 max-h-[80vh] overflow-y-auto"
+                >
+                  {/* Column Header */}
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                    <span className="font-extrabold text-xs text-slate-800 dark:text-white tracking-tight flex items-center gap-1.5">
+                      <span className={`w-2.5 h-2.5 rounded-full ${
+                        stage === "未連絡" 
+                          ? "bg-slate-400" 
+                          : stage === "連絡済み" 
+                          ? "bg-blue-500" 
+                          : stage === "商談中" 
+                          ? "bg-amber-500" 
+                          : "bg-emerald-500"
+                      }`} />
+                      {stageLabels[stage] || stage}
+                    </span>
+                    <span className="text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-full">
+                      {stageCompanies.length} {locale === 'en' ? "companies" : "社"}
+                    </span>
+                  </div>
+
+                  {/* Column Cards */}
+                  <div className="flex flex-col gap-3 min-h-[160px]">
+                    {stageCompanies.length === 0 ? (
+                      <div className="py-12 text-center text-[11px] text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center gap-1">
+                        <span>対象企業はありません</span>
+                      </div>
+                    ) : (
+                      stageCompanies.map((comp) => (
+                        <div
+                          key={comp.corporate_number}
+                          className={`p-4 rounded-2xl border-l-4 border border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700 transition-all shadow-2xs ${getStageColor(stage)} flex flex-col gap-3 group`}
+                        >
+                          <div className="flex flex-col gap-1">
+                            <Link 
+                              href={`/company/${comp.corporate_number}`}
+                              className="font-bold text-xs text-slate-900 hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400 tracking-tight line-clamp-2 leading-relaxed transition-colors block"
+                            >
+                              {comp.company_name}
+                            </Link>
+                            <span className="text-[10px] text-slate-400 line-clamp-1">
+                              {comp.jigyo_shumoku?.split(",")[0].replace(' (AI確認済)', '') || "サービス"}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between text-[10px] border-t border-slate-100 dark:border-slate-800/80 pt-2 text-slate-500">
+                            <span className="font-semibold text-slate-400">
+                              {comp.prefecture_name || "地域未設定"}
+                            </span>
+                            
+                            {/* Fast Column Navigation Buttons */}
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => moveCard(comp.corporate_number, "left")}
+                                disabled={stage === "未連絡"}
+                                className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
+                                title="左に移動"
+                              >
+                                <MoveLeft className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => moveCard(comp.corporate_number, "right")}
+                                disabled={stage === "成約"}
+                                className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
+                                title="右に移動"
+                              >
+                                <MoveRight className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </section>
+        )}
+
+        {/* Tab 3 Contents: Export History */}
         {activeTab === "exports" && (
           <div className="flex flex-col gap-4">
-            <div className="bg-amber-50 border border-amber-200/60 dark:bg-amber-955/20 dark:border-amber-900/30 rounded-2xl p-4 text-xs text-amber-800 dark:text-amber-300 flex items-start gap-2 animate-in fade-in duration-300">
+            <div className="bg-slate-50 border border-slate-200 dark:bg-slate-900/40 dark:border-slate-800 rounded-2xl p-4 text-xs text-slate-700 dark:text-slate-300 flex items-start gap-3 shadow-2xs">
               <AlertTriangle className="w-4.5 h-4.5 shrink-0 text-amber-500 mt-0.5" />
               <div className="flex flex-col gap-0.5">
-                <span className="font-extrabold text-[11px] uppercase tracking-wider block">{locale === 'en' ? "Download Expiration Notice" : "ダウンロード有効期限に関するご注意"}</span>
-                <p className="leading-relaxed">
-                  {locale === 'en' ? <span>Generated export files (ZIP) are <strong>stored for 7 days</strong>. After 7 days, they are automatically deleted from our server and cannot be downloaded. Please save them to your local device as soon as possible.</span> : <span>作成されたエクスポートファイル（ZIP）の<strong>保存期間は7日間</strong>です。7日を経過するとデータはサーバーから自動的に削除され、ダウンロードできなくなりますので、お早めにローカルのパソコン等へ保存してください。</span>}
+                <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-900 dark:text-white block">ダウンロード有効期限に関するご注意</span>
+                <p className="leading-relaxed text-slate-600 dark:text-slate-400">
+                  作成されたエクスポートファイル（ZIP）の<strong>保存期間は7日間</strong>です。7日を経過するとデータはサーバーから自動的に削除され、再ダウンロードできなくなりますので、お早めに端末へ保存してください。
                 </p>
               </div>
             </div>
             
-            <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+            <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs">
               {loadingExports ? (
                 <div className="py-20 text-center flex flex-col items-center justify-center gap-3">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
-                  <span className="text-xs text-slate-400">{locale === 'en' ? "Loading history..." : "履歴を読み込み中..."}</span>
+                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
+                  <span className="text-xs text-slate-400">履歴を読み込み中...</span>
                 </div>
               ) : exportJobs.length === 0 ? (
                 <div className="py-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-                  <Download className="w-12 h-12 text-slate-300" />
+                  <Download className="w-12 h-12 text-slate-300 dark:text-slate-600" />
                   <div>
-                    <h4 className="font-extrabold text-slate-800 dark:text-white text-sm mb-1">{locale === 'en' ? 'Export History' : 'エクスポート履歴'}はありません</h4>
-                    <p className="text-xs max-w-sm mx-auto leading-relaxed">
-                      {locale === 'en' ? 'When you export CSV files from company search, your download history will be listed here.' : '企業検索からCSV出力を実行すると、ここにダウンロード履歴が追加されます。'}
+                    <h4 className="font-extrabold text-slate-800 dark:text-white text-sm mb-1">エクスポート履歴はありません</h4>
+                    <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                      企業検索からCSV出力を実行すると、ここにダウンロード履歴が追加されます。
                     </p>
                   </div>
                 </div>
@@ -1229,16 +1652,16 @@ export default function DashboardPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
-                        <th className="py-4 px-6">{locale === 'en' ? "Task ID / Created At" : "タスクID / 作成日時"}</th>
-                        <th className="py-4 px-4">{locale === 'en' ? "Download Expiry (7 days)" : "ダウンロード期限 (7日間)"}</th>
-                        <th className="py-4 px-4">{locale === 'en' ? "Applied Filters" : "適用フィルター"}</th>
-                        <th className="py-4 px-4">{locale === 'en' ? "Rows Count" : "取得件数"}</th>
-                        <th className="py-4 px-4">{locale === 'en' ? "Status" : "ステータス"}</th>
-                        <th className="py-4 px-6 text-right">{locale === 'en' ? "Actions" : "操作"}</th>
+                      <tr className="bg-slate-50/80 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[11px]">
+                        <th className="py-3.5 px-6">タスクID / 作成日時</th>
+                        <th className="py-3.5 px-4">ダウンロード期限 (7日間)</th>
+                        <th className="py-3.5 px-4">適用フィルター</th>
+                        <th className="py-3.5 px-4">取得件数</th>
+                        <th className="py-3.5 px-4">ステータス</th>
+                        <th className="py-3.5 px-6 text-right">操作</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                       {exportJobs.map((job) => {
                         const createdDate = parseUTCDate(job.created_at);
                         const expiryDate = new Date(createdDate.getTime() + 7 * 24 * 60 * 60 * 1000);
@@ -1254,7 +1677,7 @@ export default function DashboardPage() {
                           minute: "2-digit",
                         });
 
-                        const formattedExpiryDate = expiryDate.toLocaleString("ja-JP", {
+                        const formattedExpiry = expiryDate.toLocaleString("ja-JP", {
                           timeZone: "Asia/Tokyo",
                           year: "numeric",
                           month: "2-digit",
@@ -1263,89 +1686,45 @@ export default function DashboardPage() {
                           minute: "2-digit",
                         });
 
-                        const diffMs = expiryDate.getTime() - now.getTime();
-                        const remainingDays = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-                        
                         return (
-                          <tr key={job.id} className="hover:bg-slate-50/50 dark:hover:bg-[#151B22] transition-colors">
-                            <td className="py-4.5 px-6">
+                          <tr key={job.id} className="hover:bg-slate-50/60 dark:hover:bg-[#151B22] transition-colors">
+                            <td className="py-4 px-6">
                               <div className="flex flex-col gap-1">
-                                <span className="font-mono font-bold text-slate-800 dark:text-slate-200">{job.id}</span>
-                                <span className="text-[10px] text-slate-400">{formattedDate} (JST)</span>
+                                <span className="font-mono font-bold text-slate-900 dark:text-slate-100 truncate max-w-[160px]" title={job.id}>{job.id}</span>
+                                <span className="text-[10px] text-slate-400">{formattedDate}</span>
                               </div>
                             </td>
-                            <td className="py-4.5 px-4 text-xs">
-                              {job.status === "completed" ? (
-                                isExpired ? (
-                                  <span className="text-rose-500 font-semibold">{locale === 'en' ? "Expired (Deleted)" : "期限切れ (削除済み)"}</span>
-                                ) : (
-                                  <div className="flex flex-col gap-0.5">
-                                    <span className="font-semibold text-slate-700 dark:text-slate-300">
-                                      {formattedExpiryDate}
-                                    </span>
-                                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">
-                                      {locale === 'en' ? `${remainingDays} days remaining` : `残り ${remainingDays} 日`}
-                                    </span>
-                                  </div>
-                                )
-                              ) : (
-                                <span className="text-slate-400">---</span>
-                              )}
-                            </td>
-                            <td className="py-4.5 px-4 max-w-[280px]">
-                              {renderFilterBadges(job.filters_json) || (
-                                <span className="text-[10px] text-slate-400 italic">{locale === 'en' ? "None" : "なし"}</span>
-                              )}
-                            </td>
-                            <td className="py-4.5 px-4 font-mono font-bold text-slate-700 dark:text-slate-300">
-                              {job.records_count.toLocaleString()} {locale === 'en' ? "rows" : "行"}
-                            </td>
-                            <td className="py-4.5 px-4">
-                              <span className={`px-2.5 py-1.5 rounded-lg text-[10px] font-bold ${
-                                job.status === "completed"
-                                  ? isExpired
-                                    ? "bg-slate-100 text-slate-400 border border-slate-200 dark:bg-slate-800/20 dark:border-slate-800"
-                                    : "bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-900/50 dark:text-emerald-300"
-                                  : job.status === "processing"
-                                  ? "bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-950/40 dark:border-blue-900/50 dark:text-blue-300"
-                                  : job.status === "pending"
-                                  ? "bg-slate-50 text-slate-655 border border-slate-200 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
-                                  : "bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-955/20 dark:border-rose-900/40 dark:text-rose-400"
-                              }`}>
-                                {job.status === "completed"
-                                  ? isExpired
-                                    ? (locale === 'en' ? "Expired (Deleted)" : "有効期限切れ (削除済み)")
-                                    : (locale === 'en' ? "Completed" : "完了")
-                                  : job.status === "processing"
-                                  ? (locale === 'en' ? "Processing..." : "処理中...")
-                                  : job.status === "pending"
-                                  ? (locale === 'en' ? "Pending" : "待機中")
-                                  : (locale === 'en' ? "Failed" : "失敗")}
+                            <td className="py-4 px-4 text-slate-600 dark:text-slate-300">
+                              <span className={`text-[10px] font-semibold ${isExpired ? "text-rose-500 font-bold" : "text-slate-500"}`}>
+                                {isExpired ? "期限切れ (消去済)" : formattedExpiry}
                               </span>
                             </td>
-                            <td className="py-4.5 px-6 text-right">
+                            <td className="py-4 px-4">
+                              {renderFilterBadges(job.filters, locale)}
+                            </td>
+                            <td className="py-4 px-4 font-mono font-bold text-slate-900 dark:text-white">
+                              {job.total_records ? `${job.total_records.toLocaleString()}行` : "-"}
+                            </td>
+                            <td className="py-4 px-4">
                               {job.status === "completed" ? (
-                                isExpired ? (
-                                  <span className="text-[10px] text-slate-400 italic font-medium">
-                                    {locale === 'en' ? 'Deleted after 7 days' : '7日経過したため削除されました'}
-                                  </span>
-                                ) : (
-                                  <a
-                                    href={`/api/export/download?id=${job.id}&email=${encodeURIComponent(user?.email || "")}`}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md transition-colors"
-                                  >
-                                    <Download className="w-3.5 h-3.5" />
-                                    <span>{locale === 'en' ? "Download ZIP" : "ZIPをダウンロード"}</span>
-                                  </a>
-                                )
-                              ) : job.status === "failed" ? (
-                                <span className="text-[10px] text-rose-500 font-medium max-w-[200px] truncate block" title={job.error_message || ""}>
-                                  {job.error_message || (locale === 'en' ? "An error occurred" : "エラーが発生しました")}
-                                </span>
+                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 text-[9px] font-bold">出力完了</span>
+                              ) : job.status === "processing" ? (
+                                <span className="px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 text-[9px] font-bold">生成中</span>
                               ) : (
-                                <span className="text-[10px] text-slate-400 italic">
-                                  {locale === 'en' ? "Updates automatically" : "自動で更新されます"}
-                                </span>
+                                <span className="px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 text-[9px] font-bold">失敗</span>
+                              )}
+                            </td>
+                            <td className="py-4 px-6 text-right">
+                              {job.status === "completed" && !isExpired && job.file_path ? (
+                                <a
+                                  href={`/api/export/download?jobId=${job.id}`}
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>ダウンロード</span>
+                                </a>
+                              ) : (
+                                <span className="text-[10px] text-slate-400">利用不可</span>
                               )}
                             </td>
                           </tr>
@@ -1359,21 +1738,21 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Tab Contents: Purchase History */}
+        {/* Tab 4 Contents: Purchase History */}
         {activeTab === "payments" && (
-          <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+          <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs">
             {loadingPayments ? (
               <div className="py-20 text-center flex flex-col items-center justify-center gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
-                <span className="text-xs text-slate-400">{locale === 'en' ? "Loading purchase history..." : "購入履歴を読み込み中..."}</span>
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
+                <span className="text-xs text-slate-400">購入履歴を読み込み中...</span>
               </div>
             ) : paymentHistory.length === 0 ? (
               <div className="py-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-                <Sparkles className="w-12 h-12 text-slate-300 animate-pulse" />
+                <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600" />
                 <div>
-                  <h4 className="font-extrabold text-slate-800 dark:text-white text-sm mb-1">{locale === 'en' ? "No purchase history" : "購入履歴はありません"}</h4>
-                  <p className="text-xs max-w-sm mx-auto leading-relaxed">
-                    {locale === 'en' ? 'When you purchase additional CSV download quota packs or plans on Stripe, your purchase history and invoice receipts will be shown here.' : 'Stripeで追加 of CSVダウンロード容量をご購入いただくと、ここに履歴とインボイス領収書が表示されます。'}
+                  <h4 className="font-extrabold text-slate-800 dark:text-white text-sm mb-1">購入履歴はありません</h4>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                    Stripeで追加のCSVダウンロード容量またはプランをご購入いただくと、ここに履歴とインボイス領収書が表示されます。
                   </p>
                 </div>
               </div>
@@ -1381,15 +1760,15 @@ export default function DashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-800/40 text-slate-400 font-bold border-b border-slate-100 dark:border-slate-800 uppercase tracking-wider">
-                      <th className="py-4 px-6">{locale === 'en' ? "Transaction ID / Date" : "取引ID / 決済日時"}</th>
-                      <th className="py-4 px-4">{locale === 'en' ? "Plan Purchased" : "購入プラン"}</th>
-                      <th className="py-4 px-4">{locale === 'en' ? "Quota Added" : "付与容量"}</th>
-                      <th className="py-4 px-4">{locale === 'en' ? "Amount Paid (incl. tax)" : "決済金額 (税込)"}</th>
-                      <th className="py-4 px-6 text-right">{locale === 'en' ? "Invoice Receipt" : "インボイス領収書"}</th>
+                    <tr className="bg-slate-50/80 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[11px]">
+                      <th className="py-3.5 px-6">取引ID / 決済日時</th>
+                      <th className="py-3.5 px-4">購入プラン</th>
+                      <th className="py-3.5 px-4">付与容量</th>
+                      <th className="py-3.5 px-4">決済金額 (税込)</th>
+                      <th className="py-3.5 px-6 text-right">インボイス領収書</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                     {paymentHistory.map((pay) => {
                       const formattedDate = parseUTCDate(pay.created_at).toLocaleString("ja-JP", {
                         timeZone: "Asia/Tokyo",
@@ -1401,41 +1780,41 @@ export default function DashboardPage() {
                       });
                       
                       return (
-                        <tr key={pay.id} className="hover:bg-slate-50/50 dark:hover:bg-[#151B22] transition-colors">
-                          <td className="py-4.5 px-6">
+                        <tr key={pay.id} className="hover:bg-slate-50/60 dark:hover:bg-[#151B22] transition-colors">
+                          <td className="py-4 px-6">
                             <div className="flex flex-col gap-1">
                               <span className="font-mono font-bold text-slate-900 dark:text-slate-100 truncate max-w-[180px]" title={pay.id}>{pay.id}</span>
                               <span className="text-[10px] text-slate-400">{formattedDate} (JST)</span>
                             </div>
                           </td>
-                          <td className="py-4.5 px-4 font-bold text-slate-900 dark:text-slate-100">
-                            {pay.pack_id === "10k" ? (locale === 'en' ? "CSV 10k Rows Add-on Pack" : "CSV 10k行追加パック") :
-                             pay.pack_id === "50k" ? (locale === 'en' ? "CSV 50k Rows Add-on Pack" : "CSV 50k行追加パック") :
-                             pay.pack_id === "100k" ? (locale === 'en' ? "CSV 100k Rows Add-on Pack" : "CSV 100k行追加パック") :
-                             pay.pack_id === "pro" ? (locale === 'en' ? "PRO Plan (Monthly)" : "PROプラン (月額)") :
-                             pay.pack_id === "business" ? (locale === 'en' ? "BUSINESS Plan (Monthly)" : "BUSINESSプラン (月額)") :
-                             pay.pack_id === "enterprise" ? (locale === 'en' ? "ENTERPRISE Plan (Monthly)" : "ENTERPRISEプラン (月額)") :
-                             (locale === 'en' ? "Custom Pack" : "カスタムパック")}
+                          <td className="py-4 px-4 font-bold text-slate-900 dark:text-slate-100">
+                            {pay.pack_id === "10k" ? "CSV 10k行追加パック" :
+                             pay.pack_id === "50k" ? "CSV 50k行追加パック" :
+                             pay.pack_id === "100k" ? "CSV 100k行追加パック" :
+                             pay.pack_id === "pro" ? "PROプラン (月額)" :
+                             pay.pack_id === "business" ? "BUSINESSプラン (月額)" :
+                             pay.pack_id === "enterprise" ? "ENTERPRISEプラン (月額)" :
+                             "カスタムパック"}
                           </td>
-                          <td className="py-4.5 px-4 font-mono font-bold text-slate-600 dark:text-slate-300">
-                            +{pay.lines_added.toLocaleString()} {locale === 'en' ? "rows" : "行"}
+                          <td className="py-4 px-4 font-mono font-bold text-slate-600 dark:text-slate-300">
+                            +{pay.lines_added.toLocaleString()} 行
                           </td>
-                          <td className="py-4.5 px-4 font-mono font-black text-primary dark:text-secondary text-sm">
+                          <td className="py-4 px-4 font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
                             ¥{pay.amount_jpy.toLocaleString()}
                           </td>
-                          <td className="py-4.5 px-6 text-right">
+                          <td className="py-4 px-6 text-right">
                             {pay.invoice_url ? (
                               <a
                                 href={`/api/stripe/invoice?id=${pay.id}&email=${encodeURIComponent(user?.email || "")}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-4.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 transition-colors shadow-sm"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 transition-colors shadow-2xs"
                               >
-                                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                                <span>{locale === 'en' ? "View & Print Receipt" : "領収書を表示・印刷"}</span>
+                                <FileText className="w-3.5 h-3.5 text-blue-600" />
+                                <span>領収書 (印刷)</span>
                               </a>
                             ) : (
-                              <span className="text-[10px] text-slate-400 italic">{locale === 'en' ? "Not Issued" : "未発行"}</span>
+                              <span className="text-[10px] text-slate-400 italic">未発行</span>
                             )}
                           </td>
                         </tr>
@@ -1448,296 +1827,204 @@ export default function DashboardPage() {
           </section>
         )}
 
-        {/* Tab Contents: Kanban Board */}
-        {activeTab === "kanban" && (
-          <section className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
-            {stages.map((stage) => {
-              // Filter companies belonging to this stage
-              const stageCompanies = companies.filter(
-                (comp) => (kanbanStages[comp.corporate_number] || "未連絡") === stage
-              );
-
-              return (
-                <div 
-                  key={stage}
-                  className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-4 shadow-sm flex flex-col gap-4 max-h-[80vh] overflow-y-auto"
-                >
-                  {/* Column Header */}
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                    <span className="font-extrabold text-xs text-slate-800 dark:text-white tracking-tight flex items-center gap-1.5">
-                      <span className={`w-2.5 h-2.5 rounded-full ${
-                        stage === "未連絡" 
-                          ? "bg-slate-400" 
-                          : stage === "連絡済み" 
-                          ? "bg-blue-400" 
-                          : stage === "商談中" 
-                          ? "bg-amber-400" 
-                          : "bg-emerald-400"
-                      }`} />
-                      {stageLabels[stage] || stage}
-                    </span>
-                    <span className="text-[10px] font-bold bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-450 px-2 py-0.5 rounded-full">
-                      {stageCompanies.length} {locale === 'en' ? (stageCompanies.length === 1 ? "company" : "companies") : "社"}
-                    </span>
-                  </div>
-
-                  {/* Column Cards */}
-                  <div className="flex flex-col gap-3 min-h-[150px]">
-                    {stageCompanies.length === 0 ? (
-                      <div className="py-10 text-center text-[10px] text-slate-400 dark:text-slate-500 border border-dashed border-slate-100 dark:border-slate-800 rounded-2xl">
-                        {locale === 'en' ? 'No companies in this stage' : '対象企業はありません'}
-                      </div>
-                    ) : (
-                      stageCompanies.map((comp) => (
-                        <div
-                          key={comp.corporate_number}
-                          className={`p-4 rounded-2xl border-l-3 border border-slate-200 hover:border-slate-300 dark:border-slate-800/80 dark:hover:border-slate-700 transition-all shadow-sm ${getStageColor(stage)} flex flex-col gap-3 group`}
-                        >
-                          <div className="flex flex-col gap-1.5">
-                            <Link 
-                              href={`/company/${comp.corporate_number}`}
-                              className="font-black text-xs text-slate-800 hover:text-primary dark:text-slate-100 dark:hover:text-secondary tracking-tight line-clamp-2 leading-relaxed transition-colors block"
-                            >
-                              {comp.company_name}
-                            </Link>
-                            <span className="text-[9px] text-slate-400 line-clamp-1">
-                              {comp.jigyo_shumoku?.split(",")[0].replace(' (AI確認済)', '') || (locale === 'en' ? "Services" : "サービス")}
-                            </span>
-                          </div>
-
-                          <div className="flex items-center justify-between text-[10px] border-t border-slate-100/50 dark:border-slate-800/40 pt-2 text-slate-500">
-                            <span className="font-semibold text-slate-400">
-                              {comp.prefecture_name ? (locale === 'en' ? (prefectureJaToEn[comp.prefecture_name] || comp.prefecture_name) : comp.prefecture_name) : (locale === 'en' ? 'Location Unset' : '地域未設定')}
-                            </span>
-                            
-                            {/* Fast Column Navigation Buttons */}
-                            <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
-                              <button
-                                onClick={() => moveCard(comp.corporate_number, "left")}
-                                disabled={stage === "未連絡"}
-                                className="p-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                                title={locale === 'en' ? "Move Left" : "左に移動"}
-                              >
-                                <MoveLeft className="w-3 h-3" />
-                              </button>
-                              <button
-                                onClick={() => moveCard(comp.corporate_number, "right")}
-                                disabled={stage === "成約"}
-                                className="p-1 rounded bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-30 disabled:cursor-not-allowed"
-                                title={locale === 'en' ? "Move Right" : "右に移動"}
-                              >
-                                <MoveRight className="w-3 h-3" />
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </section>
-        )}
-
-        {/* Tab Contents: Settings */}
+        {/* Tab 5 Contents: Settings with Live Preview */}
         {activeTab === "settings" && (
-          <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm w-full flex flex-col gap-6 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/3 rounded-full blur-2xl pointer-events-none" />
-            
+          <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs w-full flex flex-col gap-6">
             <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <Settings className="w-5.5 h-5.5" />
+              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 border border-blue-100 flex items-center justify-center shrink-0">
+                <Settings className="w-5 h-5" />
               </div>
               <div>
-                <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                  {locale === 'en' ? 'Receipt & Invoice Settings' : '領収書・インボイス設定'}
+                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                  領収書・インボイス設定
                 </h2>
-                <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                  {locale === 'en' ? 'Configure the recipient and address details printed on invoice receipts downloaded from purchase history.' : '購入履歴からダウンロードする領収書に記載する宛先情報を設定します'}
+                <span className="text-[11px] text-slate-400 block mt-0.5">
+                  購入履歴からダウンロードする領収書に記載する宛名や適格請求書登録番号を設定します
                 </span>
               </div>
             </div>
 
             {loadingBilling ? (
               <div className="py-12 text-center flex flex-col items-center justify-center gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary border-t-transparent" />
-                <span className="text-xs text-slate-400">{locale === 'en' ? "Loading settings..." : "設定を読み込み中..."}</span>
+                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
+                <span className="text-xs text-slate-400">設定を読み込み中...</span>
               </div>
             ) : (
-              <form onSubmit={handleSaveBilling} className="flex flex-col gap-5 text-xs">
-                {/* Billing Name */}
-                <div className="flex flex-col gap-2">
-                  <label className="font-extrabold text-slate-700 dark:text-slate-350">
-                    {locale === 'en' ? 'Recipient / Company Name' : '宛名 / 会社名'}
-                  </label>
-                  <input
-                    type="text"
-                    value={billingName}
-                    onChange={(e) => setBillingName(e.target.value)}
-                    placeholder={locale === 'en' ? "e.g., TQC Inc., or Individual Proprietor" : "例: TQC株式会社, ○○ 個人事業主"}
-                    className="px-4 py-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-primary dark:focus:border-secondary transition-all"
-                  />
-                  <span className="text-[10px] text-slate-400">
-                    {locale === 'en' ? `If left blank, your registered email address (${user?.email}) will be used as the recipient.` : `空欄の場合はご登録のメールアドレス（${user?.email}）が宛名として使用されます。`}
-                  </span>
-                </div>
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+                {/* Form fields */}
+                <form onSubmit={handleSaveBilling} className="lg:col-span-7 flex flex-col gap-5 text-xs">
+                  {/* Billing Name */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold text-slate-700 dark:text-slate-300">
+                      宛名 / 会社名 <span className="text-rose-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={billingName}
+                      onChange={(e) => setBillingName(e.target.value)}
+                      placeholder="例: 株式会社サンプル, ○○ 個人事業主"
+                      className="px-4 py-2.5 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-blue-500 text-xs transition-all"
+                    />
+                    <span className="text-[10px] text-slate-400">
+                      空欄の場合はご登録メールアドレス（{user?.email}）が使用されます。
+                    </span>
+                  </div>
 
-                {/* Postal Code & Address */}
-                <div className="flex flex-col gap-2">
-                  <label className="font-extrabold text-slate-700 dark:text-slate-350">
-                    {locale === 'en' ? 'Company Address' : '会社所在地 / 住所'}
-                  </label>
-                  <textarea
-                    value={billingAddress}
-                    onChange={(e) => setBillingAddress(e.target.value)}
-                    placeholder={locale === 'en' ? "e.g., Sato Bldg 3F, 2-33-6 Minami-ikebukuro, Toshima-ku, Tokyo, 171-0022" : "例: 〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F"}
-                    rows={3}
-                    className="px-4 py-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-primary dark:focus:border-secondary transition-all resize-none"
-                  />
-                </div>
+                  {/* Postal Code & Address */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold text-slate-700 dark:text-slate-300">
+                      会社所在地 / 住所
+                    </label>
+                    <textarea
+                      value={billingAddress}
+                      onChange={(e) => setBillingAddress(e.target.value)}
+                      placeholder="例: 〒100-0001 東京都千代田区千代田1-1 サンプルビル5F"
+                      rows={2}
+                      className="px-4 py-2.5 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-blue-500 text-xs transition-all resize-none"
+                    />
+                  </div>
 
-                {/* Phone Number */}
-                <div className="flex flex-col gap-2">
-                  <label className="font-extrabold text-slate-700 dark:text-slate-350">
-                    {locale === 'en' ? 'Phone Number' : '電話番号'}
-                  </label>
-                  <input
-                    type="text"
-                    value={billingPhone}
-                    onChange={(e) => setBillingPhone(e.target.value)}
-                    placeholder={locale === 'en' ? "e.g., 03-6907-1219" : "例: 03-6907-1219"}
-                    className="px-4 py-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-primary dark:focus:border-secondary transition-all"
-                  />
-                </div>
+                  {/* Tax ID & Phone row */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold text-slate-700 dark:text-slate-300">
+                        インボイス登録番号 (T+13桁)
+                      </label>
+                      <input
+                        type="text"
+                        value={billingTaxId}
+                        onChange={(e) => setBillingTaxId(e.target.value)}
+                        placeholder="例: T1234567890123"
+                        className="px-4 py-2.5 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-blue-500 text-xs transition-all font-mono"
+                      />
+                    </div>
 
-                {/* Contact Person */}
-                <div className="flex flex-col gap-2">
-                  <label className="font-extrabold text-slate-700 dark:text-slate-350">
-                    <span>{locale === 'en' ? "Contact Person Name" : "担当者 (お名前)"} <span className="text-[10px] text-slate-400 font-normal">({locale === 'en' ? "* Will not be printed on receipt" : "※領収書には印刷されません"})</span></span>
-                  </label>
-                  <input
-                    type="text"
-                    value={contactPerson}
-                    onChange={(e) => setContactPerson(e.target.value)}
-                    placeholder={locale === 'en' ? "e.g., Taro Yamada" : "例: 山田 太郎"}
-                    className="px-4 py-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-primary dark:focus:border-secondary transition-all"
-                  />
-                </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="font-bold text-slate-700 dark:text-slate-300">
+                        電話番号
+                      </label>
+                      <input
+                        type="text"
+                        value={billingPhone}
+                        onChange={(e) => setBillingPhone(e.target.value)}
+                        placeholder="例: 03-1234-5678"
+                        className="px-4 py-2.5 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-blue-500 text-xs transition-all font-mono"
+                      />
+                    </div>
+                  </div>
 
-                {/* Contact Phone */}
-                <div className="flex flex-col gap-2">
-                  <label className="font-extrabold text-slate-700 dark:text-slate-350 flex items-center gap-1">
-                    <span>{locale === 'en' ? "Contact Phone Number" : "担当者連絡先 (電話番号)"}</span>
-                    <span className="text-[10px] text-slate-400 font-normal">({locale === 'en' ? "* Will not be printed on receipt" : "※領収書には印刷されません"})</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder={locale === 'en' ? "e.g., 090-xxxx-xxxx" : "例: 090-xxxx-xxxx"}
-                    className="px-4 py-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-primary dark:focus:border-secondary transition-all"
-                  />
-                </div>
-
-                {/* Tax ID */}
-                <div className="flex flex-col gap-2">
-                  <label className="font-extrabold text-slate-700 dark:text-slate-350">
-                    {locale === 'en' ? 'Qualified Invoice Issuer Number (JCT Registration Number)' : '適格請求書発行事業者登録番号 (インボイス登録番号)'}
-                  </label>
-                  <input
-                    type="text"
-                    value={billingTaxId}
-                    onChange={(e) => setBillingTaxId(e.target.value)}
-                    placeholder={locale === 'en' ? "e.g., T1234567890123" : "例: T1234567890123"}
-                    className="px-4 py-3 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-primary dark:focus:border-secondary transition-all font-mono"
-                  />
-                </div>
-
-                {/* Company Logo Upload */}
-                <div className="flex flex-col gap-2">
-                  <label className="font-extrabold text-slate-700 dark:text-slate-350 flex items-center gap-1.5">
-                    {locale === 'en' ? 'Company Logo (Optional)' : '会社ロゴ (任意)'}
-                  </label>
-                  <div className="flex items-center gap-4 p-4 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl">
-                    {logoUrl ? (
-                      <div className="relative w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center p-2 border border-slate-200 dark:border-slate-700 shrink-0 animate-in fade-in zoom-in duration-200">
-                        <img
-                          src={logoUrl}
-                          alt="Company Logo Preview"
-                          className="max-w-full max-h-full object-contain"
+                  {/* Logo Upload */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-bold text-slate-700 dark:text-slate-300">
+                      社判・会社ロゴ画像 (PNG / JPG / SVG, 最大500KB)
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <label className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer transition-colors flex items-center gap-1.5">
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>{uploadingLogo ? "アップロード中..." : "画像を選択"}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleLogoUpload}
+                          disabled={uploadingLogo}
+                          className="hidden"
                         />
+                      </label>
+                      {logoUrl && (
                         <button
                           type="button"
                           onClick={() => setLogoUrl("")}
-                          className="absolute -top-1.5 -right-1.5 bg-rose-500 hover:bg-rose-600 text-white rounded-full p-0.5 shadow-md transition-all hover:scale-110"
-                          title={locale === 'en' ? "Delete Logo" : "ロゴを削除"}
+                          className="text-xs text-rose-500 hover:underline font-bold"
                         >
-                          <X className="w-3 h-3" />
+                          画像を削除
                         </button>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-start">
+                    <button
+                      type="submit"
+                      disabled={savingBilling}
+                      className="px-6 py-2.5 font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      {savingBilling ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                          <span>保存中...</span>
+                        </>
+                      ) : (
+                        <span>設定を保存する</span>
+                      )}
+                    </button>
+                  </div>
+                </form>
+
+                {/* Right: Live Preview of Receipt */}
+                <div className="lg:col-span-5 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col gap-3">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-3">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-blue-600" />
+                      領収書プレビュー（印刷イメージ）
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-mono">PREVIEW</span>
+                  </div>
+
+                  <div className="bg-white dark:bg-[#151B22] border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col gap-3 shadow-2xs">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <h4 className="text-base font-black text-slate-900 dark:text-white">領 収 書</h4>
+                        <span className="text-[9px] text-slate-400 block mt-0.5">（適格請求書等保存方式対応）</span>
                       </div>
-                    ) : (
-                      <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-lg flex items-center justify-center border border-dashed border-slate-300 dark:border-slate-700 text-slate-400 shrink-0">
-                        <Building2 className="w-6 h-6" />
-                      </div>
-                    )}
-                    
-                    <div className="flex-1 flex flex-col gap-1.5">
-                      <label className={`cursor-pointer inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800 transition-colors w-fit ${uploadingLogo ? 'opacity-50 pointer-events-none' : ''}`}>
-                        <Upload className="w-3.5 h-3.5 animate-bounce" />
-                        {uploadingLogo ? (locale === 'en' ? 'Uploading...' : 'アップロード中...') : (locale === 'en' ? 'Select Logo' : 'ロゴを選択')}
-                        <input
-                          type="file"
-                          accept=".png,.jpg,.jpeg,.svg"
-                          className="hidden"
-                          onChange={handleLogoUpload}
-                          disabled={uploadingLogo}
-                        />
-                      </label>
-                      <span className="text-[10px] text-slate-400">
-                        {locale === 'en' ? '* PNG, JPG, SVG formats (Recommended: under 500KB, transparent background PNG/SVG)' : '※ PNG, JPG, SVG形式 (推奨: 500KB以下, 背景透過PNG/SVG)'}
+                      {logoUrl ? (
+                        <img src={logoUrl} alt="Logo" className="h-8 max-w-[100px] object-contain" />
+                      ) : (
+                        <div className="h-7 px-2 border border-dashed border-slate-200 dark:border-slate-700 rounded flex items-center text-[9px] text-slate-400">
+                          ロゴ未登録
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="border-t border-b border-slate-100 dark:border-slate-800 py-2.5 flex flex-col gap-1">
+                      <span className="text-xs font-bold text-slate-900 dark:text-white">
+                        {billingName || user?.email || "宛名未入力"} 御中
                       </span>
+                      {billingAddress && (
+                        <span className="text-[10px] text-slate-500 line-clamp-1">{billingAddress}</span>
+                      )}
+                      {billingTaxId && (
+                        <span className="text-[10px] text-slate-500 font-mono">登録番号: {billingTaxId}</span>
+                      )}
+                    </div>
+
+                    <div className="text-[10px] text-slate-400 flex flex-col gap-0.5">
+                      <div className="flex justify-between">
+                        <span>発行者: Kigyou-list 運営事務局</span>
+                        <span>登録番号: T4010401012345</span>
+                      </div>
+                      <span>※ 購入履歴画面よりPDF領収書をいつでも発行・印刷いただけます。</span>
                     </div>
                   </div>
                 </div>
-
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={savingBilling}
-                    className="px-6 py-3 font-bold text-white bg-primary hover:bg-primary-hover disabled:bg-slate-350 rounded-xl shadow-lg shadow-primary/10 hover:shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-1.5"
-                  >
-                    {savingBilling ? (
-                      <>
-                        <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
-                        <span>{locale === 'en' ? "Saving..." : "保存中..."}</span>
-                      </>
-                    ) : (
-                      locale === 'en' ? "Save Settings" : "設定を保存する"
-                    )}
-                  </button>
-                </div>
-              </form>
+              </div>
             )}
           </section>
         )}
 
-        {/* Tab Contents: Developer API Settings */}
+        {/* Tab 6 Contents: Developer API Settings */}
         {activeTab === "developer" && (
           <section className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
-            {/* Tab Header */}
-            <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 md:p-8 shadow-sm flex flex-col gap-4 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-primary/3 rounded-full blur-2xl pointer-events-none" />
+            <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col gap-6">
               <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <Terminal className="w-5.5 h-5.5" />
+                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 border border-blue-100 flex items-center justify-center shrink-0">
+                  <Terminal className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                    {locale === 'en' ? 'API Integration & Key Settings' : 'API連携・APIキー設定'}
+                  <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                    API連携・APIキー設定
                   </h2>
-                  <span className="text-[10px] text-slate-400 font-semibold block mt-0.5">
-                    {locale === 'en' ? 'Generate and manage API keys for integrating with external systems (CRM, SFA, internal databases, etc.).' : '外部システム（CRM、SFA、社内データベース等）と連携するためのAPIキーの生成と管理を行います'}
+                  <span className="text-[11px] text-slate-400 block mt-0.5">
+                    外部システム（CRM、SFA、社内データベース等）と連携するためのAPIキーの生成と管理を行います
                   </span>
                 </div>
               </div>
@@ -1746,41 +2033,41 @@ export default function DashboardPage() {
               {user?.role !== "business" && user?.role !== "enterprise" ? (
                 // Premium CTA for Free/Pro
                 <div className="py-8 flex flex-col items-center max-w-xl mx-auto text-center gap-6">
-                  <div className="w-14 h-14 rounded-2xl bg-amber-100 dark:bg-amber-950/40 text-amber-500 flex items-center justify-center shadow-md">
-                    <Sparkles className="w-7 h-7 animate-pulse" />
+                  <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 flex items-center justify-center shadow-xs border border-blue-200/60">
+                    <Key className="w-7 h-7" />
                   </div>
                   <div>
                     <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-2">
-                      {locale === 'en' ? 'API integration is available on BUSINESS plan or higher.' : 'API連携機能はBUSINESSプラン以上でご利用いただけます'}
+                      API連携機能はBUSINESSプラン以上でご利用いただけます
                     </h3>
-                    <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed">
-                      {locale === 'en' ? 'By implementing our API, you can automate account database searches and intent data extraction.' : 'APIを導入することで、会社データベースの検索やシグナル（intent data）の取得を自動化できます。'}
-                      {locale === 'en' ? 'Import data in real-time to CRMs like HubSpot and Salesforce to maximize sales efficiency.' : 'HubSpotやSalesforceなどのCRMにリアルタイムにデータをインポートし、営業効率を最大化しましょう。'}
+                    <p className="text-xs text-slate-500 leading-relaxed">
+                      APIを導入することで、会社データベースの検索や購買シグナルの取得を完全自動化できます。
+                      HubSpotやSalesforceなどのCRMにリアルタイムにデータをインポートし、営業効率を最大化しましょう。
                     </p>
                   </div>
 
                   {/* Feature highlights */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full text-left mt-2">
                     <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">{locale === 'en' ? "1. Real-time Synchronization" : "① リアルタイム同期"}</span>
-                      <p className="text-[10px] text-slate-400">{locale === 'en' ? "No manual CSV downloading and importing required. Entirely automated." : "CSVの手動ダウンロードとインポート作業が不要になり、完全に自動化されます。"}</p>
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">① リアルタイム同期</span>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">CSVの手動ダウンロードとインポート作業が不要になり、完全に自動化されます。</p>
                     </div>
                     <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">{locale === 'en' ? "2. Developer Quickstart" : "② 開発者向けリファレンス"}</span>
-                      <p className="text-[10px] text-slate-400">{locale === 'en' ? "Complete code examples for cURL, Python, and Node.js. Connect in minutes with just a few lines." : "cURL、Python、Node.jsのコード例があり、数行のコードですぐに接続可能です。"}</p>
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">② 開発者向けリファレンス</span>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">cURL、Python、Node.jsのコード例があり、数行のコードですぐに接続可能です。</p>
                     </div>
                     <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">{locale === 'en' ? "3. Flexible Queries" : "③ 柔軟なAPIクエリ"}</span>
-                      <p className="text-[10px] text-slate-400">{locale === 'en' ? "Filter accounts precisely by prefecture, capital, employee counts, intent signals, and more." : "都道府県、資本金、従業員数、企業シグナルなど、多彩な条件で絞り込めます。"}</p>
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">③ 柔軟なAPIクエリ</span>
+                      <p className="text-[10px] text-slate-400 leading-relaxed">都道府県、資本金、従業員数、企業シグナルなど、多彩な条件で絞り込めます。</p>
                     </div>
                   </div>
 
                   <Link
                     href="/pricing"
-                    className="px-8 py-3 font-bold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-lg shadow-amber-600/10 hover:shadow-amber-600/20 active:scale-95 transition-all text-xs flex items-center gap-2 mt-2"
+                    className="px-8 py-3 font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs active:scale-95 transition-all text-xs flex items-center gap-2 mt-2 cursor-pointer"
                   >
                     <Sparkles className="w-4 h-4" />
-                    {locale === 'en' ? 'Upgrade to BUSINESS Plan' : 'BUSINESSプランにアップグレード'}
+                    <span>BUSINESSプランにアップグレード</span>
                   </Link>
                 </div>
               ) : (
@@ -1789,23 +2076,23 @@ export default function DashboardPage() {
                   {/* Create Key Control */}
                   <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-slate-50 dark:bg-slate-900/25 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl">
                     <div>
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">{locale === 'en' ? "Generate New API Key" : "APIキーの新規発行"}</span>
-                      <p className="text-[10px] text-slate-400">{locale === 'en' ? "Generate an API key to authenticate requests from external scripts or applications." : "外部プログラムからの認証に使用するAPIキーを発行します。"}</p>
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">APIキーの新規発行</span>
+                      <p className="text-[10px] text-slate-400">外部プログラムからの認証に使用するAPIキーを発行します。</p>
                     </div>
                     <button
                       onClick={handleCreateApiKey}
                       disabled={generatingKey}
-                      className="px-5 py-2.5 font-bold text-white bg-primary hover:bg-primary-hover disabled:bg-slate-350 rounded-xl text-xs shadow-md shadow-primary/10 hover:shadow-primary/20 active:scale-95 transition-all flex items-center gap-1.5 self-start sm:self-auto"
+                      className="px-5 py-2.5 font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl text-xs shadow-xs active:scale-95 transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
                     >
                       {generatingKey ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>{locale === 'en' ? "Generating..." : "生成中..."}</span>
+                          <span>生成中...</span>
                         </>
                       ) : (
                         <>
                           <Key className="w-3.5 h-3.5" />
-                          <span>{locale === 'en' ? "Generate API Key" : "APIキーを発行する"}</span>
+                          <span>APIキーを発行する</span>
                         </>
                       )}
                     </button>
@@ -1815,17 +2102,16 @@ export default function DashboardPage() {
                   {newRawKey && (
                     <div className="bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/40 rounded-2xl p-5 flex flex-col gap-3 animate-in slide-in-from-top duration-300">
                       <div className="flex items-start gap-2.5">
-                        <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5 animate-bounce" />
+                        <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
                         <div>
-                          <span className="text-xs font-black text-amber-800 dark:text-amber-400 block mb-1">{locale === 'en' ? "[IMPORTANT] API Key generated. Please copy it now." : "【重要】APIキーが生成されました。必ずコピーしてください"}</span>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                            {locale === 'en' ? "For security reasons, this key will never be shown again after you leave this page." : "セキュリティ上の理由から、このAPIキーは今この画面を離れると二度と表示されません。"}
-                            {locale === 'en' ? ' Copy and save it in a secure location.' : ' 安全な場所にコピーして保存してください。'}
+                          <span className="text-xs font-black text-amber-800 dark:text-amber-400 block mb-1">【重要】APIキーが生成されました。必ずコピーしてください</span>
+                          <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                            セキュリティ上の理由から、このAPIキーは画面を閉じると二度と表示されません。安全な場所にコピーして保存してください。
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl">
-                        <code className="text-xs font-mono font-bold text-primary dark:text-secondary break-all flex-1 select-all">
+                        <code className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 break-all flex-1 select-all">
                           {newRawKey}
                         </code>
                         <button
@@ -1834,8 +2120,8 @@ export default function DashboardPage() {
                             setCopiedKeyId("new");
                             setTimeout(() => setCopiedKeyId(null), 2000);
                           }}
-                          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border border-slate-200 dark:border-slate-700 shrink-0"
-                          title={locale === 'en' ? "Copy to Clipboard" : "クリップボードにコピー"}
+                          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer"
+                          title="クリップボードにコピー"
                         >
                           {copiedKeyId === "new" ? (
                             <CheckCircle2 className="w-4 h-4 text-emerald-500" />
@@ -1846,9 +2132,9 @@ export default function DashboardPage() {
                       </div>
                       <button
                         onClick={() => setNewRawKey(null)}
-                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[10px] font-bold w-fit self-end transition-colors"
+                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold w-fit self-end transition-colors cursor-pointer"
                       >
-                        {locale === 'en' ? 'Confirm Copy & Close' : 'コピー完了を確認して閉じる'}
+                        コピー完了を確認して閉じる
                       </button>
                     </div>
                   )}
@@ -1856,29 +2142,29 @@ export default function DashboardPage() {
                   {/* API Key List Table */}
                   <div className="flex flex-col gap-2.5">
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                      {locale === 'en' ? 'Active API Keys List' : 'アクティブなAPIキー一覧'}
+                      アクティブなAPIキー一覧
                     </span>
 
                     {loadingApiKeys ? (
                       <div className="py-8 text-center flex flex-col items-center justify-center gap-2 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900/10">
-                        <Loader2 className="w-6 h-6 animate-spin text-primary" />
-                        <span className="text-[10px] text-slate-400">{locale === 'en' ? "Loading API keys..." : "APIキーを読み込み中..."}</span>
+                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
+                        <span className="text-[10px] text-slate-400">APIキーを読み込み中...</span>
                       </div>
                     ) : apiKeys.length === 0 ? (
-                      <div className="py-8 text-center border border-dashed border-slate-350 dark:border-slate-800 rounded-2xl bg-white/20 dark:bg-slate-900/5 text-slate-400 text-xs">
-                        {locale === 'en' ? 'No active API keys found. Click "Generate API Key" to get started.' : '発行済みのAPIキーはありません。「APIキーを発行する」ボタンをクリックして開始してください。'}
+                      <div className="py-8 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white/20 dark:bg-slate-900/5 text-slate-400 text-xs">
+                        発行済みのAPIキーはありません。「APIキーを発行する」ボタンをクリックして開始してください。
                       </div>
                     ) : (
                       <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900/10">
                         <table className="w-full text-left text-xs whitespace-nowrap">
-                          <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold text-[10px] uppercase tracking-wider">
+                          <thead className="bg-slate-50/80 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold text-[10px] uppercase tracking-wider">
                             <tr>
-                              <th className="px-4 py-3">{locale === 'en' ? "Key Preview" : "キー (プレビュー)"}</th>
-                              <th className="px-4 py-3">{locale === 'en' ? "Status" : "ステータス"}</th>
-                              <th className="px-4 py-3">{locale === 'en' ? "Created At (JST)" : "作成日時 (JST)"}</th>
-                              <th className="px-4 py-3">{locale === 'en' ? "Last Used At (JST)" : "最終利用日時 (JST)"}</th>
-                              <th className="px-4 py-3">{locale === 'en' ? "Last IP Address" : "最終接続元 IP"}</th>
-                              <th className="px-4 py-3 text-right">{locale === 'en' ? "Actions" : "操作"}</th>
+                              <th className="px-4 py-3">キー (プレビュー)</th>
+                              <th className="px-4 py-3">ステータス</th>
+                              <th className="px-4 py-3">作成日時 (JST)</th>
+                              <th className="px-4 py-3">最終利用日時 (JST)</th>
+                              <th className="px-4 py-3">最終接続元 IP</th>
+                              <th className="px-4 py-3 text-right">操作</th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
@@ -1886,25 +2172,18 @@ export default function DashboardPage() {
                               const createdJst = new Date(key.created_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
                               const usedJst = key.last_used_at 
                                 ? new Date(key.last_used_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })
-                                : (locale === 'en' ? "Unused" : "未使用");
+                                : "未使用";
 
                               return (
                                 <tr key={key.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                                  <td className="px-4 py-3 font-mono font-bold text-slate-850 dark:text-slate-200">
+                                  <td className="px-4 py-3 font-mono font-bold text-slate-800 dark:text-slate-200">
                                     kigyou_live_...{key.api_key_preview.replace(/^\.\.\./, '')}
                                   </td>
                                   <td className="px-4 py-3">
                                     {key.status === "active" ? (
-                                      <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[8px] font-extrabold uppercase">{locale === 'en' ? "Active" : "有効"}</span>
+                                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 text-[9px] font-bold">有効</span>
                                     ) : (
-                                      <div className="flex flex-col gap-0.5 items-start">
-                                        <span className="px-2 py-0.5 rounded-full bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-[8px] font-extrabold uppercase">{locale === 'en' ? "Revoked" : "無効化済み"}</span>
-                                        {key.revoked_reason && (
-                                          <span className="text-[9px] text-rose-500 font-bold max-w-[150px] truncate block" title={key.revoked_reason}>
-                                            {locale === 'en' ? `Reason: ${key.revoked_reason}` : `理由: ${key.revoked_reason}`}
-                                          </span>
-                                        )}
-                                      </div>
+                                      <span className="px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 text-[9px] font-bold">無効化済</span>
                                     )}
                                   </td>
                                   <td className="px-4 py-3 text-slate-400 font-mono">{createdJst}</td>
@@ -1914,9 +2193,9 @@ export default function DashboardPage() {
                                     {key.status === "active" && (
                                       <button
                                         onClick={() => handleRevokeApiKey(key.id)}
-                                        className="px-2.5 py-1 text-[10px] font-bold text-rose-600 border border-rose-200 hover:bg-rose-600 hover:text-white dark:border-rose-900/40 dark:hover:bg-rose-900/30 rounded-lg transition-all active:scale-95"
+                                        className="px-2.5 py-1 text-[10px] font-bold text-rose-600 border border-rose-200 hover:bg-rose-50 dark:border-rose-900/40 dark:hover:bg-rose-950/20 rounded-lg transition-all cursor-pointer"
                                       >
-                                        {locale === 'en' ? 'Revoke' : '無効化 (Revoke)'}
+                                        無効化
                                       </button>
                                     )}
                                   </td>
@@ -1929,85 +2208,63 @@ export default function DashboardPage() {
                     )}
                   </div>
 
-                  {/* API Quick Reference Documentation */}
+                  {/* API Quick Reference Documentation with interactive tabs */}
                   <div className="border-t border-slate-100 dark:border-slate-800 pt-6 mt-2 flex flex-col gap-4">
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <Terminal className="w-4 h-4 text-primary" />
-                      {locale === 'en' ? 'API Quick Reference' : 'API クイックリファレンス'}
+                      <Terminal className="w-4 h-4 text-blue-600" />
+                      API クイックリファレンス & コードサンプル
                     </span>
 
                     <div className="bg-slate-900 text-slate-200 rounded-2xl p-5 font-mono text-xs flex flex-col gap-4 overflow-x-auto shadow-inner">
                       <div>
-                        <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider mb-1">API Base URL</span>
-                        <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-primary dark:text-secondary font-bold font-mono">
-                          {typeof window !== "undefined" ? window.location.origin : "https://kigyou-list.jp"}
+                        <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider mb-1">API Base URL</span>
+                        <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-blue-400 font-bold font-mono">
+                          {typeof window !== "undefined" ? window.location.origin : "https://kigyoulist.com"}
                         </div>
                       </div>
 
-                      <div>
-                        <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider mb-1">Authorization Header</span>
-                        <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 text-slate-350">
-                          Authorization: Bearer <span className="text-primary">&lt;YOUR_API_KEY&gt;</span>
-                        </div>
-                      </div>
-
-                      {/* API Endpoints */}
-                      <div className="flex flex-col gap-3">
-                        <span className="text-[10px] text-slate-500 block uppercase font-bold tracking-wider">Endpoints</span>
-
-                        {/* Quota */}
-                        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex flex-col gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 bg-blue-900/60 border border-blue-800 text-blue-300 text-[8px] font-black rounded uppercase">GET</span>
-                            <span className="font-bold font-mono text-[11px]">/api/v1/quota</span>
-                            <span className="text-[10px] text-slate-400 font-sans ml-auto">{locale === 'en' ? "Check remaining export quota" : "残りクォータの確認"}</span>
-                          </div>
-                        </div>
-
-                        {/* Companies */}
-                        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex flex-col gap-2.5">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 bg-blue-900/60 border border-blue-800 text-blue-300 text-[8px] font-black rounded uppercase">GET</span>
-                            <span className="font-bold font-mono text-[11px]">/api/v1/companies</span>
-                            <span className="text-[10px] text-slate-400 font-sans ml-auto">{locale === 'en' ? "Faceted search companies (Limit: 100 per request)" : "企業情報の条件検索 (1回の取得上限: 100件)"}</span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 border-t border-slate-900 pt-2 font-sans flex flex-col gap-1.5 leading-relaxed">
-                            <span className="font-bold text-slate-300">{locale === 'en' ? "Available query parameters:" : "利用可能なクエリパラメータ:"}</span>
-                            <ul className="list-disc pl-4 flex flex-col gap-0.5">
-                              <li><code>keyword</code>: {locale === 'en' ? "Fuzzy search for company name or business summary" : "企業名や事業内容のあいまい検索"}</li>
-                              <li><code>prefecture_code</code>: {locale === 'en' ? "2-digit prefecture code (e.g., 13=Tokyo)" : "都道府県コード (例: 13=東京都)"}</li>
-                              <li><code>industry_code</code>: {locale === 'en' ? "JSIC industry classification code" : "産業分類コード"}</li>
-                              <li><code>has_email</code>, <code>has_phone</code>, <code>has_website</code>: {locale === 'en' ? "Filter with 'true' to restrict results" : "&quot;true&quot; で絞り込み"}</li>
-                              <li><code>has_hiring</code>, <code>has_subsidy</code>, <code>has_bidding</code>: {locale === 'en' ? "Filter with 'true' to restrict by intent signals" : "&quot;true&quot; でシグナルありに絞り込み"}</li>
-                              <li><code>limit</code>: {locale === 'en' ? "Maximum number of rows returned (1-100, default 20)" : "取得件数 (1〜100, デフォルト20)"}</li>
-                              <li><code>offset</code>: {locale === 'en' ? "Pagination offset value" : "取得オフセット値 (ページネーション用)"}</li>
-                            </ul>
-                          </div>
+                      {/* Code Sample Tabs */}
+                      <div className="border-t border-slate-800 pt-4 flex flex-col gap-2">
+                        <div className="flex items-center gap-2">
+                          {[
+                            { id: "curl", label: "cURL" },
+                            { id: "python", label: "Python" },
+                            { id: "node", label: "Node.js" }
+                          ].map(t => (
+                            <button
+                              key={t.id}
+                              onClick={() => setCodeTab(t.id as any)}
+                              className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-colors cursor-pointer ${
+                                codeTab === t.id
+                                  ? "bg-blue-600 text-white"
+                                  : "bg-slate-800 text-slate-400 hover:text-white"
+                              }`}
+                            >
+                              {t.label}
+                            </button>
+                          ))}
                         </div>
 
-                        {/* Signals */}
-                        <div className="bg-slate-950/60 border border-slate-800 rounded-xl p-3 flex flex-col gap-2.5">
-                          <div className="flex items-center gap-2">
-                            <span className="px-2 py-0.5 bg-blue-900/60 border border-blue-800 text-blue-300 text-[8px] font-black rounded uppercase">GET</span>
-                            <span className="font-bold font-mono text-[11px]">/api/v1/signals</span>
-                            <span className="text-[10px] text-slate-400 font-sans ml-auto">{locale === 'en' ? "Search company intent signals (Jobs, Subsidies, etc.)" : "企業シグナル（補助金、求人など）の検索"}</span>
-                          </div>
-                          <div className="text-[10px] text-slate-400 border-t border-slate-900 pt-2 font-sans flex flex-col gap-1.5 leading-relaxed">
-                            <span className="font-bold text-slate-300">{locale === 'en' ? "Available query parameters:" : "利用可能なクエリパラメータ:"}</span>
-                            <ul className="list-disc pl-4 flex flex-col gap-0.5">
-                              <li><code>corporate_number</code>: {locale === 'en' ? "Filter by 13-digit corporate number" : "特定企業(13桁法人番号)のシグナル取得"}</li>
-                              <li><code>signal_type</code>: {locale === 'en' ? "Intent signal category (求人あり, 補助金受給, 特許, 調達案件, 表彰, 届出認定)" : "シグナル種別（求人中, 補助金, 特許, 調達, 表彰, 届出・認定）"}</li>
-                            </ul>
-                          </div>
-                        </div>
-                      </div>
+                        <pre className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-[11px] select-all font-mono leading-relaxed text-slate-200 overflow-x-auto">
+                          {codeTab === "curl" ? (
+`curl -X GET "${typeof window !== "undefined" ? window.location.origin : "https://kigyoulist.com"}/api/v1/companies?prefecture_code=13&limit=10" \\
+  -H "Authorization: Bearer <YOUR_API_KEY>"`
+                          ) : codeTab === "python" ? (
+`import requests
 
-                      {/* Code Sample */}
-                      <div className="border-t border-slate-800 pt-3 flex flex-col gap-1.5">
-                        <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">{locale === 'en' ? "cURL Connection Example" : "cURL 接続例"}</span>
-                        <pre className="bg-slate-950 p-3 rounded-lg border border-slate-850 text-[10px] select-all font-mono leading-relaxed text-emerald-400">
-                          {`curl -X GET "${typeof window !== "undefined" ? window.location.origin : "https://kigyou-list.jp"}/api/v1/companies?prefecture_code=13&limit=5" \\
-  -H "Authorization: Bearer <YOUR_API_KEY>"`}
+url = "${typeof window !== "undefined" ? window.location.origin : "https://kigyoulist.com"}/api/v1/companies"
+headers = {"Authorization": "Bearer <YOUR_API_KEY>"}
+params = {"prefecture_code": "13", "limit": 10}
+
+response = requests.get(url, headers=headers, params=params)
+print(response.json())`
+                          ) : (
+`const response = await fetch("${typeof window !== "undefined" ? window.location.origin : "https://kigyoulist.com"}/api/v1/companies?prefecture_code=13&limit=10", {
+  headers: { "Authorization": "Bearer <YOUR_API_KEY>" }
+});
+const data = await response.json();
+console.log(data);`
+                          )}
                         </pre>
                       </div>
                     </div>
@@ -2018,63 +2275,71 @@ export default function DashboardPage() {
           </section>
         )}
 
+        {/* Tab 7 Contents: Managed Companies */}
+        {activeTab === "companies" && (
+          <CompaniesTab userEmail={user?.email || ""} locale={locale} />
+        )}
+
+        {/* Tab 8 Contents: Form Marketing Outreach Campaigns */}
+        {activeTab === "formCampaigns" && (
+          <FormCampaignsTab />
+        )}
+
       </main>
+      </div>
 
       <Footer />
 
-      {/* Upgrade Upsell Modal - shows when free user clicks CSV download */}
+      {/* Upgrade Upsell Modal */}
       {showUpsellModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div 
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => setShowUpsellModal(false)}
           />
-          <div className="relative w-full max-w-sm bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl z-10 flex flex-col gap-4 text-center">
-            <div className="w-12 h-12 bg-amber-100 dark:bg-amber-950/40 text-amber-500 rounded-full flex items-center justify-center mx-auto shadow-sm">
-              <Sparkles className="w-6 h-6 animate-pulse" />
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl z-10 flex flex-col gap-4 text-center">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 text-blue-600 rounded-full flex items-center justify-center mx-auto shadow-xs border border-blue-200/60">
+              <Sparkles className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1">
-                {locale === 'en' ? 'CSV Export is Restricted to Paid Plans' : 'CSV出力は有料プラン限定です'}
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">
+                CSV出力容量の追加またはアップグレード
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                {locale === 'en' ? `You are currently on ${currentPlanInfo.label} (${currentPlanInfo.quota}). Upgrade your plan to expand CSV export quotas and extract bulk sales lists.` : `現在${currentPlanInfo.label}（${currentPlanInfo.quota}）です。プランアップグレードでCSV出力枠を拡張し、営業リストを大量入手できます。`}
+                現在{currentPlanInfo.label}（{currentPlanInfo.quota}）です。プランアップグレードでCSV出力枠を拡張し、営業リストを大量入手できます。
               </p>
             </div>
             
-            <div className="my-2 p-3 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-left text-xs border border-slate-100 dark:border-slate-800 flex flex-col gap-1.5">
+            <div className="my-2 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-left text-xs border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1.5">
               <div className="flex flex-col gap-1">
                 {[
-                  { plan: locale === 'en' ? "PRO Plan" : "PROプラン",        quota: locale === 'en' ? "2,000 rows/mo" : "2,000行/月", price: "¥2,900" },
-                  { plan: locale === 'en' ? "BUSINESS Plan" : "BUSINESSプラン",    quota: locale === 'en' ? "10,000 rows/mo" : "10,000行/月",price: "¥9,800" },
-                  { plan: locale === 'en' ? "ENTERPRISE Plan" : "ENTERPRISEプラン", quota: locale === 'en' ? "40,000 rows/mo" : "40,000行/月",price: "¥29,000" },
+                  { plan: "PROプラン", quota: "2,000行/月", price: "¥2,900" },
+                  { plan: "BUSINESSプラン", quota: "10,000行/月", price: "¥9,800" },
+                  { plan: "ENTERPRISEプラン", quota: "40,000行/月", price: "¥29,000" },
                 ].map((p) => (
-                  <div key={p.plan} className="flex items-center justify-between font-bold py-1 border-b border-slate-100 dark:border-slate-800 last:border-0">
-                    <span className="text-slate-700 dark:text-slate-300">{p.plan}</span>
+                  <div key={p.plan} className="flex items-center justify-between font-bold py-1.5 border-b border-slate-200/60 dark:border-slate-800 last:border-0">
+                    <span className="text-slate-800 dark:text-slate-200">{p.plan}</span>
                     <div className="text-right">
-                      <span className="text-primary dark:text-secondary">{p.price}/{locale === 'en' ? "mo" : "月"}</span>
+                      <span className="text-blue-600 dark:text-blue-400 font-extrabold">{p.price}/月</span>
                       <span className="text-[9px] text-slate-400 block">{p.quota}</span>
                     </div>
                   </div>
                 ))}
               </div>
-              <p className="text-[10px] text-slate-400 leading-relaxed mt-1">
-                {locale === 'en' ? '* Campaign discount price continues to apply until subscription cancellation.' : '※ キャンペーン期間中はご解約まで割引価格が継続適用されます。'}
-              </p>
             </div>
 
             <div className="flex flex-col gap-2">
               <Link
                 href="/pricing"
-                className="w-full py-3 text-xs font-bold text-center text-white bg-primary hover:bg-primary-hover rounded-xl shadow-md transition-colors block"
+                className="w-full py-3 text-xs font-bold text-center text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors block cursor-pointer"
               >
-                {locale === 'en' ? 'View Pricing Plans' : '料金プランを見る'}
+                料金プランを見る
               </Link>
               <button
                 onClick={() => setShowUpsellModal(false)}
-                className="w-full py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                className="w-full py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
               >
-                {locale === 'en' ? 'Close' : '閉じる'}
+                閉じる
               </button>
             </div>
           </div>
@@ -2088,40 +2353,36 @@ export default function DashboardPage() {
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => !cancellingSub && setShowCancelModal(false)}
           />
-          <div className="relative w-full max-w-sm bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-2xl z-10 flex flex-col gap-4 text-center animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 bg-rose-100 dark:bg-rose-950/40 text-rose-500 rounded-full flex items-center justify-center mx-auto shadow-sm">
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl z-10 flex flex-col gap-4 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200/80 rounded-full flex items-center justify-center mx-auto shadow-xs">
               <Trash2 className="w-6 h-6" />
             </div>
             <div>
-              <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1">
-                本当に{locale === 'en' ? 'Cancel Subscription' : 'プランを解約'}しますか？
+              <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white mb-1">
+                本当にプランを解約しますか？
               </h3>
               <p className="text-xs text-slate-500 leading-relaxed">
-                {locale === 'en' 
-                  ? `Upon cancellation, your plan will be immediately downgraded from ${currentPlanInfo.label} to FREE plan (20 rows/day).` 
-                  : `解約すると、即時に ${currentPlanInfo.label} から FREEプラン（20行/日）へダウングレードされます。`}
+                解約すると、即時に {currentPlanInfo.label} から FREEプラン（20行/日）へダウングレードされます。
               </p>
             </div>
 
             {/* Quota Warning Message */}
             {quota && (
-              <div className="bg-rose-50 border border-rose-100 dark:bg-rose-955/20 dark:border-rose-900/30 rounded-2xl p-4 text-left flex flex-col gap-2 animate-in fade-in duration-300">
-                <div className="flex gap-2 items-start text-xs font-bold text-rose-600 dark:text-rose-455">
+              <div className="bg-rose-50 border border-rose-200/80 dark:bg-rose-950/20 dark:border-rose-900/30 rounded-2xl p-4 text-left flex flex-col gap-2 animate-in fade-in duration-300">
+                <div className="flex gap-2 items-start text-xs font-bold text-rose-600 dark:text-rose-400">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
-                  <span>{locale === 'en' ? "Important: Warning on Remaining Quota" : "重要：残りの容量に関する警告"}</span>
+                  <span>重要：残りの容量に関する警告</span>
                 </div>
                 <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
                   {Math.max(0, quota.monthly_base_allowance - quota.monthly_base_used) > 0 ? (
-                    <>
-                      {locale === 'en' ? <span>Your remaining base quota for this month (<strong className="text-rose-600 dark:text-rose-400">{(quota.monthly_base_allowance - quota.monthly_base_used).toLocaleString()} rows</strong>) will be <strong>immediately reset and lost</strong>. We recommend downloading lists before cancelling.</span> : <span>今月の基本残容量 <strong className="text-rose-600 dark:text-rose-400">{(quota.monthly_base_allowance - quota.monthly_base_used).toLocaleString()} 行</strong> は<strong>即時にリセットされ消滅します</strong>。解約前にダウンロードを実行することをお勧めします。</span>}
-                    </>
+                    <span>今月の基本残容量 <strong className="text-rose-600 dark:text-rose-400">{(quota.monthly_base_allowance - quota.monthly_base_used).toLocaleString()} 行</strong> は<strong>即時にリセットされ消滅します</strong>。解約前にダウンロードを実行することをお勧めします。</span>
                   ) : (
-                    locale === 'en' ? 'All monthly base quota has been consumed.' : '今月の基本枠はすべて消費されています。'
+                    '今月の基本枠はすべて消費されています。'
                   )}
                 </p>
                 {quota.purchased_add_on_balance > 0 && (
-                  <p className="text-[10px] text-slate-450 dark:text-slate-500 border-t border-slate-100 dark:border-slate-800/60 pt-1.5 mt-0.5 leading-relaxed">
-                    {locale === 'en' ? `* Note that additional quota or spot purchases (remaining ${quota.purchased_add_on_balance.toLocaleString()} rows) will not expire upon cancellation, but they will be temporarily frozen (unusable) while you are on the FREE plan. They will be immediately unlocked and ready when you subscribe to any paid plan again.` : `※ 追加容量やスポット購入枠（残り ${quota.purchased_add_on_balance.toLocaleString()} 行）は、解約しても消失しませんが、FREEプランの間は一時的に凍結（使用不可）されます。有料プランへ再契約することで、再び制限なしでご利用いただけるようになります。`}
+                  <p className="text-[10px] text-slate-500 border-t border-rose-200/60 dark:border-slate-800 pt-1.5 mt-0.5 leading-relaxed">
+                    ※ 追加容量やスポット購入枠（残り {quota.purchased_add_on_balance.toLocaleString()} 行）は、解約しても消失しませんが、FREEプランの間は一時的に凍結（使用不可）されます。有料プランへ再契約することで、再び制限なしでご利用いただけるようになります。
                   </p>
                 )}
               </div>
@@ -2131,23 +2392,23 @@ export default function DashboardPage() {
               <button
                 onClick={handleCancelSubscription}
                 disabled={cancellingSub}
-                className="w-full py-3 text-xs font-bold text-center text-white bg-rose-600 hover:bg-rose-700 disabled:bg-rose-450 rounded-xl shadow-md transition-colors flex items-center justify-center gap-1.5 active:scale-95"
+                className="w-full py-3 text-xs font-bold text-center text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
               >
                 {cancellingSub ? (
                   <>
-                    <div className="animate-spin rounded-full h-3.5 w-3.5 border-2 border-white border-t-transparent" />
-                    {locale === 'en' ? 'Cancelling...' : '解約処理中...'}
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>解約処理中...</span>
                   </>
                 ) : (
-                  locale === 'en' ? 'Cancel Plan' : '解約する'
+                  <span>解約を実行する</span>
                 )}
               </button>
               <button
                 onClick={() => setShowCancelModal(false)}
                 disabled={cancellingSub}
-                className="w-full py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors"
+                className="w-full py-2.5 text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors cursor-pointer"
               >
-                {locale === 'en' ? 'Cancel' : 'キャンセル'}
+                キャンセル
               </button>
             </div>
           </div>
@@ -2257,19 +2518,6 @@ function renderFilterBadges(filtersJson: string | null, locale: string = "ja") {
       badges.push({ text, type: "scale" });
     }
 
-    // Sales
-    if (filters.min_sales !== undefined || filters.max_sales !== undefined) {
-      let text = locale === 'en' ? "Revenue: " : "売上高: ";
-      if (filters.min_sales !== undefined && filters.max_sales !== undefined) {
-        text += locale === 'en' ? `¥${(filters.min_sales * 100000000 / 1000000).toLocaleString()}M - ¥${(filters.max_sales * 100000000 / 1000000).toLocaleString()}M JPY` : `${filters.min_sales}〜${filters.max_sales}億円`;
-      } else if (filters.min_sales !== undefined) {
-        text += locale === 'en' ? `¥${(filters.min_sales * 100000000 / 1000000).toLocaleString()}M+ JPY` : `${filters.min_sales}億円以上`;
-      } else {
-        text += locale === 'en' ? `Up to ¥${(filters.max_sales * 100000000 / 1000000).toLocaleString()}M JPY` : `${filters.max_sales}億円以下`;
-      }
-      badges.push({ text, type: "scale" });
-    }
-
     // Signals
     if (filters.has_hiring) badges.push({ text: locale === 'en' ? "Hiring Active" : "求人あり", type: "signal" });
     if (filters.has_subsidy) badges.push({ text: locale === 'en' ? "Subsidies Received" : "助成金あり", type: "signal" });
@@ -2292,19 +2540,19 @@ function renderFilterBadges(filtersJson: string | null, locale: string = "ja") {
           let colorClass = "";
           switch (badge.type) {
             case "keyword":
-              colorClass = "bg-blue-50/50 text-blue-700 dark:bg-blue-950/20 dark:text-blue-400 border-blue-200/50 dark:border-blue-900/30";
+              colorClass = "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-900";
               break;
             case "location":
-              colorClass = "bg-emerald-50/50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-450 border-emerald-200/50 dark:border-emerald-900/30";
+              colorClass = "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900";
               break;
             case "industry":
-              colorClass = "bg-purple-50/50 text-purple-700 dark:bg-purple-950/20 dark:text-purple-400 border-purple-200/50 dark:border-purple-900/30";
+              colorClass = "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-900";
               break;
             case "scale":
-              colorClass = "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200/50 dark:border-slate-850";
+              colorClass = "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-slate-200 dark:border-slate-700";
               break;
             case "signal":
-              colorClass = "bg-amber-50/50 text-amber-700 dark:bg-amber-950/20 dark:text-amber-400 border-amber-250/50 dark:border-amber-900/30";
+              colorClass = "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-900";
               break;
           }
           return (

@@ -6,7 +6,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import Link from "next/link";
 import { 
   Download, Loader2, CreditCard, Coins, CheckCircle2, 
-  AlertTriangle, X, ArrowRight, History
+  AlertTriangle, X, ArrowRight, History, Send
 } from "lucide-react";
 
 interface ExportCSVButtonProps {
@@ -468,9 +468,31 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
               </h4>
               
               <p 
-                className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed"
+                className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: d.confirmDesc.replace(/{count}/g, totalCount.toLocaleString()) }}
               />
+
+              {/* DFY Form Outreach Cross-Sell Notice */}
+              <div className="mb-5 p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/70 dark:border-indigo-850/60 text-left">
+                <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300 font-bold text-[11px] mb-1">
+                  <Send className="w-3 h-3 text-indigo-500" />
+                  <span>{locale === 'ja' ? '手動送信の手間をゼロにする代行プラン' : locale === 'vi' ? 'Dịch vụ gửi form trọn gói (Không cần tự gõ)' : 'Done-For-You Outreach Service available'}</span>
+                </div>
+                <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed mb-2">
+                  {locale === 'ja'
+                    ? 'CSVをダウンロードして自社で入力する代わりに、専任チームがこの企業群へ代行送信することも可能です。'
+                    : locale === 'vi'
+                    ? 'Thay vì tải CSV về tự nhập thủ công, đội ngũ chuyên viên có thể gửi trực tiếp vào form của các công ty này.'
+                    : 'Instead of manually submitting forms, our team can deliver your pitch directly.'}
+                </p>
+                <Link
+                  href={`/${locale}/form-marketing`}
+                  onClick={() => setShowConfirmModal(false)}
+                  className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                >
+                  <span>{locale === 'ja' ? 'フォーム営業代行の詳細・料金を見る →' : locale === 'vi' ? 'Xem chi tiết dịch vụ gửi form →' : 'View Form DM Service Details →'}</span>
+                </Link>
+              </div>
 
               <div className="flex gap-3">
                 <button
@@ -503,6 +525,26 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
             </button>
 
             {/* Premium Package Options */}
+            {/* DFY Form Outreach Alternative */}
+            <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-indigo-200/80 dark:border-indigo-850 text-left flex items-center justify-between gap-3">
+              <div>
+                <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300 font-bold text-xs">
+                  <Send className="w-3.5 h-3.5 text-indigo-500" />
+                  <span>{locale === 'ja' ? 'リスト購入不要！フォーム送信代行（丸投げ）' : locale === 'vi' ? 'Không cần mua data! Gói gửi form trọn gói' : 'No data purchase needed! DFY Form Outreach'}</span>
+                </div>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  {locale === 'ja' ? 'リスト選定・送信・レポート納品まで丸投げ。1件20円〜' : locale === 'vi' ? 'Gửi form trọn gói từ A-Z, chỉ từ 20 JPY/form' : 'Full-service outreach starting from 20 JPY/form'}
+                </p>
+              </div>
+              <Link
+                href={`/${locale}/form-marketing`}
+                onClick={() => setShowBuyModal(false)}
+                className="shrink-0 px-3 py-1.5 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all shadow-xs"
+              >
+                {locale === 'ja' ? '代行プラン' : locale === 'vi' ? 'Xem gói' : 'View Plan'}
+              </Link>
+            </div>
+
             {user?.role === "free" || user?.role === "trial" ? (
               <div className="flex flex-col gap-4 text-center my-6">
                 <div className="p-4 rounded-2xl bg-amber-50 border border-amber-250/50 text-amber-800 dark:bg-[#201515]/20 dark:border-rose-900/30 dark:text-rose-400 text-xs leading-relaxed text-left font-medium">

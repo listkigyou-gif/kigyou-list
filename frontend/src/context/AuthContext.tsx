@@ -11,9 +11,12 @@ export interface User {
 
 export type KanbanStage = "未連絡" | "連絡済み" | "商談中" | "成約";
 
-interface AuthContextType {
+export interface AuthContextType {
   user: User | null;
   isLoggedIn: boolean;
+  isAuthLoading: boolean;
+  quota: any | null;
+  refreshQuota: (targetEmail?: string) => Promise<void>;
   logout: () => void;
   upgradeUserPlan: (plan: "free" | "pro" | "business" | "enterprise", couponCode?: string) => Promise<boolean>;
   authModalOpen: boolean;
@@ -34,29 +37,35 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { data: session, status } = useSession();
   const [user, setUser] = useState<User | null>(null);
+  const [quota, setQuota] = useState<any | null>(null);
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [savedCompanies, setSavedCompanies] = useState<string[]>([]);
   const [kanbanStages, setKanbanStages] = useState<Record<string, KanbanStage>>({});
   const [mounted, setMounted] = useState(false);
 
-  const syncUserPlan = async (email: string) => {
+  const refreshQuota = React.useCallback(async (targetEmail?: string) => {
+    const email = targetEmail || user?.email || session?.user?.email;
+    if (!email) return;
     try {
       const res = await fetch(`/api/export/quota-check?email=${encodeURIComponent(email)}`);
       if (res.ok) {
         const data = await res.json();
-        if (data.quota && data.quota.plan) {
-          setUser(prev => {
-            if (prev && prev.email === email && prev.role !== data.quota.plan) {
-              return { ...prev, role: data.quota.plan };
-            }
-            return prev;
-          });
+        if (data.quota) {
+          setQuota(data.quota);
+          if (data.quota.plan) {
+            setUser(prev => {
+              if (prev && prev.email === email && prev.role !== data.quota.plan) {
+                return { ...prev, role: data.quota.plan };
+              }
+              return prev;
+            });
+          }
         }
       }
     } catch (e) {
-      console.error("Failed to sync user plan", e);
+      console.error("Failed to sync user quota", e);
     }
-  };
+  }, [user?.email, session?.user?.email]);
 
   // Sync NextAuth session
   useEffect(() => {
@@ -70,11 +79,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: "free",
         };
       });
-      syncUserPlan(email);
+      refreshQuota(email);
     } else if (status === "unauthenticated" && mounted) {
       setUser(null);
+      setQuota(null);
     }
-  }, [session, status, mounted]);
+  }, [session, status, mounted, refreshQuota]);
+
+  // Listen to global quotaUpdated events
+  useEffect(() => {
+    const handleQuotaUpdated = () => {
+      refreshQuota();
+    };
+    window.addEventListener("quotaUpdated", handleQuotaUpdated);
+    return () => {
+      window.removeEventListener("quotaUpdated", handleQuotaUpdated);
+    };
+  }, [refreshQuota]);
 
   // Sync state from localStorage on mount (hydration safe)
   useEffect(() => {
@@ -84,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const parsed = JSON.parse(storedUser);
         setUser(parsed);
         // Sync plan in background
-        syncUserPlan(parsed.email);
+        refreshQuota(parsed.email);
       } catch (e) {
         console.error("Failed to parse stored user", e);
       }
@@ -200,6 +221,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isLoggedIn: !!user,
+        isAuthLoading: !mounted || status === "loading",
+        quota,
+        refreshQuota,
         logout,
         upgradeUserPlan,
         authModalOpen,

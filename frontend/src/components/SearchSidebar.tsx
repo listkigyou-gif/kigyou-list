@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Filter, Lock } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { industryJaToEn, getIndustryName } from "@/lib/locale-mapping";
+import { getIndustryName } from "@/lib/locale-mapping";
 
 interface PrefectureOption {
   code: string;
@@ -54,6 +54,8 @@ interface SearchSidebarProps {
   hasPhone: boolean;
   hasWebsite: boolean;
   hasFax: boolean;
+  hasContactForm?: boolean;
+  emailType?: string;
   companyStatus?: string;
   minOpIncome?: number;
   maxOpIncome?: number;
@@ -61,7 +63,7 @@ interface SearchSidebarProps {
   maxOrdIncome?: number;
   minNetIncome?: number;
   maxNetIncome?: number;
-  onFilterChange?: (updates: Record<string, any>) => void;
+  onFilterChange?: (updates: Record<string, any>, autoExecute?: boolean) => void;
   onApplyFilters?: () => void;
   className?: string;
   onCloseMobile?: () => void;
@@ -93,6 +95,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   hasPhone,
   hasWebsite,
   hasFax,
+  hasContactForm,
+  emailType,
   companyStatus,
   minOpIncome,
   maxOpIncome,
@@ -116,7 +120,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   };
   const displaySales = (val?: number) => {
     if (val === undefined || val === null) return "";
-    return String((locale === 'en' || locale === 'vi') ? val * 105 || val * 100 : val); // standard float multiplier
+    return String((locale === 'en' || locale === 'vi') ? (val * 100) : val);
   };
 
   const processCapitalInput = (val: string) => {
@@ -185,7 +189,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
     return `/search?${params.toString()}`;
   };
 
-  const navigate = (overrides: Record<string, string | null | undefined>) => {
+  const navigate = (overrides: Record<string, string | null | undefined>, autoExecute = false) => {
     if (onFilterChange) {
       const updates: Record<string, any> = {};
       Object.entries(overrides).forEach(([key, val]) => {
@@ -219,7 +223,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         else if (key === "min_net_income") updates.min_net_income = val;
         else if (key === "max_net_income") updates.max_net_income = val;
       });
-      onFilterChange(updates);
+      onFilterChange(updates, autoExecute);
       if (onCloseMobile) {
         onCloseMobile();
       }
@@ -232,7 +236,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
     <aside className={className || "hidden lg:block w-76 shrink-0 bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-5 sticky top-20 max-h-[calc(100vh-7rem)] overflow-y-auto scrollbar-thin"}>
       <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-200/80 dark:border-slate-800">
         <h2 className="font-bold flex items-center gap-2 text-slate-800 dark:text-white">
-          <Filter className="w-4 h-4 text-primary" />
+          <Filter className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
           {t.search.title}
         </h2>
         {onFilterChange ? (
@@ -268,7 +272,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               max_ordinary_income: null,
               min_net_income: null,
               max_net_income: null,
-            })}
+            }, true)}
             className="text-xs text-slate-400 hover:text-slate-650 dark:hover:text-white transition-colors"
           >
             {t.search.clear}
@@ -356,6 +360,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
+              key={`minEmp_${minEmp ?? ''}`}
               type="number"
               placeholder={t.search.minEmployees}
               defaultValue={minEmp || ""}
@@ -374,6 +379,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             />
             <input
+              key={`maxEmp_${maxEmp ?? ''}`}
               type="number"
               placeholder={t.search.maxEmployees}
               defaultValue={maxEmp || ""}
@@ -401,6 +407,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
+              key={`minCap_${minCap ?? ''}`}
               type="number"
               placeholder={t.search.minCapital}
               defaultValue={displayCapital(minCap)}
@@ -419,6 +426,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             />
             <input
+              key={`maxCap_${maxCap ?? ''}`}
               type="number"
               placeholder={t.search.maxCapital}
               defaultValue={displayCapital(maxCap)}
@@ -446,6 +454,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
+              key={`minSales_${minSales ?? ''}`}
               type="number"
               placeholder={t.search.minSales}
               defaultValue={displaySales(minSales)}
@@ -464,6 +473,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             />
             <input
+              key={`maxSales_${maxSales ?? ''}`}
               type="number"
               placeholder={t.search.maxSales}
               defaultValue={displaySales(maxSales)}
@@ -499,6 +509,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <input
+                  key={`minOpIncome_${minOpIncome ?? ''}`}
                   type="number"
                   placeholder={t.search.minSales}
                   defaultValue={displaySales(minOpIncome)}
@@ -517,6 +528,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                 />
                 <input
+                  key={`maxOpIncome_${maxOpIncome ?? ''}`}
                   type="number"
                   placeholder={t.search.maxSales}
                   defaultValue={displaySales(maxOpIncome)}
@@ -544,6 +556,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <input
+                  key={`minOrdIncome_${minOrdIncome ?? ''}`}
                   type="number"
                   placeholder={t.search.minSales}
                   defaultValue={displaySales(minOrdIncome)}
@@ -562,6 +575,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                 />
                 <input
+                  key={`maxOrdIncome_${maxOrdIncome ?? ''}`}
                   type="number"
                   placeholder={t.search.maxSales}
                   defaultValue={displaySales(maxOrdIncome)}
@@ -589,6 +603,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <input
+                  key={`minNetIncome_${minNetIncome ?? ''}`}
                   type="number"
                   placeholder={t.search.minSales}
                   defaultValue={displaySales(minNetIncome)}
@@ -607,6 +622,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                 />
                 <input
+                  key={`maxNetIncome_${maxNetIncome ?? ''}`}
                   type="number"
                   placeholder={t.search.maxSales}
                   defaultValue={displaySales(maxNetIncome)}
@@ -636,6 +652,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
           </label>
           <div className="grid grid-cols-2 gap-2">
             <input
+              key={`minEstYear_${minEstYear ?? ''}`}
               type="number"
               placeholder={t.search.minEstablishmentYear}
               defaultValue={minEstYear || ""}
@@ -654,6 +671,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
             />
             <input
+              key={`maxEstYear_${maxEstYear ?? ''}`}
               type="number"
               placeholder={t.search.maxEstablishmentYear}
               defaultValue={maxEstYear || ""}
@@ -773,8 +791,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-transparent z-10"
               title={locale === 'en' ? "Click to register free" : locale === 'vi' ? "Nhấp để đăng ký miễn phí" : "クリックして無料会員登録"}
             >
-              <div className="bg-amber-100/90 dark:bg-amber-950/90 border border-amber-250/50 dark:border-amber-900/50 rounded-xl px-2.5 py-1.5 flex items-center gap-1 shadow-sm text-[10px] font-black text-amber-800 dark:text-amber-300 hover:scale-105 transition-transform duration-200">
-                <Lock className="w-3.5 h-3.5" />
+              <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 shadow-xs text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 transition-colors">
+                <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 {locale === 'en' ? "Register Free to Unlock" : locale === 'vi' ? "Đăng ký miễn phí để mở khóa" : "無料登録で利用可能"}
               </div>
             </div>
@@ -793,7 +811,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 checked={hasEmail}
                 disabled={!isProOrHigher}
                 onChange={(e) => navigate({ email: e.target.checked ? "true" : null })}
-                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
               />
               <span>{t.search.emailLabel}</span>
             </label>
@@ -803,7 +821,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 checked={hasPhone}
                 disabled={!isProOrHigher}
                 onChange={(e) => navigate({ phone: e.target.checked ? "true" : null })}
-                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
               />
               <span>{t.search.phoneLabel}</span>
             </label>
@@ -813,7 +831,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 checked={hasWebsite}
                 disabled={!isProOrHigher}
                 onChange={(e) => navigate({ website: e.target.checked ? "true" : null })}
-                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
               />
               <span>{t.search.websiteLabel}</span>
             </label>
@@ -823,10 +841,40 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 checked={hasFax}
                 disabled={!isProOrHigher}
                 onChange={(e) => navigate({ fax: e.target.checked ? "true" : null })}
-                className="w-4 h-4 rounded text-primary focus:ring-primary dark:border-slate-700 dark:bg-slate-800"
+                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
               />
               <span>{t.search.faxLabel}</span>
             </label>
+            <label className="flex items-center gap-2 text-[11px] font-medium text-slate-600 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+              <input
+                type="checkbox"
+                checked={!!hasContactForm}
+                disabled={!isProOrHigher}
+                onChange={(e) => navigate({ contact_form: e.target.checked ? "true" : null })}
+                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
+              />
+              <span className="flex items-center gap-1">
+                {locale === 'en' ? 'Contact Form' : locale === 'vi' ? 'Biểu mẫu liên hệ' : 'お問い合わせフォーム'}
+                <span className="text-[9px] bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 px-1 py-0.2 rounded font-semibold">FORM</span>
+              </span>
+            </label>
+            {hasEmail && (
+              <div className="pl-6 pt-1 flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-500">{locale === 'en' ? 'Type:' : locale === 'vi' ? 'Loại:' : '種別:'}</span>
+                <select
+                  value={emailType || ""}
+                  disabled={!isProOrHigher}
+                  onChange={(e) => navigate({ email_type: e.target.value || null })}
+                  className="text-[10px] font-medium text-slate-700 bg-white border border-slate-200 rounded px-1.5 py-0.5 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                >
+                  <option value="">{locale === 'en' ? 'All Types' : locale === 'vi' ? 'Tất cả loại' : '全種別'}</option>
+                  <option value="RECRUIT">{locale === 'en' ? 'Recruiting' : locale === 'vi' ? 'Tuyển dụng' : '採用'}</option>
+                  <option value="PR">{locale === 'en' ? 'PR / Media' : locale === 'vi' ? 'Truyền thông/PR' : '広報・PR'}</option>
+                  <option value="SALES">{locale === 'en' ? 'Sales' : locale === 'vi' ? 'Kinh doanh' : '営業'}</option>
+                  <option value="GENERAL">{locale === 'en' ? 'General' : locale === 'vi' ? 'Chung' : '代表'}</option>
+                </select>
+              </div>
+            )}
           </div>
           {!isProOrHigher && (
             <div 
@@ -840,8 +888,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-transparent z-10"
               title={isLoggedIn ? (locale === 'en' ? "Click to upgrade to PRO" : locale === 'vi' ? "Nhấp để nâng cấp lên PRO" : "クリックしてProにアップグレード") : (locale === 'en' ? "Click to register" : locale === 'vi' ? "Nhấp để đăng ký" : "クリックして会員登録")}
             >
-              <div className="bg-amber-100/90 dark:bg-amber-950/90 border border-amber-250/50 dark:border-amber-900/50 rounded-xl px-2.5 py-1.5 flex items-center gap-1 shadow-sm text-[10px] font-black text-amber-800 dark:text-amber-300 hover:scale-105 transition-transform duration-200">
-                <Lock className="w-3.5 h-3.5" />
+              <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 shadow-xs text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 transition-colors">
+                <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                 {locale === 'en' ? "PRO Plan Required" : locale === 'vi' ? "Yêu cầu tài khoản PRO" : "Proプランで利用可能"}
               </div>
             </div>
@@ -855,7 +903,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
           <button
             type="button"
             onClick={onApplyFilters}
-            className="w-full py-3 px-4 bg-primary hover:bg-primary-hover text-white font-bold rounded-xl shadow-sm transition-all transform active:scale-95 flex items-center justify-center gap-2"
+            className="w-full py-2.5 px-4 bg-[#1B4F8A] hover:bg-[#163e6d] text-white text-xs font-semibold rounded-lg shadow-xs transition-colors flex items-center justify-center gap-2"
           >
             <Filter className="w-4 h-4" />
             {locale === 'en' ? 'Apply Filters' : locale === 'vi' ? 'Áp dụng bộ lọc' : '検索する'}

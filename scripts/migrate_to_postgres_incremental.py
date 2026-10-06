@@ -146,7 +146,7 @@ def main():
                         employee_count, sales_amount, phone_number, fax_number, website_url, email_address,
                         business_summary, status, created_at, updated_at, jigyo_shumoku, branch_phone_numbers,
                         yahoo_last_crawled_at, website_last_crawled_at, website_crawl_status, last_deep_tagged_at,
-                        is_detailed
+                        is_detailed, contact_form_url, email_type
                     FROM companies
                     WHERE corporate_number IN ({placeholders})
                 """
@@ -180,7 +180,7 @@ def main():
                         employee_count, sales_amount, phone_number, fax_number, website_url, email_address,
                         business_summary, status, created_at, updated_at, jigyo_shumoku, branch_phone_numbers,
                         yahoo_last_crawled_at, website_last_crawled_at, website_crawl_status, last_deep_tagged_at,
-                        is_detailed
+                        is_detailed, contact_form_url, email_type
                     ) VALUES %s
                     ON CONFLICT (prefecture_code, corporate_number) DO UPDATE SET
                         company_name = EXCLUDED.company_name,
@@ -210,7 +210,9 @@ def main():
                         website_last_crawled_at = EXCLUDED.website_last_crawled_at,
                         website_crawl_status = EXCLUDED.website_crawl_status,
                         last_deep_tagged_at = EXCLUDED.last_deep_tagged_at,
-                        is_detailed = EXCLUDED.is_detailed
+                        is_detailed = EXCLUDED.is_detailed,
+                        contact_form_url = EXCLUDED.contact_form_url,
+                        email_type = EXCLUDED.email_type
                     WHERE (
                         companies.company_name IS DISTINCT FROM EXCLUDED.company_name OR
                         companies.company_name_kana IS DISTINCT FROM EXCLUDED.company_name_kana OR
@@ -238,7 +240,9 @@ def main():
                         companies.website_last_crawled_at IS DISTINCT FROM EXCLUDED.website_last_crawled_at OR
                         companies.website_crawl_status IS DISTINCT FROM EXCLUDED.website_crawl_status OR
                         companies.last_deep_tagged_at IS DISTINCT FROM EXCLUDED.last_deep_tagged_at OR
-                        companies.is_detailed IS DISTINCT FROM EXCLUDED.is_detailed
+                        companies.is_detailed IS DISTINCT FROM EXCLUDED.is_detailed OR
+                        companies.contact_form_url IS DISTINCT FROM EXCLUDED.contact_form_url OR
+                        companies.email_type IS DISTINCT FROM EXCLUDED.email_type
                     );
                 """
                 execute_values(pg_cur, upsert_companies_sql, cleaned_companies)
