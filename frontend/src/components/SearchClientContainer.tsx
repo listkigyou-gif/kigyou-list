@@ -1363,25 +1363,12 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     )}
 
                     {company.contact_form_url && (
-                      <a 
-                        href={company.contact_form_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="flex items-center gap-1 font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors"
-                        title={locale === 'en' ? "Open Contact Form" : locale === 'vi' ? "Mở biểu mẫu liên hệ" : "お問い合わせフォームを開く"}
+                      <span 
+                        className="inline-flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/70 px-2 py-0.5 rounded text-xs select-none"
+                        title={locale === 'en' ? "Contact form available (Outreach supported)" : locale === 'vi' ? "Có form liên hệ (Hỗ trợ gửi form tiếp thị)" : "お問い合わせフォームあり（フォーム営業代行対応）"}
                       >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>{locale === 'en' ? 'Form' : locale === 'vi' ? 'Biểu mẫu' : 'フォーム'}</span>
-                        <ExternalLink className="w-3 h-3 text-slate-400" />
-                      </a>
-                    )}
-
-                    {company.email_type && company.email_type !== 'GENERAL' && (
-                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800">
-                        {company.email_type === 'RECRUIT' ? (locale === 'en' ? 'Recruiting' : locale === 'vi' ? 'Tuyển dụng' : '採用窓口') :
-                         company.email_type === 'PR' ? (locale === 'en' ? 'PR / Media' : locale === 'vi' ? 'Truyền thông' : '広報窓口') :
-                         company.email_type === 'SALES' ? (locale === 'en' ? 'Sales' : locale === 'vi' ? 'Kinh doanh' : '営業窓口') :
-                         company.email_type}
+                        <MessageSquare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <span>{locale === 'en' ? 'Form Available' : locale === 'vi' ? 'Có form' : 'フォームあり'}</span>
                       </span>
                     )}
 

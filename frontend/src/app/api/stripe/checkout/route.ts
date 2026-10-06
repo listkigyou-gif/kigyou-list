@@ -10,14 +10,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
     const email = session.user.email;
-    const { planId, packId, couponCode, couponDiscount } = await request.json();
+    const { planId, packId, formPlanId, couponCode, couponDiscount } = await request.json();
     
     // Extract IP and UA for logging in payment history
     const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "127.0.0.1";
     const userAgent = request.headers.get("user-agent") || "";
 
-    if (!planId && !packId) {
-      return NextResponse.json({ error: "Plan ID or Pack ID is required" }, { status: 400 });
+    if (!planId && !packId && !formPlanId) {
+      return NextResponse.json({ error: "Plan ID, Pack ID, or Form Plan ID is required" }, { status: 400 });
     }
 
     // Define subscription pricing and quota mappings
@@ -81,6 +81,30 @@ export async function POST(request: Request) {
         default:
           return NextResponse.json({ error: "Invalid packId parameter" }, { status: 400 });
       }
+    } else if (formPlanId) {
+      isSubscription = false;
+      switch (formPlanId) {
+        case "form_1k":
+          listPrice = 28000;
+          priceJpy = 19600; // 30% OFF Campaign
+          allowance = 1000;
+          priceName = "問い合わせフォーム営業 1,000件配信枠 [キャンペーン30%OFF]";
+          break;
+        case "form_3k":
+          listPrice = 69000;
+          priceJpy = 48300; // 30% OFF Campaign
+          allowance = 3000;
+          priceName = "問い合わせフォーム営業 3,000件配信枠 [キャンペーン30%OFF]";
+          break;
+        case "form_5k":
+          listPrice = 99000;
+          priceJpy = 69300; // 30% OFF Campaign
+          allowance = 5000;
+          priceName = "問い合わせフォーム営業 5,000件配信枠 [キャンペーン30%OFF]";
+          break;
+        default:
+          return NextResponse.json({ error: "Invalid formPlanId parameter" }, { status: 400 });
+      }
     }
 
     const campaignCouponId = process.env.STRIPE_CAMPAIGN_COUPON_ID;
@@ -133,6 +157,13 @@ export async function POST(request: Request) {
           url: mockSuccessUrl,
           simulated: true 
         });
+      } else if (formPlanId) {
+        console.log(`[Stripe Simulator] Creating Form DM checkout for ${email} - formPlan: ${formPlanId} (¥${priceJpy})`);
+        const mockSuccessUrl = `${appUrl}/dashboard?tab=formCampaigns&stripe_success=true&formPlanId=${formPlanId}&allowance=${allowance}&email=${encodeURIComponent(email)}&amount_jpy=${priceJpy}`;
+        return NextResponse.json({
+          url: mockSuccessUrl,
+          simulated: true
+        });
       } else {
         console.log(`[Stripe Simulator] Creating one-time pack checkout for ${email} - pack: ${packId} (¥${priceJpy})`);
         const mockSuccessUrl = `${appUrl}/dashboard?stripe_success=true&pack=${packId}&amount=${allowance}&email=${encodeURIComponent(email)}`;
@@ -154,16 +185,15 @@ export async function POST(request: Request) {
 
       const sessionData: any = {
         payment_method_types: ["card"],
-        // consent_collection: {
-        //   terms_of_service: "required",
-        // },
         line_items: [
           {
             price_data: {
               currency: "jpy",
               product_data: {
                 name: priceName,
-                description: isSubscription 
+                description: formPlanId
+                  ? `Kigyou-list 問い合わせフォーム営業配信枠 (+${allowance.toLocaleString()} 件送信枠)`
+                  : isSubscription 
                   ? `Kigyou-list 月額プラン購読 (+毎月 ${allowance.toLocaleString()} 行 CSV枠)`
                   : `Kigyou-list 追加容量パッケージ (+${allowance.toLocaleString()} 行 CSV枠)`,
               },
@@ -180,8 +210,12 @@ export async function POST(request: Request) {
           ip_address: ipAddress,
           user_agent: userAgent.slice(0, 480)
         },
-        success_url: `${appUrl}/dashboard?stripe_success=true&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: isSubscription 
+        success_url: formPlanId
+          ? `${appUrl}/dashboard?tab=formCampaigns&stripe_success=true&session_id={CHECKOUT_SESSION_ID}`
+          : `${appUrl}/dashboard?stripe_success=true&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: formPlanId
+          ? `${appUrl}/pricing?tab=form&stripe_cancel=true`
+          : isSubscription 
           ? `${appUrl}/pricing?stripe_cancel=true`
           : `${appUrl}/search?stripe_cancel=true`,
       };
@@ -194,6 +228,9 @@ export async function POST(request: Request) {
         if (activeCouponId) {
           sessionData.discounts = [{ coupon: activeCouponId }];
         }
+      } else if (formPlanId) {
+        sessionData.metadata.formPlanId = formPlanId;
+        sessionData.metadata.formAllowance = String(allowance);
       } else {
         sessionData.metadata.packId = packId;
         sessionData.metadata.amount = String(allowance);
@@ -214,7 +251,9 @@ export async function POST(request: Request) {
         else if (planId === "business") simulatedAmountJpy = 9800;
         else if (planId === "enterprise") simulatedAmountJpy = 29000;
       }
-      const mockSuccessUrl = isSubscription
+      const mockSuccessUrl = formPlanId
+        ? `${appUrl}/dashboard?tab=formCampaigns&stripe_success=true&formPlanId=${formPlanId}&allowance=${allowance}&email=${encodeURIComponent(email)}&amount_jpy=${priceJpy}`
+        : isSubscription
         ? `${appUrl}/dashboard?stripe_success=true&email=${encodeURIComponent(email)}&plan=${planId}&amount_jpy=${simulatedAmountJpy}&allowance=${allowance}&couponCode=${encodeURIComponent(couponCode || "")}`
         : `${appUrl}/dashboard?stripe_success=true&pack=${packId}&amount=${allowance}&email=${encodeURIComponent(email)}`;
 

@@ -36,6 +36,17 @@ interface PackDetails {
   recommended?: boolean;
 }
 
+interface FormPlanDetails {
+  id: "form_1k" | "form_3k" | "form_5k";
+  name: string;
+  count: number;
+  listPrice: number;
+  campaignPrice: number;
+  unitPrice: number;
+  description: string;
+  recommended?: boolean;
+}
+
 export default function PricingPage() {
   const { isLoggedIn, user, setAuthModalOpen } = useAuth();
   const { locale, t } = useLanguage();
@@ -45,6 +56,40 @@ export default function PricingPage() {
   const discountType = "campaign";
   const [showCheckoutModal, setShowCheckoutModal] = useState<PlanDetails | null>(null);
   const [showPackCheckoutModal, setShowPackCheckoutModal] = useState<PackDetails | null>(null);
+  const [showFormCheckoutModal, setShowFormCheckoutModal] = useState<FormPlanDetails | null>(null);
+
+  const formPlans: FormPlanDetails[] = [
+    {
+      id: "form_1k",
+      name: isEn ? "Starter (1,000 Forms)" : isVi ? "Gói Starter 1.000 Form" : "1,000 件プラン",
+      count: 1000,
+      listPrice: 28000,
+      campaignPrice: 19600,
+      unitPrice: 19.6,
+      description: isEn ? "Ideal for testing product-market fit" : isVi ? "Thử nghiệm phản hồi thị trường" : "まずは効果検証・テスト送信に最適",
+      recommended: false
+    },
+    {
+      id: "form_3k",
+      name: isEn ? "Standard (3,000 Forms)" : isVi ? "Gói Standard 3.000 Form" : "3,000 件プラン",
+      count: 3000,
+      listPrice: 69000,
+      campaignPrice: 48300,
+      unitPrice: 16.1,
+      description: isEn ? "Optimal for scalable lead generation" : isVi ? "Đạt lượng chuyển đổi cuộc hẹn ổn định" : "本格的なリード獲得・商談創出に",
+      recommended: true
+    },
+    {
+      id: "form_5k",
+      name: isEn ? "Enterprise (5,000 Forms)" : isVi ? "Gói Enterprise 5.000 Form" : "5,000 件プラン",
+      count: 5000,
+      listPrice: 99000,
+      campaignPrice: 69300,
+      unitPrice: 13.8,
+      description: isEn ? "Maximum appointment pipeline volume" : isVi ? "Quy mô lớn, chi phí trên mỗi form rẻ nhất" : "大量アプローチで商談数を最大化",
+      recommended: false
+    }
+  ];
 
   const packs: PackDetails[] = [
     {
@@ -378,6 +423,50 @@ export default function PricingPage() {
         body: JSON.stringify({
           email: emailInput,
           packId: showPackCheckoutModal.id
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        alert(errData.error || (isEn ? "Failed to create checkout." : isVi ? "Không thể tạo phiên thanh toán." : "チェックアウトの作成に失敗しました。"));
+        setLoading(false);
+        return;
+      }
+
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        alert(isEn ? "Failed to acquire checkout URL." : isVi ? "Không thể lấy URL thanh toán." : "チェックアウトURLの取得に失敗しました。");
+      }
+    } catch (err) {
+      console.error(err);
+      alert(isEn ? "A communication error occurred." : isVi ? "Đã xảy ra lỗi kết nối." : "通信中にエラーが発生しました。");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFormCheckoutClick = (plan: FormPlanDetails) => {
+    if (!isLoggedIn) {
+      setAuthModalOpen(true);
+      return;
+    }
+    setShowFormCheckoutModal(plan);
+  };
+
+  const handleFormSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!showFormCheckoutModal) return;
+    
+    setLoading(true);
+    try {
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: emailInput,
+          formPlanId: showFormCheckoutModal.id
         })
       });
 
@@ -1044,6 +1133,25 @@ export default function PricingPage() {
           </div>
         </section>
 
+        {/* Month-End Countdown urgence timer for Form DM */}
+        <section className="max-w-4xl mx-auto w-full">
+          <CountdownTimer />
+        </section>
+
+        <section className="flex flex-col items-center gap-2">
+          <div className="p-2 bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 rounded-xl flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200 px-4 py-2 shadow-xs">
+            <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
+            <span>{isEn ? "Special Campaign Discount (30% OFF) Applied" : isVi ? "Áp dụng giá ưu đãi chiến dịch (Giảm 30%)" : "今月のキャンペーン特別価格 (30% OFF) 適用中"}</span>
+          </div>
+          <p className="text-xs text-slate-500 text-center max-w-md leading-relaxed">
+            {isEn 
+              ? "All outreach volume plans discounted by 30%. Secure payment via Stripe." 
+              : isVi 
+              ? "Toàn bộ các gói gửi Form đều được chiết khấu trực tiếp 30%. Thanh toán bảo mật qua Stripe." 
+              : "全ボリューム枠に30%割引が自動適用されています。Stripe決済で即時配信枠チャージ完了。"}
+          </p>
+        </section>
+
         {/* Form DM 3 Pricing Cards */}
         <section className="max-w-6xl mx-auto w-full">
           <div className="text-center max-w-2xl mx-auto mb-10">
@@ -1070,12 +1178,18 @@ export default function PricingPage() {
                   {isEn ? "Ideal for testing product-market fit" : isVi ? "Thử nghiệm phản hồi thị trường" : "まずは効果検証・テスト送信に最適"}
                 </p>
 
-                <div className="flex items-baseline gap-1.5 mb-1.5">
-                  <span className="text-3xl font-black text-slate-900 dark:text-white">¥28,000</span>
+                <div className="flex items-baseline gap-1.5 mb-1">
+                  <span className="text-3xl font-black text-slate-900 dark:text-white">¥19,600</span>
                   <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
                 </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="line-through text-slate-400 font-mono text-xs">¥28,000</span>
+                  <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
+                    30% OFF
+                  </span>
+                </div>
                 <div className="text-xs text-slate-500 font-semibold mb-6">
-                  {isEn ? "Unit rate: 28 JPY / form" : isVi ? "Đơn giá: 28 JPY / form" : "単価: 28円 / 送信完了"}
+                  {isEn ? "Unit rate: 19.6 JPY / form" : isVi ? "Đơn giá: 19.6 JPY / form" : "単価: 19.6円 / 送信完了"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -1102,12 +1216,14 @@ export default function PricingPage() {
                 </ul>
               </div>
 
-              <LocaleLink
-                href="/dashboard?tab=formCampaigns"
-                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors block active:scale-[0.98]"
+              <button
+                type="button"
+                onClick={() => handleFormCheckoutClick(formPlans[0])}
+                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
               >
-                {isEn ? "Configure Starter" : isVi ? "Cấu hình gói 1.000 Form" : "このプランで配信設定する"}
-              </LocaleLink>
+                <CreditCard className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                <span>{isEn ? "Pay with Stripe (1,000 Forms)" : isVi ? "Thanh toán Stripe (1.000 Form)" : "Stripe決済で1,000件枠を購入"}</span>
+              </button>
             </div>
 
             {/* 3,000 Plan (RECOMMENDED) */}
@@ -1124,12 +1240,18 @@ export default function PricingPage() {
                   {isEn ? "Optimal for scalable lead generation" : isVi ? "Đạt lượng chuyển đổi cuộc hẹn ổn định" : "本格的なリード獲得・商談創出に"}
                 </p>
 
-                <div className="flex items-baseline gap-1.5 mb-1.5">
-                  <span className="text-3xl font-black text-indigo-700 dark:text-indigo-300">¥69,000</span>
+                <div className="flex items-baseline gap-1.5 mb-1">
+                  <span className="text-3xl font-black text-indigo-700 dark:text-indigo-300">¥48,300</span>
                   <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
                 </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="line-through text-slate-400 font-mono text-xs">¥69,000</span>
+                  <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
+                    30% OFF
+                  </span>
+                </div>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6">
-                  {isEn ? "Unit rate: 23 JPY / form (Save 18%)" : isVi ? "Đơn giá: 23 JPY / form (Tiết kiệm 18%)" : "単価: 23円 / 送信完了 (約18%お得)"}
+                  {isEn ? "Unit rate: 16.1 JPY / form (Save 42% from standard)" : isVi ? "Đơn giá: 16.1 JPY / form (Tiết kiệm tối đa)" : "単価: 16.1円 / 送信完了 (業界最安級)"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -1158,12 +1280,14 @@ export default function PricingPage() {
                 </ul>
               </div>
 
-              <LocaleLink
-                href="/dashboard?tab=formCampaigns"
-                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-500/20 text-center transition-all block active:scale-[0.98]"
+              <button
+                type="button"
+                onClick={() => handleFormCheckoutClick(formPlans[1])}
+                className="mt-8 w-full py-3.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-500/20 text-center transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
               >
-                {isEn ? "Launch Standard" : isVi ? "Bắt đầu với gói 3.000 Form" : "このプランで今すぐ始める"}
-              </LocaleLink>
+                <CreditCard className="w-4 h-4" />
+                <span>{isEn ? "Pay with Stripe (3,000 Forms)" : isVi ? "Thanh toán Stripe (3.000 Form)" : "Stripe決済で3,000件枠を購入"}</span>
+              </button>
             </div>
 
             {/* 5,000+ Plan */}
@@ -1176,12 +1300,18 @@ export default function PricingPage() {
                   {isEn ? "Maximum appointment pipeline volume" : isVi ? "Quy mô lớn, chi phí trên mỗi form rẻ nhất" : "大量アプローチで商談数を最大化"}
                 </p>
 
-                <div className="flex items-baseline gap-1.5 mb-1.5">
-                  <span className="text-3xl font-black text-slate-900 dark:text-white">¥99,000</span>
+                <div className="flex items-baseline gap-1.5 mb-1">
+                  <span className="text-3xl font-black text-slate-900 dark:text-white">¥69,300</span>
                   <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
                 </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="line-through text-slate-400 font-mono text-xs">¥99,000</span>
+                  <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
+                    30% OFF
+                  </span>
+                </div>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6">
-                  {isEn ? "Unit rate: 19.8 JPY / form (Best rate)" : isVi ? "Đơn giá: 19.8 JPY / form (Tốt nhất)" : "単価: 19.8円 / 送信完了 (最安値レート)"}
+                  {isEn ? "Unit rate: 13.8 JPY / form (Best rate)" : isVi ? "Đơn giá: 13.8 JPY / form (Tốt nhất)" : "単価: 13.8円 / 送信完了 (最安値レート)"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -1208,12 +1338,14 @@ export default function PricingPage() {
                 </ul>
               </div>
 
-              <LocaleLink
-                href="/dashboard?tab=formCampaigns"
-                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors block active:scale-[0.98]"
+              <button
+                type="button"
+                onClick={() => handleFormCheckoutClick(formPlans[2])}
+                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
               >
-                {isEn ? "Configure 5,000 Forms" : isVi ? "Cấu hình gói 5.000 Form" : "このプランで配信設定する"}
-              </LocaleLink>
+                <CreditCard className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+                <span>{isEn ? "Pay with Stripe (5,000 Forms)" : isVi ? "Thanh toán Stripe (5.000 Form)" : "Stripe決済で5,000件枠を購入"}</span>
+              </button>
             </div>
           </div>
 
@@ -1637,6 +1769,101 @@ export default function PricingPage() {
 
             <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 bg-slate-50 dark:bg-[#0D1117] py-2 rounded-xl border border-slate-200/50 dark:border-slate-800">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span>{isEn ? "Secure checkout encrypted via Stripe." : isVi ? "Thanh toán an toàn được mã hóa qua Stripe." : "Stripe社による暗号化された安全な決済処理が施されます"}</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Form DM Checkout Simulator / Stripe Modal */}
+      {showFormCheckoutModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            onClick={() => setShowFormCheckoutModal(null)}
+          />
+          
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-2xl z-10 flex flex-col gap-4 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-11 h-11 bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 rounded-xl flex items-center justify-center mx-auto border border-indigo-100 dark:border-indigo-900/40">
+              <CreditCard className="w-5 h-5" />
+            </div>
+
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
+                {isEn ? "Form Outreach Checkout" : isVi ? "Xác nhận thanh toán Form Outreach" : "フォーム営業 配信枠のお申し込み"}
+              </h3>
+              <p className="text-xs text-slate-500 leading-relaxed">
+                {isEn ? "Review package details before proceeding to Stripe secure checkout." : isVi ? "Kiểm tra gói cước trước khi chuyển sang cổng thanh toán bảo mật Stripe." : "お申し込み内容をご確認の上、安全なStripe決済画面へお進みください。"}
+              </p>
+            </div>
+
+            <form onSubmit={handleFormSubscribe} className="flex flex-col gap-3 text-left">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  {isEn ? "Selected Package" : isVi ? "Gói đã chọn" : "選択したプラン"}
+                </label>
+                <div className="p-3 bg-slate-50 dark:bg-[#0D1117] rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1 text-xs">
+                  <div className="flex justify-between items-center font-bold">
+                    <span className="text-slate-800 dark:text-slate-200">{showFormCheckoutModal.name}</span>
+                    <span className="text-indigo-600 font-mono">
+                      ¥{showFormCheckoutModal.campaignPrice.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center text-[10px] text-slate-400">
+                    <span className="line-through">¥{showFormCheckoutModal.listPrice.toLocaleString()}</span>
+                    <span className="font-bold text-rose-500">30% OFF 適用</span>
+                  </div>
+                  <div className="text-[11px] text-slate-500 mt-1 border-t border-slate-200/60 dark:border-slate-800 pt-1 flex justify-between">
+                    <span>{isEn ? "Delivery Volume" : isVi ? "Số lượng Form" : "配信可能件数"}</span>
+                    <strong className="text-slate-800 dark:text-slate-200 font-mono">+{showFormCheckoutModal.count.toLocaleString()} 件</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                  {isEn ? "Billing Email" : isVi ? "Email nhận hóa đơn" : "請求先メールアドレス"}
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={emailInput}
+                  onChange={(e) => setEmailInput(e.target.value)}
+                  placeholder="name@company.com"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0D1117] text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
+                />
+              </div>
+
+              <div className="pt-2 flex flex-col gap-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.99]"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      <span>{isEn ? "Connecting to Stripe..." : isVi ? "Đang kết nối Stripe..." : "Stripeに接続中..."}</span>
+                    </>
+                  ) : (
+                    <>
+                      <CreditCard className="w-3.5 h-3.5" />
+                      <span>{isEn ? "Pay with Stripe (Secure)" : isVi ? "Thanh toán qua Stripe" : "Stripe決済画面へ進む"}</span>
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowFormCheckoutModal(null)}
+                  className="w-full py-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs transition-colors cursor-pointer"
+                >
+                  {isEn ? "Cancel" : isVi ? "Hủy" : "キャンセル"}
+                </button>
+              </div>
+            </form>
+
+            <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 bg-slate-50 dark:bg-[#0D1117] py-2 rounded-xl border border-slate-200/50 dark:border-slate-800">
+              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
               <span>{isEn ? "Secure checkout encrypted via Stripe." : isVi ? "Thanh toán an toàn được mã hóa qua Stripe." : "Stripe社による暗号化された安全な決済処理が施されます"}</span>
             </div>
           </div>

@@ -813,16 +813,8 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                     <Mail className="w-4 h-4" />
                   </div>
                   <div>
-                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 flex items-center gap-1.5 mb-0.5">
-                      <span>{t.company.email}</span>
-                      {company.email_type && company.email_type !== 'GENERAL' && (
-                        <span className="inline-flex items-center px-1.5 py-0.2 rounded text-[10px] font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/60 dark:text-indigo-300 dark:border-indigo-800">
-                          {company.email_type === 'RECRUIT' ? (locale === 'en' ? 'Recruiting' : locale === 'vi' ? 'Tuyển dụng' : '採用窓口') :
-                           company.email_type === 'PR' ? (locale === 'en' ? 'PR / Media' : locale === 'vi' ? 'Truyền thông' : '広報窓口') :
-                           company.email_type === 'SALES' ? (locale === 'en' ? 'Sales' : locale === 'vi' ? 'Kinh doanh' : '営業窓口') :
-                           company.email_type}
-                        </span>
-                      )}
+                    <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-0.5">
+                      {t.company.email}
                     </span>
                     <div data-nosnippet>
                       <UnlockCard type="inline" requiredPlan="pro" fallbackText={locale === 'en' ? "contact@company.co.jp (Sample)" : "contact@company.co.jp (サンプル)"}>
@@ -834,7 +826,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   </div>
                 </div>
 
-                {/* 5. Contact Form URL */}
+                {/* 5. Contact Form Status (Protected - No direct link) */}
                 {company.contact_form_url && (
                   <div className="flex items-start gap-3 relative">
                     <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/70 dark:border-emerald-800/60 flex items-center justify-center shrink-0">
@@ -844,15 +836,18 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                       <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-0.5">
                         {locale === 'en' ? 'Contact Form' : locale === 'vi' ? 'Biểu mẫu liên hệ' : 'お問い合わせフォーム'}
                       </span>
-                      <a 
-                        href={company.contact_form_url} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
-                        className="inline-flex items-center gap-1.5 font-semibold text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 transition-colors text-sm break-all"
-                      >
-                        <span>{locale === 'en' ? 'Open Contact Form' : locale === 'vi' ? 'Mở biểu mẫu liên hệ' : 'お問い合わせフォームを開く'}</span>
-                        <ExternalLink className="w-3.5 h-3.5 shrink-0 text-emerald-500" />
-                      </a>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/70 px-2.5 py-0.5 rounded text-xs select-none">
+                          <span>{locale === 'en' ? 'Form Available' : locale === 'vi' ? 'Có form liên hệ' : 'フォームあり'}</span>
+                        </span>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          {locale === 'en' 
+                            ? '• Outreach supported via Form Campaign' 
+                            : locale === 'vi' 
+                            ? '• Hỗ trợ tiếp cận qua dịch vụ Gửi Form' 
+                            : '• フォーム営業代行対応（自動アプローチ可能）'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 )}

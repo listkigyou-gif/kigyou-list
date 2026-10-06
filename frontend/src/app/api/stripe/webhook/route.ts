@@ -298,6 +298,37 @@ export async function POST(request: Request) {
           const invoiceUrl = await uploadFileToR2(invoiceKey, htmlInvoice, "text/html");
 
           await createPaymentRecord(paymentId, userEmail, packId, priceJpy, addOnLines, 'completed', invoiceUrl, sessionIp, sessionUa);
+        } else if (metadata.formPlanId) {
+          const formAllowance = Number(metadata.formAllowance || 0);
+          const formPlanId = metadata.formPlanId;
+          const priceName = `問い合わせフォーム営業 ${formAllowance.toLocaleString()}件配信枠 [キャンペーン30%OFF]`;
+
+          console.log(`[Stripe Webhook] Real Payment Received for Form Outreach. ${userEmail} purchased ${formPlanId} (+${formAllowance} forms)`);
+
+          const formattedDate = new Intl.DateTimeFormat('ja-JP', { dateStyle: 'long' }).format(new Date());
+          const taxExclusivePrice = Math.round(priceJpy / 1.1);
+          const taxAmount = priceJpy - taxExclusivePrice;
+          const billing = await getUserBillingInfo(userEmail);
+
+          const htmlInvoice = generateInvoiceHtml({
+            email: userEmail,
+            paymentId,
+            formattedDate,
+            priceJpy,
+            priceName,
+            linesAdded: formAllowance,
+            taxExclusivePrice,
+            taxAmount,
+            billingName: billing?.billing_name || undefined,
+            billingAddress: billing?.billing_address || undefined,
+            billingTaxId: billing?.billing_tax_id || undefined,
+            billingPhone: billing?.billing_phone || undefined
+          });
+
+          const invoiceKey = `invoices/inv_${paymentId}.html`;
+          const invoiceUrl = await uploadFileToR2(invoiceKey, htmlInvoice, "text/html");
+
+          await createPaymentRecord(paymentId, userEmail, formPlanId, priceJpy, formAllowance, 'completed', invoiceUrl, sessionIp, sessionUa);
         }
       }
     } 
