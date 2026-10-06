@@ -8,8 +8,8 @@ import { useAuth } from "@/context/AuthContext";
 import { 
   Send, Sparkles, ShieldCheck, CheckCircle2, Clock, 
   ArrowRight, FileText, Phone, Mail, Building2, User, 
-  HelpCircle, ChevronDown, Check, Zap, Target, BarChart3,
-  ExternalLink, Loader2, AlertCircle, Award
+  ChevronDown, Check, Zap, Target, BarChart3,
+  ExternalLink, Loader2, AlertCircle, Award, Layers
 } from "lucide-react";
 import Link from "next/link";
 
@@ -19,13 +19,12 @@ export default function FormMarketingPage() {
   const isJa = locale === "ja";
   const isVi = locale === "vi";
 
-  // Form states
-  const [selectedPlan, setSelectedPlan] = useState<"1k" | "3k" | "5k">("3k");
+  // Enterprise Custom Inquiry Form states
+  const [selectedVolume, setSelectedVolume] = useState<"10k" | "20k" | "50k" | "custom">("10k");
   const [companyName, setCompanyName] = useState("");
   const [contactName, setContactName] = useState("");
   const [email, setEmail] = useState(user?.email || "");
   const [phone, setPhone] = useState("");
-  const [targetIndustry, setTargetIndustry] = useState("");
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
@@ -34,20 +33,27 @@ export default function FormMarketingPage() {
   // FAQ state
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleEnterpriseSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!companyName || !contactName || !email) {
-      setErrorMsg(isJa ? "必須項目（会社名、お名前、メールアドレス）を入力してください。" : isVi ? "Vui lòng nhập các trường bắt buộc (Tên công ty, Họ tên, Email)." : "Please enter all required fields.");
+      setErrorMsg(
+        isJa
+          ? "必須項目（会社名、お名前、メールアドレス）を入力してください。"
+          : isVi
+          ? "Vui lòng nhập các trường bắt buộc (Tên công ty, Họ tên, Email)."
+          : "Please enter all required fields."
+      );
       return;
     }
 
     setLoading(true);
     setErrorMsg(null);
 
-    const planNames = {
-      "1k": "1,000件スターター (¥28,000)",
-      "3k": "3,000件スタンダード (¥69,000) [人気No.1]",
-      "5k": "5,000件エンタープライズ (¥99,000)"
+    const volumeLabels = {
+      "10k": "10,000件〜20,000件 (大口プラン)",
+      "20k": "20,000件〜50,000件 (大規模配信)",
+      "50k": "50,000件以上 / 定期配信",
+      "custom": "自社保有リスト・その他カスタム要件"
     };
 
     try {
@@ -61,11 +67,10 @@ export default function FormMarketingPage() {
           requester_email: email,
           mobile_number: phone,
           locale,
-          message: `【問い合わせフォーム営業代行 お問い合わせ】
-■ 希望プラン: ${planNames[selectedPlan]}
-■ ターゲット希望業界・地域: ${targetIndustry || "未定"}
-■ 提案内容・相談内容:
-${message || "未入力（専任スタッフと相談希望）"}`
+          message: `【フォーム営業代行 大口・エンタープライズご相談】
+■ 希望ボリューム: ${volumeLabels[selectedVolume]}
+■ 相談内容・商材概要:
+${message || "未入力"}`
         })
       });
 
@@ -73,7 +78,13 @@ ${message || "未入力（専任スタッフと相談希望）"}`
       setSubmitted(true);
     } catch (err: any) {
       console.error(err);
-      setErrorMsg(isJa ? "送信に失敗しました。時間をおいて再試行してください。" : isVi ? "Gửi yêu cầu thất bại. Vui lòng thử lại sau." : "Submission failed. Please try again.");
+      setErrorMsg(
+        isJa
+          ? "送信に失敗しました。時間をおいて再試行してください。"
+          : isVi
+          ? "Gửi yêu cầu thất bại. Vui lòng thử lại sau."
+          : "Submission failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -81,7 +92,11 @@ ${message || "未入力（専任スタッフと相談希望）"}`
 
   const faqs = [
     {
-      q: isJa ? "問い合わせフォーム営業は特定商取引法などの法律上問題ありませんか？" : isVi ? "Gửi Form DM có vi phạm luật chống spam hay luật Tokushoho tại Nhật không?" : "Is contact form outreach compliant with Japanese anti-spam regulations?",
+      q: isJa
+        ? "問い合わせフォーム営業は特定商取引法などの法律上問題ありませんか？"
+        : isVi
+        ? "Gửi Form DM có vi phạm luật chống spam hay luật Tokushoho tại Nhật không?"
+        : "Is contact form outreach compliant with Japanese anti-spam regulations?",
       a: isJa 
         ? "はい、法令を遵守した設計を行っております。送信文面には特定商取引法に基づく発信者情報（会社名・担当者名・連絡先）および送信停止（オプトアウト）案内を必ず明記します。また、当社のAIシステムにより「営業目的の連絡お断り」と明記されている企業を自動除外するため、クレームリスクを最小化しています。"
         : isVi
@@ -89,7 +104,11 @@ ${message || "未入力（専任スタッフと相談希望）"}`
         : "Yes, fully compliant with Japanese laws. Every message contains complete sender corporate disclosure and an explicit opt-out notice. Additionally, our AI automatically filters out forms with anti-sales disclaimers."
     },
     {
-      q: isJa ? "テレアポやメール営業（メルマガ）と何が違うのですか？" : isVi ? "Điểm khác biệt lớn nhất so với Telesales và Cold Email là gì?" : "How does this compare to Cold Email and Telesales?",
+      q: isJa
+        ? "テレアポやメール営業（メルマガ）と何が違うのですか？"
+        : isVi
+        ? "Điểm khác biệt lớn nhất so với Telesales và Cold Email là gì?"
+        : "How does this compare to Cold Email and Telesales?",
       a: isJa
         ? "メルマガや代表メール（info@宛）はスパムフィルターや受付で埋もれがちですが、Webサイトのお問い合わせフォームは【見込み客からの連絡窓口】であるため、社内の担当部署や決裁者（役員・部長クラス）が必ず目を通します。そのため閲覧率が50%〜90%と圧倒的に高く、アポイント獲得単価を大幅に削減できます。"
         : isVi
@@ -97,87 +116,113 @@ ${message || "未入力（専任スタッフと相談希望）"}`
         : "Unlike general info@ inboxes that get flooded with spam, corporate contact forms are designated inquiry channels actively monitored by executives and managers, resulting in 50%-90% read rates."
     },
     {
-      q: isJa ? "文面がまだ完成していないのですが、相談できますか？" : isVi ? "Chúng tôi chưa có kịch bản chào hàng tiếng Nhật chuẩn thì có được hỗ trợ không?" : "Can you help optimize our Japanese pitch template?",
-      a: isJa
-        ? "もちろん可能です。日本のビジネス慣習・敬語に精通したスタッフが、貴社の強みや商材をヒアリングし、開封率・返信率を最大化するアプローチ文面をご提案・添削いたします。"
+      q: isJa
+        ? "文面がまだ完成していないのですが、どうすればよいですか？"
         : isVi
-        ? "Chắc chắn có. Đội ngũ chuyên gia am hiểu văn hóa kinh doanh và Kính ngữ (Keigo) Nhật Bản sẽ hỗ trợ tư vấn, chỉnh sửa kịch bản chào hàng của bạn để tối ưu tỷ lệ phản hồi và tránh vi phạm văn hóa."
-        : "Yes, our bilingual B2B copywriters will review and optimize your message in natural Japanese business etiquette (Keigo) to maximize conversion."
+        ? "Chúng tôi chưa có kịch bản chào hàng tiếng Nhật chuẩn thì có được hỗ trợ không?"
+        : "Can you help optimize our Japanese pitch template?",
+      a: isJa
+        ? "管理画面内に日本のビジネスマナーに対応した「業種別テンプレート」を複数ご用意しております。自社のサービス概要や会社名を当てはめるだけで、誰でも効果的なアプローチ文面を簡単に作成いただけます。また、作成された文面は配信開始前に運営スタッフが特定商取引法やNGワードの事前審査を行いますので、安心してご利用いただけます。"
+        : isVi
+        ? "Trong trang quản trị (Dashboard) có sẵn thư viện mẫu kịch bản Kính ngữ (Keigo) chuẩn theo từng ngành nghề. Bạn chỉ cần điền tên sản phẩm là có thể kích hoạt. Ngoài ra, đội ngũ quản trị sẽ rà soát tuân thủ luật Tokushoho và từ khóa cấm trước khi hệ thống bắt đầu phát hành."
+        : "Our dashboard provides pre-built Japanese business etiquette (Keigo) templates. All submitted scripts undergo compliance verification prior to dispatch."
     },
     {
-      q: isJa ? "送信完了後のレポートはどのように確認できますか？" : isVi ? "Sau khi gửi xong, báo cáo kết quả được cung cấp như thế nào?" : "How is the delivery proof delivered?",
-      a: isJa
-        ? "送信完了後、送信先企業名、法人番号、送信日時、お問い合わせフォームURL、送信ステータスを記載した詳細なエクセル/CSVレポートを納品いたします。"
+      q: isJa
+        ? "送信結果やレポートはどのように確認できますか？"
         : isVi
-        ? "Sau khi hoàn tất chiến dịch, bạn sẽ nhận được file Excel/CSV chi tiết gồm: Tên doanh nghiệp, Mã số thuế法人番号, Thời gian gửi, URL form và trạng thái xác nhận gửi thành công."
-        : "Upon campaign completion, you receive a full spreadsheet report containing corporate numbers, company names, form URLs, exact timestamps, and delivery confirmation logs."
+        ? "Sau khi gửi xong, báo cáo kết quả được cung cấp như thế nào?"
+        : "How is the delivery proof delivered?",
+      a: isJa
+        ? "配信開始後、管理画面のダッシュボード上でリアルタイムに送信進捗が反映されます。配信完了後は、送信企業名、法人番号、送信日時、対象フォームURL、送信ステータスを記載した詳細なエクセル/CSVレポートをワンクリックでダウンロード可能です。"
+        : isVi
+        ? "Ngay khi bắt đầu gửi, tiến độ sẽ cập nhật trực tiếp trên Dashboard. Khi hoàn tất, bạn có thể tải về file Excel/CSV chi tiết gồm: Tên doanh nghiệp, Mã số thuế, Thời gian gửi, URL form và trạng thái gửi thành công."
+        : "Live progress updates are shown directly on your dashboard. Upon completion, download full CSV reports containing corporate numbers, company names, form URLs, exact timestamps, and delivery logs."
     }
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0D1117] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-indigo-500/20">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0D1117] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-indigo-500/20 font-sans">
       <Header />
 
       <main className="flex-1">
         {/* HERO SECTION */}
-        <section className="relative overflow-hidden pt-12 pb-20 border-b border-slate-200/70 dark:border-slate-800/80 bg-gradient-to-b from-indigo-50/40 via-white to-slate-50 dark:from-indigo-950/20 dark:via-[#0D1117] dark:to-[#0D1117]">
+        <section className="relative overflow-hidden pt-12 pb-20 border-b border-slate-200/80 dark:border-slate-800 bg-gradient-to-b from-indigo-50/40 via-white to-slate-50 dark:from-indigo-950/20 dark:via-[#0D1117] dark:to-[#0D1117]">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto">
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold mb-6 shadow-xs animate-in fade-in duration-300">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold mb-6 shadow-2xs">
                 <Sparkles className="w-4 h-4 text-indigo-500" />
-                <span>{isJa ? "国内最大級500万社データベース連携" : isVi ? "Kết nối trực tiếp Database 5 Triệu Doanh nghiệp Nhật" : "Direct Integration with 5M+ Japan Companies"}</span>
+                <span>
+                  {isJa
+                    ? "国内500万社DB連携 × セルフサービス型フォーム営業プラットフォーム"
+                    : isVi
+                    ? "Kết nối Database 5 Triệu Doanh nghiệp × Tự động hóa Form Outreach B2B"
+                    : "5M+ Verified Companies × Self-Serve Contact Form Outreach SaaS"}
+                </span>
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.2] mb-6">
+              <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.25] mb-6">
                 {isJa ? (
                   <>
-                    アポイント獲得を最短化する<br />
+                    問い合わせフォーム営業を、<br />
                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
-                      問い合わせフォーム営業代行
+                      オンラインで最短即日スタート。
                     </span>
                   </>
                 ) : isVi ? (
                   <>
-                    Tối đa hóa cuộc hẹn B2B tại Nhật với<br />
+                    Tiếp cận trực tiếp lãnh đạo doanh nghiệp Nhật với<br />
                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
-                      Dịch Vụ Gửi Form Doanh Nghiệp (DFY)
+                      Nền tảng Tự động Gửi Form Marketing B2B
                     </span>
                   </>
                 ) : (
                   <>
                     Scale Your B2B Meetings in Japan with<br />
                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
-                      Automated Form DM Outreach
+                      Self-Serve Form Outreach Platform
                     </span>
                   </>
                 )}
               </h1>
 
               {/* Subheadline */}
-              <p className="text-sm sm:text-lg text-slate-600 dark:text-slate-350 leading-relaxed mb-8 max-w-2xl mx-auto">
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-350 leading-relaxed mb-8 max-w-2xl mx-auto">
                 {isJa
-                  ? "テレアポの受付ブロックやメールの迷惑フォルダを完全回避。500万社のデータベースからターゲット企業を厳選し、お問い合わせフォームへ安全・確実に営業メッセージをお届けします。"
+                  ? "テレアポの受付ブロックやメールの迷惑フォルダを完全回避。500万社データベースからターゲット企業を抽出し、管理画面から自社の営業文面を即時設定。運営による事前法令・NGワード審査で、安全かつ効率的な新規商談創出を実現します。"
                   : isVi
-                  ? "Vượt qua lễ tân và bộ lọc spam. Hệ thống tự động lọc tệp khách hàng mục tiêu từ 5 triệu doanh nghiệp và gửi thông điệp chào hàng trực tiếp vào Form liên hệ với tỷ lệ mở 50% - 90%."
-                  : "Bypass gatekeepers and spam folders. Filter hyper-targeted prospects from 5M+ corporate records and deliver your pitch straight into decision-maker inboxes."}
+                  ? "Vượt qua bộ lọc spam và lễ tân. Lọc tệp khách hàng từ 5 triệu doanh nghiệp, tự soạn kịch bản và kích hoạt chiến dịch ngay trên hệ thống. Đội ngũ kiểm duyệt tuân thủ Tokushoho và nội dung trước khi gửi để đảm bảo an toàn tuyệt đối."
+                  : "Bypass gatekeepers and spam filters. Filter hyper-targeted prospects from 5M+ records, set up your pitch template, and dispatch automatically with our safety & compliance verification."}
               </p>
 
               {/* CTA Buttons */}
               <div className="flex flex-wrap items-center justify-center gap-3.5">
-                <a
-                  href="#contact-form"
-                  className="px-6 py-3.5 rounded-2xl font-bold text-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2"
+                <Link
+                  href={`/${locale}/dashboard?tab=formCampaigns`}
+                  className="px-6 py-3.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2"
                 >
                   <Send className="w-4 h-4" />
-                  <span>{isJa ? "今すぐ無料相談・お見積り" : isVi ? "Nhận báo giá & Tư vấn miễn phí" : "Get Free Quote & Consultation"}</span>
-                </a>
+                  <span>
+                    {isJa
+                      ? "今すぐ配信キャンペーンを設定する"
+                      : isVi
+                      ? "Thiết lập chiến dịch gửi ngay"
+                      : "Launch Campaign Now"}
+                  </span>
+                </Link>
                 <Link
                   href={`/${locale}/search?contact_form=true`}
-                  className="px-6 py-3.5 rounded-2xl font-bold text-sm bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-sm active:scale-[0.98] transition-all flex items-center gap-1.5"
+                  className="px-6 py-3.5 rounded-xl font-bold text-sm bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-[0.98] transition-all flex items-center gap-1.5"
                 >
-                  <span>{isJa ? "フォーム対象企業を検索" : isVi ? "Khám phá danh sách có Form" : "Search Companies with Forms"}</span>
+                  <span>
+                    {isJa
+                      ? "フォーム対象企業を検索"
+                      : isVi
+                      ? "Khám phá danh sách có Form"
+                      : "Search Companies with Forms"}
+                  </span>
                   <ArrowRight className="w-4 h-4 text-slate-400" />
                 </Link>
               </div>
@@ -189,7 +234,7 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{isJa ? "収録法人データベース" : isVi ? "Dữ liệu pháp nhân toàn Nhật" : "Total Companies in DB"}</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400 font-mono">60,000+</div>
+                  <div className="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400 font-mono">235,000+</div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{isJa ? "フォームURL常時解析済" : isVi ? "Form liên hệ sẵn sàng gửi" : "Verified Form URLs"}</div>
                 </div>
                 <div className="text-center">
@@ -198,7 +243,7 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                 </div>
                 <div className="text-center">
                   <div className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400 font-mono">¥20〜</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{isJa ? "業界最安水準 送信単価" : isVi ? "Chi phí gửi từ 20 JPY/form" : "Cost per form from 20 JPY"}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{isJa ? "送信完了単価 (最安水準)" : isVi ? "Chi phí gửi từ 20 JPY/form" : "Cost per form from 20 JPY"}</div>
                 </div>
               </div>
             </div>
@@ -221,7 +266,7 @@ ${message || "未入力（専任スタッフと相談希望）"}`
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse bg-white dark:bg-[#161B22] rounded-3xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm text-xs sm:text-sm">
+            <table className="w-full text-left border-collapse bg-white dark:bg-[#161B22] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xs text-xs sm:text-sm">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
                   <th className="p-4 sm:p-5 font-bold text-slate-600 dark:text-slate-350">{isJa ? "比較項目" : isVi ? "Tiêu chí" : "Metric"}</th>
@@ -230,7 +275,7 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                   <th className="p-4 sm:p-5 font-extrabold text-indigo-700 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/40 border-l border-r border-indigo-200 dark:border-indigo-800">
                     <span className="flex items-center gap-1.5">
                       <Sparkles className="w-4 h-4 text-indigo-500" />
-                      {isJa ? "問い合わせフォーム営業代行" : isVi ? "Gửi Form DM (Kigyou-List)" : "Kigyou-List Form DM"}
+                      {isJa ? "Kigyou-List フォーム営業" : isVi ? "Gửi Form DM (Kigyou-List)" : "Kigyou-List Form DM"}
                     </span>
                   </th>
                 </tr>
@@ -265,7 +310,7 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                   <td className="p-4 sm:p-5">中 (配信リスト管理・SPF)</td>
                   <td className="p-4 sm:p-5 text-rose-600 dark:text-rose-400">極めて大 (担当者の疲弊)</td>
                   <td className="p-4 sm:p-5 font-bold text-emerald-600 dark:text-emerald-400 bg-indigo-50/30 dark:bg-indigo-950/20 border-l border-r border-indigo-200 dark:border-indigo-800">
-                    完全ゼロ（丸投げOK）
+                    数分で完了 (完全オンライン完結)
                   </td>
                 </tr>
                 <tr>
@@ -273,7 +318,7 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                   <td className="p-4 sm:p-5">ドメイン汚染リスク大</td>
                   <td className="p-4 sm:p-5">ガチャ切り・苦情リスク</td>
                   <td className="p-4 sm:p-5 font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/30 dark:bg-indigo-950/20 border-l border-r border-indigo-200 dark:border-indigo-800">
-                    AI営業お断り自動除外
+                    AI自動除外 ＆ 運営事前審査
                   </td>
                 </tr>
               </tbody>
@@ -286,26 +331,26 @@ ${message || "未入力（専任スタッフと相談希望）"}`
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-12">
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3">
-                {isJa ? "Kigyou-list が選ばれる4つの安心理由" : isVi ? "4 Ưu điểm độc quyền của Dịch vụ Gửi Form Kigyou-List" : "4 Pillars of Kigyou-List Form DM Excellence"}
+                {isJa ? "Kigyou-list が選ばれる4つの強み" : isVi ? "4 Ưu điểm độc quyền của Nền tảng Gửi Form Kigyou-List" : "4 Pillars of Kigyou-List Form Outreach SaaS"}
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                 {isJa
-                  ? "ただ送信するだけでなく、安全・安心に反響を最大化するテクノロジーとサポート。"
+                  ? "高い反響率と法令遵守の両立を支えるセルフサービステクノロジー。"
                   : isVi
-                  ? "Không chỉ gửi form tự động, chúng tôi bảo vệ uy tín và tối đa hóa chuyển đổi cho bạn."
+                  ? "Tối ưu hóa chuyển đổi và bảo vệ uy tín thương hiệu bằng quy trình tự động hóa chuẩn xác."
                   : "Enterprise-grade safety, precision targeting, and high conversion safeguards."}
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Feature 1 */}
-              <div className="p-6 rounded-3xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 flex items-center justify-center shrink-0">
                   <ShieldCheck className="w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">
-                    {isJa ? "AI「営業お断り」自動検知・除外フィルター" : isVi ? "AI Tự động bỏ qua các Form 'Cấm chào hàng'" : "AI Anti-Spam Disclaimer Detector"}
+                    {isJa ? "AI「営業お断り」自動検知・除外フィルター" : isVi ? "AI Tự động bỏ qua Form 'Cấm chào hàng'" : "AI Anti-Spam Disclaimer Detector"}
                   </h3>
                   <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
                     {isJa
@@ -318,27 +363,27 @@ ${message || "未入力（専任スタッフと相談希望）"}`
               </div>
 
               {/* Feature 2 */}
-              <div className="p-6 rounded-3xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
                   <FileText className="w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">
-                    {isJa ? "日本ビジネス敬語・文面コンサルティング" : isVi ? "Tư vấn & Kiểm tra Kính ngữ (Keigo) B2B chuẩn xác" : "B2B Japanese Keigo Copy Optimization"}
+                    {isJa ? "運営スタッフによる事前法令・NGワード審査" : isVi ? "Duyệt kịch bản tuân thủ Pháp luật & Từ khóa cấm" : "Human Compliance & Tokushoho Review"}
                   </h3>
                   <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
                     {isJa
-                      ? "フォーム経由の連絡において最も重要な「突然の連絡に対する丁寧なお詫び」と「特定商取引法遵守の表示」を網羅。成約率の高いプロ仕様の文面作成を支援します。"
+                      ? "送信前に特定商取引法に基づく発信者情報やオプトアウト案内の記載を専任スタッフが迅速にチェック（最短2〜4時間）。法令違反や過度な売り込みトラブルを未然に防止します。"
                       : isVi
-                      ? "Bao gồm đầy đủ các câu chào hỏi chuẩn mực, xin phép liên hệ lịch sự, và câu từ chối nhận tin (opt-out). Tối ưu hóa từng câu chữ để giám đốc người Nhật cảm thấy được tôn trọng."
-                      : "Includes polite apologies for contacting via web forms and full Tokushoho disclosures, crafted to resonate with Japanese corporate executives."}
+                      ? "Trước khi gửi, chuyên viên sẽ kiểm duyệt kịch bản để đảm bảo đầy đủ thông tin pháp nhân người gửi và câu từ chối nhận tin (opt-out), tránh mọi rủi ro vi phạm pháp luật Nhật Bản."
+                      : "Every submitted campaign is reviewed by our compliance specialists within 2-4 hours to ensure Tokushoho and opt-out regulations are strictly met."}
                   </p>
                 </div>
               </div>
 
               {/* Feature 3 */}
-              <div className="p-6 rounded-3xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 flex items-center justify-center shrink-0">
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 flex items-center justify-center shrink-0">
                   <Target className="w-6 h-6" />
                 </div>
                 <div>
@@ -356,20 +401,20 @@ ${message || "未入力（専任スタッフと相談希望）"}`
               </div>
 
               {/* Feature 4 */}
-              <div className="p-6 rounded-3xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 flex items-center justify-center shrink-0">
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start gap-4">
+                <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 flex items-center justify-center shrink-0">
                   <BarChart3 className="w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">
-                    {isJa ? "送信完了レポート納品（証跡の透明性）" : isVi ? "Báo cáo minh bạch 100% kèm Log & Bằng chứng" : "100% Transparent Delivery Audit Logs"}
+                    {isJa ? "リアルタイム管理画面 & CSV証跡レポート" : isVi ? "Báo cáo minh bạch 100% kèm Log & Bằng chứng" : "Live Dashboard & 100% Audit Logs"}
                   </h3>
                   <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
                     {isJa
-                      ? "送信した企業名、法人番号、送信日時、対象フォームURLを網羅したCSVレポートを納品。ブラックボックスになりがちな営業代行を完全な透明性で提供します。"
+                      ? "送信進捗は管理画面でリアルタイムに確認可能。送信完了後は企業名、法人番号、送信日時、フォームURLを網羅したCSVレポートをいつでもダウンロードいただけます。"
                       : isVi
-                      ? "Bàn giao danh sách chi tiết gồm tên công ty, link form, thời điểm gửi, kết quả xác nhận. Không có tình trạng báo khống số lượng, hoàn toàn minh bạch."
-                      : "Detailed spreadsheet containing company names, corporate numbers, timestamps, and target URLs delivered upon completion."}
+                      ? "Theo dõi tiến độ gửi trực tiếp trên giao diện quản trị. Tải về file báo cáo chi tiết gồm tên công ty, link form, thời điểm gửi, kết quả xác nhận bất cứ lúc nào."
+                      : "Track delivery progress live in your dashboard. Download comprehensive CSV audit files including timestamps and URLs upon completion."}
                   </p>
                 </div>
               </div>
@@ -387,13 +432,13 @@ ${message || "未入力（専任スタッフと相談希望）"}`
               {isJa ? "送信ボリューム別プラン" : isVi ? "Các gói chiến dịch gửi Form" : "Outreach Volume Packages"}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-              {isJa ? "初期費用ゼロ・月額固定費ゼロ。送信完了件数に応じた明朗会計です。" : isVi ? "Không phí khởi tạo, không phí duy trì. Chi phí tính theo số lượng form tiếp cận." : "Zero setup fees, zero monthly commitments. Pure pay-as-you-go delivery."}
+              {isJa ? "初期費用ゼロ・月額固定費ゼロ。管理画面から即座にお申し込み・文面設定いただけます。" : isVi ? "Không phí khởi tạo, không phí duy trì. Tự lên kịch bản và kích hoạt trực tiếp từ hệ thống." : "Zero setup fees, zero monthly commitments. Pure pay-as-you-go delivery."}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {/* 1,000 Plan */}
-            <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col justify-between">
+            <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
                   {isJa ? "1,000 件プラン" : isVi ? "Gói Starter 1.000 Form" : "Starter (1,000 Forms)"}
@@ -421,27 +466,30 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>{isJa ? "文面ひな形・基本チェック" : isVi ? "Kiểm tra ngữ pháp & kính ngữ cơ bản" : "Standard Keigo copy review"}</span>
+                    <span>{isJa ? "業種別テンプレート活用" : isVi ? "Thư viện mẫu kịch bản chuẩn Keigo" : "Industry templates library"}</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>{isJa ? "送信完了CSVレポート納品" : isVi ? "Báo cáo chi tiết file CSV" : "Delivery CSV report"}</span>
+                    <span>{isJa ? "運営による事前法令・NGワード審査" : isVi ? "Kiểm duyệt tuân thủ Tokushoho" : "Pre-dispatch compliance check"}</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <span>{isJa ? "リアルタイム進捗 ＆ CSVレポート" : isVi ? "Báo cáo CSV và theo dõi trực tiếp" : "Realtime logs & CSV report"}</span>
                   </li>
                 </ul>
               </div>
 
-              <a
-                href="#contact-form"
-                onClick={() => setSelectedPlan("1k")}
+              <Link
+                href={`/${locale}/dashboard?tab=formCampaigns`}
                 className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors block"
               >
-                {isJa ? "このプランを選択する" : isVi ? "Chọn gói Starter" : "Select Starter"}
-              </a>
+                {isJa ? "このプランで配信設定する" : isVi ? "Cấu hình gói Starter" : "Select Starter"}
+              </Link>
             </div>
 
             {/* 3,000 Plan (RECOMMENDED) */}
-            <div className="bg-white dark:bg-[#1C2128] border-2 border-indigo-600 dark:border-indigo-500 rounded-3xl p-6 sm:p-7 shadow-xl shadow-indigo-500/10 flex flex-col justify-between relative">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10px] font-black uppercase tracking-wider shadow">
+            <div className="bg-white dark:bg-[#1C2128] border-2 border-indigo-600 dark:border-indigo-500 rounded-2xl p-6 sm:p-7 shadow-lg shadow-indigo-500/10 flex flex-col justify-between relative">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10px] font-black uppercase tracking-wider shadow-xs">
                 {isJa ? "★ 一番人気・推奨プラン" : isVi ? "★ Phổ biến & Tối ưu nhất" : "★ MOST POPULAR & BEST VALUE"}
               </div>
 
@@ -473,31 +521,30 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-500 shrink-0" />
                     <span className="font-bold text-slate-900 dark:text-white">
-                      {isJa ? "文面プロ添削・A/Bテスト文面作成支援" : isVi ? "Tư vấn & Tối ưu kịch bản A/B Test" : "Full A/B test copywriting assistance"}
+                      {isJa ? "企業名・住所などの自動差し込みタグ対応" : isVi ? "Tự động chèn {company_name}, {location}" : "Dynamic placeholder tags"}
                     </span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>{isJa ? "送信完了CSVレポート納品" : isVi ? "Báo cáo chi tiết file CSV" : "Delivery CSV report"}</span>
+                    <span>{isJa ? "優先スピード審査（最短2時間）" : isVi ? "Ưu tiên kiểm duyệt trong 2 giờ" : "Priority 2-hour compliance check"}</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>{isJa ? "優先配信スケジュール設定" : isVi ? "Ưu tiên lịch gửi trong ngày" : "Priority sending schedule"}</span>
+                    <span>{isJa ? "リアルタイム進捗 ＆ CSVレポート" : isVi ? "Báo cáo CSV và theo dõi trực tiếp" : "Realtime logs & CSV report"}</span>
                   </li>
                 </ul>
               </div>
 
-              <a
-                href="#contact-form"
-                onClick={() => setSelectedPlan("3k")}
+              <Link
+                href={`/${locale}/dashboard?tab=formCampaigns`}
                 className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-500/20 text-center transition-all block active:scale-[0.98]"
               >
-                {isJa ? "このプランを申し込む" : isVi ? "Chọn gói Standard" : "Select Standard"}
-              </a>
+                {isJa ? "このプランで今すぐ始める" : isVi ? "Bắt đầu với gói Standard" : "Launch Standard"}
+              </Link>
             </div>
 
             {/* 5,000+ Plan */}
-            <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-7 shadow-sm flex flex-col justify-between">
+            <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
               <div>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
                   {isJa ? "5,000 件プラン" : isVi ? "Gói Enterprise 5.000 Form" : "Enterprise (5,000+ Forms)"}
@@ -525,27 +572,53 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>{isJa ? "専任コンサルタントによる文面全面作成" : isVi ? "Chuyên viên soạn thảo toàn bộ kịch bản" : "Dedicated copywriter & strategic review"}</span>
+                    <span>{isJa ? "自動差し込みタグ＆高度な除外設定" : isVi ? "Hỗ trợ tùy biến nâng cao" : "Advanced filter & tags"}</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>{isJa ? "送信完了CSVレポート納品" : isVi ? "Báo cáo chi tiết file CSV" : "Delivery CSV report"}</span>
+                    <span>{isJa ? "最優先審査 ＆ 分割配信スケジュール対応" : isVi ? "Chia lịch gửi tối ưu theo ngày" : "Priority scheduling"}</span>
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span>{isJa ? "10,000件超のカスタム対応可" : isVi ? "Hỗ trợ gói trên 10.000 form theo yêu cầu" : "Custom enterprise volume discounts"}</span>
+                    <span>{isJa ? "リアルタイム進捗 ＆ CSVレポート" : isVi ? "Báo cáo CSV và theo dõi trực tiếp" : "Realtime logs & CSV report"}</span>
                   </li>
                 </ul>
               </div>
 
-              <a
-                href="#contact-form"
-                onClick={() => setSelectedPlan("5k")}
+              <Link
+                href={`/${locale}/dashboard?tab=formCampaigns`}
                 className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors block"
               >
-                {isJa ? "このプランを選択する" : isVi ? "Chọn gói Enterprise" : "Select Enterprise"}
-              </a>
+                {isJa ? "このプランで配信設定する" : isVi ? "Cấu hình gói Enterprise" : "Select Enterprise"}
+              </Link>
             </div>
+          </div>
+
+          {/* Enterprise notice below pricing */}
+          <div className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400">
+            {isJa ? (
+              <p>
+                ※ 10,000件以上の大口配信や、請求書払い（月末締め翌月末払い）をご希望の場合は、
+                <a href="#contact-form" className="text-indigo-600 dark:text-indigo-400 underline font-semibold ml-1">
+                  下記の大口・カスタム窓口
+                </a>
+                よりお気軽にご相談ください。
+              </p>
+            ) : isVi ? (
+              <p>
+                ※ Đối với nhu cầu gửi trên 10.000 Form hoặc thanh toán bằng hóa đơn công ty (Invoice), vui lòng liên hệ tại
+                <a href="#contact-form" className="text-indigo-600 dark:text-indigo-400 underline font-semibold ml-1">
+                  Mục tư vấn Doanh nghiệp lớn
+                </a>.
+              </p>
+            ) : (
+              <p>
+                For enterprise volume (10,000+ forms) or invoice billing, please contact our
+                <a href="#contact-form" className="text-indigo-600 dark:text-indigo-400 underline font-semibold ml-1">
+                  Enterprise Consultation desk
+                </a>.
+              </p>
+            )}
           </div>
         </section>
 
@@ -554,139 +627,175 @@ ${message || "未入力（専任スタッフと相談希望）"}`
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-2xl mx-auto mb-12">
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3">
-                {isJa ? "お申し込みから配信完了までの流れ" : isVi ? "Quy trình triển khai 4 bước tinh gọn" : "Simple 4-Step Execution Workflow"}
+                {isJa ? "お申し込みから配信開始までの流れ" : isVi ? "Quy trình triển khai 4 bước tự động" : "Simple 4-Step Self-Serve Workflow"}
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                {isJa ? "最短2営業日でターゲット企業へ配信開始可能です。" : isVi ? "Bắt đầu tiếp cận tệp khách hàng mục tiêu chỉ sau 2 ngày làm việc." : "Launch your outbound campaign in as fast as 2 business days."}
+                {isJa ? "管理画面からオンライン完結。最短即日でターゲット企業へのアプローチを開始できます。" : isVi ? "Thực hiện hoàn toàn trực tuyến trên hệ thống, bắt đầu tiếp cận khách hàng chỉ trong ngày." : "Setup entirely online. Launch your outbound campaign in as fast as same-day."}
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="p-6 rounded-3xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-sm relative">
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs relative">
                 <div className="text-2xl font-black text-indigo-600 font-mono mb-2">STEP 01</div>
                 <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5">
-                  {isJa ? "相談・ターゲット選定" : isVi ? "Tư vấn & Lọc danh sách" : "Consultation & Filtering"}
+                  {isJa ? "ターゲット抽出・リスト指定" : isVi ? "Lọc đối tượng mục tiêu" : "Filter Target Prospects"}
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  {isJa ? "商材に合わせて業界、地域、企業規模などのターゲット条件をヒアリング。" : isVi ? "Xác định chân dung khách hàng mục tiêu: ngành nghề, số vốn, địa bàn." : "Define target industry, geography, and company size from our DB."}
+                  {isJa ? "500万社データベースから業種、地域、企業規模、キーワードなどの条件を指定し、アプローチ対象企業を抽出。" : isVi ? "Lọc tệp doanh nghiệp theo ngành nghề, vốn điều lệ, số nhân sự, tỉnh thành hoặc tín hiệu kinh doanh." : "Select target industry, geography, and headcounts from our 5M+ database."}
                 </p>
               </div>
 
-              <div className="p-6 rounded-3xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-sm relative">
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs relative">
                 <div className="text-2xl font-black text-indigo-600 font-mono mb-2">STEP 02</div>
                 <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5">
-                  {isJa ? "アプローチ文面作成・校正" : isVi ? "Soạn thảo kịch bản Keigo" : "Copywriting & Keigo Review"}
+                  {isJa ? "配信メッセージの作成" : isVi ? "Soạn thảo kịch bản chào hàng" : "Compose Pitch Message"}
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  {isJa ? "返信率を高める件名・本文の作成を専任スタッフがサポート。" : isVi ? "Chuyên gia rà soát kính ngữ, câu mở đầu và nội dung hấp dẫn." : "Craft high-converting subject and body copy compliant with Tokushoho."}
+                  {isJa ? "管理画面上で営業文面を入力。業種別テンプレートを活用し、会社名や住所の自動差し込みタグも設定可能。" : isVi ? "Tự nhập nội dung hoặc chọn mẫu có sẵn, hỗ trợ tự động chèn tên công ty người nhận." : "Craft your pitch copy using industry templates with dynamic company name tags."}
                 </p>
               </div>
 
-              <div className="p-6 rounded-3xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-sm relative">
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs relative">
                 <div className="text-2xl font-black text-indigo-600 font-mono mb-2">STEP 03</div>
                 <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5">
-                  {isJa ? "AI自動除外・安全送信" : isVi ? "AI lọc cấm QC & Gửi tự động" : "Safe AI-Monitored Dispatch"}
+                  {isJa ? "オンライン決済 & 運営審査" : isVi ? "Thanh toán & Kiểm duyệt" : "Checkout & Compliance Review"}
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  {isJa ? "「営業お断り」企業を自動除外しながら、高速・安全にフォームへ送信。" : isVi ? "Bot tự động gửi qua proxy Nhật Bản, tự động bỏ qua form cấm chào hàng." : "Headless browser dispatching via Japanese residential proxies with auto-skip."}
+                  {isJa ? "オンラインで決済完了後、特定商取引法遵守・オプトアウト記載や営業NG規約を専任スタッフが速やかに審査（最短2〜4時間）。" : isVi ? "Thanh toán trực tuyến. Đội ngũ quản trị kiểm tra tính tuân thủ pháp luật và từ khóa cấm trong 2-4 giờ." : "Instant checkout. Our team verifies Tokushoho compliance within 2 to 4 hours."}
                 </p>
               </div>
 
-              <div className="p-6 rounded-3xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-sm relative">
+              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs relative">
                 <div className="text-2xl font-black text-indigo-600 font-mono mb-2">STEP 04</div>
                 <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5">
-                  {isJa ? "レポート納品・反響獲得" : isVi ? "Báo cáo & Nhận phản hồi" : "Delivery Audit & Direct Leads"}
+                  {isJa ? "自動配信開始 & リアルタイム管理" : isVi ? "Tự động gửi & Báo cáo real-time" : "Automated Sending & Live Logs"}
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-                  {isJa ? "送信先URL・日時の一覧レポートを納品。返信は貴社のメールへ直接届きます。" : isVi ? "Nhận file báo cáo chi tiết. Khách hàng quan tâm sẽ phản hồi thẳng vào email của bạn." : "Receive full CSV logs. Interested prospects reply directly to your inbox."}
+                  {isJa ? "AI自動除外を用いて安全に配信。送信完了結果やログは管理画面からリアルタイムで確認・CSVダウンロード可能。" : isVi ? "Hệ thống tự động gửi an toàn qua proxy Nhật. Khách hàng theo dõi tiến độ và tải file CSV trên Dashboard." : "Safe residential proxy dispatching with auto-skip. Audit CSV logs available on dashboard."}
                 </p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* INQUIRY & ORDER FORM */}
+        {/* ENTERPRISE & CUSTOM INQUIRY FORM */}
         <section id="contact-form" className="py-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-3xl p-8 sm:p-10 shadow-xl">
+          <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-8 sm:p-10 shadow-lg">
+            
+            {/* Self-serve hint banner */}
+            <div className="mb-8 p-4 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-200 font-medium">
+                <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                <span>
+                  {isJa
+                    ? "1,000件〜5,000件の通常プランは、管理画面から今すぐオンライン完結で配信設定いただけます。"
+                    : isVi
+                    ? "Các gói tiêu chuẩn từ 1.000 đến 5.000 Form có thể thiết lập trực tiếp trên Dashboard."
+                    : "Standard packages (1k - 5k forms) can be launched directly online via your Dashboard."}
+                </span>
+              </div>
+              <Link
+                href={`/${locale}/dashboard?tab=formCampaigns`}
+                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shrink-0 transition-colors shadow-2xs"
+              >
+                {isJa ? "管理画面へ進む" : isVi ? "Mở Dashboard" : "Go to Dashboard"}
+              </Link>
+            </div>
+
             <div className="text-center max-w-xl mx-auto mb-8">
-              <div className="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 flex items-center justify-center mx-auto mb-3">
-                <Send className="w-6 h-6" />
+              <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 flex items-center justify-center mx-auto mb-3">
+                <Building2 className="w-6 h-6" />
+              </div>
+              <div className="inline-block px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[11px] font-bold mb-2">
+                {isJa ? "法人・エンタープライズ窓口" : isVi ? "Dành cho Khách hàng Doanh nghiệp lớn" : "Enterprise Inquiries"}
               </div>
               <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-2">
-                {isJa ? "無料お見積り・お問い合わせ" : isVi ? "Đăng ký tư vấn chiến dịch & Báo giá" : "Get Free Quote & Consultation"}
+                {isJa ? "大口配信（10,000件以上）・カスタム要件のご相談" : isVi ? "Tư vấn Gói lớn (>10.000 Form) & Hóa đơn công ty" : "Enterprise Volume & Custom Inquiries"}
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                 {isJa
-                  ? "商材のターゲット層やご予算に合わせて、最適なアプローチプランをご提案いたします。"
+                  ? "月間1万件以上の大規模配信、貴社保有リストへの配信、請求書払い（Paid/後払い）などのご要望はこちらよりお気軽にご相談ください。"
                   : isVi
-                  ? "Để lại thông tin, đội ngũ chuyên gia sẽ liên hệ tư vấn tệp doanh nghiệp và báo giá chi tiết."
-                  : "Share your target requirements and our specialists will prepare an optimal campaign proposal."}
+                  ? "Doanh nghiệp có nhu cầu gửi trên 10.000 form/tháng, gửi trên danh sách riêng hoặc thanh toán hóa đơn công ty (Invoice) vui lòng để lại thông tin."
+                  : "Share your high-volume requirements (10,000+ forms), custom targeting lists, or invoice billing needs."}
               </p>
             </div>
 
             {submitted ? (
-              <div className="text-center py-10 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 rounded-2xl p-6">
+              <div className="text-center py-10 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-6">
                 <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
                 <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
                   {isJa ? "お問い合わせありがとうございます" : isVi ? "Cảm ơn bạn đã gửi yêu cầu!" : "Thank You For Your Request!"}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-350 max-w-md mx-auto">
                   {isJa
-                    ? "担当者よりご入力いただいたメールアドレス宛に、24時間以内に詳細なスケジュール・文面確認・お見積りをご案内いたします。"
+                    ? "担当者よりご入力いただいたメールアドレス宛に、1営業日以内に大口ボリューム向けのお見積り・進行スケジュールをご案内いたします。"
                     : isVi
                     ? "Chúng tôi đã ghi nhận yêu cầu. Chuyên viên tư vấn sẽ liên hệ lại với bạn trong vòng 24 giờ làm việc."
-                    : "Our outbound sales consultant will reach out via email within 24 business hours."}
+                    : "Our enterprise sales specialist will contact you via email within 1 business day."}
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleEnterpriseSubmit} className="space-y-4">
                 {errorMsg && (
                   <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/30 dark:border-rose-900 text-xs font-semibold">
                     {errorMsg}
                   </div>
                 )}
 
-                {/* Plan Selection Buttons */}
+                {/* Volume Selector */}
                 <div>
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
-                    {isJa ? "ご希望の送信件数" : isVi ? "Gói số lượng mong muốn" : "Target Volume Package"}
+                    {isJa ? "想定送信ボリューム / ご希望要件" : isVi ? "Quy mô số lượng dự kiến / Nhu cầu" : "Estimated Target Volume"}
                   </label>
-                  <div className="grid grid-cols-3 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
                     <button
                       type="button"
-                      onClick={() => setSelectedPlan("1k")}
-                      className={`p-3 rounded-2xl border text-left transition-all ${
-                        selectedPlan === "1k"
+                      onClick={() => setSelectedVolume("10k")}
+                      className={`p-3 rounded-xl border text-center transition-all ${
+                        selectedVolume === "10k"
                           ? "border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold"
                           : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300 hover:border-slate-300"
                       }`}
                     >
-                      <div className="text-xs font-bold">1,000 件</div>
-                      <div className="text-xs opacity-75">¥28,000</div>
+                      <div className="text-xs font-bold">10,000〜20,000件</div>
+                      <div className="text-[10px] opacity-75">単価相談可</div>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSelectedPlan("3k")}
-                      className={`p-3 rounded-2xl border text-left transition-all relative ${
-                        selectedPlan === "3k"
+                      onClick={() => setSelectedVolume("20k")}
+                      className={`p-3 rounded-xl border text-center transition-all ${
+                        selectedVolume === "20k"
                           ? "border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold"
                           : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300 hover:border-slate-300"
                       }`}
                     >
-                      <div className="text-xs font-bold">3,000 件</div>
-                      <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">¥69,000 (人気)</div>
+                      <div className="text-xs font-bold">20,000〜50,000件</div>
+                      <div className="text-[10px] opacity-75">特別ディスカウント</div>
                     </button>
                     <button
                       type="button"
-                      onClick={() => setSelectedPlan("5k")}
-                      className={`p-3 rounded-2xl border text-left transition-all ${
-                        selectedPlan === "5k"
+                      onClick={() => setSelectedVolume("50k")}
+                      className={`p-3 rounded-xl border text-center transition-all ${
+                        selectedVolume === "50k"
                           ? "border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold"
                           : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300 hover:border-slate-300"
                       }`}
                     >
-                      <div className="text-xs font-bold">5,000 件</div>
-                      <div className="text-xs opacity-75">¥99,000</div>
+                      <div className="text-xs font-bold">50,000件以上</div>
+                      <div className="text-[10px] opacity-75">定期配信・API連携</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedVolume("custom")}
+                      className={`p-3 rounded-xl border text-center transition-all ${
+                        selectedVolume === "custom"
+                          ? "border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold"
+                          : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300 hover:border-slate-300"
+                      }`}
+                    >
+                      <div className="text-xs font-bold">自社リスト配信</div>
+                      <div className="text-[10px] opacity-75">カスタム要件</div>
                     </button>
                   </div>
                 </div>
@@ -710,7 +819,7 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-350 mb-1">
                       {isJa ? "ご担当者様名 *" : isVi ? "Họ tên người phụ trách *" : "Contact Name *"}
                     </label>
                     <div className="relative">
@@ -727,8 +836,8 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                      {isJa ? "メールアドレス *" : isVi ? "Email nhận báo cáo *" : "Business Email *"}
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-350 mb-1">
+                      {isJa ? "メールアドレス *" : isVi ? "Email nhận báo giá *" : "Business Email *"}
                     </label>
                     <div className="relative">
                       <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -744,7 +853,7 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-350 mb-1">
                       {isJa ? "電話番号" : isVi ? "Số điện thoại" : "Phone Number"}
                     </label>
                     <div className="relative">
@@ -761,30 +870,17 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    {isJa ? "ターゲット希望業種・地域" : isVi ? "Ngành nghề & Khu vực doanh nghiệp mong muốn" : "Target Industry & Location"}
-                  </label>
-                  <input
-                    type="text"
-                    placeholder={isJa ? "例: 東京都のIT受託開発企業、従業員30名以上" : isVi ? "Ví dụ: Công ty IT tại Tokyo, quy mô > 30 nhân viên" : "e.g. IT companies in Tokyo, >30 employees"}
-                    value={targetIndustry}
-                    onChange={(e) => setTargetIndustry(e.target.value)}
-                    className="w-full text-xs font-medium px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
-                    {isJa ? "提案商材・ご相談内容" : isVi ? "Sản phẩm/dịch vụ chào hàng & Yêu cầu cụ thể" : "Your Pitch Offer & Requirements"}
+                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-350 mb-1">
+                    {isJa ? "ご要望・商材概要・ご質問内容" : isVi ? "Yêu cầu chi tiết, sản phẩm chào hàng hoặc câu hỏi" : "Requirements & Offer Overview"}
                   </label>
                   <textarea
                     rows={4}
                     placeholder={
                       isJa
-                        ? "アプローチしたい商材の概要や、ご質問・ご要望があればご記入ください。"
+                        ? "希望件数、対象業種・地域、請求書払い希望、貴社保有リストの利用有無などをご記入ください。"
                         : isVi
-                        ? "Mô tả dịch vụ bạn muốn chào hoặc những thắc mắc cần tư vấn."
-                        : "Describe your service offer, value proposition, or specific questions."
+                        ? "Mô tả số lượng mong muốn, tệp khách hàng hoặc yêu cầu thanh toán hóa đơn..."
+                        : "Please describe your desired volume, targeting criteria, or invoice billing preferences."
                     }
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
@@ -795,14 +891,14 @@ ${message || "未入力（専任スタッフと相談希望）"}`
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 rounded-2xl font-bold text-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-lg shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                  className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
-                      <span>{isJa ? "無料相談・お見積りを送信する" : isVi ? "Gửi thông tin tư vấn & Nhận báo giá" : "Submit Request & Get Quote"}</span>
+                      <span>{isJa ? "大口・カスタム要件を相談する" : isVi ? "Gửi yêu cầu tư vấn Doanh nghiệp" : "Submit Enterprise Inquiry"}</span>
                     </>
                   )}
                 </button>
@@ -818,7 +914,7 @@ ${message || "未入力（専任スタッフと相談希望）"}`
               {isJa ? "よくあるご質問 (FAQ)" : isVi ? "Câu hỏi thường gặp" : "Frequently Asked Questions"}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {isJa ? "問い合わせフォーム営業代行に関する主な疑問にお答えします。" : isVi ? "Giải đáp các thắc mắc về tính an toàn và hiệu quả của dịch vụ." : "Common questions about safety, delivery, and conversion rates."}
+              {isJa ? "問い合わせフォーム営業に関する主な疑問にお答えします。" : isVi ? "Giải đáp các thắc mắc về tính an toàn và hiệu quả của dịch vụ." : "Common questions about safety, delivery, and conversion rates."}
             </p>
           </div>
 
@@ -826,7 +922,7 @@ ${message || "未入力（専任スタッフと相談希望）"}`
             {faqs.map((faq, idx) => (
               <div
                 key={idx}
-                className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden transition-all shadow-xs"
+                className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden transition-all shadow-2xs"
               >
                 <button
                   type="button"
