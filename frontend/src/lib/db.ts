@@ -9,7 +9,7 @@ import { loadEnvConfig } from '@next/env';
 loadEnvConfig(process.cwd());
 
 // Connection parameters
-const DATABASE_URL = process.env.DATABASE_URL;
+const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres:Hrptlcct6789%40@127.0.0.1:5432/kigyou_list";
 let pgPool: Pool | null = null;
 let sqliteInstance: DatabaseSync | null = null;
 
@@ -1207,7 +1207,11 @@ function buildSearchQuery(
   }
 
   // Filter out hidden companies
-  whereClauses.push("c.corporate_number NOT IN (SELECT corporate_number FROM hidden_companies)");
+  if (isPG) {
+    whereClauses.push("NOT EXISTS (SELECT 1 FROM hidden_companies hc WHERE hc.corporate_number = c.corporate_number)");
+  } else {
+    whereClauses.push("c.corporate_number NOT IN (SELECT corporate_number FROM hidden_companies)");
+  }
 
   let finalSql = sql;
   if (whereClauses.length > 0) {
@@ -1360,7 +1364,11 @@ export async function searchCompanies(
     let sql = dataQuery.sql;
     const isPG = !!DATABASE_URL;
     if (isPG) {
-      sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+      if (keyword) {
+        sql = `WITH matched AS MATERIALIZED (${sql}) SELECT * FROM matched ORDER BY has_financials DESC, capital_amount DESC NULLS LAST, corporate_number ASC`;
+      } else {
+        sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
+      }
     } else {
       sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
     }
