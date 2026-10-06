@@ -594,30 +594,55 @@ ${message || "未入力"}`
             </div>
           </div>
 
-          {/* Enterprise notice below pricing */}
-          <div className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400">
+          {/* Enterprise notice & Cross-link to Data Pricing */}
+          <div className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
             {isJa ? (
-              <p>
-                ※ 10,000件以上の大口配信や、請求書払い（月末締め翌月末払い）をご希望の場合は、
-                <a href="#contact-form" className="text-indigo-600 dark:text-indigo-400 underline font-semibold ml-1">
-                  下記の大口・カスタム窓口
-                </a>
-                よりお気軽にご相談ください。
-              </p>
+              <>
+                <p>
+                  ※ 10,000件以上の大口配信や、請求書払い（月末締め翌月末払い）をご希望の場合は、
+                  <a href="#contact-form" className="text-indigo-600 dark:text-indigo-400 underline font-semibold ml-1">
+                    下記の大口・カスタム窓口
+                  </a>
+                  よりお気軽にご相談ください。
+                </p>
+                <p className="text-slate-400 dark:text-slate-500">
+                  ※ 企業データベースの閲覧やCSV抽出のみをご希望の場合は、
+                  <Link href={`/${locale}/pricing`} className="text-blue-600 dark:text-blue-400 underline font-medium ml-1">
+                    企業データ料金プラン
+                  </Link>
+                  をご確認ください。
+                </p>
+              </>
             ) : isVi ? (
-              <p>
-                ※ Đối với nhu cầu gửi trên 10.000 Form hoặc thanh toán bằng hóa đơn công ty (Invoice), vui lòng liên hệ tại
-                <a href="#contact-form" className="text-indigo-600 dark:text-indigo-400 underline font-semibold ml-1">
-                  Mục tư vấn Doanh nghiệp lớn
-                </a>.
-              </p>
+              <>
+                <p>
+                  ※ Đối với nhu cầu gửi trên 10.000 Form hoặc thanh toán bằng hóa đơn công ty (Invoice), vui lòng liên hệ tại
+                  <a href="#contact-form" className="text-indigo-600 dark:text-indigo-400 underline font-semibold ml-1">
+                    Mục tư vấn Doanh nghiệp lớn
+                  </a>.
+                </p>
+                <p className="text-slate-400 dark:text-slate-500">
+                  ※ Nếu bạn chỉ có nhu cầu tra cứu và xuất danh sách CSV, vui lòng xem
+                  <Link href={`/${locale}/pricing`} className="text-blue-600 dark:text-blue-400 underline font-medium ml-1">
+                    Bảng giá Dữ liệu Doanh nghiệp
+                  </Link>.
+                </p>
+              </>
             ) : (
-              <p>
-                For enterprise volume (10,000+ forms) or invoice billing, please contact our
-                <a href="#contact-form" className="text-indigo-600 dark:text-indigo-400 underline font-semibold ml-1">
-                  Enterprise Consultation desk
-                </a>.
-              </p>
+              <>
+                <p>
+                  For enterprise volume (10,000+ forms) or invoice billing, please contact our
+                  <a href="#contact-form" className="text-indigo-600 dark:text-indigo-400 underline font-semibold ml-1">
+                    Enterprise Consultation desk
+                  </a>.
+                </p>
+                <p className="text-slate-400 dark:text-slate-500">
+                  If you only need corporate search and CSV list exports, please view our
+                  <Link href={`/${locale}/pricing`} className="text-blue-600 dark:text-blue-400 underline font-medium ml-1">
+                    Corporate Data Pricing Plans
+                  </Link>.
+                </p>
+              </>
             )}
           </div>
         </section>

@@ -2,7 +2,7 @@ const ja = {
   header: {
     search: "企業検索",
     directory: "企業データ一覧",
-    formDm: "フォーム営業代行",
+    formDm: "フォーム営業",
     pricing: "料金プラン",
     blog: "ブログ",
     dashboard: "ABMダッシュボード",

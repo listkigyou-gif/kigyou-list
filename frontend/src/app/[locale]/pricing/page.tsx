@@ -9,7 +9,8 @@ import { useLanguage } from "@/context/LanguageContext";
 import { LocaleLink } from "@/components/LocaleLink";
 import { 
   Check, Info, Sparkles, ShieldCheck, CreditCard, 
-  HelpCircle, Coins, ArrowRight, Loader2, Star, Clock, ChevronRight
+  HelpCircle, Coins, ArrowRight, Loader2, Star, Clock, ChevronRight,
+  Database, Send
 } from "lucide-react";
 
 interface PlanDetails {
@@ -386,36 +387,54 @@ export default function PricingPage() {
           </p>
         </section>
 
+        {/* Service Type Switcher Tabs */}
+        <section className="max-w-xl mx-auto w-full">
+          <div className="p-1 bg-slate-200/80 dark:bg-slate-800/80 rounded-2xl flex items-center gap-1 border border-slate-300/60 dark:border-slate-700/60 shadow-inner">
+            <div className="flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-center bg-white dark:bg-[#1C2128] text-slate-900 dark:text-white shadow-xs flex items-center justify-center gap-2">
+              <Database className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span>{isEn ? "Corporate Data & CSV" : isVi ? "Dữ liệu & Xuất CSV" : "企業データ・CSV抽出"}</span>
+            </div>
+            <LocaleLink
+              href="/form-marketing#pricing"
+              className="flex-1 py-2.5 px-4 rounded-xl font-semibold text-xs sm:text-sm text-center text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all flex items-center justify-center gap-2 hover:bg-white/50 dark:hover:bg-slate-750"
+            >
+              <Send className="w-4 h-4 text-indigo-500" />
+              <span>{isEn ? "Form Outreach" : isVi ? "Gửi Form Tiếp Cận" : "フォーム営業 (配信)"}</span>
+              <span className="text-[9px] px-1 py-0.2 rounded font-extrabold bg-indigo-600 text-white">NEW</span>
+            </LocaleLink>
+          </div>
+        </section>
+
         {/* Month-End Countdown urgence timer */}
         <section className="max-w-4xl mx-auto w-full">
           <CountdownTimer />
         </section>
 
-        {/* DFY Form Outreach Service Banner in Pricing */}
+        {/* Form Outreach Service SaaS Callout in Pricing */}
         <section className="max-w-5xl mx-auto w-full">
-          <div className="p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-blue-900 via-indigo-900 to-purple-900 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-indigo-700/50">
+          <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-indigo-900/60">
             <div className="flex-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[10px] font-black uppercase tracking-wider mb-3">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>{isEn ? "NEW OUTBOUND SERVICE" : isVi ? "DỊCH VỤ MỚI" : "新登場・丸投げ営業代行"}</span>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[10px] font-black uppercase tracking-wider mb-3">
+                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                <span>{isEn ? "SELF-SERVE OUTBOUND SAAS" : isVi ? "NỀN TẢNG TIẾP CẬN TỰ ĐỘNG" : "セルフサービス型 フォーム営業"}</span>
               </div>
               <h2 className="text-xl sm:text-2xl font-black mb-2">
-                {isEn ? "Done-For-You Contact Form DM Service" : isVi ? "Dịch Vụ Gửi Form Doanh Nghiệp Trọn Gói (DFY)" : "問い合わせフォーム営業代行（丸投げプラン）"}
+                {isEn ? "Automated Contact Form Outreach SaaS" : isVi ? "Tự Động Gửi Form Marketing Trực Tuyến" : "問い合わせフォーム営業配信プラットフォーム"}
               </h2>
-              <p className="text-xs sm:text-sm text-indigo-100 leading-relaxed max-w-2xl">
+              <p className="text-xs sm:text-sm text-slate-350 leading-relaxed max-w-2xl">
                 {isEn
-                  ? "Don't have time to download lists and submit forms manually? Our team + AI delivers your sales message directly to target contact forms starting at just 20 JPY/form."
+                  ? "Looking to pitch decision-makers directly? Filter hyper-targeted prospects from our 5M+ database and dispatch your pitch directly to verified corporate contact forms starting at 20 JPY/form."
                   : isVi
-                  ? "Không cần tự tải dữ liệu và nhập form thủ công. Đội ngũ chuyên gia và AI của chúng tôi sẽ thay bạn gửi thông điệp chào hàng trực tiếp vào form của các doanh nghiệp Nhật (chỉ từ 20 JPY/form)."
-                  : "自社でリストを精査し、手動でフォーム送信する工数はもう不要。500万社DBからターゲットを厳選し、AI除外＆専任スタッフが代行送信（1件20円〜）。"}
+                  ? "Muốn chào hàng trực tiếp đến ban lãnh đạo công ty? Lọc tệp khách hàng từ 5 triệu doanh nghiệp và tự động gửi thông điệp chào hàng vào Form liên hệ ngay trên hệ thống (chỉ từ 20 JPY/form)."
+                  : "自社でリストを精査し、手動でフォーム送信する工数はもう不要。500万社DBからターゲットを抽出し、管理画面から自社の営業文面を即時オンライン配信（1件20円〜）。"}
               </p>
             </div>
             <div className="shrink-0 flex flex-col sm:flex-row items-center gap-3">
               <LocaleLink
-                href="/form-marketing"
-                className="px-6 py-3 rounded-2xl font-bold text-xs text-indigo-950 bg-white hover:bg-slate-100 shadow-md transition-all active:scale-[0.98] flex items-center gap-2"
+                href="/form-marketing#pricing"
+                className="px-6 py-3 rounded-xl font-bold text-xs text-slate-900 bg-white hover:bg-slate-100 shadow-md transition-all active:scale-[0.98] flex items-center gap-2"
               >
-                <span>{isEn ? "Explore Form DM Plans" : isVi ? "Xem Bảng Giá Gửi Form" : "フォーム代行プランを見る"}</span>
+                <span>{isEn ? "View Form Outreach Plans" : isVi ? "Xem Bảng Giá Gửi Form" : "フォーム営業プランを見る"}</span>
                 <ArrowRight className="w-4 h-4 text-indigo-600" />
               </LocaleLink>
             </div>
