@@ -93,6 +93,9 @@ export function FormCampaignsTab() {
       if (resCmp.ok) {
         const data = await resCmp.json();
         setCampaigns(data.campaigns || []);
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new Event("formCampaignsUpdated"));
+        }
       }
       if (resTpl.ok) {
         const data = await resTpl.json();

@@ -11,7 +11,8 @@ import {
   Building2, Trash2, Download, ArrowRight, Kanban, ListFilter, 
   Sparkles, CheckCircle2, ChevronRight, Lock, Phone, MoveLeft, MoveRight,
   AlertTriangle, Settings, Loader2, X, ShieldAlert, Upload, Key, Terminal, Copy, Check,
-  Search, FileText, ExternalLink, RefreshCw, Eye, ShieldCheck, Send
+  Search, FileText, ExternalLink, RefreshCw, Eye, ShieldCheck, Send,
+  Clock, Info
 } from "lucide-react";
 import Link from "next/link";
 import { parseUTCDate } from "@/lib/dateUtils";
@@ -141,6 +142,8 @@ export default function DashboardPage() {
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
   const [loadingExports, setLoadingExports] = useState(false);
   const [loadingPayments, setLoadingPayments] = useState(false);
+  const [formCampaignsList, setFormCampaignsList] = useState<any[]>([]);
+  const [loadingFormCampaigns, setLoadingFormCampaigns] = useState(false);
 
   // Billing Info States
   const [billingName, setBillingName] = useState("");
@@ -261,6 +264,22 @@ export default function DashboardPage() {
       console.error("Failed to fetch billing info", e);
     } finally {
       setLoadingBilling(false);
+    }
+  }, [user]);
+
+  const fetchFormCampaigns = useCallback(async () => {
+    if (!user?.email) return;
+    setLoadingFormCampaigns(true);
+    try {
+      const res = await fetch("/api/user/form-campaigns");
+      if (res.ok) {
+        const data = await res.json();
+        setFormCampaignsList(data.campaigns || []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch form campaigns in dashboard", e);
+    } finally {
+      setLoadingFormCampaigns(false);
     }
   }, [user]);
 
@@ -417,8 +436,10 @@ export default function DashboardPage() {
       fetchBillingInfo();
     } else if (activeTab === "developer") {
       fetchApiKeys();
+    } else if (activeTab === "formCampaigns") {
+      fetchFormCampaigns();
     }
-  }, [activeTab, fetchExportJobs, fetchPaymentHistory, fetchBillingInfo, fetchApiKeys]);
+  }, [activeTab, fetchExportJobs, fetchPaymentHistory, fetchBillingInfo, fetchApiKeys, fetchFormCampaigns]);
 
   // Sync saved list from API
   useEffect(() => {
@@ -445,6 +466,16 @@ export default function DashboardPage() {
       window.removeEventListener("quotaUpdated", handleQuotaUpdated);
     };
   }, [refreshQuota]);
+
+  useEffect(() => {
+    const handleCampaignsUpdated = () => {
+      fetchFormCampaigns();
+    };
+    window.addEventListener("formCampaignsUpdated", handleCampaignsUpdated);
+    return () => {
+      window.removeEventListener("formCampaignsUpdated", handleCampaignsUpdated);
+    };
+  }, [fetchFormCampaigns]);
 
   // Handle Stripe subscription success redirection & simulation
   useEffect(() => {
@@ -1205,47 +1236,134 @@ export default function DashboardPage() {
           </div>
 
           {/* 4 Quick KPI Stat Cards */}
-          <section className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 border border-blue-100 dark:border-blue-900 flex items-center justify-center shrink-0">
-                <Building2 className="w-4.5 h-4.5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-semibold text-slate-400">マイリスト保存数</span>
-                <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{companies.length} <span className="text-xs font-bold text-slate-400">社</span></span>
-              </div>
-            </div>
+          {activeTab === "formCampaigns" ? (
+            <div className="flex flex-col gap-3">
+              <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-200">
+                {/* Form KPI 1 */}
+                <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 border border-indigo-100 dark:border-indigo-900 flex items-center justify-center shrink-0">
+                    <Send className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-semibold text-slate-400">
+                      {locale === 'en' ? "Total Campaigns" : locale === 'vi' ? "Tổng số chiến dịch" : "総キャンペーン数"}
+                    </span>
+                    <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
+                      {formCampaignsList.length} <span className="text-xs font-bold text-slate-400">件</span>
+                    </span>
+                  </div>
+                </div>
 
-            <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 border border-amber-100 dark:border-amber-900 flex items-center justify-center shrink-0">
-                <Kanban className="w-4.5 h-4.5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-semibold text-slate-400">商談中・成約案件</span>
-                <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{dealsInProgressCount} <span className="text-xs font-bold text-slate-400">件</span></span>
-              </div>
-            </div>
+                {/* Form KPI 2 */}
+                <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 border border-amber-100 dark:border-amber-900 flex items-center justify-center shrink-0">
+                    <Clock className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-semibold text-slate-400">
+                      {locale === 'en' ? "In Review / Sending" : locale === 'vi' ? "Đang duyệt / Đang gửi" : "審査中・配信中"}
+                    </span>
+                    <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
+                      {formCampaignsList.filter((c: any) => c.status === "pending_review" || c.status === "approved" || c.status === "sending").length} <span className="text-xs font-bold text-slate-400">件</span>
+                    </span>
+                  </div>
+                </div>
 
-            <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 border border-emerald-100 dark:border-emerald-900 flex items-center justify-center shrink-0">
-                <Download className="w-4.5 h-4.5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-semibold text-slate-400">残CSV出力可能枠</span>
-                <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{quota?.remaining.toLocaleString() ?? "-"} <span className="text-xs font-bold text-slate-400">行</span></span>
-              </div>
-            </div>
+                {/* Form KPI 3 */}
+                <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 border border-emerald-100 dark:border-emerald-900 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-semibold text-slate-400">
+                      {locale === 'en' ? "Delivered Forms" : locale === 'vi' ? "Form đã gửi thành công" : "送信完了フォーム数"}
+                    </span>
+                    <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
+                      {formCampaignsList.reduce((acc: number, c: any) => acc + (c.success_count || 0), 0).toLocaleString()} <span className="text-xs font-bold text-slate-400">通</span>
+                    </span>
+                  </div>
+                </div>
 
-            <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
-              <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 border border-purple-100 dark:border-purple-900 flex items-center justify-center shrink-0">
-                <Sparkles className="w-4.5 h-4.5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[10px] font-semibold text-slate-400">契約プラン</span>
-                <span className="text-xs font-black text-slate-900 dark:text-white mt-1 uppercase">{currentPlanInfo.label}</span>
+                {/* Form KPI 4 */}
+                <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 border border-purple-100 dark:border-purple-900 flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4.5 h-4.5" />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-semibold text-slate-400">
+                      {locale === 'en' ? "Billing Model" : locale === 'vi' ? "Cơ chế tính phí" : "配信課金モデル"}
+                    </span>
+                    <span className="text-xs font-black text-slate-900 dark:text-white mt-1">
+                      {locale === 'en' ? "Pay-per-campaign" : locale === 'vi' ? "Theo chiến dịch (từ 20円)" : "都度購入 (1件20円〜)"}
+                    </span>
+                  </div>
+                </div>
+              </section>
+
+              {/* Informative Guidance Notice */}
+              <div className="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/25 border border-indigo-200/80 dark:border-indigo-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-indigo-950 dark:text-indigo-200 animate-in fade-in duration-200 shadow-2xs">
+                <div className="flex items-center gap-2">
+                  <Info className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <span>
+                    {locale === 'vi' 
+                      ? "問い合わせフォーム営業 là dịch vụ thanh toán theo từng chiến dịch (từ 500 đến 5.000 form). Hạn mức này tách biệt hoàn toàn với hạn mức tải 20 dòng CSV miễn phí của tài khoản."
+                      : locale === 'en'
+                      ? "Contact Form Outreach operates on a pay-per-campaign basis (from 500 to 5,000 forms), separate from your account's daily CSV export allowance."
+                      : "※ 問い合わせフォーム営業はキャンペーン単位（500件〜）の都度購入・従量課金制です。アカウントの無料CSV出力枠（20行）とは別枠となります。"}
+                  </span>
+                </div>
+                <Link
+                  href={`/${locale}/form-marketing#pricing`}
+                  className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline shrink-0 text-[11px] flex items-center gap-1"
+                >
+                  <span>{locale === 'vi' ? "Xem bảng giá chiến dịch" : locale === 'en' ? "View Campaign Pricing" : "配信単価・料金表"}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
-          </section>
+          ) : (
+            <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-200">
+              <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 border border-blue-100 dark:border-blue-900 flex items-center justify-center shrink-0">
+                  <Building2 className="w-4.5 h-4.5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-semibold text-slate-400">マイリスト保存数</span>
+                  <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{companies.length} <span className="text-xs font-bold text-slate-400">社</span></span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 border border-amber-100 dark:border-amber-900 flex items-center justify-center shrink-0">
+                  <Kanban className="w-4.5 h-4.5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-semibold text-slate-400">商談中・成約案件</span>
+                  <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{dealsInProgressCount} <span className="text-xs font-bold text-slate-400">件</span></span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 border border-emerald-100 dark:border-emerald-900 flex items-center justify-center shrink-0">
+                  <Download className="w-4.5 h-4.5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-semibold text-slate-400">残CSV出力可能枠</span>
+                  <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{quota?.remaining.toLocaleString() ?? "-"} <span className="text-xs font-bold text-slate-400">行</span></span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
+                <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 border border-purple-100 dark:border-purple-900 flex items-center justify-center shrink-0">
+                  <Sparkles className="w-4.5 h-4.5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-semibold text-slate-400">契約プラン</span>
+                  <span className="text-xs font-black text-slate-900 dark:text-white mt-1 uppercase">{currentPlanInfo.label}</span>
+                </div>
+              </div>
+            </section>
+          )}
 
           {quota?.subscription_status === 'suspended' && (
             <div className="bg-rose-50 border border-rose-200 dark:bg-rose-950/20 dark:border-rose-900/30 rounded-2xl p-4 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2.5 animate-in fade-in duration-300">
