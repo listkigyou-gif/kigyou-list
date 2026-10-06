@@ -70,7 +70,7 @@ export function FormCampaignsTab() {
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
   const [editingCampaignId, setEditingCampaignId] = useState<string | null>(null);
   const [cmpName, setCmpName] = useState("");
-  const [cmpTargetCount, setCmpTargetCount] = useState<number>(500);
+  const [cmpTargetCount, setCmpTargetCount] = useState<number>(1000);
   const [cmpSenderCompany, setCmpSenderCompany] = useState("");
   const [cmpSenderName, setCmpSenderName] = useState("");
   const [cmpSenderEmail, setCmpSenderEmail] = useState(user?.email || "");
@@ -185,7 +185,7 @@ export function FormCampaignsTab() {
     } else {
       setEditingCampaignId(null);
       setCmpName(isJa ? `新規フォーム営業キャンペーン_${new Date().toLocaleDateString("ja-JP")}` : `Chiến dịch gửi Form_${new Date().toLocaleDateString("vi-VN")}`);
-      setCmpTargetCount(500);
+      setCmpTargetCount(1000);
       setCmpSenderCompany("");
       setCmpSenderName("");
       setCmpSenderEmail(user?.email || "");
@@ -211,7 +211,7 @@ export function FormCampaignsTab() {
     }
 
     setSavingCampaign(true);
-    const calculatedCost = cmpTargetCount <= 500 ? 12000 : cmpTargetCount <= 1000 ? 22000 : Math.round(cmpTargetCount * 20);
+    const calculatedCost = cmpTargetCount <= 1000 ? 19600 : cmpTargetCount <= 3000 ? 48300 : 69300;
 
     try {
       const res = await fetch("/api/user/form-campaigns", {
@@ -699,10 +699,9 @@ export function FormCampaignsTab() {
                     onChange={(e) => setCmpTargetCount(parseInt(e.target.value))}
                     className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                   >
-                    <option value={500}>500 件 (¥12,000 / 単価24円)</option>
-                    <option value={1000}>1,000 件 (¥22,000 / 単価22円)</option>
-                    <option value={3000}>3,000 件 (¥59,000 / 単価19.6円 - おすすめ)</option>
-                    <option value={5000}>5,000 件 (¥95,000 / 単価19円)</option>
+                    <option value={1000}>1,000 件 (¥19,600 / 単価19.6円)</option>
+                    <option value={3000}>3,000 件 (¥48,300 / 単価16.1円 - おすすめ)</option>
+                    <option value={5000}>5,000 件 (¥69,300 / 単価13.8円)</option>
                   </select>
                 </div>
               </div>
