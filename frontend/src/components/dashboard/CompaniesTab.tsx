@@ -111,42 +111,42 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
   return (
     <div className="space-y-6">
       {/* Top Banner: 50 Quota Partner Benefit */}
-      <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700 rounded-3xl p-6 sm:p-7 text-white shadow-lg relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
+      <div className="bg-[#0F1E36] border border-blue-900/40 rounded-xl p-6 text-white shadow-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/5 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold border border-white/25">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-blue-500/10 border border-blue-400/30 rounded-md text-xs font-semibold text-blue-300">
               <Sparkles className="w-3.5 h-3.5 text-amber-300" />
               <span>{isJa ? "公式認証パートナー限定プログラム" : "Chương trình Đối tác Doanh nghiệp"}</span>
             </div>
 
-            <h2 className="text-xl sm:text-2xl font-black tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
               {isJa ? "自社プロファイル管理 & 公式認証" : "Quản lý Hồ sơ Doanh nghiệp & Xác thực"}
             </h2>
 
-            <p className="text-xs sm:text-sm text-emerald-50 leading-relaxed font-medium">
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
               {isJa
                 ? "自社の公式オーナー認証を完了し、ページを公開維持していただくことで、毎日のリスト無料ダウンロード枠が永久に 20件 → 50件/日（月間1,500件） に拡大されます。"
                 : "Xác minh chính chủ và duy trì công khai hồ sơ doanh nghiệp để được nâng cấp hạn ngạch tải danh bạ lên 50 lượt/ngày (1.500 lượt/tháng)."}
             </p>
           </div>
 
-          <div className="bg-white/15 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-white/20 text-center shrink-0 min-w-[200px]">
-            <span className="text-[11px] font-bold text-emerald-100 uppercase tracking-wider block">
+          <div className="bg-slate-800/90 border border-slate-700/70 p-4 sm:p-5 rounded-lg text-center shrink-0 min-w-[200px]">
+            <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider block">
               {isJa ? "現在の無料ダウンロード枠" : "Hạn ngạch miễn phí"}
             </span>
-            <div className="text-3xl font-black mt-1">
-              {dailyAllowance} <span className="text-sm font-bold text-emerald-200">{isJa ? "件/日" : "lượt/ngày"}</span>
+            <div className="text-3xl font-bold mt-1 text-white">
+              {dailyAllowance} <span className="text-sm font-semibold text-slate-300">{isJa ? "件/日" : "lượt/ngày"}</span>
             </div>
             <div className="mt-2">
               {isVerifiedPartner ? (
-                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-200 bg-emerald-950/40 px-2.5 py-0.5 rounded-full">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-300" />
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-300 bg-emerald-950/60 border border-emerald-800/60 px-2 py-0.5 rounded-md">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" />
                   {isJa ? "公式認証特典 適用中" : "Đã kích hoạt ưu đãi"}
                 </span>
               ) : (
-                <span className="text-[10px] text-emerald-200/80">
+                <span className="text-[10px] text-slate-400">
                   {isJa ? "認証完了で50件/日に拡大" : "Xác thực để nhận 50 lượt/ngày"}
                 </span>
               )}
@@ -159,9 +159,9 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-            <Building2 className="w-5 h-5 text-emerald-600" />
+            <Building2 className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
             <span>{isJa ? "管理企業一覧" : "Danh sách doanh nghiệp quản lý"}</span>
-            <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+            <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
               {companies.length} {isJa ? "社" : "cty"}
             </span>
           </h3>
@@ -176,7 +176,7 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
           <button
             onClick={fetchUserCompanies}
             disabled={loading}
-            className="p-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer"
+            className="p-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
             title={isJa ? "更新" : "Làm mới"}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -184,7 +184,7 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
 
           <Link
             href={`/${locale}/search`}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#1B4F8A] hover:bg-[#163e6d] text-white text-xs font-semibold rounded-lg shadow-xs transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>{isJa ? "企業を追加認証する" : "Thêm doanh nghiệp quản lý"}</span>
@@ -194,14 +194,14 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
 
       {/* Claimed Companies List */}
       {loading ? (
-        <div className="p-12 text-center bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl">
-          <Loader2 className="w-6 h-6 animate-spin text-emerald-600 mx-auto mb-2" />
+        <div className="p-12 text-center bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl">
+          <Loader2 className="w-6 h-6 animate-spin text-[#1B4F8A] dark:text-blue-400 mx-auto mb-2" />
           <p className="text-xs text-slate-500">{isJa ? "管理企業情報を取得中..." : "Đang tải dữ liệu..."}</p>
         </div>
       ) : companies.length === 0 ? (
-        <div className="p-10 text-center bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl space-y-4">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
-            <Building2 className="w-7 h-7" />
+        <div className="p-10 text-center bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl space-y-4">
+          <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-[#1B4F8A] dark:text-blue-400 flex items-center justify-center mx-auto border border-blue-100 dark:border-blue-900/60">
+            <Building2 className="w-6 h-6" />
           </div>
           <div className="max-w-md mx-auto space-y-1">
             <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">
@@ -215,34 +215,34 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
           </div>
           <Link
             href={`/${locale}/search`}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all"
+            className="inline-flex items-center gap-2 px-4 py-2 bg-[#1B4F8A] hover:bg-[#163e6d] text-white text-xs font-semibold rounded-lg shadow-xs transition-colors"
           >
             <Search className="w-4 h-4" />
             <span>{isJa ? "自社を検索して公式認証する" : "Tìm kiếm công ty để xác thực"}</span>
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4">
+        <div className="grid grid-cols-1 gap-3">
           {companies.map((comp) => (
             <div
               key={comp.corporate_number}
-              className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-xs hover:border-emerald-300 dark:hover:border-emerald-800 transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+              className="bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 shadow-xs hover:border-blue-300 dark:hover:border-blue-800 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4"
             >
               <div className="space-y-2 flex-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                     {isJa ? "公式認証済" : "Đã xác minh chính chủ"}
                   </span>
 
                   {comp.is_hidden ? (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                       <EyeOff className="w-3 h-3 text-amber-600" />
                       {isJa ? "非公開中" : "Đang ẩn"}
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
-                      <Eye className="w-3 h-3 text-blue-600" />
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                      <Eye className="w-3 h-3 text-[#1B4F8A]" />
                       {isJa ? "公開中" : "Công khai"}
                     </span>
                   )}
@@ -262,16 +262,16 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
                   <h4 className="text-base font-bold text-slate-900 dark:text-white truncate">
                     {comp.company_name}
                   </h4>
-                  <p className="text-xs text-slate-400 mt-0.5">
-                    法人番号: <span className="font-mono text-slate-600 dark:text-slate-300">{comp.corporate_number}</span>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    法人番号: <span className="font-mono text-slate-700 dark:text-slate-300">{comp.corporate_number}</span>
                     {comp.prefecture_name && ` | 所在地: ${comp.prefecture_name}`}
                   </p>
                 </div>
 
                 {comp.pr_message && (
-                  <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                  <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-2 bg-slate-50 dark:bg-slate-800/40 p-2.5 rounded-lg border border-slate-100 dark:border-slate-800">
                     <strong className="text-slate-800 dark:text-slate-200">PR: </strong>
-                    {comp.pr_title && <span className="font-semibold text-emerald-700 dark:text-emerald-400">「{comp.pr_title}」 </span>}
+                    {comp.pr_title && <span className="font-semibold text-[#1B4F8A] dark:text-blue-400">「{comp.pr_title}」 </span>}
                     {comp.pr_message}
                   </p>
                 )}
@@ -281,7 +281,7 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
                 <button
                   type="button"
                   onClick={() => setSelectedCompanyForModal(comp)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-semibold rounded-lg transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
                 >
                   <FileEdit className="w-3.5 h-3.5 text-slate-500" />
                   <span>{isJa ? "プロファイル編集" : "Chỉnh sửa hồ sơ"}</span>
@@ -290,7 +290,7 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
                 <Link
                   href={`/${locale}/company/${comp.corporate_number}`}
                   target="_blank"
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-bold rounded-xl transition-all"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-semibold rounded-lg transition-colors"
                 >
                   <span>{isJa ? "公開ページ" : "Xem trang"}</span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
@@ -316,9 +316,9 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
             </p>
           </div>
 
-          <div className="overflow-x-auto bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl">
+          <div className="overflow-x-auto bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl">
             <table className="w-full text-left text-xs whitespace-nowrap">
-              <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 font-bold border-b border-slate-200 dark:border-slate-800">
+              <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 font-semibold border-b border-slate-200 dark:border-slate-800">
                 <tr>
                   <th className="px-4 py-3">{isJa ? "申請日時" : "Thời gian"}</th>
                   <th className="px-4 py-3">{isJa ? "対象企業名" : "Tên doanh nghiệp"}</th>
@@ -333,7 +333,7 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
                     <td className="px-4 py-3 text-slate-500 font-mono">
                       {new Date(req.created_at).toLocaleDateString(isJa ? "ja-JP" : "vi-VN")}
                     </td>
-                    <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
+                    <td className="px-4 py-3 font-semibold text-slate-900 dark:text-white">
                       {req.company_name}
                       <span className="block text-[10px] text-slate-400 font-normal">
                         法人番号: {req.corporate_number}
@@ -344,17 +344,17 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
                     </td>
                     <td className="px-4 py-3">
                       {req.status === "pending" ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                           <Clock className="w-3 h-3" />
                           {isJa ? "審査中（24時間以内）" : "Đang xét duyệt"}
                         </span>
                       ) : req.status === "approved" ? (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                           <CheckCircle2 className="w-3 h-3" />
                           {isJa ? "承認完了" : "Đã phê duyệt"}
                         </span>
                       ) : (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-md text-[10px] font-semibold bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                           <XCircle className="w-3 h-3" />
                           {isJa ? "見送り / 却下" : "Từ chối"}
                         </span>
@@ -370,6 +370,7 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
           </div>
         </div>
       )}
+
 
       {/* Edit Profile Modal Integration */}
       {selectedCompanyForModal && (

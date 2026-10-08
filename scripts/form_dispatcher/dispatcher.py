@@ -20,8 +20,33 @@ import time
 import argparse
 import sqlite3
 import csv
+from urllib.parse import urlparse
 from datetime import datetime
 from typing import Dict, Any, List
+
+try:
+    from dotenv import load_dotenv
+    env_local = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env.local")
+    if os.path.exists(env_local):
+        load_dotenv(env_local)
+except ImportError:
+    pass
+
+def parse_proxy_url(proxy_str: str):
+    if not proxy_str:
+        return None
+    if not (proxy_str.startswith("http://") or proxy_str.startswith("https://") or proxy_str.startswith("socks5://")):
+        proxy_str = "http://" + proxy_str
+    parsed = urlparse(proxy_str)
+    config = {
+        "server": f"{parsed.scheme}://{parsed.hostname}:{parsed.port}",
+        "bypass": "localhost, 127.0.0.1"
+    }
+    if parsed.username:
+        config["username"] = parsed.username
+    if parsed.password:
+        config["password"] = parsed.password
+    return config
 
 try:
     sys.stdout.reconfigure(encoding='utf-8')
@@ -30,7 +55,7 @@ except Exception:
     pass
 
 # Import local detector module
-from detector import check_anti_spam_disclaimer, analyze_form_structure
+from detector import check_anti_spam_disclaimer, check_captcha_or_bot_protection, analyze_form_structure
 
 try:
     from playwright.sync_api import sync_playwright, Page, TimeoutError as PlaywrightTimeoutError
@@ -43,10 +68,12 @@ SCREENSHOT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "repor
 
 
 class FormDispatcher:
-    def __init__(self, sender_profile: Dict[str, str], dry_run: bool = True):
+    def __init__(self, sender_profile: Dict[str, str], dry_run: bool = True, save_screenshot: bool = False):
         self.sender = sender_profile
         self.dry_run = dry_run
-        os.makedirs(SCREENSHOT_DIR, exist_ok=True)
+        self.save_screenshot = save_screenshot
+        if self.save_screenshot:
+            os.makedirs(SCREENSHOT_DIR, exist_ok=True)
 
     def dispatch_single_company(self, page: Page, company: Dict[str, Any]) -> Dict[str, Any]:
         url = company.get("contact_form_url") or company.get("website_url")
@@ -58,6 +85,7 @@ class FormDispatcher:
             "company_name": comp_name,
             "form_url": url,
             "status": "FAILED",
+            "billable": False,
             "message": "",
             "screenshot_path": "",
             "timestamp": datetime.now().isoformat()
@@ -73,16 +101,27 @@ class FormDispatcher:
             page.goto(url, wait_until="domcontentloaded", timeout=25000)
             page.wait_for_timeout(1500)
 
-            # 2. Check for Anti-Spam / Sales Prohibited Disclaimer (AI Safety Check)
             html_content = page.content()
+
+            # 2. Check for Anti-Spam / Sales Prohibited Disclaimer (AI Safety Check)
             disclaimer_check = check_anti_spam_disclaimer(html_content)
             if disclaimer_check["has_disclaimer"]:
                 result["status"] = "SKIPPED_DISCLAIMER"
-                result["message"] = f"Skipped: Prohibited disclaimer found ({', '.join(disclaimer_check['matched_phrases'])})"
-                print(f"  [!] {result['message']}")
+                result["billable"] = False
+                result["message"] = f"Skipped: Prohibited disclaimer ({', '.join(disclaimer_check['matched_phrases'])})"
+                print(f"  [!] {result['message']} (Refund credit)")
                 return result
 
-            # 3. Locate and fill form fields via smart CSS / XPath selectors
+            # 3. Check for CAPTCHA or Anti-Bot Protection (Approach 1: Auto-skip and refund)
+            captcha_check = check_captcha_or_bot_protection(html_content)
+            if captcha_check["has_protection"]:
+                result["status"] = "BLOCKED_CAPTCHA" if "CAPTCHA" in captcha_check["type"] else "BLOCKED_BOT_WAF"
+                result["billable"] = False
+                result["message"] = f"Skipped: {captcha_check['reason']}"
+                print(f"  [!] {result['message']} (Refund credit)")
+                return result
+
+            # 4. Locate and fill form fields via smart CSS / XPath selectors
             filled_fields = 0
 
             # Company name input
@@ -124,8 +163,12 @@ class FormDispatcher:
                 if page.locator(sel).count() > 0:
                     page.locator(sel).first.fill(self.sender["email"])
                     filled_fields += 1
-                    # Also look for email confirmation input
-                    conf_selectors = ['input[name*="confirm" i]', 'input[name*="check" i]', 'input[id*="confirm" i]']
+                    # Also look for email confirmation input (exclude submit/button)
+                    conf_selectors = [
+                        'input[name*="confirm" i]:not([type="submit"]):not([type="button"])',
+                        'input[name*="check" i]:not([type="submit"]):not([type="button"])',
+                        'input[id*="confirm" i]:not([type="submit"]):not([type="button"])'
+                    ]
                     for c_sel in conf_selectors:
                         if page.locator(c_sel).count() > 0:
                             page.locator(c_sel).first.fill(self.sender["email"])
@@ -143,7 +186,9 @@ class FormDispatcher:
 
             # Subject (if available)
             subject_selectors = [
-                'input[name*="subject" i]', 'input[name*="title" i]', 'input[placeholder*="件名" i]', 'input[placeholder*="題名" i]'
+                'input[type="text"][name*="subject" i]', 'input[type="text"][name*="title" i]',
+                'input:not([type="checkbox"]):not([type="radio"])[name*="subject" i]',
+                'input[placeholder*="件名" i]', 'input[placeholder*="題名" i]'
             ]
             for sel in subject_selectors:
                 if page.locator(sel).count() > 0:
@@ -172,14 +217,15 @@ class FormDispatcher:
                 return result
 
             # 4. Handle Confirmation or Direct Submit
-            screenshot_path = os.path.join(SCREENSHOT_DIR, f"{corp_num}_{int(time.time())}.png")
-
             if self.dry_run:
-                # DRY RUN: Take screenshot of filled form without submitting
-                page.screenshot(path=screenshot_path)
+                # DRY RUN: Take screenshot only if explicitly requested
+                if self.save_screenshot:
+                    screenshot_path = os.path.join(SCREENSHOT_DIR, f"{corp_num}_{int(time.time())}.png")
+                    page.screenshot(path=screenshot_path)
+                    result["screenshot_path"] = screenshot_path
                 result["status"] = "SUCCESS_DRY_RUN"
+                result["billable"] = False
                 result["message"] = f"Form successfully filled ({filled_fields} fields). Not submitted (Dry Run)."
-                result["screenshot_path"] = screenshot_path
                 print(f"  [+] {result['message']}")
                 return result
 
@@ -209,21 +255,28 @@ class FormDispatcher:
                     final_btn.first.click()
                     page.wait_for_timeout(3000)
 
-                page.screenshot(path=screenshot_path)
+                if self.save_screenshot:
+                    screenshot_path = os.path.join(SCREENSHOT_DIR, f"{corp_num}_{int(time.time())}.png")
+                    page.screenshot(path=screenshot_path)
+                    result["screenshot_path"] = screenshot_path
+
                 result["status"] = "SUCCESS_SENT"
+                result["billable"] = True
                 result["message"] = "Form successfully dispatched and confirmed."
-                result["screenshot_path"] = screenshot_path
-                print(f"  [+] {result['message']}")
+                print(f"  [+] {result['message']} (Billable: 1 Credit)")
             else:
                 result["status"] = "NO_SUBMIT_BUTTON"
+                result["billable"] = False
                 result["message"] = "Could not find submit button"
 
         except PlaywrightTimeoutError:
             result["status"] = "TIMEOUT"
+            result["billable"] = False
             result["message"] = "Page navigation or submission timed out"
             print(f"  [-] Timeout loading {url}")
         except Exception as e:
             result["status"] = "ERROR"
+            result["billable"] = False
             result["message"] = str(e)
             print(f"  [-] Error: {e}")
 
@@ -260,18 +313,24 @@ def fetch_target_companies(limit: int = 10, pref_code: str = None, industry_code
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Kigyou-List Done-For-You Contact Form Dispatcher")
+    parser = argparse.ArgumentParser(description="Kigyou-List Done-For-You Contact Form Dispatcher (Approach 1: Skip & Refund)")
     parser.add_argument("--limit", type=int, default=5, help="Number of companies to process")
     parser.add_argument("--dry-run", action="store_true", default=True, help="Test form filling without final submit")
     parser.add_argument("--live", action="store_true", help="Perform real live form submission")
     parser.add_argument("--corporate-number", type=str, help="Target a specific corporate number")
+    parser.add_argument("--screenshot", action="store_true", default=False, help="Save screenshots (disabled by default to save disk space)")
+    parser.add_argument("--proxy", type=str, default=os.environ.get("OUTREACH_PROXY_URL"), help="Proxy URL (e.g. http://user:pass@host:port)")
     args = parser.parse_args()
 
     is_dry_run = not args.live
+    proxy_config = parse_proxy_url(args.proxy) if args.proxy else None
 
     print("=" * 65)
     print("  KIGYOU-LIST: DONE-FOR-YOU (DFY) FORM OUTREACH ENGINE")
     print(f"  Mode: {'[DRY RUN - Safe Simulation]' if is_dry_run else '[LIVE SUBMISSION - Real Outreach]'}")
+    print(f"  Screenshots: {'[ENABLED]' if args.screenshot else '[DISABLED - Lightweight Mode]'}")
+    print(f"  Proxy: {'[' + proxy_config['server'] + ']' if proxy_config else '[DIRECT CONNECTION]'}")
+    print("  Strategy: [Approach 1: Auto-Skip CAPTCHA & Refund Credits]")
     print("=" * 65)
 
     if not HAS_PLAYWRIGHT:
@@ -315,11 +374,11 @@ def main():
 
     print(f"[*] Loaded {len(targets)} target companies with verified contact forms.")
 
-    dispatcher = FormDispatcher(sender_profile=sender_profile, dry_run=is_dry_run)
+    dispatcher = FormDispatcher(sender_profile=sender_profile, dry_run=is_dry_run, save_screenshot=args.screenshot)
     results = []
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=True, proxy=proxy_config)
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
             viewport={"width": 1280, "height": 800}
@@ -334,26 +393,40 @@ def main():
 
         browser.close()
 
-    # Generate CSV Delivery Report
+    # Generate CSV Delivery Report (Lightweight text report without heavy image bloat)
     report_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports", f"delivery_report_{int(time.time())}.csv")
     os.makedirs(os.path.dirname(report_file), exist_ok=True)
 
     with open(report_file, "w", newline="", encoding="utf-8-sig") as f:
-        writer = csv.DictWriter(f, fieldnames=["corporate_number", "company_name", "form_url", "status", "message", "screenshot_path", "timestamp"])
+        fieldnames = ["corporate_number", "company_name", "form_url", "status", "billable", "message", "timestamp"]
+        if args.screenshot:
+            fieldnames.append("screenshot_path")
+        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction='ignore')
         writer.writeheader()
         writer.writerows(results)
 
+    # Detailed Audit & Refund Summary
+    success_count = sum(1 for r in results if r.get("billable") is True or r.get("status") == "SUCCESS_SENT")
+    captcha_count = sum(1 for r in results if "CAPTCHA" in r.get("status", ""))
+    disclaimer_count = sum(1 for r in results if "DISCLAIMER" in r.get("status", ""))
+    waf_count = sum(1 for r in results if "WAF" in r.get("status", "") or "BOT" in r.get("status", ""))
+    error_count = len(results) - success_count - captcha_count - disclaimer_count - waf_count
+    refund_count = len(results) - success_count
+
     print("\n" + "=" * 65)
-    print("  CAMPAIGN EXECUTION SUMMARY")
+    print("  CAMPAIGN EXECUTION SUMMARY (APPROACH 1: SKIP & REFUND)")
     print("=" * 65)
-    success_count = sum(1 for r in results if "SUCCESS" in r["status"])
-    skipped_count = sum(1 for r in results if "SKIPPED" in r["status"])
-    error_count = len(results) - success_count - skipped_count
-    print(f"  Total Processed: {len(results)}")
-    print(f"  Success (Filled/Sent): {success_count}")
-    print(f"  Skipped (Anti-Spam / Disclaimer): {skipped_count}")
-    print(f"  Errors / Unmatched: {error_count}")
-    print(f"  Audit Report Saved To: {report_file}")
+    print(f"  Total Targets Processed:           {len(results)}")
+    print(f"  -------------------------------------------------------------")
+    print(f"  [+] SUCCESS SENT (Deduct 1 Credit): {success_count} companies")
+    print(f"  [!] BLOCKED CAPTCHA (Skip & Refund):{captcha_count} companies")
+    print(f"  [!] SKIPPED DISCLAIMER (Cấm chào): {disclaimer_count} companies")
+    print(f"  [!] BLOCKED WAF/BOT (Firewall):     {waf_count} companies")
+    print(f"  [!] ERRORS / TIMEOUT (Lỗi web):     {error_count} companies")
+    print(f"  -------------------------------------------------------------")
+    print(f"  Total Credits Deducted:            {success_count} credits")
+    print(f"  TOTAL CREDITS TO REFUND TO USER:   {refund_count} credits")
+    print(f"  Audit Report Saved To:             {report_file}")
     print("=" * 65)
 
 

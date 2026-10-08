@@ -29,7 +29,7 @@ export async function POST(request: Request) {
     }
 
     const body = await request.json();
-    const { campaignId, action, rejectionReason } = body;
+    const { campaignId, action, rejectionReason, successCount, skippedCount, reportFileUrl } = body;
 
     if (!campaignId || !["approve", "reject", "complete"].includes(action)) {
       return NextResponse.json({ error: "Invalid parameters" }, { status: 400 });
@@ -44,7 +44,12 @@ export async function POST(request: Request) {
     const updated = await adminUpdateCampaignStatus(
       campaignId,
       statusMap[action],
-      rejectionReason
+      rejectionReason,
+      {
+        success_count: successCount,
+        skipped_count: skippedCount,
+        report_file_url: reportFileUrl
+      }
     );
 
     return NextResponse.json({ success: updated, status: statusMap[action] });

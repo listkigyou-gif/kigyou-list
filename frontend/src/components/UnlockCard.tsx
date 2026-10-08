@@ -28,7 +28,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
     setMounted(true);
   }, []);
 
-  const isProOrHigher = user && (user.role === 'pro' || user.role === 'business' || user.role === 'enterprise');
+  const isProOrHigher = Boolean(user && (user.role === 'pro' || user.role === 'business' || user.role === 'enterprise' || user.role === 'admin'));
   const hasAccess = requiredPlan === 'pro' ? (isLoggedIn && isProOrHigher) : isLoggedIn;
 
   // Hydration safety: render blurred fallback initially on server & before hydration
@@ -96,7 +96,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
   return (
     <div 
       onClick={handleUnlockClick}
-      className="group relative rounded-2xl border border-slate-150 bg-slate-50/50 dark:bg-[#151B22]/50 dark:border-slate-800/80 overflow-hidden cursor-pointer transition-all duration-300 hover:border-amber-300 dark:hover:border-amber-900/50 hover:shadow-lg hover:shadow-slate-100/10 dark:hover:shadow-none"
+      className="group relative rounded-xl border border-slate-200 bg-slate-50/50 dark:bg-[#151B22]/50 dark:border-slate-800 overflow-hidden cursor-pointer transition-all duration-300 hover:border-slate-400 dark:hover:border-slate-700 shadow-2xs"
     >
       <div className="blur-[6px] group-hover:blur-[2.5px] transition-all duration-500 p-5 select-none opacity-30 group-hover:opacity-40">
         {children}
@@ -105,7 +105,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
       {/* Locked Overlay Card with Clean Enterprise Style */}
       <div className="absolute inset-0 bg-white/85 dark:bg-[#0D1117]/85 backdrop-blur-[3px] flex flex-col items-center justify-center p-6 text-center transition-all duration-200">
         <div className="mb-3 flex items-center justify-center">
-          <div className="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 text-amber-700 dark:text-amber-400 flex items-center justify-center shadow-xs">
+          <div className="w-10 h-10 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/50 text-amber-700 dark:text-amber-400 flex items-center justify-center shadow-xs">
             <Lock className="w-4.5 h-4.5" />
           </div>
         </div>
@@ -119,7 +119,7 @@ export const UnlockCard: React.FC<UnlockCardProps> = ({
           {fallbackText || (requiredPlan === "pro" ? t.auth.unlockCardProDesc : t.auth.unlockCardFreeDesc)}
         </p>
         
-        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary hover:bg-[#153e6d] text-white text-[11px] font-semibold shadow-xs transition-colors duration-150 select-none">
+        <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#1B4F8A] hover:bg-[#163e6d] text-white text-[11px] font-semibold shadow-xs transition-colors duration-150 select-none">
           {requiredPlan === "pro" ? t.auth.unlockCardProBtn : t.auth.unlockCardFreeBtn}
         </span>
       </div>

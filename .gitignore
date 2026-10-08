@@ -1,10 +1,14 @@
 *.db
 *.db-shm
 *.db-wal
+*.sqlite*
 *.csv
 *.log*
 crawlers/yahoo/data/
 crawlers/yahoo/logs/
+crawlers/hellowork/data/
+crawlers/website/logs/
+crawlers/website/*.log
 
 # Development artifacts
 node_modules/
@@ -12,6 +16,7 @@ node_modules/
 out/
 .env*
 .DS_Store
+Thumbs.db
 importdata/
 __pycache__/
 *.pyc
@@ -19,6 +24,8 @@ scratch/
 scratch_*
 qc
 *.tar.gz
+*.zip
+*.tmp
 crawlers/website/pass2_progress.json
 frontend/test*
 frontend/scratch*

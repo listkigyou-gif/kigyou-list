@@ -59,6 +59,7 @@ export async function generateMetadata({
         ja: "/ja",
         en: "/en",
         vi: "/vi",
+        "x-default": "/ja",
       },
     },
     openGraph: {
@@ -70,18 +71,18 @@ export async function generateMetadata({
       type: "website",
       images: [
         {
-          url: "/icon.svg",
-          width: 512,
-          height: 512,
-          alt: "Kigyou-list Logo",
+          url: "/og-image.png",
+          width: 1200,
+          height: 630,
+          alt: "Kigyou-list - 500万社の日本企業データベース・営業リスト",
         },
       ],
     },
     twitter: {
-      card: "summary",
+      card: "summary_large_image",
       title,
       description,
-      images: ["/icon.svg"],
+      images: ["/og-image.png"],
     },
   };
 }

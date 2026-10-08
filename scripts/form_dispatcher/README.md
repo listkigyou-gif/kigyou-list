@@ -46,9 +46,14 @@ scripts/form_dispatcher/
 3. **Multi-Step Form Handling (Quy trình nhiều bước)**:
    - Tự động xử lý luồng xác nhận phổ biến tại Nhật:
      `[ 入力 ] -> [ 確認画面へ (Confirm) ] -> [ 送信する (Final Submit) ]`
-4. **Audit Proof & Reporting (Bằng chứng minh bạch)**:
-   - Tự động chụp ảnh màn hình lưu vào thư mục `reports/screenshots/`.
-   - Xuất file CSV báo cáo gồm: `corporate_number`, `company_name`, `form_url`, `status`, `message`, `screenshot_path`, `timestamp`.
+4. **Audit Proof & Lightweight CSV Reporting (Báo cáo nhẹ, không tốn ổ cứng)**:
+   - Thay vì chụp hàng ngàn ảnh màn hình gây đầy ổ cứng, hệ thống ghi nhận mã trạng thái chuẩn xác (Status Code).
+   - Xuất file CSV gồm: `corporate_number`, `company_name`, `form_url`, `status`, `billable`, `message`, `timestamp`.
+   - **Cơ chế minh bạch tài chính (Cách 1: Bỏ qua & Hoàn Credit)**:
+     - `SUCCESS_SENT` $\rightarrow$ Trừ 1 Credit.
+     - `BLOCKED_CAPTCHA` $\rightarrow$ Tự động bỏ qua và **hoàn lại 100% credit** cho khách.
+     - `SKIPPED_DISCLAIMER` $\rightarrow$ Tự động bỏ qua (cấm chào hàng) và **hoàn lại 100% credit**.
+     - `BLOCKED_BOT_WAF` / `TIMEOUT` / `FORM_ERROR` $\rightarrow$ **Hoàn lại 100% credit**.
 
 ---
 
@@ -69,25 +74,25 @@ sender_profile = {
 ```
 
 ### Bước 2: Chạy thử nghiệm mô phỏng (Dry-Run Mode)
-Chế độ này sẽ mở trình duyệt, tự động điền các trường và chụp ảnh form đã điền nhưng **KHÔNG bấm nút gửi cuối cùng** để kỹ sư kiểm tra:
+Chế độ này sẽ mở trình duyệt, tự động điền các trường nhưng **KHÔNG bấm nút gửi cuối cùng** để kỹ sư kiểm tra:
 ```bash
 python scripts/form_dispatcher/dispatcher.py --limit 5 --dry-run
 ```
 
-### Bước 3: Chạy chiến dịch thật (Live Mode)
+### Bước 3: Chạy chiến dịch thật (Live Mode - Cách 1: Bỏ qua & Hoàn credit)
 Khi nội dung và luồng đã được kiểm tra chuẩn xác, chạy lệnh gửi chính thức:
 ```bash
-# Gửi 100 công ty đầu tiên
+# Gửi 100 công ty đầu tiên (mặc định không chụp ảnh, siêu nhẹ và nhanh)
 python scripts/form_dispatcher/dispatcher.py --limit 100 --live
 
-# Gửi thử nghiệm cho 1 công ty cụ thể theo 法人番号
-python scripts/form_dispatcher/dispatcher.py --corporate-number 7011101080460 --live
+# Nếu cần chụp ảnh để debug kiểm tra
+python scripts/form_dispatcher/dispatcher.py --limit 5 --live --screenshot
 ```
 
 ### Bước 4: Xuất báo cáo giao cho khách hàng
 File CSV kết quả được tự động lưu tại:
 `scripts/form_dispatcher/reports/delivery_report_<timestamp>.csv`
-Gửi file này kèm các ảnh chụp màn hình xác nhận trong thư mục `reports/screenshots/` cho khách hàng làm bằng chứng hoàn thành chiến dịch.
+Gửi file này cho khách hàng (hoặc khách tải trực tiếp từ Dashboard). File phân loại rõ số lượng thành công và số credit được hoàn trả về ví.
 
 ---
 

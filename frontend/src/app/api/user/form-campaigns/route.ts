@@ -3,7 +3,9 @@ import { auth } from "@/auth";
 import { 
   getUserCampaigns, 
   saveUserCampaign, 
-  deleteUserCampaign 
+  deleteUserCampaign,
+  revertCampaignToDraft,
+  submitCampaignForApproval
 } from "@/lib/formCampaigns";
 
 export async function GET(request: Request) {
@@ -77,6 +79,47 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, campaign: saved });
   } catch (err: any) {
     console.error("Error in POST /api/user/form-campaigns:", err);
+    const isInsufficient = err.message?.includes("INSUFFICIENT_CREDITS");
+    const isTargetRequired = err.message?.includes("TARGET_REQUIRED");
+    const isMinTarget = err.message?.includes("MIN_TARGET_100");
+    return NextResponse.json({ 
+      error: err.message || "Internal error",
+      code: isInsufficient ? "INSUFFICIENT_CREDITS" : isTargetRequired ? "TARGET_REQUIRED" : isMinTarget ? "MIN_TARGET_100" : "ERROR"
+    }, { status: (isInsufficient || isTargetRequired || isMinTarget) ? 400 : 500 });
+  }
+}
+
+export async function PATCH(request: Request) {
+  try {
+    const session = await auth();
+    const email = session?.user?.email || request.headers.get("x-user-email");
+    if (!email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id, action } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Campaign ID is required." }, { status: 400 });
+    }
+
+    if (action === "revert_to_draft") {
+      const reverted = await revertCampaignToDraft(email, id);
+      return NextResponse.json({ success: reverted });
+    }
+
+    if (action === "submit_for_approval") {
+      const result = await submitCampaignForApproval(email, id);
+      if (!result.success) {
+        return NextResponse.json({ error: result.error || "Failed to submit for approval." }, { status: 400 });
+      }
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: "Invalid action" }, { status: 400 });
+  } catch (err: any) {
+    console.error("Error in PATCH /api/user/form-campaigns:", err);
     return NextResponse.json({ error: err.message || "Internal error" }, { status: 500 });
   }
 }

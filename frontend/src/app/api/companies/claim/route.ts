@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server';
 import { Pool } from 'pg';
 import { verifyClaimToken, sendEmailViaResend } from '@/lib/marketing';
-import { verifyOtp } from '@/lib/db';
+import { verifyOtp, invalidateCompanyCache } from '@/lib/db';
+import { isAdmin, isAdminEmail } from '@/lib/adminAuth';
+import { revalidatePath } from 'next/cache';
+import { auth } from '@/auth';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -10,6 +13,9 @@ const pool = new Pool({
 export async function POST(request: Request) {
   const client = await pool.connect();
   try {
+    const session = await auth();
+    const sessionEmail = session?.user?.email?.toLowerCase().trim() || null;
+
     const body = await request.json();
     const {
       corporate_number,
@@ -27,6 +33,13 @@ export async function POST(request: Request) {
     const isJa = locale === 'ja';
     const isVi = locale === 'vi';
 
+    // Check if request is initiated by an Administrator
+    const isRequestAdmin = 
+      isAdmin(request) || 
+      isAdminEmail(email) || 
+      isAdminEmail(request.headers.get("x-admin-email")) ||
+      isAdminEmail(sessionEmail);
+
     if (!corporate_number || corporate_number.length !== 13) {
       return NextResponse.json(
         { error: isJa ? '有効な法人番号（13桁）を指定してください。' : 'Mã số pháp nhân không hợp lệ.' },
@@ -41,36 +54,18 @@ export async function POST(request: Request) {
       );
     }
 
-    if (!person_in_charge || !person_in_charge.trim()) {
+    const effectivePersonInCharge = (person_in_charge && person_in_charge.trim()) 
+      ? person_in_charge.trim() 
+      : (isRequestAdmin ? '管理者 (Admin)' : '');
+
+    if (!effectivePersonInCharge) {
       return NextResponse.json(
         { error: isJa ? '担当者氏名をご入力ください。' : 'Vui lòng nhập họ tên người phụ trách.' },
         { status: 400 }
       );
     }
 
-    // 1. Verify credentials: via secure claim_token OR via 6-digit OTP code
-    let isVerified = false;
-
-    if (claim_token) {
-      isVerified = verifyClaimToken(corporate_number, email, claim_token);
-    }
-
-    if (!isVerified && otp_code) {
-      isVerified = await verifyOtp(email, otp_code);
-    }
-
-    if (!isVerified) {
-      return NextResponse.json(
-        {
-          error: isJa
-            ? '認証コードが無効または有効期限切れです。最新の認証コードをご入力ください。'
-            : 'Mã xác thực OTP hoặc Token không hợp lệ hoặc đã hết hạn.',
-        },
-        { status: 400 }
-      );
-    }
-
-    // 2. Check company existence and current status
+    // 1. Check company existence and current status
     const compRes = await client.query(
       `SELECT corporate_number, company_name, is_claimed, claimed_by_email FROM companies WHERE corporate_number = $1`,
       [corporate_number]
@@ -85,8 +80,16 @@ export async function POST(request: Request) {
 
     const company = compRes.rows[0];
 
-    // If claimed by another email
-    if (company.is_claimed && company.claimed_by_email && company.claimed_by_email.toLowerCase() !== email.toLowerCase()) {
+    // Check if user is the already-verified company owner
+    const isCompanyOwner = Boolean(
+      company.is_claimed && 
+      company.claimed_by_email && 
+      (company.claimed_by_email.toLowerCase() === email.toLowerCase() || 
+       (sessionEmail && company.claimed_by_email.toLowerCase() === sessionEmail))
+    );
+
+    // If claimed by another email (Only block non-admin users)
+    if (!isRequestAdmin && company.is_claimed && company.claimed_by_email && !isCompanyOwner) {
       return NextResponse.json(
         {
           error: isJa
@@ -94,6 +97,39 @@ export async function POST(request: Request) {
             : 'Hồ sơ doanh nghiệp này đã được xác minh bởi một đại diện khác.',
         },
         { status: 409 }
+      );
+    }
+
+    // 2. Verify credentials: Admin bypass OR already-verified Owner OR secure claim_token OR 6-digit OTP code
+    let isVerified = false;
+
+    if (isRequestAdmin || isCompanyOwner) {
+      // Direct Admin or verified Owner Access: bypass OTP
+      isVerified = true;
+    } else if (claim_token) {
+      isVerified = verifyClaimToken(corporate_number, email, claim_token);
+    } else if (otp_code) {
+      isVerified = await verifyOtp(email, otp_code);
+    }
+
+    if (!isVerified) {
+      if (!sessionEmail && !otp_code && !claim_token) {
+        return NextResponse.json(
+          {
+            error: isJa
+              ? '企業公式アカウントのログインまたは認証コードの入力が必要です。'
+              : 'Vui lòng đăng nhập tài khoản hoặc nhập mã xác thực OTP.',
+          },
+          { status: 401 }
+        );
+      }
+      return NextResponse.json(
+        {
+          error: isJa
+            ? '認証コードが無効または有効期限切れです。最新の認証コードをご入力ください。'
+            : 'Mã xác thực OTP hoặc Token không hợp lệ hoặc đã hết hạn.',
+        },
+        { status: 400 }
       );
     }
 
@@ -111,15 +147,26 @@ export async function POST(request: Request) {
         updated_at = NOW()
       WHERE corporate_number = $7`,
       [
-        person_in_charge.trim(),
+        effectivePersonInCharge,
         email.toLowerCase().trim(),
         phone ? phone.trim() : null,
         department ? department.trim() : null,
-        pr_title ? pr_title.trim() : null,
-        pr_message ? pr_message.trim() : null,
+        pr_title !== undefined ? pr_title.trim() : null,
+        pr_message !== undefined ? pr_message.trim() : null,
         corporate_number,
       ]
     );
+
+    // Invalidate memory cache and revalidate Next.js ISR cache
+    invalidateCompanyCache(corporate_number);
+    try {
+      revalidatePath(`/[locale]/company/${corporate_number}`, 'page');
+      revalidatePath(`/ja/company/${corporate_number}`);
+      revalidatePath(`/vi/company/${corporate_number}`);
+      revalidatePath(`/en/company/${corporate_number}`);
+    } catch (e) {
+      console.warn("revalidatePath warning:", e);
+    }
 
     // 4. Record ownership in user_companies for multi-company management
     const verificationMethod = claim_token ? 'token_hmac' : 'instant_domain';
@@ -214,9 +261,14 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: isJa
-        ? '公式オーナー認証が完了いたしました。「公式認証済」バッジが付与されました。'
-        : 'Xác minh chính chủ thành công! Huy hiệu đã được gắn vào hồ sơ công ty.',
+      auto_approved: isRequestAdmin ? true : undefined,
+      message: isRequestAdmin
+        ? (isJa
+            ? '管理者特権により、公式企業情報およびPRメッセージがデータベースに即時反映されました（承認・OTP不要）。'
+            : 'Quyền Quản trị viên: Đã lưu trực tiếp thông tin doanh nghiệp và PR vào cơ sở dữ liệu (Không cần OTP / Phê duyệt).')
+        : (isJa
+            ? '公式オーナー認証が完了いたしました。「公式認証済」バッジが付与されました。'
+            : 'Xác minh chính chủ thành công! Huy hiệu đã được gắn vào hồ sơ công ty.'),
       company_name: company.company_name,
     });
   } catch (error: any) {

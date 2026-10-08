@@ -10,6 +10,7 @@ import {
   getUserBillingInfo,
   redeemCoupon
 } from "@/lib/db";
+import { addFormCredits } from "@/lib/formCampaigns";
 import { uploadFileToR2 } from "@/lib/r2";
 import { generateInvoiceHtml } from "@/lib/invoice";
 
@@ -109,6 +110,21 @@ export async function POST(request: Request) {
         return NextResponse.json({
           success: true,
           message: `Successfully simulated ${plan.toUpperCase()} subscription for ${email}.`
+        });
+      } else if (simulatedJson?.formPlanId) {
+        const formPlanId = simulatedJson.formPlanId;
+        const allowance = Number(simulatedJson.allowance || 0);
+        const amountJpy = Number(simulatedJson.amount_jpy || 0);
+
+        console.log(`[Stripe Simulator Webhook] Crediting email ${email} with +${allowance} Form Credits (${formPlanId})`);
+        await addFormCredits(email, allowance);
+
+        const paymentId = `sim_form_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+        await createPaymentRecord(paymentId, email, formPlanId, amountJpy, allowance, 'completed', null, ipAddress, userAgent);
+
+        return NextResponse.json({
+          success: true,
+          message: `Successfully credited +${allowance} Form Credits for ${email}.`
         });
       } else {
         if (isNaN(amount) || amount <= 0) {
@@ -304,6 +320,7 @@ export async function POST(request: Request) {
           const priceName = `問い合わせフォーム営業 ${formAllowance.toLocaleString()}件配信枠 [キャンペーン30%OFF]`;
 
           console.log(`[Stripe Webhook] Real Payment Received for Form Outreach. ${userEmail} purchased ${formPlanId} (+${formAllowance} forms)`);
+          await addFormCredits(userEmail, formAllowance);
 
           const formattedDate = new Intl.DateTimeFormat('ja-JP', { dateStyle: 'long' }).format(new Date());
           const taxExclusivePrice = Math.round(priceJpy / 1.1);

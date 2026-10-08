@@ -21,11 +21,11 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
   const hasFinancials = financials && financials.length > 0;
   if (!hasFinancials) {
     return (
-      <div className="py-12 border-2 border-dashed border-slate-200 rounded-2xl dark:border-slate-800 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-        <AlertCircle className="w-10 h-10 text-slate-300" />
+      <div className="py-10 border border-dashed border-slate-200 rounded-lg dark:border-slate-800 text-center text-slate-400 flex flex-col items-center justify-center gap-2.5 bg-slate-50/50 dark:bg-slate-900/20">
+        <AlertCircle className="w-8 h-8 text-slate-300 dark:text-slate-600" />
         <div>
-          <h4 className="font-semibold text-slate-800 dark:text-white text-sm mb-1">{t.company.financialChartUnregistered}</h4>
-          <p className="text-xs max-w-xs mx-auto leading-relaxed">
+          <h4 className="font-semibold text-slate-800 dark:text-white text-xs mb-1">{t.company.financialChartUnregistered}</h4>
+          <p className="text-[11px] max-w-xs mx-auto leading-relaxed">
             {t.company.financialChartUnregisteredDesc}
           </p>
         </div>
@@ -52,25 +52,25 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
     if (val === null || val === undefined) return '-';
     if (locale === 'en') {
       const millionVal = val / 1000000;
-      const formatted = millionVal.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      const formatted = millionVal.toLocaleString('en-US', { maximumFractionDigits: 2 });
       return useFull ? `¥${formatted} Million JPY` : `¥${formatted}M JPY`;
     }
     if (locale === 'vi') {
       const millionVal = val / 1000000;
-      const formatted = millionVal.toLocaleString(undefined, { maximumFractionDigits: 2 });
+      const formatted = millionVal.toLocaleString('vi-VN', { maximumFractionDigits: 2 });
       return useFull ? `¥${formatted} triệu JPY` : `¥${formatted}tr JPY`;
     }
     if (Math.abs(val) >= 100000000) {
-      return `${(val / 100000000).toLocaleString(undefined, { maximumFractionDigits: 1 })}億円`;
+      return `${(val / 100000000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}億円`;
     }
-    return `${(val / 10000).toLocaleString(undefined, { maximumFractionDigits: 0 })}万円`;
+    return `${(val / 10000).toLocaleString('ja-JP', { maximumFractionDigits: 0 })}万円`;
   };
 
   const getSourceBadge = (source: string) => {
     if (source === 'BOTH') {
       return (
-        <span className="text-[10px] font-medium text-indigo-700 bg-indigo-50 dark:bg-indigo-950/20 dark:text-indigo-400 px-2 py-0.5 rounded border border-indigo-100 dark:border-indigo-900/50 flex items-center gap-1 shadow-sm">
-          <Info className="w-3 h-3" />
+        <span className="text-[10px] font-semibold text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 flex items-center gap-1">
+          <Info className="w-3 h-3 text-[#1B4F8A] dark:text-blue-400" />
           {t.company.govIntegrator}
         </span>
       );
@@ -129,15 +129,15 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
     return (
       <div className="flex flex-col gap-4 relative">
         <div 
-          className="relative p-4 border border-slate-100 dark:border-slate-800/80 rounded-2xl bg-white dark:bg-[#1C2128]/25 shadow-sm overflow-hidden"
+          className="relative p-4 sm:p-5 border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50/50 dark:bg-slate-900/30 overflow-hidden"
           onMouseLeave={() => setHoveredIndex(null)}
         >
           <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto text-slate-300 dark:text-slate-700">
             {/* Gradients */}
             <defs>
               <linearGradient id="salesGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#2563EB" />
-                <stop offset="100%" stopColor="#1B4F8A" />
+                <stop offset="0%" stopColor="#1B4F8A" />
+                <stop offset="100%" stopColor="#163E6D" />
               </linearGradient>
               <linearGradient id="incomeAreaGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#D97706" stopOpacity="0.12" />
@@ -158,14 +158,14 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     y2={y} 
                     stroke="currentColor" 
                     strokeWidth="1" 
-                    strokeDasharray="4" 
-                    className="text-slate-100 dark:text-slate-800/60" 
+                    strokeDasharray="3 3" 
+                    className="text-slate-200 dark:text-slate-800" 
                   />
                   <text 
                     x={paddingLeft - 12} 
                     y={y + 3.5} 
                     textAnchor="end" 
-                    className="text-[10px] font-bold font-mono fill-slate-400 dark:fill-slate-500"
+                    className="text-[10px] font-semibold font-mono fill-slate-500 dark:fill-slate-400"
                   >
                     {formatAmount(gridVal)}
                   </text>
@@ -207,15 +207,15 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
 
                   {bar.val > 0 ? (
                     <rect 
-                      x={bar.x} 
-                      y={bar.y} 
-                      width={bar.w} 
-                      height={bar.h} 
-                      fill={isHovered ? "#1B4F8A" : "#2563EB"} 
-                      rx="3"
-                      className="transition-all duration-200"
-                      fillOpacity={isHovered ? 1 : 0.85}
-                    />
+                    x={bar.x} 
+                    y={bar.y} 
+                    width={bar.w} 
+                    height={bar.h} 
+                    fill={isHovered ? "#163E6D" : "#1B4F8A"} 
+                    rx="2"
+                    className="transition-all duration-200"
+                    fillOpacity={isHovered ? 1 : 0.9}
+                  />
                   ) : (
                     <text x={bar.cx} y={height - paddingBottom - 10} textAnchor="middle" className="text-[8px] font-bold fill-slate-400 dark:fill-slate-600">
                       {t.company.nonDisclosed}
@@ -227,10 +227,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     x={bar.cx} 
                     y={height - paddingBottom + 18} 
                     textAnchor="middle" 
-                    className={`text-[10px] font-bold transition-colors ${
+                    className={`text-[10px] font-semibold transition-colors ${
                       isHovered 
-                        ? 'fill-primary dark:fill-slate-200' 
-                        : 'fill-slate-400 dark:fill-slate-500'
+                        ? 'fill-[#1B4F8A] dark:fill-blue-400 font-bold' 
+                        : 'fill-slate-600 dark:fill-slate-400'
                     }`}
                   >
                     {bar.label}
@@ -274,7 +274,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     <circle
                       cx={bar.cx}
                       cy={bar.cy}
-                      r="7"
+                      r="6"
                       fill="#D97706"
                       fillOpacity="0.2"
                     />
@@ -283,7 +283,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                   <circle 
                     cx={bar.cx} 
                     cy={bar.cy} 
-                    r={isHovered ? "5" : "3.5"} 
+                    r={isHovered ? "4.5" : "3"} 
                     fill="#D97706" 
                     stroke="white" 
                     strokeWidth="1.5"
@@ -298,7 +298,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
         {/* Clean Interactive Tooltip */}
         {hoveredIndex !== null && sortedFinancials[hoveredIndex] && (
           <div 
-            className="absolute bg-slate-900 text-white p-3 rounded-xl border border-slate-800 shadow-xl backdrop-blur-md text-xs pointer-events-none transition-all duration-200"
+            className="absolute bg-slate-900/95 text-white p-3 rounded-lg border border-slate-700 shadow-xl backdrop-blur-md text-xs pointer-events-none transition-all duration-200"
             style={{
               left: `${(paddingLeft + (chartWidth / sortedFinancials.length) * (hoveredIndex + 0.5)) / width * 100}%`,
               top: '12px',
@@ -308,18 +308,18 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
           >
             <div className="font-bold text-[10px] text-slate-400 mb-1.5 border-b border-slate-800 pb-1.5 flex items-center justify-between gap-4">
               <span>{t.company.fiscalYearTrend.replace("{year}", sortedFinancials[hoveredIndex].fiscal_year)}</span>
-              <span className="text-amber-400 font-bold bg-amber-400/10 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider">
+              <span className="text-amber-400 font-semibold bg-amber-400/10 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider">
                 {t.company.confirmedStatus}
               </span>
             </div>
             
-            <div className="flex flex-col gap-1.5 text-[11px] min-w-[150px]">
+            <div className="flex flex-col gap-1.5 text-[11px] min-w-[160px]">
               <div className="flex items-center justify-between gap-6">
                 <span className="flex items-center gap-1.5 text-slate-400">
                   <span className="w-2.5 h-2.5 rounded-xs bg-[#1B4F8A]" />
                   {t.company.revenue}
                 </span>
-                <span className="font-bold font-mono text-emerald-400">
+                <span className="font-bold font-mono text-white">
                   {formatAmount(sortedFinancials[hoveredIndex].revenue || sortedFinancials[hoveredIndex].sales_amount, true)}
                 </span>
               </div>
@@ -329,7 +329,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                   <span className="w-2.5 h-0.5 bg-[#D97706]" />
                   {t.company.ordinaryIncome}
                 </span>
-                <span className={`font-bold font-mono ${ (sortedFinancials[hoveredIndex].ordinary_income || 0) >= 0 ? 'text-amber-400' : 'text-rose-450' }`}>
+                <span className={`font-bold font-mono ${ (sortedFinancials[hoveredIndex].ordinary_income || 0) >= 0 ? 'text-amber-400' : 'text-rose-400' }`}>
                   {formatAmount(sortedFinancials[hoveredIndex].ordinary_income, true)}
                 </span>
               </div>
@@ -343,7 +343,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                   return (
                     <div className="flex items-center justify-between gap-6 text-[10px] text-slate-400">
                       <span>{t.company.operatingMargin}</span>
-                      <span className="font-bold font-mono">
+                      <span className="font-bold font-mono text-slate-200">
                         {margin.toFixed(1)}%
                       </span>
                     </div>
@@ -362,7 +362,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     if (prevSales > 0) {
                       const growth = ((currSales - prevSales) / prevSales) * 100;
                       return (
-                        <span className={`font-bold font-mono ${growth >= 0 ? 'text-emerald-400' : 'text-rose-450'}`}>
+                        <span className={`font-bold font-mono ${growth >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
                           {growth >= 0 ? '▲' : '▼'} {Math.abs(growth).toFixed(1)}%
                         </span>
                       );
@@ -376,13 +376,13 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
         )}
 
         {/* Clean Corporate Legend */}
-        <div className="flex items-center justify-center gap-6 text-xs font-semibold text-slate-600 dark:text-slate-400">
+        <div className="flex items-center justify-center gap-6 text-xs font-medium text-slate-600 dark:text-slate-400 py-2.5 px-4 bg-slate-50/80 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800">
           <span className="flex items-center gap-2">
-            <span className="w-3.5 h-3.5 bg-[#1B4F8A] rounded-xs" />
+            <span className="w-3 h-3 bg-[#1B4F8A] rounded-xs" />
             {t.company.trendChartLegendRevenue}
           </span>
           <span className="flex items-center gap-2">
-            <span className="w-4 h-1 bg-[#D97706] rounded-full inline-block relative -top-[1px]" />
+            <span className="w-3.5 h-1 bg-[#D97706] rounded-full inline-block relative -top-[1px]" />
             {t.company.trendChartLegendOrdinary}
           </span>
         </div>
@@ -397,10 +397,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
     
     if (xmlRecords.length === 0) {
       return (
-        <div className="py-12 border border-slate-100 dark:border-slate-800 rounded-2xl bg-white dark:bg-[#1C2128]/10 text-center text-slate-400 flex flex-col items-center gap-3">
-          <AlertCircle className="w-10 h-10 text-amber-500/70" />
+        <div className="py-10 border border-dashed border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50/50 text-center text-slate-400 flex flex-col items-center gap-2.5">
+          <AlertCircle className="w-8 h-8 text-amber-500/70" />
           <div className="max-w-xs mx-auto">
-            <h4 className="font-bold text-slate-850 dark:text-slate-200 text-sm mb-1">{t.company.bsUnregistered}</h4>
+            <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-xs mb-1">{t.company.bsUnregistered}</h4>
             <p className="text-[11px] leading-relaxed">
               {t.company.bsUnregisteredDesc}
             </p>
@@ -469,33 +469,33 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
     });
 
     return (
-      <div className="flex flex-col gap-6 relative">
+      <div className="flex flex-col gap-4 relative">
         <div 
-          className="relative p-4 border border-slate-100 dark:border-slate-800/80 rounded-2xl bg-white dark:bg-[#1C2128]/25 shadow-sm overflow-hidden"
+          className="relative p-4 sm:p-5 border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50/50 dark:bg-slate-900/30 overflow-hidden"
           onMouseLeave={() => setHoveredBsIndex(null)}
         >
           <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto text-slate-300 dark:text-slate-700">
             {/* Gradients */}
             <defs>
               <linearGradient id="liquidAssetsGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#00A896" />
-                <stop offset="100%" stopColor="#028090" />
+                <stop offset="0%" stopColor="#4A7BB0" />
+                <stop offset="100%" stopColor="#3B82F6" />
               </linearGradient>
               <linearGradient id="fixedAssetsGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#028090" stopOpacity="0.85" />
+                <stop offset="0%" stopColor="#205999" />
                 <stop offset="100%" stopColor="#1B4F8A" />
               </linearGradient>
               <linearGradient id="liquidLiabGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#F72585" />
-                <stop offset="100%" stopColor="#B5179E" />
+                <stop offset="0%" stopColor="#EF4444" />
+                <stop offset="100%" stopColor="#DC2626" />
               </linearGradient>
               <linearGradient id="fixedLiabGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#4CC9F0" />
-                <stop offset="100%" stopColor="#4895EF" />
+                <stop offset="0%" stopColor="#F59E0B" />
+                <stop offset="100%" stopColor="#D97706" />
               </linearGradient>
               <linearGradient id="equityGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#7209B7" />
-                <stop offset="100%" stopColor="#560BAD" />
+                <stop offset="0%" stopColor="#10B981" />
+                <stop offset="100%" stopColor="#059669" />
               </linearGradient>
             </defs>
 
@@ -512,10 +512,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     y2={y} 
                     stroke="currentColor" 
                     strokeWidth="1" 
-                    strokeDasharray="4" 
-                    className="text-slate-100 dark:text-slate-800/60" 
+                    strokeDasharray="3 3" 
+                    className="text-slate-200 dark:text-slate-800" 
                   />
-                  <text x={paddingLeft - 12} y={y + 3.5} textAnchor="end" className="text-[10px] font-bold font-mono fill-slate-400 dark:fill-slate-500">
+                  <text x={paddingLeft - 12} y={y + 3.5} textAnchor="end" className="text-[10px] font-semibold font-mono fill-slate-500 dark:fill-slate-400">
                     {formatAmount(gridVal)}
                   </text>
                 </g>
@@ -541,7 +541,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
               const isHovered = hoveredBsIndex === idx;
               return (
                 <g 
-                  key={idx}
+                  key={idx} 
                   className="cursor-pointer"
                   onMouseEnter={() => setHoveredBsIndex(idx)}
                 >
@@ -561,9 +561,9 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     y={bar.assets.liquidY}
                     width={barWidth}
                     height={Math.max(1.5, bar.assets.liquidH)}
-                    fill="#0D9488"
+                    fill="#4A7BB0"
                     rx="1.5"
-                    fillOpacity={isHovered ? 1 : 0.85}
+                    fillOpacity={isHovered ? 1 : 0.9}
                     className="transition-all duration-200"
                   />
                   {/* Fixed Assets (Top) */}
@@ -574,7 +574,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     height={Math.max(1.5, bar.assets.fixedH)}
                     fill="#1B4F8A"
                     rx="1.5"
-                    fillOpacity={isHovered ? 1 : 0.85}
+                    fillOpacity={isHovered ? 1 : 0.9}
                     className="transition-all duration-200"
                   />
 
@@ -585,9 +585,9 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     y={bar.liabilitiesEquity.equityY}
                     width={barWidth}
                     height={Math.max(1.5, bar.liabilitiesEquity.equityH)}
-                    fill="#7C3AED"
+                    fill="#059669"
                     rx="1.5"
-                    fillOpacity={isHovered ? 1 : 0.85}
+                    fillOpacity={isHovered ? 1 : 0.9}
                     className="transition-all duration-200"
                   />
                   {/* Liquid Liabilities (Middle) */}
@@ -596,9 +596,9 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     y={bar.liabilitiesEquity.liquidLiabY}
                     width={barWidth}
                     height={Math.max(1.5, bar.liabilitiesEquity.liquidLiabH)}
-                    fill="#E11D48"
+                    fill="#DC2626"
                     rx="1.5"
-                    fillOpacity={isHovered ? 1 : 0.85}
+                    fillOpacity={isHovered ? 1 : 0.9}
                     className="transition-all duration-200"
                   />
                   {/* Fixed Liabilities (Top) */}
@@ -607,9 +607,9 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     y={bar.liabilitiesEquity.fixedLiabY}
                     width={barWidth}
                     height={Math.max(1.5, bar.liabilitiesEquity.fixedLiabH)}
-                    fill="#0284C7"
+                    fill="#D97706"
                     rx="1.5"
-                    fillOpacity={isHovered ? 1 : 0.85}
+                    fillOpacity={isHovered ? 1 : 0.9}
                     className="transition-all duration-200"
                   />
 
@@ -618,16 +618,16 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                     x={bar.colX} 
                     y={height - paddingBottom + 18} 
                     textAnchor="middle" 
-                    className={`text-[10px] font-bold transition-colors ${
-                      isHovered ? 'fill-primary dark:fill-slate-200' : 'fill-slate-600 dark:fill-slate-400'
+                    className={`text-[10px] font-semibold transition-colors ${
+                      isHovered ? 'fill-[#1B4F8A] dark:fill-blue-400 font-bold' : 'fill-slate-600 dark:fill-slate-400'
                     }`}
                   >
                     {bar.yearStr}
                   </text>
-                  <text x={bar.assets.x + barWidth / 2} y={height - paddingBottom + 29} textAnchor="middle" className="text-[8px] font-extrabold fill-slate-400 dark:fill-slate-500">
+                  <text x={bar.assets.x + barWidth / 2} y={height - paddingBottom + 29} textAnchor="middle" className="text-[8px] font-medium fill-slate-500 dark:fill-slate-400">
                     {t.company.bsAssetsAxis}
                   </text>
-                  <text x={bar.liabilitiesEquity.x + barWidth / 2} y={height - paddingBottom + 29} textAnchor="middle" className="text-[8px] font-extrabold fill-slate-400 dark:fill-slate-500">
+                  <text x={bar.liabilitiesEquity.x + barWidth / 2} y={height - paddingBottom + 29} textAnchor="middle" className="text-[8px] font-medium fill-slate-500 dark:fill-slate-400">
                     {t.company.bsLiabilitiesAxis}
                   </text>
                 </g>
@@ -636,10 +636,10 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
           </svg>
         </div>
 
-        {/* BS Floating Premium Tooltip */}
+        {/* BS Floating Clean Tooltip */}
         {hoveredBsIndex !== null && xmlRecords[hoveredBsIndex] && (
           <div 
-            className="absolute bg-slate-900/90 dark:bg-slate-950/95 text-white p-3.5 rounded-2xl border border-slate-700/50 shadow-2xl backdrop-blur-md text-xs pointer-events-none transition-all duration-300"
+            className="absolute bg-slate-900/95 dark:bg-slate-950/95 text-white p-3.5 rounded-lg border border-slate-700 shadow-xl backdrop-blur-md text-xs pointer-events-none transition-all duration-200"
             style={{
               left: `${(paddingLeft + (chartWidth / xmlRecords.length) * (hoveredBsIndex + 0.5)) / width * 100}%`,
               top: '12px',
@@ -647,20 +647,20 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
               zIndex: 10
             }}
           >
-            <div className="font-black text-[10px] text-slate-400 mb-1.5 border-b border-slate-800 pb-1.5 flex items-center justify-between gap-4">
+            <div className="font-bold text-[10px] text-slate-400 mb-1.5 border-b border-slate-800 pb-1.5 flex items-center justify-between gap-4">
               <span>{t.company.fiscalYearBS.replace("{year}", xmlRecords[hoveredBsIndex].fiscal_year)}</span>
-              <span className="text-teal-400 font-bold bg-teal-500/10 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider">
+              <span className="text-sky-400 font-semibold bg-sky-500/10 px-1.5 py-0.5 rounded text-[8px] uppercase tracking-wider">
                 {t.company.summaryStatus}
               </span>
             </div>
             
-            <div className="flex flex-col gap-1.5 text-[10.5px] min-w-[180px]">
-              <div className="flex items-center justify-between gap-5 font-extrabold text-emerald-400">
+            <div className="flex flex-col gap-1.5 text-[11px] min-w-[190px]">
+              <div className="flex items-center justify-between gap-5 font-bold text-sky-400">
                 <span>{t.company.bsTotalAssets}:</span>
                 <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].total_assets, true)}</span>
               </div>
               
-              <div className="pl-2 flex flex-col gap-1 text-[9.5px] text-slate-300 border-l border-emerald-500/30 ml-1">
+              <div className="pl-2 flex flex-col gap-1 text-[10px] text-slate-300 border-l border-sky-500/30 ml-1">
                 <div className="flex items-center justify-between gap-4">
                   <span>・{t.company.bsLiquidAssets}:</span>
                   <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].liquid_assets, true)}</span>
@@ -673,21 +673,21 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                 </div>
               </div>
               
-              <div className="flex items-center justify-between gap-5 font-extrabold text-indigo-400 mt-1 border-t border-slate-800 pt-1.5">
+              <div className="flex items-center justify-between gap-5 font-bold text-slate-300 mt-1 border-t border-slate-800 pt-1.5">
                 <span>{t.company.bsTotalLiabilities}:</span>
                 <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].total_assets, true)}</span>
               </div>
               
-              <div className="pl-2 flex flex-col gap-1 text-[9.5px] text-slate-400 border-l border-indigo-500/30 ml-1">
-                <div className="flex items-center justify-between gap-4">
+              <div className="pl-2 flex flex-col gap-1 text-[10px] text-slate-400 border-l border-slate-500/30 ml-1">
+                <div className="flex items-center justify-between gap-4 text-rose-400">
                   <span>・{t.company.bsLiquidLiabilities}:</span>
                   <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].liquid_liabilities, true)}</span>
                 </div>
-                <div className="flex items-center justify-between gap-4 text-sky-400">
+                <div className="flex items-center justify-between gap-4 text-amber-400">
                   <span>・{t.company.bsFixedLiabilities}:</span>
                   <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].fixed_liabilities, true)}</span>
                 </div>
-                <div className="flex items-center justify-between gap-4 text-purple-400 font-extrabold">
+                <div className="flex items-center justify-between gap-4 text-emerald-400 font-bold">
                   <span>・{t.company.bsNetAssets}:</span>
                   <span className="font-mono">{formatAmount(xmlRecords[hoveredBsIndex].net_assets, true)}</span>
                 </div>
@@ -697,25 +697,25 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
         )}
 
         {/* Legend Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-[10px] text-slate-600 dark:text-slate-400 font-semibold bg-slate-50 dark:bg-[#1C2128]/25 p-3.5 rounded-xl border border-slate-200/60 dark:border-slate-800/80 shadow-xs">
-          <div className="flex items-center gap-2 justify-center">
-            <span className="w-3 h-3 bg-[#0D9488] rounded-xs shadow-xs" />
+        <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-xs text-slate-600 dark:text-slate-400 font-medium py-2.5 px-4 bg-slate-50/80 dark:bg-slate-800/50 rounded-lg border border-slate-200 dark:border-slate-800">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 bg-[#4A7BB0] rounded-xs" />
             <span>{t.company.bsLiquidAssets}</span>
           </div>
-          <div className="flex items-center gap-2 justify-center">
-            <span className="w-3 h-3 bg-[#1B4F8A] rounded-xs shadow-xs" />
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 bg-[#1B4F8A] rounded-xs" />
             <span>{t.company.bsFixedAssets}</span>
           </div>
-          <div className="flex items-center gap-2 justify-center">
-            <span className="w-3 h-3 bg-[#E11D48] rounded-xs shadow-xs" />
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 bg-[#DC2626] rounded-xs" />
             <span>{t.company.bsLiquidLiabilities}</span>
           </div>
-          <div className="flex items-center gap-2 justify-center">
-            <span className="w-3 h-3 bg-[#0284C7] rounded-xs shadow-xs" />
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 bg-[#D97706] rounded-xs" />
             <span>{t.company.bsFixedLiabilities}</span>
           </div>
-          <div className="flex items-center gap-2 justify-center">
-            <span className="w-3 h-3 bg-[#7C3AED] rounded-xs shadow-xs" />
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 bg-[#059669] rounded-xs" />
             <span>{t.company.bsNetAssets}</span>
           </div>
         </div>
@@ -724,15 +724,16 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
   };
 
   return (
-    <div className="flex flex-col gap-4 sm:gap-6">
+    <div className="flex flex-col gap-4 sm:gap-5">
       {/* Tab Controls */}
-      <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-2">
-        <div className="flex gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/60 rounded-xl">
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+        <div className="inline-flex p-0.5 bg-slate-100 dark:bg-slate-800/80 rounded-lg border border-slate-200 dark:border-slate-700/60">
           <button 
+            type="button"
             onClick={() => setActiveTab('trend')}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-150 ${
               activeTab === 'trend' 
-                ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-white' 
+                ? 'bg-white text-[#1B4F8A] shadow-xs dark:bg-slate-700 dark:text-blue-300 font-bold' 
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
@@ -740,10 +741,11 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
             {t.company.financialTrendTab}
           </button>
           <button 
+            type="button"
             onClick={() => setActiveTab('balance')}
-            className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-lg transition-all duration-150 ${
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-all duration-150 ${
               activeTab === 'balance' 
-                ? 'bg-white text-slate-900 shadow-xs dark:bg-slate-700 dark:text-white' 
+                ? 'bg-white text-[#1B4F8A] shadow-xs dark:bg-slate-700 dark:text-blue-300 font-bold' 
                 : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
             }`}
           >
@@ -762,29 +764,27 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
         {activeTab === 'trend' ? renderTrendChart() : renderBalanceSheet()}
       </div>
 
-      {/* Retained Earnings Health Badge - Hidden by request */}
-
       {/* Shareholders Section */}
       {shareholders.length > 0 && (
-        <div className="mt-2 sm:mt-4 border border-slate-100 rounded-2xl p-5 md:p-6 dark:border-slate-800 bg-white dark:bg-[#1C2128]/40 shadow-sm">
-          <h3 className="text-xs font-black text-slate-900 dark:text-white mb-4 flex items-center gap-2 pb-2 border-b border-slate-50 dark:border-slate-800/50">
-            <Users className="w-4.5 h-4.5 text-primary" />
+        <div className="mt-2 sm:mt-3 border border-slate-200 rounded-lg p-5 dark:border-slate-800 bg-white dark:bg-slate-900/40">
+          <h3 className="text-xs font-bold text-slate-900 dark:text-white mb-3.5 flex items-center gap-2 pb-2 border-b border-slate-100 dark:border-slate-800">
+            <Users className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
             {t.company.shareholdersTitle}
           </h3>
           <UnlockCard type="block" fallbackText={t.company.shareholdersFallback}>
-            <div className="overflow-hidden border border-slate-100 dark:border-slate-850 rounded-xl">
+            <div className="overflow-hidden border border-slate-200 dark:border-slate-800 rounded-lg">
               <table className="w-full text-xs text-left text-slate-500 dark:text-slate-400">
-                <thead className="text-[10px] text-slate-400 uppercase bg-slate-50 dark:bg-slate-800/40 font-bold border-b border-slate-100 dark:border-slate-850">
+                <thead className="text-[10px] text-slate-600 dark:text-slate-300 uppercase bg-slate-50 dark:bg-slate-800/60 font-semibold border-b border-slate-200 dark:border-slate-800">
                   <tr>
-                    <th scope="col" className="px-4 py-3">{t.company.shareholderName}</th>
-                    <th scope="col" className="px-4 py-3 text-right">{t.company.shareholderRatio}</th>
+                    <th scope="col" className="px-4 py-2.5">{t.company.shareholderName}</th>
+                    <th scope="col" className="px-4 py-2.5 text-right">{t.company.shareholderRatio}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                   {shareholders.map((sh, idx) => (
                     <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                      <td className="px-4 py-3 font-semibold text-slate-800 dark:text-slate-200">{sh.name}</td>
-                      <td className="px-4 py-3 text-right font-bold text-emerald-600 dark:text-emerald-450 font-mono">
+                      <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">{sh.name}</td>
+                      <td className="px-4 py-2.5 text-right font-semibold text-emerald-700 dark:text-emerald-400 font-mono">
                         {sh.ratio !== null ? `${sh.ratio}%` : '-'}
                       </td>
                     </tr>

@@ -3,13 +3,15 @@ import { Pool } from 'pg';
 import path from 'path';
 import crypto from 'crypto';
 import { deleteFileFromR2 } from './r2';
+import { isAdminEmail } from './adminAuth';
 import { loadEnvConfig } from '@next/env';
+import { getAllUserFormCredits } from './formCampaigns';
 
 // Load env variables dynamically if running in standalone script scripts
 loadEnvConfig(process.cwd());
 
 // Connection parameters
-const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres:Hrptlcct6789%40@127.0.0.1:5432/kigyou_list";
+const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres:Hrptlcct6789%40@160.251.203.84:5432/kigyou_list";
 let pgPool: Pool | null = null;
 let sqliteInstance: DatabaseSync | null = null;
 
@@ -405,6 +407,14 @@ function mapCompanyRow(row: any): Company {
     logo_url: row.logo_url || null,
     contact_form_url: row.contact_form_url || null,
     email_type: row.email_type || null,
+    is_claimed: Boolean(row.is_claimed),
+    claimed_at: row.claimed_at ? String(row.claimed_at) : null,
+    claimed_by_name: row.claimed_by_name || null,
+    claimed_by_email: row.claimed_by_email || null,
+    claimed_by_phone: row.claimed_by_phone || null,
+    claimed_by_department: row.claimed_by_department || null,
+    pr_title: row.pr_title || null,
+    pr_message: row.pr_message || null,
   };
 }
 
@@ -453,6 +463,10 @@ export async function getCompanyByNumber(corpNum: string): Promise<Company | nul
     console.error(`Error in getCompanyByNumber(${corpNum}):`, error);
     return null;
   }
+}
+
+export function invalidateCompanyCache(corpNum: string): void {
+  cacheMap.delete(`company_detail_${corpNum}`);
 }
 
 /**
@@ -1231,6 +1245,9 @@ export interface DatabaseStats {
   signalAward: number;
   signalCertification: number;
   signalPatent: number;
+  signalContactForm: number;
+  signalEmail: number;
+  signalWebsite: number;
 }
 
 /**
@@ -1334,6 +1351,18 @@ export async function searchCompanies(
         if (singleFilter === 'patent') {
           const stats = await getDatabaseStats();
           return stats.signalPatent;
+        }
+        if (singleFilter === 'contact_form') {
+          const stats = await getDatabaseStats();
+          return stats.signalContactForm;
+        }
+        if (singleFilter === 'email') {
+          const stats = await getDatabaseStats();
+          return stats.signalEmail;
+        }
+        if (singleFilter === 'website') {
+          const stats = await getDatabaseStats();
+          return stats.signalWebsite;
         }
         if (singleFilter === 'financials') {
           const isPG = !!DATABASE_URL;
@@ -1460,6 +1489,9 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
       signalAward: stats['signal_award'] || 0,
       signalCertification: stats['signal_certification'] || 0,
       signalPatent: stats['signal_patent'] || 0,
+      signalContactForm: stats['signal_contact_form'] || 235290,
+      signalEmail: stats['signal_email'] || 176505,
+      signalWebsite: stats['signal_website'] || 539749,
     };
     setCachedData(cacheKey, result);
     return result;
@@ -1475,6 +1507,9 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
       signalAward: 8154,
       signalCertification: 69745,
       signalPatent: 4465859,
+      signalContactForm: 235290,
+      signalEmail: 176505,
+      signalWebsite: 539749,
     };
   }
 }
@@ -2470,17 +2505,17 @@ export async function addUserAddOnBalance(email: string, amount: number): Promis
     
     const updateSql = `
       UPDATE user_export_quotas
-      SET purchased_add_on_balance = ?, monthly_base_used = 0, last_reset_date = ?, updated_at = CURRENT_TIMESTAMP
+      SET purchased_add_on_balance = ?, updated_at = CURRENT_TIMESTAMP
       WHERE user_email = ?
     `;
     
     if (DATABASE_URL) {
       const pool = getPGPool();
-      await pool.query(convertSqlForPG(updateSql), [newAddOn, currentJstDate, email]);
+      await pool.query(convertSqlForPG(updateSql), [newAddOn, email]);
     } else {
       const db = getSQLiteDB();
       const stmt = db.prepare(updateSql);
-      stmt.run(newAddOn, currentJstDate, email);
+      stmt.run(newAddOn, email);
     }
   } catch (error) {
     console.error(`Error in addUserAddOnBalance(${email}, ${amount}):`, error);
@@ -3416,6 +3451,9 @@ export interface UserAdminView {
   updated_at: string;
   contact_person?: string | null;
   contact_phone?: string | null;
+  form_credits_balance?: number;
+  form_credits_purchased?: number;
+  form_credits_used?: number;
 }
 
 let adminTablesInitialized = false;
@@ -3550,23 +3588,37 @@ export async function initAdminTables(): Promise<void> {
 export async function getAllUsers(): Promise<UserAdminView[]> {
   await initQuotaTables();
   try {
-    const rows = await runQuery(`
-      SELECT ueq.*, ubi.contact_person, ubi.contact_phone 
-      FROM user_export_quotas ueq
-      LEFT JOIN user_billing_info ubi ON ueq.user_email = ubi.user_email
-      ORDER BY ueq.updated_at DESC
-    `);
-    return rows ? rows.map(r => ({
-      user_email: String(r.user_email),
-      monthly_base_allowance: Number(r.monthly_base_allowance),
-      monthly_base_used: Number(r.monthly_base_used),
-      purchased_add_on_balance: Number(r.purchased_add_on_balance),
-      plan: r.plan ? String(r.plan) : 'free',
-      subscription_status: r.subscription_status ? String(r.subscription_status) : 'inactive',
-      updated_at: String(r.updated_at),
-      contact_person: r.contact_person ? String(r.contact_person) : null,
-      contact_phone: r.contact_phone ? String(r.contact_phone) : null,
-    })) : [];
+    const [rows, formCreditsMap] = await Promise.all([
+      runQuery(`
+        SELECT ueq.*, ubi.contact_person, ubi.contact_phone 
+        FROM user_export_quotas ueq
+        LEFT JOIN user_billing_info ubi ON ueq.user_email = ubi.user_email
+        ORDER BY ueq.updated_at DESC
+      `),
+      getAllUserFormCredits().catch((e) => {
+        console.warn('Could not fetch form credits for users:', e);
+        return {} as Record<string, any>;
+      })
+    ]);
+
+    return rows ? rows.map(r => {
+      const email = String(r.user_email);
+      const fc = formCreditsMap[email];
+      return {
+        user_email: email,
+        monthly_base_allowance: Number(r.monthly_base_allowance),
+        monthly_base_used: Number(r.monthly_base_used),
+        purchased_add_on_balance: Number(r.purchased_add_on_balance),
+        plan: r.plan ? String(r.plan) : 'free',
+        subscription_status: r.subscription_status ? String(r.subscription_status) : 'inactive',
+        updated_at: String(r.updated_at),
+        contact_person: r.contact_person ? String(r.contact_person) : null,
+        contact_phone: r.contact_phone ? String(r.contact_phone) : null,
+        form_credits_balance: fc ? fc.balance : 0,
+        form_credits_purchased: fc ? fc.total_purchased : 0,
+        form_credits_used: fc ? fc.total_used : 0,
+      };
+    }) : [];
   } catch (error) {
     console.error('Error in getAllUsers:', error);
     return [];
@@ -3823,7 +3875,9 @@ export const ALLOWED_EDIT_FIELDS = [
   'email_address', 
   'fax_number', 
   'representative_name', 
-  'jigyo_shumoku'
+  'jigyo_shumoku',
+  'pr_title',
+  'pr_message'
 ];
 
 export async function updateCompanyField(corporate_number: string, field_name: string, new_value: string): Promise<boolean> {
@@ -3842,6 +3896,7 @@ export async function updateCompanyField(corporate_number: string, field_name: s
       db.prepare(`UPDATE companies SET ${field_name} = ?, updated_at = CURRENT_TIMESTAMP WHERE corporate_number = ?`)
         .run(new_value, corporate_number);
     }
+    invalidateCompanyCache(corporate_number);
     return true;
   } catch (error) {
     console.error(`Error in updateCompanyField(${corporate_number}, ${field_name}):`, error);
@@ -3932,7 +3987,7 @@ export async function getCompanyEditHistory(corporate_number?: string): Promise<
   await initAdminTables();
   try {
     let sql = `SELECT * FROM company_edit_history`;
-    let params: any[] = [];
+    const params: any[] = [];
     if (corporate_number) {
       sql += ` WHERE corporate_number = ?`;
       params.push(corporate_number);
@@ -4473,17 +4528,20 @@ export async function verifyApiKey(rawKey: string): Promise<{ keyInfo: UserApiKe
     const sql = `
       SELECT k.*, q.plan, q.subscription_status
       FROM user_api_keys k
-      JOIN user_export_quotas q ON k.user_email = q.user_email
+      LEFT JOIN user_export_quotas q ON LOWER(k.user_email) = LOWER(q.user_email)
       WHERE k.api_key_hash = ? AND k.status = 'active'
       LIMIT 1
     `;
     const row = await runGetQuery(sql, [keyHash]);
     if (!row) return null;
 
+    const email = row.user_email;
+    const isOwnerOrAdmin = isAdminEmail(email);
+
     return {
       keyInfo: {
         id: row.id,
-        user_email: row.user_email,
+        user_email: email,
         api_key_hash: row.api_key_hash,
         api_key_preview: row.api_key_preview,
         status: row.status as any,
@@ -4492,8 +4550,8 @@ export async function verifyApiKey(rawKey: string): Promise<{ keyInfo: UserApiKe
         last_ip: row.last_ip || null,
         last_user_agent: row.last_user_agent || null
       },
-      plan: row.plan || 'free',
-      subscription_status: row.subscription_status || 'inactive'
+      plan: isOwnerOrAdmin ? 'enterprise' : (row.plan || 'free'),
+      subscription_status: isOwnerOrAdmin ? 'active' : (row.subscription_status || 'inactive')
     };
   } catch (error) {
     console.error('Error in verifyApiKey:', error);
@@ -4606,21 +4664,25 @@ export async function getBusinessSignalsGlobal(
     }
 
     const countSql = `SELECT COUNT(*) as count FROM business_signals bs ${whereClause}`;
-    const countResult = await runGetQuery(countSql, params);
+    const countResult = await runGetQuery(countSql, [...params]);
     const totalCount = countResult ? Number(countResult.count) : 0;
 
-    let sql = `
-      SELECT bs.*, c.company_name
-      FROM business_signals bs
-      JOIN companies c ON bs.corporate_number = c.corporate_number
-      ${whereClause}
-      ORDER BY bs.signal_date DESC, bs.id DESC
+    const sql = `
+      WITH top_signals AS (
+        SELECT bs.*
+        FROM business_signals bs
+        ${whereClause}
+        ORDER BY bs.signal_date DESC, bs.id DESC
+        LIMIT ? OFFSET ?
+      )
+      SELECT ts.*, c.company_name
+      FROM top_signals ts
+      LEFT JOIN companies c ON ts.corporate_number = c.corporate_number
+      ORDER BY ts.signal_date DESC, ts.id DESC
     `;
     
-    sql += " LIMIT ? OFFSET ?";
-    params.push(limit, offset);
-
-    const rows = await runQuery(sql, params);
+    const queryParams = [...params, limit, offset];
+    const rows = await runQuery(sql, queryParams);
     return {
       signals: rows ? rows.map(r => ({
         id: r.id,

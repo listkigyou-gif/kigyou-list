@@ -142,46 +142,46 @@ ${message || "未入力"}`
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0D1117] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-indigo-500/20 font-sans">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0D1117] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-[#1B4F8A]/20 font-sans">
       <Header />
 
       <main className="flex-1">
-        {/* HERO SECTION */}
-        <section className="relative overflow-hidden pt-12 pb-20 border-b border-slate-200/80 dark:border-slate-800 bg-gradient-to-b from-indigo-50/40 via-white to-slate-50 dark:from-indigo-950/20 dark:via-[#0D1117] dark:to-[#0D1117]">
+        {/* HERO SECTION: Authoritative Japan B2B Header */}
+        <section className="relative overflow-hidden pt-12 pb-16 lg:pt-16 lg:pb-20 border-b border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0D1117]">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center max-w-3xl mx-auto">
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 text-xs font-bold mb-6 shadow-2xs">
-                <Sparkles className="w-4 h-4 text-indigo-500" />
+              {/* B2B Eyebrow Tag */}
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 text-[#1B4F8A] dark:text-blue-400 text-xs font-bold mb-6 tracking-wide shadow-2xs">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A] dark:bg-blue-400 animate-pulse" />
                 <span>
                   {isJa
-                    ? "国内500万社DB連携 × セルフサービス型フォーム営業プラットフォーム"
+                    ? "国内500万社DB連携 × 完全オンライン自動フォーム営業プラットフォーム"
                     : isVi
-                    ? "Kết nối Database 5 Triệu Doanh nghiệp × Tự động hóa Form Outreach B2B"
+                    ? "Database 5 Triệu Doanh nghiệp × Tự động hóa Form Outreach B2B"
                     : "5M+ Verified Companies × Self-Serve Contact Form Outreach SaaS"}
                 </span>
               </div>
 
               {/* Main Headline */}
-              <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-slate-900 dark:text-white leading-[1.25] mb-6">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.25] mb-6">
                 {isJa ? (
                   <>
                     問い合わせフォーム営業を、<br />
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+                    <span className="text-[#1B4F8A] dark:text-blue-400">
                       オンラインで最短即日スタート。
                     </span>
                   </>
                 ) : isVi ? (
                   <>
-                    Tiếp cận trực tiếp lãnh đạo doanh nghiệp Nhật với<br />
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+                    Tiếp cận trực tiếp ban lãnh đạo doanh nghiệp Nhật với<br />
+                    <span className="text-[#1B4F8A] dark:text-blue-400">
                       Nền tảng Tự động Gửi Form Marketing B2B
                     </span>
                   </>
                 ) : (
                   <>
                     Scale Your B2B Meetings in Japan with<br />
-                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600">
+                    <span className="text-[#1B4F8A] dark:text-blue-400">
                       Self-Serve Form Outreach Platform
                     </span>
                   </>
@@ -189,7 +189,7 @@ ${message || "未入力"}`
               </h1>
 
               {/* Subheadline */}
-              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-350 leading-relaxed mb-8 max-w-2xl mx-auto">
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 leading-relaxed mb-8 max-w-2xl mx-auto font-normal">
                 {isJa
                   ? "テレアポの受付ブロックやメールの迷惑フォルダを完全回避。500万社データベースからターゲット企業を抽出し、管理画面から自社の営業文面を即時設定。運営による事前法令・NGワード審査で、安全かつ効率的な新規商談創出を実現します。"
                   : isVi
@@ -197,11 +197,11 @@ ${message || "未入力"}`
                   : "Bypass gatekeepers and spam filters. Filter hyper-targeted prospects from 5M+ records, set up your pitch template, and dispatch automatically with our safety & compliance verification."}
               </p>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-wrap items-center justify-center gap-3.5">
+              {/* Action Buttons */}
+              <div className="flex flex-wrap items-center justify-center gap-3">
                 <Link
                   href={`/${locale}/dashboard?tab=formCampaigns`}
-                  className="px-6 py-3.5 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-500/20 active:scale-[0.98] transition-all flex items-center gap-2"
+                  className="px-6 py-3.5 rounded-lg font-bold text-xs sm:text-sm text-white bg-[#1B4F8A] hover:bg-[#163e6d] shadow-2xs active:scale-[0.98] transition-all flex items-center gap-2"
                 >
                   <Send className="w-4 h-4" />
                   <span>
@@ -214,7 +214,7 @@ ${message || "未入力"}`
                 </Link>
                 <Link
                   href={`/${locale}/search?contact_form=true`}
-                  className="px-6 py-3.5 rounded-xl font-bold text-sm bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-2xs active:scale-[0.98] transition-all flex items-center gap-1.5"
+                  className="px-6 py-3.5 rounded-lg font-bold text-xs sm:text-sm bg-white hover:bg-slate-50 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-750 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 shadow-2xs active:scale-[0.98] transition-all flex items-center gap-1.5"
                 >
                   <span>
                     {isJa
@@ -227,23 +227,23 @@ ${message || "未入力"}`
                 </Link>
               </div>
 
-              {/* Trust Metrics Bar */}
+              {/* Key Trust Metrics Bar (B2B Spec Matrix) */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-12 pt-8 border-t border-slate-200/80 dark:border-slate-800">
-                <div className="text-center">
-                  <div className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white font-mono">5,070,000+</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{isJa ? "収録法人データベース" : isVi ? "Dữ liệu pháp nhân toàn Nhật" : "Total Companies in DB"}</div>
+                <div className="text-center p-3 rounded-lg bg-slate-50/80 dark:bg-slate-800/30 border border-slate-200/70 dark:border-slate-800">
+                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white">5,070,000+</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{isJa ? "収録法人データベース" : isVi ? "Dữ liệu pháp nhân toàn Nhật" : "Total Companies in DB"}</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl sm:text-3xl font-black text-indigo-600 dark:text-indigo-400 font-mono">235,000+</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{isJa ? "フォームURL常時解析済" : isVi ? "Form liên hệ sẵn sàng gửi" : "Verified Form URLs"}</div>
+                <div className="text-center p-3 rounded-lg bg-slate-50/80 dark:bg-slate-800/30 border border-slate-200/70 dark:border-slate-800">
+                  <div className="text-xl sm:text-2xl font-bold text-[#1B4F8A] dark:text-blue-400">235,000+</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{isJa ? "フォームURL常時解析済" : isVi ? "Form liên hệ sẵn sàng gửi" : "Verified Form URLs"}</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl sm:text-3xl font-black text-emerald-600 dark:text-emerald-400 font-mono">50〜90%</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{isJa ? "平均開封・閲覧率" : isVi ? "Tỷ lệ mở & đọc thực tế" : "Average Read Rate"}</div>
+                <div className="text-center p-3 rounded-lg bg-slate-50/80 dark:bg-slate-800/30 border border-slate-200/70 dark:border-slate-800">
+                  <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">50〜90%</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{isJa ? "平均開封・閲覧率" : isVi ? "Tỷ lệ mở & đọc thực tế" : "Average Read Rate"}</div>
                 </div>
-                <div className="text-center">
-                  <div className="text-2xl sm:text-3xl font-black text-purple-600 dark:text-purple-400 font-mono">¥20〜</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{isJa ? "送信完了単価 (最安水準)" : isVi ? "Chi phí gửi từ 20 JPY/form" : "Cost per form from 20 JPY"}</div>
+                <div className="text-center p-3 rounded-lg bg-slate-50/80 dark:bg-slate-800/30 border border-slate-200/70 dark:border-slate-800">
+                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-200">¥16.1〜</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{isJa ? "送信完了単価 (最安水準)" : isVi ? "Chi phí gửi từ 16.1 JPY/form" : "Cost per form from 16.1 JPY"}</div>
                 </div>
               </div>
             </div>
@@ -252,11 +252,11 @@ ${message || "未入力"}`
 
         {/* COMPARISON TABLE: Why Form DM > Cold Email & Telesales */}
         <section className="py-16 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mb-2.5">
               {isJa ? "他アウトバウンド手法との決定的な違い" : isVi ? "So sánh Form DM với các kênh Outbound khác tại Nhật" : "Why Form Outreach Beats Traditional Channels"}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-normal">
               {isJa
                 ? "テレアポ・代表メール営業の課題をすべて解決する次世代の営業アプローチです。"
                 : isVi
@@ -266,15 +266,15 @@ ${message || "未入力"}`
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse bg-white dark:bg-[#161B22] rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-2xs text-xs sm:text-sm">
+            <table className="w-full text-left border-collapse bg-white dark:bg-[#161B22] rounded-xl overflow-hidden border border-slate-200/90 dark:border-slate-800 shadow-2xs text-xs sm:text-sm">
               <thead>
-                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
-                  <th className="p-4 sm:p-5 font-bold text-slate-600 dark:text-slate-350">{isJa ? "比較項目" : isVi ? "Tiêu chí" : "Metric"}</th>
-                  <th className="p-4 sm:p-5 font-bold text-slate-500 dark:text-slate-400">{isJa ? "代表メール (info@)" : isVi ? "Cold Email (info@)" : "Cold Email"}</th>
-                  <th className="p-4 sm:p-5 font-bold text-slate-500 dark:text-slate-400">{isJa ? "テレアポ (架電)" : isVi ? "Telesales (Gọi điện)" : "Cold Calling"}</th>
-                  <th className="p-4 sm:p-5 font-extrabold text-indigo-700 dark:text-indigo-400 bg-indigo-50/60 dark:bg-indigo-950/40 border-l border-r border-indigo-200 dark:border-indigo-800">
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40">
+                  <th className="p-4 sm:p-5 font-bold text-slate-700 dark:text-slate-300">{isJa ? "比較項目" : isVi ? "Tiêu chí" : "Metric"}</th>
+                  <th className="p-4 sm:p-5 font-medium text-slate-500 dark:text-slate-400">{isJa ? "代表メール (info@)" : isVi ? "Cold Email (info@)" : "Cold Email"}</th>
+                  <th className="p-4 sm:p-5 font-medium text-slate-500 dark:text-slate-400">{isJa ? "テレアポ (架電)" : isVi ? "Telesales (Gọi điện)" : "Cold Calling"}</th>
+                  <th className="p-4 sm:p-5 font-bold text-[#1B4F8A] dark:text-blue-400 bg-blue-50/70 dark:bg-blue-950/40 border-l border-r border-blue-200/80 dark:border-blue-900/60">
                     <span className="flex items-center gap-1.5">
-                      <Sparkles className="w-4 h-4 text-indigo-500" />
+                      <Send className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                       {isJa ? "Kigyou-List フォーム営業" : isVi ? "Gửi Form DM (Kigyou-List)" : "Kigyou-List Form DM"}
                     </span>
                   </th>
@@ -282,42 +282,42 @@ ${message || "未入力"}`
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-slate-700 dark:text-slate-300">
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold">{isJa ? "閲覧・到達率" : isVi ? "Tỷ lệ đọc / Mở" : "Read / Open Rate"}</td>
+                  <td className="p-4 sm:p-5 font-semibold">{isJa ? "閲覧・到達率" : isVi ? "Tỷ lệ đọc / Mở" : "Read / Open Rate"}</td>
                   <td className="p-4 sm:p-5 text-rose-600 dark:text-rose-400">3% 〜 5% (迷惑メール化)</td>
                   <td className="p-4 sm:p-5 text-amber-600 dark:text-amber-400">10% 〜 20% (受付ブロック)</td>
-                  <td className="p-4 sm:p-5 font-bold text-emerald-600 dark:text-emerald-400 bg-indigo-50/30 dark:bg-indigo-950/20 border-l border-r border-indigo-200 dark:border-indigo-800">
+                  <td className="p-4 sm:p-5 font-bold text-emerald-600 dark:text-emerald-400 bg-blue-50/20 dark:bg-blue-950/20 border-l border-r border-blue-200/60 dark:border-blue-900/40">
                     50% 〜 90% (決裁者必読)
                   </td>
                 </tr>
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold">{isJa ? "アプローチ単価" : isVi ? "Chi phí tiếp cận / lượt" : "Cost per touch"}</td>
+                  <td className="p-4 sm:p-5 font-semibold">{isJa ? "アプローチ単価" : isVi ? "Chi phí tiếp cận / lượt" : "Cost per touch"}</td>
                   <td className="p-4 sm:p-5">¥1 〜 ¥3</td>
                   <td className="p-4 sm:p-5 text-rose-600 dark:text-rose-400">¥200 〜 ¥350 / 呼</td>
-                  <td className="p-4 sm:p-5 font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/30 dark:bg-indigo-950/20 border-l border-r border-indigo-200 dark:border-indigo-800">
-                    ¥20 〜 ¥28 / 送信完了
+                  <td className="p-4 sm:p-5 font-bold text-[#1B4F8A] dark:text-blue-400 bg-blue-50/20 dark:bg-blue-950/20 border-l border-r border-blue-200/60 dark:border-blue-900/40">
+                    ¥16.1 〜 ¥19.6 / 送信完了
                   </td>
                 </tr>
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold">{isJa ? "アポ獲得率 (CVR)" : isVi ? "Tỷ lệ chốt cuộc hẹn" : "Meeting CVR"}</td>
+                  <td className="p-4 sm:p-5 font-semibold">{isJa ? "アポ獲得率 (CVR)" : isVi ? "Tỷ lệ chốt cuộc hẹn" : "Meeting CVR"}</td>
                   <td className="p-4 sm:p-5 text-slate-500">0.05% 〜 0.1%</td>
                   <td className="p-4 sm:p-5">0.5% 〜 1.0%</td>
-                  <td className="p-4 sm:p-5 font-bold text-emerald-600 dark:text-emerald-400 bg-indigo-50/30 dark:bg-indigo-950/20 border-l border-r border-indigo-200 dark:border-indigo-800">
+                  <td className="p-4 sm:p-5 font-bold text-emerald-600 dark:text-emerald-400 bg-blue-50/20 dark:bg-blue-950/20 border-l border-r border-blue-200/60 dark:border-blue-900/40">
                     0.5% 〜 2.0% (高レスポンス)
                   </td>
                 </tr>
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold">{isJa ? "自社リソース負荷" : isVi ? "Gánh nặng nhân sự nội bộ" : "In-house Workload"}</td>
+                  <td className="p-4 sm:p-5 font-semibold">{isJa ? "自社リソース負荷" : isVi ? "Gánh nặng nhân sự nội bộ" : "In-house Workload"}</td>
                   <td className="p-4 sm:p-5">中 (配信リスト管理・SPF)</td>
                   <td className="p-4 sm:p-5 text-rose-600 dark:text-rose-400">極めて大 (担当者の疲弊)</td>
-                  <td className="p-4 sm:p-5 font-bold text-emerald-600 dark:text-emerald-400 bg-indigo-50/30 dark:bg-indigo-950/20 border-l border-r border-indigo-200 dark:border-indigo-800">
+                  <td className="p-4 sm:p-5 font-bold text-emerald-600 dark:text-emerald-400 bg-blue-50/20 dark:bg-blue-950/20 border-l border-r border-blue-200/60 dark:border-blue-900/40">
                     数分で完了 (完全オンライン完結)
                   </td>
                 </tr>
                 <tr>
-                  <td className="p-4 sm:p-5 font-bold">{isJa ? "クレーム防止対策" : isVi ? "Phòng chống khiếu nại" : "Complaint Prevention"}</td>
+                  <td className="p-4 sm:p-5 font-semibold">{isJa ? "クレーム防止対策" : isVi ? "Phòng chống khiếu nại" : "Complaint Prevention"}</td>
                   <td className="p-4 sm:p-5">ドメイン汚染リスク大</td>
                   <td className="p-4 sm:p-5">ガチャ切り・苦情リスク</td>
-                  <td className="p-4 sm:p-5 font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-50/30 dark:bg-indigo-950/20 border-l border-r border-indigo-200 dark:border-indigo-800">
+                  <td className="p-4 sm:p-5 font-bold text-[#1B4F8A] dark:text-blue-400 bg-blue-50/20 dark:bg-blue-950/20 border-l border-r border-blue-200/60 dark:border-blue-900/40">
                     AI自動除外 ＆ 運営事前審査
                   </td>
                 </tr>
@@ -327,13 +327,13 @@ ${message || "未入力"}`
         </section>
 
         {/* 4 CORE FEATURES */}
-        <section className="py-16 bg-slate-100/50 dark:bg-[#12161E] border-t border-b border-slate-200/80 dark:border-slate-800">
+        <section className="py-16 bg-slate-50/60 dark:bg-[#12161E] border-t border-b border-slate-200/80 dark:border-slate-800">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3">
+            <div className="text-center max-w-2xl mx-auto mb-10">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mb-2.5">
                 {isJa ? "Kigyou-list が選ばれる4つの強み" : isVi ? "4 Ưu điểm độc quyền của Nền tảng Gửi Form Kigyou-List" : "4 Pillars of Kigyou-List Form Outreach SaaS"}
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-normal">
                 {isJa
                   ? "高い反響率と法令遵守の両立を支えるセルフサービステクノロジー。"
                   : isVi
@@ -342,17 +342,17 @@ ${message || "未入力"}`
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
               {/* Feature 1 */}
-              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-6 h-6" />
+              <div className="p-5 sm:p-6 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200/70 dark:border-blue-900/50 text-[#1B4F8A] dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-1">
                     {isJa ? "AI「営業お断り」自動検知・除外フィルター" : isVi ? "AI Tự động bỏ qua Form 'Cấm chào hàng'" : "AI Anti-Spam Disclaimer Detector"}
                   </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                     {isJa
                       ? "フォーム周辺にある「営業目的の連絡はお断り」「セールス禁止」などの免責文言をAIが事前解析。該当する企業には自動的に送信をスキップし、貴社のブランド価値を保全します。"
                       : isVi
@@ -363,15 +363,15 @@ ${message || "未入力"}`
               </div>
 
               {/* Feature 2 */}
-              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
-                  <FileText className="w-6 h-6" />
+              <div className="p-5 sm:p-6 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200/70 dark:border-blue-900/50 text-[#1B4F8A] dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <FileText className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-1">
                     {isJa ? "運営スタッフによる事前法令・NGワード審査" : isVi ? "Duyệt kịch bản tuân thủ Pháp luật & Từ khóa cấm" : "Human Compliance & Tokushoho Review"}
                   </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                     {isJa
                       ? "送信前に特定商取引法に基づく発信者情報やオプトアウト案内の記載を専任スタッフが迅速にチェック（最短2〜4時間）。法令違反や過度な売り込みトラブルを未然に防止します。"
                       : isVi
@@ -382,15 +382,15 @@ ${message || "未入力"}`
               </div>
 
               {/* Feature 3 */}
-              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 flex items-center justify-center shrink-0">
-                  <Target className="w-6 h-6" />
+              <div className="p-5 sm:p-6 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200/70 dark:border-blue-900/50 text-[#1B4F8A] dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <Target className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-1">
                     {isJa ? "500万社DBから高精度ターゲティング" : isVi ? "Nhắm chọn đối tượng mục tiêu từ 5 triệu doanh nghiệp" : "Hyper-Targeting from 5M+ Enterprise DB"}
                   </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                     {isJa
                       ? "JSIC中分類業界コード、資本金、従業員規模、都道府県、求人・助成金シグナルを組み合わせ、本当に貴社の商品を必要としている企業だけを狙い撃ちできます。"
                       : isVi
@@ -401,15 +401,15 @@ ${message || "未入力"}`
               </div>
 
               {/* Feature 4 */}
-              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start gap-4">
-                <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 flex items-center justify-center shrink-0">
-                  <BarChart3 className="w-6 h-6" />
+              <div className="p-5 sm:p-6 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 shadow-2xs flex items-start gap-4">
+                <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/50 border border-blue-200/70 dark:border-blue-900/50 text-[#1B4F8A] dark:text-blue-400 flex items-center justify-center shrink-0">
+                  <BarChart3 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">
+                  <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-1">
                     {isJa ? "リアルタイム管理画面 & CSV証跡レポート" : isVi ? "Báo cáo minh bạch 100% kèm Log & Bằng chứng" : "Live Dashboard & 100% Audit Logs"}
                   </h3>
-                  <p className="text-xs text-slate-600 dark:text-slate-350 leading-relaxed">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                     {isJa
                       ? "送信進捗は管理画面でリアルタイムに確認可能。送信完了後は企業名、法人番号、送信日時、フォームURLを網羅したCSVレポートをいつでもダウンロードいただけます。"
                       : isVi
@@ -423,36 +423,42 @@ ${message || "未入力"}`
         </section>
 
         {/* PRICING PLANS */}
-        <section id="pricing" className="py-20 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold mb-3">
+        <section id="pricing" className="py-16 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto mb-10">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-[#1B4F8A] dark:text-blue-400 border border-slate-200/80 dark:border-slate-700 text-xs font-semibold mb-3">
               <span>{isJa ? "シンプル＆成果重視の料金体系" : isVi ? "Bảng giá minh bạch - Không phí ẩn" : "Transparent Pricing - No Hidden Fees"}</span>
             </div>
-            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 dark:text-white mb-3">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mb-2.5">
               {isJa ? "送信ボリューム別プラン" : isVi ? "Các gói chiến dịch gửi Form" : "Outreach Volume Packages"}
             </h2>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-normal">
               {isJa ? "初期費用ゼロ・月額固定費ゼロ。管理画面から即座にお申し込み・文面設定いただけます。" : isVi ? "Không phí khởi tạo, không phí duy trì. Tự lên kịch bản và kích hoạt trực tiếp từ hệ thống." : "Zero setup fees, zero monthly commitments. Pure pay-as-you-go delivery."}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
             {/* 1,000 Plan */}
-            <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
+            <div className="bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 rounded-xl p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
                   {isJa ? "1,000 件プラン" : isVi ? "Gói Starter 1.000 Form" : "Starter (1,000 Forms)"}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
                   {isJa ? "まずは効果検証・テスト送信に最適" : isVi ? "Thử nghiệm phản hồi thị trường" : "Ideal for testing product-market fit"}
                 </p>
 
-                <div className="flex items-baseline gap-1.5 mb-2">
-                  <span className="text-3xl font-black text-slate-900 dark:text-white">¥28,000</span>
+                <div className="flex items-baseline gap-1.5 mb-1">
+                  <span className="text-3xl font-extrabold text-slate-900 dark:text-white">¥19,600</span>
                   <span className="text-xs text-slate-400">({isJa ? "税抜" : isVi ? "chưa VAT" : "excl. tax"})</span>
                 </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="line-through text-slate-400 text-xs">¥28,000</span>
+                  <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
+                    30% OFF
+                  </span>
+                </div>
                 <div className="text-xs text-slate-500 font-semibold mb-6">
-                  {isJa ? "単価: 28円 / 送信完了" : isVi ? "28 JPY / form gửi thành công" : "28 JPY / delivered form"}
+                  {isJa ? "単価: 19.6円 / 送信完了" : isVi ? "19.6 JPY / form gửi thành công" : "19.6 JPY / delivered form"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -481,32 +487,38 @@ ${message || "未入力"}`
 
               <Link
                 href={`/${locale}/dashboard?tab=formCampaigns`}
-                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors block"
+                className="mt-8 w-full py-2.5 rounded-lg font-semibold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors block"
               >
                 {isJa ? "このプランで配信設定する" : isVi ? "Cấu hình gói Starter" : "Select Starter"}
               </Link>
             </div>
 
             {/* 3,000 Plan (RECOMMENDED) */}
-            <div className="bg-white dark:bg-[#1C2128] border-2 border-indigo-600 dark:border-indigo-500 rounded-2xl p-6 sm:p-7 shadow-lg shadow-indigo-500/10 flex flex-col justify-between relative">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10px] font-black uppercase tracking-wider shadow-xs">
-                {isJa ? "★ 一番人気・推奨プラン" : isVi ? "★ Phổ biến & Tối ưu nhất" : "★ MOST POPULAR & BEST VALUE"}
+            <div className="bg-white dark:bg-[#161B22] border-2 border-[#1B4F8A] dark:border-blue-500 rounded-xl p-6 sm:p-7 shadow-xs flex flex-col justify-between relative">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#1B4F8A] text-white text-[10px] font-bold uppercase tracking-wider shadow-2xs whitespace-nowrap">
+                {isJa ? "推奨・一番人気の標準プラン" : isVi ? "Phổ biến & Tối ưu nhất" : "RECOMMENDED & BEST VALUE"}
               </div>
 
               <div>
-                <h3 className="text-lg font-bold text-indigo-700 dark:text-indigo-400 mb-1">
+                <h3 className="text-base font-bold text-[#1B4F8A] dark:text-blue-400 mb-1">
                   {isJa ? "3,000 件プラン" : isVi ? "Gói Standard 3.000 Form" : "Standard (3,000 Forms)"}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
                   {isJa ? "本格的なリード獲得・商談創出に" : isVi ? "Đạt lượng chuyển đổi cuộc hẹn ổn định" : "Optimal for scalable lead generation"}
                 </p>
 
-                <div className="flex items-baseline gap-1.5 mb-2">
-                  <span className="text-3xl font-black text-indigo-700 dark:text-indigo-300">¥69,000</span>
+                <div className="flex items-baseline gap-1.5 mb-1">
+                  <span className="text-3xl font-extrabold text-[#1B4F8A] dark:text-blue-400">¥48,300</span>
                   <span className="text-xs text-slate-400">({isJa ? "税抜" : isVi ? "chưa VAT" : "excl. tax"})</span>
                 </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="line-through text-slate-400 text-xs">¥69,000</span>
+                  <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
+                    30% OFF
+                  </span>
+                </div>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6">
-                  {isJa ? "単価: 23円 / 送信完了 (約18%お得)" : isVi ? "23 JPY / form (Tiết kiệm 18%)" : "23 JPY / delivered form (Save 18%)"}
+                  {isJa ? "単価: 16.1円 / 送信完了 (業界最安級)" : isVi ? "16.1 JPY / form (Tiết kiệm tối đa)" : "16.1 JPY / delivered form (Save 42%)"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -520,7 +532,7 @@ ${message || "未入力"}`
                   </li>
                   <li className="flex items-center gap-2">
                     <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                    <span className="font-bold text-slate-900 dark:text-white">
+                    <span className="font-semibold text-slate-900 dark:text-white">
                       {isJa ? "企業名・住所などの自動差し込みタグ対応" : isVi ? "Tự động chèn {company_name}, {location}" : "Dynamic placeholder tags"}
                     </span>
                   </li>
@@ -537,28 +549,34 @@ ${message || "未入力"}`
 
               <Link
                 href={`/${locale}/dashboard?tab=formCampaigns`}
-                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-500/20 text-center transition-all block active:scale-[0.98]"
+                className="mt-8 w-full py-2.5 rounded-lg font-bold text-xs text-white bg-[#1B4F8A] hover:bg-[#163e6d] shadow-2xs text-center transition-all block active:scale-[0.98]"
               >
                 {isJa ? "このプランで今すぐ始める" : isVi ? "Bắt đầu với gói Standard" : "Launch Standard"}
               </Link>
             </div>
 
             {/* 5,000+ Plan */}
-            <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
+            <div className="bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 rounded-xl p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1">
                   {isJa ? "5,000 件プラン" : isVi ? "Gói Enterprise 5.000 Form" : "Enterprise (5,000+ Forms)"}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
                   {isJa ? "大量アプローチで商談数を最大化" : isVi ? "Quy mô lớn, chi phí trên mỗi form rẻ nhất" : "Maximum appointment pipeline volume"}
                 </p>
 
-                <div className="flex items-baseline gap-1.5 mb-2">
-                  <span className="text-3xl font-black text-slate-900 dark:text-white">¥99,000</span>
+                <div className="flex items-baseline gap-1.5 mb-1">
+                  <span className="text-3xl font-extrabold text-slate-900 dark:text-white">¥69,300</span>
                   <span className="text-xs text-slate-400">({isJa ? "税抜" : isVi ? "chưa VAT" : "excl. tax"})</span>
                 </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="line-through text-slate-400 text-xs">¥99,000</span>
+                  <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
+                    30% OFF
+                  </span>
+                </div>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6">
-                  {isJa ? "単価: 19.8円 / 送信完了 (最安値レート)" : isVi ? "19.8 JPY / form (Mức giá tốt nhất)" : "19.8 JPY / delivered form (Best rate)"}
+                  {isJa ? "単価: 13.8円 / 送信完了 (最安値レート)" : isVi ? "13.8 JPY / form (Mức giá tốt nhất)" : "13.8 JPY / delivered form (Best rate)"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -587,7 +605,7 @@ ${message || "未入力"}`
 
               <Link
                 href={`/${locale}/dashboard?tab=formCampaigns`}
-                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors block"
+                className="mt-8 w-full py-2.5 rounded-lg font-semibold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors block"
               >
                 {isJa ? "このプランで配信設定する" : isVi ? "Cấu hình gói Enterprise" : "Select Enterprise"}
               </Link>
@@ -595,19 +613,19 @@ ${message || "未入力"}`
           </div>
 
           {/* Enterprise notice & Cross-link to Data Pricing */}
-          <div className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400 space-y-2">
+          <div className="mt-8 text-center text-xs text-slate-500 dark:text-slate-400 space-y-1.5">
             {isJa ? (
               <>
                 <p>
                   ※ 10,000件以上の大口配信や、請求書払い（月末締め翌月末払い）をご希望の場合は、
-                  <a href="#contact-form" className="text-indigo-600 dark:text-indigo-400 underline font-semibold ml-1">
+                  <a href="#contact-form" className="text-[#1B4F8A] dark:text-blue-400 underline font-semibold ml-1">
                     下記の大口・カスタム窓口
                   </a>
                   よりお気軽にご相談ください。
                 </p>
                 <p className="text-slate-400 dark:text-slate-500">
                   ※ 企業データベースの閲覧やCSV抽出のみをご希望の場合は、
-                  <Link href={`/${locale}/pricing`} className="text-blue-600 dark:text-blue-400 underline font-medium ml-1">
+                  <Link href={`/${locale}/pricing`} className="text-[#1B4F8A] dark:text-blue-400 underline font-medium ml-1">
                     企業データ料金プラン
                   </Link>
                   をご確認ください。
@@ -617,13 +635,13 @@ ${message || "未入力"}`
               <>
                 <p>
                   ※ Đối với nhu cầu gửi trên 10.000 Form hoặc thanh toán bằng hóa đơn công ty (Invoice), vui lòng liên hệ tại
-                  <a href="#contact-form" className="text-indigo-600 dark:text-indigo-400 underline font-semibold ml-1">
+                  <a href="#contact-form" className="text-[#1B4F8A] dark:text-blue-400 underline font-semibold ml-1">
                     Mục tư vấn Doanh nghiệp lớn
                   </a>.
                 </p>
                 <p className="text-slate-400 dark:text-slate-500">
                   ※ Nếu bạn chỉ có nhu cầu tra cứu và xuất danh sách CSV, vui lòng xem
-                  <Link href={`/${locale}/pricing`} className="text-blue-600 dark:text-blue-400 underline font-medium ml-1">
+                  <Link href={`/${locale}/pricing`} className="text-[#1B4F8A] dark:text-blue-400 underline font-medium ml-1">
                     Bảng giá Dữ liệu Doanh nghiệp
                   </Link>.
                 </p>
@@ -632,13 +650,13 @@ ${message || "未入力"}`
               <>
                 <p>
                   For enterprise volume (10,000+ forms) or invoice billing, please contact our
-                  <a href="#contact-form" className="text-indigo-600 dark:text-indigo-400 underline font-semibold ml-1">
+                  <a href="#contact-form" className="text-[#1B4F8A] dark:text-blue-400 underline font-semibold ml-1">
                     Enterprise Consultation desk
                   </a>.
                 </p>
                 <p className="text-slate-400 dark:text-slate-500">
                   If you only need corporate search and CSV list exports, please view our
-                  <Link href={`/${locale}/pricing`} className="text-blue-600 dark:text-blue-400 underline font-medium ml-1">
+                  <Link href={`/${locale}/pricing`} className="text-[#1B4F8A] dark:text-blue-400 underline font-medium ml-1">
                     Corporate Data Pricing Plans
                   </Link>.
                 </p>
@@ -648,54 +666,54 @@ ${message || "未入力"}`
         </section>
 
         {/* 4-STEP WORKFLOW */}
-        <section className="py-16 bg-slate-100/50 dark:bg-[#12161E] border-t border-b border-slate-200/80 dark:border-slate-800">
+        <section className="py-16 bg-slate-50/60 dark:bg-[#12161E] border-t border-b border-slate-200/80 dark:border-slate-800">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-2xl mx-auto mb-12">
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-3">
+            <div className="text-center max-w-2xl mx-auto mb-10">
+              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white mb-2.5">
                 {isJa ? "お申し込みから配信開始までの流れ" : isVi ? "Quy trình triển khai 4 bước tự động" : "Simple 4-Step Self-Serve Workflow"}
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-normal">
                 {isJa ? "管理画面からオンライン完結。最短即日でターゲット企業へのアプローチを開始できます。" : isVi ? "Thực hiện hoàn toàn trực tuyến trên hệ thống, bắt đầu tiếp cận khách hàng chỉ trong ngày." : "Setup entirely online. Launch your outbound campaign in as fast as same-day."}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs relative">
-                <div className="text-2xl font-black text-indigo-600 font-mono mb-2">STEP 01</div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+              <div className="p-5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 shadow-2xs relative">
+                <div className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 mb-1.5 uppercase tracking-wide">STEP 01</div>
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1">
                   {isJa ? "ターゲット抽出・リスト指定" : isVi ? "Lọc đối tượng mục tiêu" : "Filter Target Prospects"}
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
                   {isJa ? "500万社データベースから業種、地域、企業規模、キーワードなどの条件を指定し、アプローチ対象企業を抽出。" : isVi ? "Lọc tệp doanh nghiệp theo ngành nghề, vốn điều lệ, số nhân sự, tỉnh thành hoặc tín hiệu kinh doanh." : "Select target industry, geography, and headcounts from our 5M+ database."}
                 </p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs relative">
-                <div className="text-2xl font-black text-indigo-600 font-mono mb-2">STEP 02</div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5">
+              <div className="p-5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 shadow-2xs relative">
+                <div className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 mb-1.5 uppercase tracking-wide">STEP 02</div>
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1">
                   {isJa ? "配信メッセージの作成" : isVi ? "Soạn thảo kịch bản chào hàng" : "Compose Pitch Message"}
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
                   {isJa ? "管理画面上で営業文面を入力。業種別テンプレートを活用し、会社名や住所の自動差し込みタグも設定可能。" : isVi ? "Tự nhập nội dung hoặc chọn mẫu có sẵn, hỗ trợ tự động chèn tên công ty người nhận." : "Craft your pitch copy using industry templates with dynamic company name tags."}
                 </p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs relative">
-                <div className="text-2xl font-black text-indigo-600 font-mono mb-2">STEP 03</div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5">
+              <div className="p-5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 shadow-2xs relative">
+                <div className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 mb-1.5 uppercase tracking-wide">STEP 03</div>
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1">
                   {isJa ? "オンライン決済 & 運営審査" : isVi ? "Thanh toán & Kiểm duyệt" : "Checkout & Compliance Review"}
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
                   {isJa ? "オンラインで決済完了後、特定商取引法遵守・オプトアウト記載や営業NG規約を専任スタッフが速やかに審査（最短2〜4時間）。" : isVi ? "Thanh toán trực tuyến. Đội ngũ quản trị kiểm tra tính tuân thủ pháp luật và từ khóa cấm trong 2-4 giờ." : "Instant checkout. Our team verifies Tokushoho compliance within 2 to 4 hours."}
                 </p>
               </div>
 
-              <div className="p-6 rounded-2xl bg-white dark:bg-[#1C2128] border border-slate-200/80 dark:border-slate-800 shadow-2xs relative">
-                <div className="text-2xl font-black text-indigo-600 font-mono mb-2">STEP 04</div>
-                <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1.5">
+              <div className="p-5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 shadow-2xs relative">
+                <div className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 mb-1.5 uppercase tracking-wide">STEP 04</div>
+                <h4 className="font-bold text-sm text-slate-900 dark:text-white mb-1">
                   {isJa ? "自動配信開始 & リアルタイム管理" : isVi ? "Tự động gửi & Báo cáo real-time" : "Automated Sending & Live Logs"}
                 </h4>
-                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
                   {isJa ? "AI自動除外を用いて安全に配信。送信完了結果やログは管理画面からリアルタイムで確認・CSVダウンロード可能。" : isVi ? "Hệ thống tự động gửi an toàn qua proxy Nhật. Khách hàng theo dõi tiến độ và tải file CSV trên Dashboard." : "Safe residential proxy dispatching with auto-skip. Audit CSV logs available on dashboard."}
                 </p>
               </div>
@@ -704,13 +722,13 @@ ${message || "未入力"}`
         </section>
 
         {/* ENTERPRISE & CUSTOM INQUIRY FORM */}
-        <section id="contact-form" className="py-20 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-8 sm:p-10 shadow-lg">
+        <section id="contact-form" className="py-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 sm:p-8 shadow-xs">
             
             {/* Self-serve hint banner */}
-            <div className="mb-8 p-4 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2 text-indigo-900 dark:text-indigo-200 font-medium">
-                <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+            <div className="mb-7 p-3.5 rounded-lg bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div className="flex items-center gap-2 text-[#1B4F8A] dark:text-blue-300 font-medium">
+                <Sparkles className="w-4 h-4 shrink-0" />
                 <span>
                   {isJa
                     ? "1,000件〜5,000件の通常プランは、管理画面から今すぐオンライン完結で配信設定いただけます。"
@@ -721,23 +739,23 @@ ${message || "未入力"}`
               </div>
               <Link
                 href={`/${locale}/dashboard?tab=formCampaigns`}
-                className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs shrink-0 transition-colors shadow-2xs"
+                className="px-3.5 py-1.5 rounded-md bg-[#1B4F8A] hover:bg-[#163e6d] text-white font-semibold text-xs shrink-0 transition-colors shadow-2xs"
               >
                 {isJa ? "管理画面へ進む" : isVi ? "Mở Dashboard" : "Go to Dashboard"}
               </Link>
             </div>
 
             <div className="text-center max-w-xl mx-auto mb-8">
-              <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 flex items-center justify-center mx-auto mb-3">
-                <Building2 className="w-6 h-6" />
+              <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 flex items-center justify-center mx-auto mb-3">
+                <Building2 className="w-5 h-5" />
               </div>
-              <div className="inline-block px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[11px] font-bold mb-2">
+              <div className="inline-block px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold mb-2">
                 {isJa ? "法人・エンタープライズ窓口" : isVi ? "Dành cho Khách hàng Doanh nghiệp lớn" : "Enterprise Inquiries"}
               </div>
-              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-2">
+              <h2 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-1.5">
                 {isJa ? "大口配信（10,000件以上）・カスタム要件のご相談" : isVi ? "Tư vấn Gói lớn (>10.000 Form) & Hóa đơn công ty" : "Enterprise Volume & Custom Inquiries"}
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-normal">
                 {isJa
                   ? "月間1万件以上の大規模配信、貴社保有リストへの配信、請求書払い（Paid/後払い）などのご要望はこちらよりお気軽にご相談ください。"
                   : isVi
@@ -747,12 +765,12 @@ ${message || "未入力"}`
             </div>
 
             {submitted ? (
-              <div className="text-center py-10 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 rounded-xl p-6">
-                <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-3" />
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">
+              <div className="text-center py-10 bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 rounded-lg p-6">
+                <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-3" />
+                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">
                   {isJa ? "お問い合わせありがとうございます" : isVi ? "Cảm ơn bạn đã gửi yêu cầu!" : "Thank You For Your Request!"}
                 </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-350 max-w-md mx-auto">
+                <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
                   {isJa
                     ? "担当者よりご入力いただいたメールアドレス宛に、1営業日以内に大口ボリューム向けのお見積り・進行スケジュールをご案内いたします。"
                     : isVi
@@ -763,7 +781,7 @@ ${message || "未入力"}`
             ) : (
               <form onSubmit={handleEnterpriseSubmit} className="space-y-4">
                 {errorMsg && (
-                  <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/30 dark:border-rose-900 text-xs font-semibold">
+                  <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 dark:bg-rose-950/30 dark:border-rose-900 text-xs font-semibold">
                     {errorMsg}
                   </div>
                 )}
@@ -773,61 +791,61 @@ ${message || "未入力"}`
                   <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-2">
                     {isJa ? "想定送信ボリューム / ご希望要件" : isVi ? "Quy mô số lượng dự kiến / Nhu cầu" : "Estimated Target Volume"}
                   </label>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     <button
                       type="button"
                       onClick={() => setSelectedVolume("10k")}
-                      className={`p-3 rounded-xl border text-center transition-all ${
+                      className={`p-2.5 rounded-lg border text-center transition-all ${
                         selectedVolume === "10k"
-                          ? "border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold"
+                          ? "border-[#1B4F8A] bg-blue-50/70 dark:bg-blue-950/40 text-[#1B4F8A] dark:text-blue-300 font-bold"
                           : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300 hover:border-slate-300"
                       }`}
                     >
-                      <div className="text-xs font-bold">10,000〜20,000件</div>
+                      <div className="text-xs font-semibold">10,000〜20,000件</div>
                       <div className="text-[10px] opacity-75">単価相談可</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedVolume("20k")}
-                      className={`p-3 rounded-xl border text-center transition-all ${
+                      className={`p-2.5 rounded-lg border text-center transition-all ${
                         selectedVolume === "20k"
-                          ? "border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold"
+                          ? "border-[#1B4F8A] bg-blue-50/70 dark:bg-blue-950/40 text-[#1B4F8A] dark:text-blue-300 font-bold"
                           : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300 hover:border-slate-300"
                       }`}
                     >
-                      <div className="text-xs font-bold">20,000〜50,000件</div>
-                      <div className="text-[10px] opacity-75">特別ディスカウント</div>
+                      <div className="text-xs font-semibold">20,000〜50,000件</div>
+                      <div className="text-[10px] opacity-75">特別割引適用</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedVolume("50k")}
-                      className={`p-3 rounded-xl border text-center transition-all ${
+                      className={`p-2.5 rounded-lg border text-center transition-all ${
                         selectedVolume === "50k"
-                          ? "border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold"
+                          ? "border-[#1B4F8A] bg-blue-50/70 dark:bg-blue-950/40 text-[#1B4F8A] dark:text-blue-300 font-bold"
                           : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300 hover:border-slate-300"
                       }`}
                     >
-                      <div className="text-xs font-bold">50,000件以上</div>
+                      <div className="text-xs font-semibold">50,000件以上</div>
                       <div className="text-[10px] opacity-75">定期配信・API連携</div>
                     </button>
                     <button
                       type="button"
                       onClick={() => setSelectedVolume("custom")}
-                      className={`p-3 rounded-xl border text-center transition-all ${
+                      className={`p-2.5 rounded-lg border text-center transition-all ${
                         selectedVolume === "custom"
-                          ? "border-indigo-600 bg-indigo-50/60 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 font-bold"
+                          ? "border-[#1B4F8A] bg-blue-50/70 dark:bg-blue-950/40 text-[#1B4F8A] dark:text-blue-300 font-bold"
                           : "border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 text-slate-600 dark:text-slate-300 hover:border-slate-300"
                       }`}
                     >
-                      <div className="text-xs font-bold">自社リスト配信</div>
+                      <div className="text-xs font-semibold">自社リスト配信</div>
                       <div className="text-[10px] opacity-75">カスタム要件</div>
                     </button>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300 mb-1">
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-300 mb-1">
                       {isJa ? "貴社名 *" : isVi ? "Tên công ty của bạn *" : "Company Name *"}
                     </label>
                     <div className="relative">
@@ -838,13 +856,13 @@ ${message || "未入力"}`
                         placeholder={isJa ? "例: 株式会社〇〇" : isVi ? "Ví dụ: Công ty Cổ phần ABC" : "e.g. Acme Corp"}
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
-                        className="w-full text-xs font-medium pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-full text-xs font-medium pl-9 pr-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-350 mb-1">
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-350 mb-1">
                       {isJa ? "ご担当者様名 *" : isVi ? "Họ tên người phụ trách *" : "Contact Name *"}
                     </label>
                     <div className="relative">
@@ -855,13 +873,13 @@ ${message || "未入力"}`
                         placeholder={isJa ? "例: 山田 太郎" : isVi ? "Ví dụ: Nguyễn Văn A" : "e.g. John Doe"}
                         value={contactName}
                         onChange={(e) => setContactName(e.target.value)}
-                        className="w-full text-xs font-medium pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-full text-xs font-medium pl-9 pr-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-350 mb-1">
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-350 mb-1">
                       {isJa ? "メールアドレス *" : isVi ? "Email nhận báo giá *" : "Business Email *"}
                     </label>
                     <div className="relative">
@@ -872,13 +890,13 @@ ${message || "未入力"}`
                         placeholder="name@company.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="w-full text-xs font-medium pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-full text-xs font-medium pl-9 pr-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A]"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-350 mb-1">
+                    <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-350 mb-1">
                       {isJa ? "電話番号" : isVi ? "Số điện thoại" : "Phone Number"}
                     </label>
                     <div className="relative">
@@ -888,14 +906,14 @@ ${message || "未入力"}`
                         placeholder="03-1234-5678"
                         value={phone}
                         onChange={(e) => setPhone(e.target.value)}
-                        className="w-full text-xs font-medium pl-9 pr-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                        className="w-full text-xs font-medium pl-9 pr-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A]"
                       />
                     </div>
                   </div>
                 </div>
 
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-350 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-350 mb-1">
                     {isJa ? "ご要望・商材概要・ご質問内容" : isVi ? "Yêu cầu chi tiết, sản phẩm chào hàng hoặc câu hỏi" : "Requirements & Offer Overview"}
                   </label>
                   <textarea
@@ -909,14 +927,14 @@ ${message || "未入力"}`
                     }
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    className="w-full text-xs font-medium p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                    className="w-full text-xs font-medium p-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A]"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 rounded-xl font-bold text-sm text-white bg-slate-900 hover:bg-slate-800 dark:bg-indigo-600 dark:hover:bg-indigo-500 shadow-sm active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
+                  className="w-full py-3 rounded-lg font-bold text-xs sm:text-sm text-white bg-[#1B4F8A] hover:bg-[#163e6d] shadow-2xs active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -933,9 +951,9 @@ ${message || "未入力"}`
         </section>
 
         {/* FAQ SECTION */}
-        <section className="py-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-200 dark:border-slate-800">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">
+        <section className="py-16 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 border-t border-slate-200/80 dark:border-slate-800">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-1.5">
               {isJa ? "よくあるご質問 (FAQ)" : isVi ? "Câu hỏi thường gặp" : "Frequently Asked Questions"}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -943,16 +961,16 @@ ${message || "未入力"}`
             </p>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {faqs.map((faq, idx) => (
               <div
                 key={idx}
-                className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden transition-all shadow-2xs"
+                className="bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 rounded-lg overflow-hidden transition-all shadow-2xs"
               >
                 <button
                   type="button"
                   onClick={() => setOpenFaq(openFaq === idx ? null : idx)}
-                  className="w-full px-5 py-4 text-left flex items-center justify-between gap-4 font-bold text-xs sm:text-sm text-slate-900 dark:text-white hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                  className="w-full px-5 py-3.5 text-left flex items-center justify-between gap-4 font-semibold text-xs sm:text-sm text-slate-800 dark:text-white hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors"
                 >
                   <span>{faq.q}</span>
                   <ChevronDown
@@ -962,7 +980,7 @@ ${message || "未入力"}`
                   />
                 </button>
                 {openFaq === idx && (
-                  <div className="px-5 pb-5 pt-1 text-xs text-slate-600 dark:text-slate-350 leading-relaxed border-t border-slate-100 dark:border-slate-800/60">
+                  <div className="px-5 pb-4 pt-1 text-xs text-slate-600 dark:text-slate-400 leading-relaxed border-t border-slate-100 dark:border-slate-800/60 font-normal">
                     {faq.a}
                   </div>
                 )}

@@ -232,9 +232,19 @@ export async function GET(request: NextRequest) {
       cities = await getCitiesWithCounts(filters.prefecture_code);
     }
     
+    // Sanitize high-value contact assets (email and contact form URL)
+    // They are only provided inside CSV export after deducting user download quota
+    const sanitizedCompanies = result.companies.map((c: any) => ({
+      ...c,
+      has_email: Boolean(c.email_address),
+      has_contact_form: Boolean(c.contact_form_url),
+      email_address: null,
+      contact_form_url: null,
+    }));
+
     return NextResponse.json(
       {
-        companies: result.companies,
+        companies: sanitizedCompanies,
         totalCount: result.totalCount,
         cities
       },

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getUserQuota, getExportJobs } from "@/lib/db";
 import { isAdmin } from "@/lib/adminAuth";
 import { auth } from "@/auth";
+import { getUserFormCredits } from "@/lib/formCampaigns";
 
 export async function GET(request: Request) {
   try {
@@ -27,9 +28,10 @@ export async function GET(request: Request) {
     const includeHistory = searchParams.get("include_history") === "true";
 
     // Fast parallel execution; skip heavy export history unless requested
-    const [quota, history] = await Promise.all([
+    const [quota, history, formCredits] = await Promise.all([
       getUserQuota(email),
-      includeHistory ? getExportJobs(email) : Promise.resolve([])
+      includeHistory ? getExportJobs(email) : Promise.resolve([]),
+      getUserFormCredits(email).catch(() => ({ balance: 0, total_purchased: 0, total_used: 0 }))
     ]);
 
     const isFreePlan = (quota.plan === 'free');
@@ -38,7 +40,8 @@ export async function GET(request: Request) {
     return NextResponse.json({
       quota: {
         ...quota,
-        remaining: Math.max(0, remaining)
+        remaining: Math.max(0, remaining),
+        form_credits_balance: formCredits ? formCredits.balance : 0
       },
       history
     });

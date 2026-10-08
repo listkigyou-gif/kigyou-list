@@ -12,7 +12,7 @@ import {
   Sparkles, CheckCircle2, ChevronRight, Lock, Phone, MoveLeft, MoveRight,
   AlertTriangle, Settings, Loader2, X, ShieldAlert, Upload, Key, Terminal, Copy, Check,
   Search, FileText, ExternalLink, RefreshCw, Eye, ShieldCheck, Send,
-  Clock, Info
+  Clock, Info, Coins
 } from "lucide-react";
 import Link from "next/link";
 import { parseUTCDate } from "@/lib/dateUtils";
@@ -116,12 +116,15 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [showUpsellModal, setShowUpsellModal] = useState(false);
 
-  // My List filters
+  // My List filters & Multi-select
   const [listSearchQuery, setListSearchQuery] = useState("");
   const [listFilterStage, setListFilterStage] = useState<string>("all");
+  const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
+  const [campaignInitialCompanies, setCampaignInitialCompanies] = useState<{ id: string; name: string }[] | null>(null);
 
   // Code snippet tab in developer console
   const [codeTab, setCodeTab] = useState<"curl" | "python" | "node">("curl");
+  const [selectedEndpoint, setSelectedEndpoint] = useState<"companies" | "quota" | "signals">("companies");
 
   // API Key states
   const [apiKeys, setApiKeys] = useState<any[]>([]);
@@ -144,6 +147,11 @@ export default function DashboardPage() {
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [formCampaignsList, setFormCampaignsList] = useState<any[]>([]);
   const [loadingFormCampaigns, setLoadingFormCampaigns] = useState(false);
+  const [formCredits, setFormCredits] = useState<{ balance: number; total_purchased: number; total_used: number }>({
+    balance: 0,
+    total_purchased: 0,
+    total_used: 0
+  });
 
   // Billing Info States
   const [billingName, setBillingName] = useState("");
@@ -280,6 +288,21 @@ export default function DashboardPage() {
       console.error("Failed to fetch form campaigns in dashboard", e);
     } finally {
       setLoadingFormCampaigns(false);
+    }
+  }, [user]);
+
+  const fetchCredits = useCallback(async () => {
+    if (!user?.email) return;
+    try {
+      const res = await fetch("/api/user/form-credits");
+      if (res.ok) {
+        const data = await res.json();
+        if (data.credits) {
+          setFormCredits(data.credits);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to fetch form credits in dashboard", e);
     }
   }, [user]);
 
@@ -477,6 +500,29 @@ export default function DashboardPage() {
     };
   }, [fetchFormCampaigns]);
 
+  useEffect(() => {
+    fetchCredits();
+    const handleCreditsUpdated = () => {
+      fetchCredits();
+    };
+    window.addEventListener("formCreditsUpdated", handleCreditsUpdated);
+    window.addEventListener("formCampaignsUpdated", handleCreditsUpdated);
+    return () => {
+      window.removeEventListener("formCreditsUpdated", handleCreditsUpdated);
+      window.removeEventListener("formCampaignsUpdated", handleCreditsUpdated);
+    };
+  }, [fetchCredits]);
+
+  // Handle direct tab navigation via query parameter (e.g. ?tab=formCampaigns)
+  useEffect(() => {
+    if (!mounted) return;
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get("tab");
+    if (tabParam && ["list", "kanban", "exports", "payments", "settings", "developer", "companies", "formCampaigns"].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    }
+  }, [mounted]);
+
   // Handle Stripe subscription success redirection & simulation
   useEffect(() => {
     if (!mounted || !user?.email) return;
@@ -487,12 +533,45 @@ export default function DashboardPage() {
     if (isSuccess) {
       const plan = params.get("plan");
       const pack = params.get("pack");
+      const formPlanId = params.get("formPlanId");
       const email = params.get("email");
       const amountJpy = params.get("amount_jpy");
       const allowance = params.get("allowance");
       const amount = params.get("amount");
       
-      if (plan && email && amountJpy && allowance) {
+      if (formPlanId && email && allowance) {
+        // Form Credits purchase trigger
+        const triggerSimulatedFormWebhook = async () => {
+          try {
+            const res = await fetch("/api/stripe/webhook", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                simulated: true,
+                formPlanId,
+                email,
+                allowance: Number(allowance),
+                amount_jpy: Number(amountJpy || 0)
+              })
+            });
+            if (res.ok) {
+              window.dispatchEvent(new Event("formCreditsUpdated"));
+              window.dispatchEvent(new Event("formCampaignsUpdated"));
+              alert(
+                locale === 'ja'
+                  ? `【購入完了】フォーム営業クレジット（+${Number(allowance).toLocaleString()}件）をチャージしました！`
+                  : locale === 'vi'
+                  ? `【Thành công】Đã nạp +${Number(allowance).toLocaleString()} lượt gửi Form vào ví của bạn!`
+                  : `【Success】Added +${Number(allowance).toLocaleString()} Form Credits to your wallet!`
+              );
+              window.location.href = `/${locale}/dashboard?tab=formCampaigns`;
+            }
+          } catch (e) {
+            console.error("Failed to trigger simulated webhook for form credits", e);
+          }
+        };
+        triggerSimulatedFormWebhook();
+      } else if (plan && email && amountJpy && allowance) {
         // Simulated subscription creation trigger
         const triggerSimulatedWebhook = async () => {
           try {
@@ -619,27 +698,27 @@ export default function DashboardPage() {
       <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
         <Header />
         <main className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-2xl mx-auto gap-8 py-16 sm:py-24">
-          <div className="w-16 h-16 rounded-3xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 border border-blue-100 dark:border-blue-900 flex items-center justify-center shadow-xs">
-            <Lock className="w-7 h-7" />
+          <div className="w-14 h-14 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-[#1B4F8A] dark:text-blue-400 border border-blue-200/80 dark:border-blue-900/60 flex items-center justify-center shadow-xs">
+            <Lock className="w-6 h-6" />
           </div>
 
           <div className="flex flex-col gap-3">
-            <div className="inline-flex items-center justify-center gap-2 px-3 py-1 bg-blue-50 border border-blue-200/80 text-blue-700 text-[11px] font-extrabold uppercase tracking-wider rounded-full shadow-2xs mx-auto">
-              <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
+            <div className="inline-flex items-center justify-center gap-1.5 px-3 py-1 bg-blue-50 border border-blue-200/80 text-[#1B4F8A] dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900 text-[11px] font-bold uppercase tracking-wider rounded-md shadow-2xs mx-auto">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A] animate-pulse"></span>
               {locale === 'en' ? "MEMBER WORKSPACE ONLY" : "会員専用営業管理ボード"}
             </div>
             <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white">
               {locale === 'en' ? t.dashboard.memberOnlyTitle : 'ABMダッシュボードは会員専用機能です'}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg mx-auto">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg mx-auto font-normal">
               {locale === 'en' ? t.dashboard.memberOnlyDesc : '無料会員登録をしていただくと、気になる企業をブックマークする「マイリスト」や、案件化プロセスを管理する「かんばん営業管理ボード」をご利用いただけます。'}
             </p>
           </div>
 
           {/* 4 Feature Value Props */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full text-left">
-            <div className="p-4 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-start gap-3 shadow-2xs">
-              <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 flex items-center justify-center shrink-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 w-full text-left">
+            <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-start gap-3 shadow-2xs">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/60">
                 <ListFilter className="w-4 h-4" />
               </div>
               <div className="flex flex-col">
@@ -648,8 +727,8 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-start gap-3 shadow-2xs">
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-start gap-3 shadow-2xs">
+              <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-100 dark:border-emerald-900/60">
                 <Kanban className="w-4 h-4" />
               </div>
               <div className="flex flex-col">
@@ -658,8 +737,8 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-start gap-3 shadow-2xs">
-              <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 dark:bg-amber-950 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-start gap-3 shadow-2xs">
+              <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 flex items-center justify-center shrink-0 border border-amber-100 dark:border-amber-900/60">
                 <Download className="w-4 h-4" />
               </div>
               <div className="flex flex-col">
@@ -668,8 +747,8 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="p-4 bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl flex items-start gap-3 shadow-2xs">
-              <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950 dark:text-purple-400 flex items-center justify-center shrink-0">
+            <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl flex items-start gap-3 shadow-2xs">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0 border border-blue-100 dark:border-blue-900/60">
                 <FileText className="w-4 h-4" />
               </div>
               <div className="flex flex-col">
@@ -682,13 +761,13 @@ export default function DashboardPage() {
           <div className="flex flex-col sm:flex-row gap-3 w-full max-w-sm justify-center">
             <button
               onClick={() => setAuthModalOpen(true)}
-              className="flex-1 px-6 py-3 font-bold text-xs sm:text-sm text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md transition-all cursor-pointer"
+              className="flex-1 px-5 py-2.5 font-bold text-xs sm:text-sm text-white bg-[#1B4F8A] hover:bg-[#163e6d] rounded-lg shadow-xs transition-colors cursor-pointer"
             >
               {locale === 'en' ? t.dashboard.registerFreeBtn : '無料会員登録 (10秒)'}
             </button>
             <Link
               href="/search"
-              className="flex-1 px-6 py-3 font-bold text-xs sm:text-sm text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-all dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 text-center"
+              className="flex-1 px-5 py-2.5 font-bold text-xs sm:text-sm text-slate-700 bg-white border border-slate-300/80 hover:bg-slate-50 rounded-lg transition-colors dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 text-center"
             >
               {locale === 'en' ? t.dashboard.backToSearch : '企業検索に戻る'}
             </Link>
@@ -872,6 +951,39 @@ export default function DashboardPage() {
     return true;
   });
 
+  const toggleSelectCompany = (corpNum: string) => {
+    setSelectedCompanyIds((prev) =>
+      prev.includes(corpNum) ? prev.filter((x) => x !== corpNum) : [...prev, corpNum]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedCompanyIds.length === filteredCompanies.length && filteredCompanies.length > 0) {
+      setSelectedCompanyIds([]);
+    } else {
+      setSelectedCompanyIds(filteredCompanies.map((c) => c.corporate_number));
+    }
+  };
+
+  const handleCreateCampaignFromSelected = () => {
+    const selectedList = companies
+      .filter((c) => selectedCompanyIds.includes(c.corporate_number))
+      .map((c) => ({ id: c.corporate_number, name: c.company_name }));
+    if (selectedList.length === 0) return;
+    if (selectedList.length < 100) {
+      alert(
+        locale === 'ja'
+          ? `フォーム営業キャンペーンの作成は【最低100社以上】の選定が必要です。\n（現在選択中: ${selectedList.length}社）\n\n少数の過剰申請を防ぎ、アプローチ成約率を担保するため、100社以上を選択して作成してください。`
+          : locale === 'vi'
+          ? `Chiến dịch gửi Form yêu cầu tối thiểu từ 100 doanh nghiệp trở lên.\n(Hiện đang chọn: ${selectedList.length} công ty)\n\nVui lòng chọn tối thiểu 100 công ty để tạo chiến dịch hiệu quả.`
+          : `Form outreach campaigns require at least 100 selected companies (Currently selected: ${selectedList.length}). Please select at least 100 companies.`
+      );
+      return;
+    }
+    setCampaignInitialCompanies(selectedList);
+    setActiveTab("formCampaigns");
+  };
+
   const getTabTitle = (tab: typeof activeTab) => {
     switch (tab) {
       case "list": return locale === 'en' ? "My Saved Companies" : "マイリスト・保存企業一覧";
@@ -907,19 +1019,23 @@ export default function DashboardPage() {
         <aside className="w-full lg:w-72 shrink-0 bg-white dark:bg-[#151B22] border-b lg:border-b-0 lg:border-r border-slate-200 dark:border-slate-800 p-4 sm:p-5 flex flex-col justify-between gap-6">
           <div className="flex flex-col gap-5">
             {/* Sidebar Header */}
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800/80">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 border border-blue-200/60 flex items-center justify-center shadow-xs">
-                  <Building2 className="w-5 h-5" />
+            <div className="flex items-center justify-between pb-4 border-b border-slate-150 dark:border-slate-800/80">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-[#1B4F8A] text-white flex items-center justify-center shadow-xs shrink-0">
+                  <Building2 className="w-4 h-4" />
                 </div>
-                <div className="flex flex-col">
-                  <span className="font-black text-sm text-slate-900 dark:text-white tracking-tight">Sales Workspace</span>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{user?.name || "ABM 営業ボード"}</span>
+                <div className="flex flex-col min-w-0">
+                  <span className="font-extrabold text-sm text-slate-900 dark:text-white tracking-tight truncate">
+                    {user?.name ? `${user.name} ワークスペース` : "営業ワークスペース"}
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium truncate">
+                    {locale === 'en' ? "ABM Pipeline Management" : locale === 'vi' ? "Quản lý Bán hàng & Tiếp cận" : "ABM 営業パイプライン"}
+                  </span>
                 </div>
               </div>
               <Link
                 href={`/${locale}/search`}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors text-slate-500 hover:text-slate-800 dark:hover:text-white cursor-pointer"
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors text-slate-400 hover:text-[#1B4F8A] dark:hover:text-white cursor-pointer shrink-0"
                 title="企業データ検索へ"
               >
                 <Search className="w-4 h-4" />
@@ -929,10 +1045,10 @@ export default function DashboardPage() {
             {/* Quick Shortcut to Search */}
             <Link
               href={`/${locale}/search`}
-              className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:hover:bg-slate-800 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/80 text-xs font-bold transition-all shadow-2xs group"
+              className="flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-slate-700 dark:bg-slate-800/60 dark:hover:bg-slate-800 dark:text-slate-300 border border-slate-200/90 dark:border-slate-700/80 text-xs font-bold transition-all shadow-2xs group"
             >
               <div className="flex items-center gap-2">
-                <Search className="w-3.5 h-3.5 text-slate-500" />
+                <Search className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
                 <span>企業データ検索</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform text-slate-400" />
@@ -942,25 +1058,25 @@ export default function DashboardPage() {
             <nav className="flex flex-col gap-4 text-xs font-semibold" aria-label="Dashboard Navigation">
               {/* Group 1: Sales & Pipeline */}
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
                   営業・パイプライン (Sales)
                 </span>
 
                 {/* My List */}
                 <button
                   onClick={() => setActiveTab("list")}
-                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                  className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
                     activeTab === "list"
-                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      ? "bg-[#1B4F8A]/10 text-[#1B4F8A] font-bold border border-[#1B4F8A]/25 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 shadow-2xs"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <ListFilter className={`w-4 h-4 shrink-0 ${activeTab === "list" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <ListFilter className={`w-4 h-4 shrink-0 ${activeTab === "list" ? "text-[#1B4F8A] dark:text-blue-300" : "text-slate-500"}`} />
                     <span>マイリスト</span>
                   </div>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === "list" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
+                    activeTab === "list" ? "bg-white text-[#1B4F8A] border border-blue-200 dark:bg-blue-900/60 dark:text-blue-200 dark:border-blue-800" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
                   }`}>
                     {companies.length}
                   </span>
@@ -969,18 +1085,18 @@ export default function DashboardPage() {
                 {/* Kanban */}
                 <button
                   onClick={() => setActiveTab("kanban")}
-                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                  className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
                     activeTab === "kanban"
-                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      ? "bg-[#1B4F8A]/10 text-[#1B4F8A] font-bold border border-[#1B4F8A]/25 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 shadow-2xs"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Kanban className={`w-4 h-4 shrink-0 ${activeTab === "kanban" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <Kanban className={`w-4 h-4 shrink-0 ${activeTab === "kanban" ? "text-[#1B4F8A] dark:text-blue-300" : "text-slate-500"}`} />
                     <span>かんばん営業管理</span>
                   </div>
                   {dealsInProgressCount > 0 && (
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
                       activeTab === "kanban" ? "bg-white text-amber-700 border border-amber-200 dark:bg-amber-950/60 dark:text-amber-300 dark:border-amber-900" : "bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300"
                     }`}>
                       {dealsInProgressCount}
@@ -991,43 +1107,48 @@ export default function DashboardPage() {
                 {/* Form Outreach Campaigns */}
                 <button
                   onClick={() => setActiveTab("formCampaigns")}
-                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                  className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
                     activeTab === "formCampaigns"
-                      ? "bg-indigo-50 text-indigo-950 font-bold border border-indigo-300 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800 shadow-2xs"
+                      ? "bg-[#1B4F8A]/10 text-[#1B4F8A] font-bold border border-[#1B4F8A]/25 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 shadow-2xs"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Send className={`w-4 h-4 shrink-0 ${activeTab === "formCampaigns" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-500"}`} />
-                    <span>フォーム営業・下書き</span>
+                    <Send className={`w-4 h-4 shrink-0 ${activeTab === "formCampaigns" ? "text-[#1B4F8A] dark:text-blue-300" : "text-slate-500"}`} />
+                    <span className="flex items-center gap-1.5">
+                      <span>{locale === 'en' ? "Form Outreach (DM)" : locale === 'vi' ? "Chiến dịch gửi Form DM" : "フォーム営業 (DM)"}</span>
+                      <span className="text-[9px] bg-indigo-600 text-white font-black px-1.5 py-0.2 rounded uppercase tracking-wider">NEW</span>
+                    </span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-900/60 dark:text-indigo-300">
-                    NEW
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
+                    activeTab === "formCampaigns" ? "bg-white text-[#1B4F8A] border border-blue-200 dark:bg-blue-900/60 dark:text-blue-200 dark:border-blue-800" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  }`}>
+                    {formCampaignsList.length}
                   </span>
                 </button>
               </div>
 
               {/* Group 2: Data & Developer */}
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
                   データ・連携 (Data & API)
                 </span>
 
                 {/* Exports */}
                 <button
                   onClick={() => setActiveTab("exports")}
-                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                  className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
                     activeTab === "exports"
-                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      ? "bg-[#1B4F8A]/10 text-[#1B4F8A] font-bold border border-[#1B4F8A]/25 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 shadow-2xs"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Download className={`w-4 h-4 shrink-0 ${activeTab === "exports" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <Download className={`w-4 h-4 shrink-0 ${activeTab === "exports" ? "text-[#1B4F8A] dark:text-blue-300" : "text-slate-500"}`} />
                     <span>CSVエクスポート履歴</span>
                   </div>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === "exports" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
+                    activeTab === "exports" ? "bg-white text-[#1B4F8A] border border-blue-200 dark:bg-blue-900/60 dark:text-blue-200 dark:border-blue-800" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
                   }`}>
                     {exportJobs.length}
                   </span>
@@ -1036,18 +1157,18 @@ export default function DashboardPage() {
                 {/* Developer */}
                 <button
                   onClick={() => setActiveTab("developer")}
-                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                  className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
                     activeTab === "developer"
-                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      ? "bg-[#1B4F8A]/10 text-[#1B4F8A] font-bold border border-[#1B4F8A]/25 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 shadow-2xs"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Terminal className={`w-4 h-4 shrink-0 ${activeTab === "developer" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
-                    <span>API連携 (API Keys)</span>
+                    <Terminal className={`w-4 h-4 shrink-0 ${activeTab === "developer" ? "text-[#1B4F8A] dark:text-blue-300" : "text-slate-500"}`} />
+                    <span>{locale === 'en' ? "API Keys (REST)" : locale === 'vi' ? "Tích hợp API" : "API連携 (API Keys)"}</span>
                   </div>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === "developer" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
+                    activeTab === "developer" ? "bg-white text-[#1B4F8A] border border-blue-200 dark:bg-blue-900/60 dark:text-blue-200 dark:border-blue-800" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
                   }`}>
                     {apiKeys.length}
                   </span>
@@ -1056,25 +1177,25 @@ export default function DashboardPage() {
 
               {/* Group 3: Billing & Profile */}
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
                   請求・プラン (Billing)
                 </span>
 
                 {/* Payments */}
                 <button
                   onClick={() => setActiveTab("payments")}
-                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                  className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
                     activeTab === "payments"
-                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      ? "bg-[#1B4F8A]/10 text-[#1B4F8A] font-bold border border-[#1B4F8A]/25 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 shadow-2xs"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <FileText className={`w-4 h-4 shrink-0 ${activeTab === "payments" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <FileText className={`w-4 h-4 shrink-0 ${activeTab === "payments" ? "text-[#1B4F8A] dark:text-blue-300" : "text-slate-500"}`} />
                     <span>購入履歴・インボイス</span>
                   </div>
-                  <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                    activeTab === "payments" ? "bg-white text-slate-700 border border-slate-200 dark:bg-slate-700 dark:text-slate-200 dark:border-slate-600" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
+                    activeTab === "payments" ? "bg-white text-[#1B4F8A] border border-blue-200 dark:bg-blue-900/60 dark:text-blue-200 dark:border-blue-800" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
                   }`}>
                     {paymentHistory.length}
                   </span>
@@ -1083,14 +1204,14 @@ export default function DashboardPage() {
                 {/* Settings */}
                 <button
                   onClick={() => setActiveTab("settings")}
-                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                  className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
                     activeTab === "settings"
-                      ? "bg-slate-100 text-slate-900 font-bold border border-slate-200/90 dark:bg-slate-800 dark:text-white dark:border-slate-700 shadow-2xs"
+                      ? "bg-[#1B4F8A]/10 text-[#1B4F8A] font-bold border border-[#1B4F8A]/25 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 shadow-2xs"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <Settings className={`w-4 h-4 shrink-0 ${activeTab === "settings" ? "text-slate-900 dark:text-white" : "text-slate-500"}`} />
+                    <Settings className={`w-4 h-4 shrink-0 ${activeTab === "settings" ? "text-[#1B4F8A] dark:text-blue-300" : "text-slate-500"}`} />
                     <span>領収書・企業情報設定</span>
                   </div>
                 </button>
@@ -1098,64 +1219,106 @@ export default function DashboardPage() {
 
               {/* Group 4: Company Profile & Claim Management */}
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
                   自社・公式認証 (Enterprise)
                 </span>
 
                 <button
                   onClick={() => setActiveTab("companies")}
-                  className={`w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer ${
+                  className={`w-full py-2 px-3 rounded-lg flex items-center justify-between transition-colors cursor-pointer ${
                     activeTab === "companies"
-                      ? "bg-emerald-50 text-emerald-950 font-bold border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 shadow-2xs"
+                      ? "bg-[#1B4F8A]/10 text-[#1B4F8A] font-bold border border-[#1B4F8A]/25 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 shadow-2xs"
                       : "text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
                   }`}
                 >
                   <div className="flex items-center gap-2.5">
-                    <ShieldCheck className={`w-4 h-4 shrink-0 ${activeTab === "companies" ? "text-emerald-600 dark:text-emerald-400" : "text-slate-500"}`} />
-                    <span>自社プロファイル管理</span>
+                    <ShieldCheck className={`w-4 h-4 shrink-0 ${activeTab === "companies" ? "text-[#1B4F8A] dark:text-blue-300" : "text-slate-500"}`} />
+                    <span>{locale === 'en' ? "Managed Profiles" : locale === 'vi' ? "Quản lý hồ sơ doanh nghiệp" : "自社プロファイル管理"}</span>
                   </div>
-                  <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
-                    50件/日
+                  <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
+                    activeTab === "companies" ? "bg-white text-[#1B4F8A] border border-blue-200 dark:bg-blue-900/60 dark:text-blue-200 dark:border-blue-800" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                  }`}>
+                    企業認証
                   </span>
                 </button>
               </div>
             </nav>
 
-            {/* Sidebar Plan & Quota Card */}
-            <div className="flex flex-col gap-2.5 p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl shadow-2xs text-xs">
-              <div className="flex items-center justify-between">
-                <span className="font-extrabold text-blue-700 dark:text-blue-400 uppercase tracking-wide flex items-center gap-1.5 text-[11px]">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
-                  {currentPlanInfo.label}
+            {/* Sidebar Plan & Quota Card (ご利用枠・残高) */}
+            <div className="flex flex-col gap-2.5 p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-2xs text-xs">
+              {/* Header Title */}
+              <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/70 dark:border-slate-800">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                  {locale === 'en' ? "Quotas & Balances" : locale === 'vi' ? "Hạn mức & Số dư" : "ご利用枠・残高"}
                 </span>
-                <span className="font-mono text-slate-700 dark:text-slate-300 font-bold text-[11px]">
-                  {quota ? `残り ${quota.remaining.toLocaleString()} 行` : `${currentPlanInfo.quota}`}
+                <span className="font-extrabold text-[#1B4F8A] dark:text-blue-400 text-[10px] px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-900">
+                  {currentPlanInfo.label}
                 </span>
               </div>
 
-              {quota && (
-                <div className="flex flex-col gap-1.5">
-                  <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                    <div 
-                      className="bg-blue-600 h-full rounded-full transition-all duration-500" 
-                      style={{ width: `${Math.min(100, (quota.monthly_base_used / quota.monthly_base_allowance) * 100)}%` }}
-                    />
-                  </div>
-                  <div className="flex justify-between text-[10px] text-slate-400">
-                    <span>使用量: {quota.monthly_base_used.toLocaleString()} / {quota.monthly_base_allowance.toLocaleString()} 行</span>
-                  </div>
-                  {quota.last_reset_date && (
-                    <div className="text-[10px] text-slate-400 border-t border-slate-200/60 dark:border-slate-800 pt-1.5 flex justify-between items-center">
-                      <span className="truncate">{getSubscriptionPeriodText(quota.last_reset_date, quota.plan)}</span>
+              {/* Resource 1: CSV Export Quota */}
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Download className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+                    <span>{locale === 'en' ? "CSV Allowance" : locale === 'vi' ? "Hạn mức CSV" : "CSV出力枠"}</span>
+                  </span>
+                  <span className="font-mono text-slate-900 dark:text-white font-bold">
+                    {quota ? `残 ${quota.remaining.toLocaleString()} 行` : `${currentPlanInfo.quota}`}
+                  </span>
+                </div>
+
+                {quota && (
+                  <div className="flex flex-col gap-1">
+                    <div className="w-full bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-[#1B4F8A] h-full rounded-full transition-all duration-500" 
+                        style={{ width: `${Math.min(100, (quota.monthly_base_used / quota.monthly_base_allowance) * 100)}%` }}
+                      />
                     </div>
-                  )}
+                    <div className="flex justify-between text-[9px] text-slate-400">
+                      <span>使用量: {quota.monthly_base_used.toLocaleString()} / {quota.monthly_base_allowance.toLocaleString()} 行</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Resource 2: Form DM Outreach Credit Wallet */}
+              <div className="pt-2 border-t border-slate-200/70 dark:border-slate-800 space-y-1">
+                <div className="flex items-center justify-between text-[11px]">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <Coins className="w-3.5 h-3.5 text-amber-500" />
+                    <span>{locale === 'en' ? "Form Credits" : locale === 'vi' ? "Ví gửi Form" : "フォーム営業残高"}</span>
+                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="font-mono text-slate-900 dark:text-white font-bold">
+                      {formCredits.balance.toLocaleString()} 件
+                    </span>
+                    <Link
+                      href={`/${locale}/pricing?tab=form`}
+                      className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-50 text-amber-800 hover:bg-amber-100 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300/80 dark:border-amber-700 transition-colors"
+                      title={locale === 'vi' ? 'Nạp thêm Credits' : locale === 'en' ? 'Top up' : 'クレジットをチャージ'}
+                    >
+                      + チャージ
+                    </Link>
+                  </div>
+                </div>
+                <div className="text-[9px] text-slate-400">
+                  <span>{locale === 'en' ? "No expiry • Batch delivery" : locale === 'vi' ? "Không hết hạn • Chia nhỏ gửi tự do" : "有効期限なし・100件〜随時配信"}</span>
+                </div>
+              </div>
+
+              {quota?.last_reset_date && (
+                <div className="text-[9px] text-slate-400 border-t border-slate-200/70 dark:border-slate-800 pt-1.5 flex justify-between items-center">
+                  <span className="truncate">{getSubscriptionPeriodText(quota.last_reset_date, quota.plan)}</span>
                 </div>
               )}
 
-              <div className="flex items-center gap-1.5 pt-1">
+              {/* Action Buttons: Plan Change / Cancel */}
+              <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-200/70 dark:border-slate-800">
                 <Link
                   href={`/${locale}/pricing`}
-                  className="flex-1 py-1.5 text-[11px] font-bold text-center text-slate-800 dark:text-slate-100 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 rounded-lg transition-all shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="flex-1 py-1.5 text-[11px] font-bold text-center text-slate-800 dark:text-slate-100 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 rounded-lg transition-colors shadow-2xs flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Sparkles className="w-3 h-3 text-amber-500" />
                   <span>{isPro ? "プラン変更" : "アップグレード"}</span>
@@ -1163,7 +1326,7 @@ export default function DashboardPage() {
                 {isPro && (
                   <button
                     onClick={() => setShowCancelModal(true)}
-                    className="py-1.5 px-2 text-[10px] font-bold text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
+                    className="py-1.5 px-2 text-[10px] font-semibold text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors cursor-pointer"
                     title="解約手続き"
                   >
                     解約
@@ -1174,7 +1337,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Sidebar Footer: User profile info */}
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-xs">
+          <div className="pt-3 border-t border-slate-150 dark:border-slate-800/80 flex items-center justify-between text-xs">
             <div className="flex flex-col truncate pr-2">
               <span className="text-[10px] text-slate-400 font-semibold">{user?.role ? user.role.toUpperCase() : "MEMBER"}</span>
               <span className="font-bold text-slate-800 dark:text-slate-200 truncate" title={user?.email || ""}>
@@ -1196,8 +1359,16 @@ export default function DashboardPage() {
         {/* Main Content Area */}
         <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 flex flex-col gap-6 overflow-y-auto">
           {/* Section Title Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-200/80 dark:border-slate-800/80">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-200/80 dark:border-slate-800/80">
             <div>
+              {/* Kicker Eyebrow B2B */}
+              <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-[11px] font-bold mb-1.5 tracking-wide shadow-2xs">
+                <span className="w-2 h-2 rounded-full bg-[#1B4F8A] dark:bg-blue-400 animate-pulse" />
+                <span>
+                  {locale === 'en' ? "ABM Corporate Intelligence & Sales Pipeline" : locale === 'vi' ? "Nền tảng Quản trị & Tiếp cận Khách hàng B2B" : "日本企業データベース × ABM営業パイプライン"}
+                </span>
+              </div>
+
               <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
                 <Link href={`/${locale}`} className="hover:text-slate-600 dark:hover:text-slate-200">ホーム</Link>
                 <span>/</span>
@@ -1205,10 +1376,10 @@ export default function DashboardPage() {
                 <span>/</span>
                 <span className="text-slate-800 dark:text-slate-200 font-bold">{getTabTitle(activeTab)}</span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1.5">
                 {getTabTitle(activeTab)}
               </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 {getTabDescription(activeTab)}
               </p>
             </div>
@@ -1219,7 +1390,7 @@ export default function DashboardPage() {
                 <button
                   onClick={handleCSVDownload}
                   disabled={csvExporting || companies.length === 0}
-                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 rounded-xl shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 rounded-xl shadow-2xs transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   {csvExporting ? <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" /> : <Download className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />}
                   <span>マイリスト出力 (CSV)</span>
@@ -1227,9 +1398,9 @@ export default function DashboardPage() {
               )}
               <Link
                 href={`/${locale}/search`}
-                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl shadow-2xs transition-all cursor-pointer"
+                className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-300/80 hover:bg-slate-50 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 rounded-xl shadow-2xs transition-colors cursor-pointer"
               >
-                <Search className="w-3.5 h-3.5" />
+                <Search className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
                 <span>企業検索</span>
               </Link>
             </div>
@@ -1238,135 +1409,148 @@ export default function DashboardPage() {
           {/* 4 Quick KPI Stat Cards */}
           {activeTab === "formCampaigns" ? (
             <div className="flex flex-col gap-3">
-              <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-200">
+              <section className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 animate-in fade-in duration-200">
                 {/* Form KPI 1 */}
-                <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 border border-indigo-100 dark:border-indigo-900 flex items-center justify-center shrink-0">
-                    <Send className="w-4.5 h-4.5" />
+                <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-2xs flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-[#1B4F8A] dark:text-blue-400 border border-blue-100 dark:border-blue-900/60 flex items-center justify-center shrink-0">
+                    <Send className="w-4 h-4" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[10px] font-semibold text-slate-400">
                       {locale === 'en' ? "Total Campaigns" : locale === 'vi' ? "Tổng số chiến dịch" : "総キャンペーン数"}
                     </span>
-                    <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
-                      {formCampaignsList.length} <span className="text-xs font-bold text-slate-400">件</span>
+                    <span className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+                      {formCampaignsList.length} <span className="text-xs font-semibold text-slate-400">件</span>
                     </span>
                   </div>
                 </div>
 
                 {/* Form KPI 2 */}
-                <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 border border-amber-100 dark:border-amber-900 flex items-center justify-center shrink-0">
-                    <Clock className="w-4.5 h-4.5" />
+                <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-2xs flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/60 flex items-center justify-center shrink-0">
+                    <Clock className="w-4 h-4" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[10px] font-semibold text-slate-400">
                       {locale === 'en' ? "In Review / Sending" : locale === 'vi' ? "Đang duyệt / Đang gửi" : "審査中・配信中"}
                     </span>
-                    <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
-                      {formCampaignsList.filter((c: any) => c.status === "pending_review" || c.status === "approved" || c.status === "sending").length} <span className="text-xs font-bold text-slate-400">件</span>
+                    <span className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+                      {formCampaignsList.filter((c: any) => c.status === "pending_review" || c.status === "approved" || c.status === "sending").length} <span className="text-xs font-semibold text-slate-400">件</span>
                     </span>
                   </div>
                 </div>
 
                 {/* Form KPI 3 */}
-                <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 border border-emerald-100 dark:border-emerald-900 flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-4.5 h-4.5" />
+                <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-2xs flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/60 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-4 h-4" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[10px] font-semibold text-slate-400">
                       {locale === 'en' ? "Delivered Forms" : locale === 'vi' ? "Form đã gửi thành công" : "送信完了フォーム数"}
                     </span>
-                    <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">
-                      {formCampaignsList.reduce((acc: number, c: any) => acc + (c.success_count || 0), 0).toLocaleString()} <span className="text-xs font-bold text-slate-400">通</span>
+                    <span className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">
+                      {formCampaignsList.reduce((acc: number, c: any) => acc + (c.success_count || 0), 0).toLocaleString()} <span className="text-xs font-semibold text-slate-400">通</span>
                     </span>
                   </div>
                 </div>
 
                 {/* Form KPI 4 */}
-                <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
-                  <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 border border-purple-100 dark:border-purple-900 flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4.5 h-4.5" />
+                <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-2xs flex items-center gap-3.5">
+                  <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/60 flex items-center justify-center shrink-0">
+                    <Coins className="w-4 h-4" />
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[10px] font-semibold text-slate-400">
-                      {locale === 'en' ? "Billing Model" : locale === 'vi' ? "Cơ chế tính phí" : "配信課金モデル"}
+                      {locale === 'en' ? "Delivery Method" : locale === 'vi' ? "Cơ chế phân bổ" : "配信方式"}
                     </span>
-                    <span className="text-xs font-black text-slate-900 dark:text-white mt-1">
-                      {locale === 'en' ? "Pay-per-campaign" : locale === 'vi' ? "Theo chiến dịch (từ 20円)" : "都度購入 (1件20円〜)"}
+                    <span className="text-xs font-bold text-slate-900 dark:text-white mt-1">
+                      {locale === 'en' ? "Flexible Batches (100+)" : locale === 'vi' ? "Chia lẻ từ 100 lượt" : "100件〜 自由分割対応"}
                     </span>
                   </div>
                 </div>
               </section>
 
               {/* Informative Guidance Notice */}
-              <div className="p-3.5 rounded-xl bg-indigo-50/70 dark:bg-indigo-950/25 border border-indigo-200/80 dark:border-indigo-800/60 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-indigo-950 dark:text-indigo-200 animate-in fade-in duration-200 shadow-2xs">
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/50 border border-slate-200/90 dark:border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-700 dark:text-slate-300 animate-in fade-in duration-200 shadow-2xs">
                 <div className="flex items-center gap-2">
-                  <Info className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <Info className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400 shrink-0" />
                   <span>
                     {locale === 'vi' 
-                      ? "問い合わせフォーム営業 là dịch vụ thanh toán theo từng chiến dịch (từ 500 đến 5.000 form). Hạn mức này tách biệt hoàn toàn với hạn mức tải 20 dòng CSV miễn phí của tài khoản."
+                      ? "問い合わせフォーム営業 là hệ thống gửi tiếp cận tự động qua Form liên hệ B2B, có thể chia nhỏ từ 100 lượt gửi và khấu trừ trực tiếp từ Ví Credits."
                       : locale === 'en'
-                      ? "Contact Form Outreach operates on a pay-per-campaign basis (from 500 to 5,000 forms), separate from your account's daily CSV export allowance."
-                      : "※ 問い合わせフォーム営業はキャンペーン単位（500件〜）の都度購入・従量課金制です。アカウントの無料CSV出力枠（20行）とは別枠となります。"}
+                      ? "Contact Form Outreach automatically dispatches outreach pitches to verified corporate forms in flexible batches of 100+ forms."
+                      : "※ 問い合わせフォーム営業は保有クレジットから100件単位で自由分割して配信可能です。ターゲット条件を指定して下書き保存または審査申請を行えます。"}
                   </span>
                 </div>
                 <Link
                   href={`/${locale}/form-marketing#pricing`}
-                  className="font-bold text-indigo-600 dark:text-indigo-400 hover:underline shrink-0 text-[11px] flex items-center gap-1"
+                  className="font-bold text-[#1B4F8A] dark:text-blue-400 hover:underline shrink-0 text-[11px] flex items-center gap-1"
                 >
-                  <span>{locale === 'vi' ? "Xem bảng giá chiến dịch" : locale === 'en' ? "View Campaign Pricing" : "配信単価・料金表"}</span>
+                  <span>{locale === 'vi' ? "Xem bảng giá chi tiết" : locale === 'en' ? "View Pricing" : "配信単価・料金表"}</span>
                   <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             </div>
           ) : (
-            <section className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-in fade-in duration-200">
-              <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-600 border border-blue-100 dark:border-blue-900 flex items-center justify-center shrink-0">
-                  <Building2 className="w-4.5 h-4.5" />
+            <section className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 animate-in fade-in duration-200">
+              <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-2xs flex items-center gap-3.5">
+                <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-[#1B4F8A] dark:text-blue-400 border border-blue-100 dark:border-blue-900/60 flex items-center justify-center shrink-0">
+                  <Building2 className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-semibold text-slate-400">マイリスト保存数</span>
-                  <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{companies.length} <span className="text-xs font-bold text-slate-400">社</span></span>
+                  <span className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">{companies.length} <span className="text-xs font-semibold text-slate-400">社</span></span>
                 </div>
               </div>
 
-              <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/50 text-amber-600 border border-amber-100 dark:border-amber-900 flex items-center justify-center shrink-0">
-                  <Kanban className="w-4.5 h-4.5" />
+              <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-2xs flex items-center gap-3.5">
+                <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/60 flex items-center justify-center shrink-0">
+                  <Kanban className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-semibold text-slate-400">商談中・成約案件</span>
-                  <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{dealsInProgressCount} <span className="text-xs font-bold text-slate-400">件</span></span>
+                  <span className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">{dealsInProgressCount} <span className="text-xs font-semibold text-slate-400">件</span></span>
                 </div>
               </div>
 
-              <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 border border-emerald-100 dark:border-emerald-900 flex items-center justify-center shrink-0">
-                  <Download className="w-4.5 h-4.5" />
+              <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl shadow-2xs flex items-center gap-3.5">
+                <div className="w-9 h-9 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/60 flex items-center justify-center shrink-0">
+                  <Download className="w-4 h-4" />
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[10px] font-semibold text-slate-400">残CSV出力可能枠</span>
-                  <span className="text-lg font-black text-slate-900 dark:text-white mt-0.5">{quota?.remaining.toLocaleString() ?? "-"} <span className="text-xs font-bold text-slate-400">行</span></span>
+                  <span className="text-lg font-bold text-slate-900 dark:text-white mt-0.5">{quota?.remaining.toLocaleString() ?? "-"} <span className="text-xs font-semibold text-slate-400">行</span></span>
                 </div>
               </div>
 
-              <div className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xs flex items-center gap-3.5">
-                <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-600 border border-purple-100 dark:border-purple-900 flex items-center justify-center shrink-0">
-                  <Sparkles className="w-4.5 h-4.5" />
+              <div 
+                onClick={() => setActiveTab("formCampaigns")}
+                className="p-4 bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-800 rounded-xl shadow-2xs flex items-center justify-between gap-3.5 transition-colors cursor-pointer group"
+                title={locale === 'en' ? "Manage form campaigns and credits" : locale === 'vi' ? "Quản lý chiến dịch & credits gửi Form" : "フォーム営業キャンペーン画面へ"}
+              >
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="w-9 h-9 rounded-lg bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-900/60 flex items-center justify-center shrink-0">
+                    <Coins className="w-4 h-4" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-[10px] font-semibold text-slate-400">
+                      {locale === 'en' ? "Form DM Credits" : locale === 'vi' ? "Ví tín dụng gửi Form" : "フォーム営業残高"}
+                    </span>
+                    <span className="text-lg font-bold text-slate-900 dark:text-white mt-0.5 truncate">
+                      {formCredits.balance.toLocaleString()} <span className="text-xs font-semibold text-slate-400">件</span>
+                    </span>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-semibold text-slate-400">契約プラン</span>
-                  <span className="text-xs font-black text-slate-900 dark:text-white mt-1 uppercase">{currentPlanInfo.label}</span>
-                </div>
+                <span className="text-[10px] font-bold text-[#1B4F8A] dark:text-blue-400 group-hover:underline shrink-0">
+                  {locale === 'en' ? "Open →" : locale === 'vi' ? "Quản lý →" : "管理 →"}
+                </span>
               </div>
             </section>
           )}
 
           {quota?.subscription_status === 'suspended' && (
-            <div className="bg-rose-50 border border-rose-200 dark:bg-rose-950/20 dark:border-rose-900/30 rounded-2xl p-4 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2.5 animate-in fade-in duration-300">
+            <div className="bg-rose-50 border border-rose-200 dark:bg-rose-950/20 dark:border-rose-900/30 rounded-xl p-4 text-xs text-rose-800 dark:text-rose-300 flex items-start gap-2.5 animate-in fade-in duration-300">
               <ShieldAlert className="w-5 h-5 shrink-0 text-rose-500 mt-0.5" />
               <div className="flex flex-col gap-0.5">
                 <span className="font-extrabold text-[11px] uppercase tracking-wider block">{locale === 'en' ? "Account Suspended" : "アカウントが一時停止されています"}</span>
@@ -1381,20 +1565,20 @@ export default function DashboardPage() {
         {/* CSV Confirm Modal */}
         {showCSVConfirm && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-250">
+            <div className="bg-white border border-slate-200/90 dark:bg-[#1C2128] dark:border-slate-800 rounded-xl p-6 sm:p-7 shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-250">
               <button
                 onClick={() => setShowCSVConfirm(false)}
-                className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl cursor-pointer"
+                className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
 
               <div className="text-center">
-                <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 border border-blue-200/60 flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/40 dark:text-blue-400 border border-blue-200/80 dark:border-blue-900/60 flex items-center justify-center mx-auto mb-4">
                   <Download className="w-6 h-6" />
                 </div>
 
-                <h4 className="font-extrabold text-slate-900 dark:text-white text-base mb-2">
+                <h4 className="font-bold text-slate-900 dark:text-white text-base mb-2">
                   {locale === 'en' ? 'Confirm CSV Export' : 'マイリストCSVエクスポートの確認'}
                 </h4>
 
@@ -1406,7 +1590,7 @@ export default function DashboardPage() {
                 </p>
 
                 {csvQuota && (
-                  <div className="mb-4 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-200/80 dark:border-slate-800 rounded-xl text-[10px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center gap-2">
+                  <div className="mb-4 px-3 py-2.5 bg-slate-50 dark:bg-slate-800/30 border border-slate-200/80 dark:border-slate-800 rounded-lg text-[10px] text-slate-500 dark:text-slate-400 font-medium flex items-center justify-center gap-2">
                     <span>
                       {locale === 'en' ? "Current remaining: " : "現在の残容量: "}
                       <strong className="text-slate-800 dark:text-slate-200">
@@ -1416,7 +1600,7 @@ export default function DashboardPage() {
                     <span className="text-slate-300 dark:text-slate-600">→</span>
                     <span>
                       {locale === 'en' ? "After export: " : "出力後: "}
-                      <strong className="text-blue-600 dark:text-blue-400">
+                      <strong className="text-[#1B4F8A] dark:text-blue-400">
                         {(csvQuota.remaining - companies.length).toLocaleString()} {locale === 'en' ? "rows" : "行"}
                       </strong>
                     </span>
@@ -1424,22 +1608,22 @@ export default function DashboardPage() {
                 )}
 
                 {!isPro && (
-                  <div className="mb-4 px-3 py-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/80 rounded-xl text-[10px] text-amber-700 dark:text-amber-400 font-medium text-left">
+                  <div className="mb-4 px-3 py-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200/80 rounded-lg text-[10px] text-amber-700 dark:text-amber-400 font-medium text-left">
                     {locale === 'en' ? '* Email addresses are not included in the FREE plan. Upgrade to PRO to export all columns.' : '※ FREEプランではメールアドレス列は含まれません。PROプランにアップグレードすると全列が出力されます。'}
                   </div>
                 )}
 
-                <div className="flex gap-3">
+                <div className="flex gap-2.5">
                   <button
                     onClick={() => setShowCSVConfirm(false)}
-                    className="flex-1 px-4 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/60 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl transition-all cursor-pointer"
+                    className="flex-1 px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/80 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-lg transition-colors cursor-pointer"
                   >
                     {locale === 'en' ? 'Cancel' : 'キャンセル'}
                   </button>
                   <button
                     disabled={quota?.subscription_status === 'suspended'}
                     onClick={executeCSVDownload}
-                    className="flex-1 px-4 py-2.5 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 dark:bg-blue-600 dark:hover:bg-blue-700 rounded-xl shadow-xs active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                    className="flex-1 px-4 py-2 text-xs font-bold text-white bg-[#1B4F8A] hover:bg-[#163e6d] rounded-lg shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                   >
                     {quota?.subscription_status === 'suspended' ? (locale === 'en' ? 'Blocked' : 'ブロック中') : (locale === 'en' ? 'Export CSV' : 'エクスポート実行')}
                   </button>
@@ -1450,33 +1634,35 @@ export default function DashboardPage() {
         )}
 
         {activeTab === "list" && (
-          <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs">
+          <section className="bg-white border border-slate-200/90 dark:bg-[#1C2128] dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
             {loading ? (
               <div className="py-20 text-center flex flex-col items-center justify-center gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
+                <Loader2 className="w-6 h-6 animate-spin text-[#1B4F8A] dark:text-blue-400" />
                 <span className="text-xs text-slate-400">{locale === 'en' ? "Syncing list..." : "リストを同期中..."}</span>
               </div>
             ) : companies.length === 0 ? (
               <div className="py-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
-                <Building2 className="w-12 h-12 text-slate-300 dark:text-slate-600" />
+                <div className="w-12 h-12 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-[#1B4F8A] dark:text-blue-400 flex items-center justify-center border border-blue-100 dark:border-blue-900/60">
+                  <Building2 className="w-6 h-6" />
+                </div>
                 <div>
-                  <h4 className="font-extrabold text-slate-800 dark:text-white text-sm mb-1">{locale === 'en' ? 'No Saved Companies' : '保存された企業はありません'}</h4>
+                  <h4 className="font-bold text-slate-800 dark:text-white text-sm mb-1">{locale === 'en' ? 'No Saved Companies' : '保存された企業はありません'}</h4>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
                     {locale === 'en' ? 'Use search to find companies you want to approach, then click "Save to My List".' : 'データベース検索を利用してアプローチしたい企業を探し、「マイリストに保存」ボタンを押してください。'}
                   </p>
                 </div>
                 <Link
                   href={`/${locale}/search`}
-                  className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 rounded-xl shadow-2xs transition-all"
+                  className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-[#1B4F8A] hover:bg-[#163e6d] rounded-lg shadow-xs transition-colors"
                 >
-                  <Search className="w-3.5 h-3.5 text-slate-500" />
+                  <Search className="w-3.5 h-3.5" />
                   <span>{locale === 'en' ? 'Search Companies' : '企業を検索する'}</span>
                 </Link>
               </div>
             ) : (
               <>
                 {/* Search & Action Bar on top of table */}
-                <div className="p-4 sm:p-6 border-b border-slate-100 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/30">
+                <div className="p-4 sm:p-5 border-b border-slate-200/80 dark:border-slate-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50 dark:bg-slate-900/30">
                   <div className="flex flex-col sm:flex-row sm:items-center gap-3 flex-1">
                     {/* Filter by stage */}
                     <div className="flex items-center gap-1.5 flex-wrap">
@@ -1490,10 +1676,10 @@ export default function DashboardPage() {
                         <button
                           key={st.id}
                           onClick={() => setListFilterStage(st.id)}
-                          className={`px-3 py-1 text-2xs font-bold rounded-lg transition-all cursor-pointer ${
+                          className={`px-3 py-1 text-2xs font-bold rounded-lg transition-colors cursor-pointer ${
                             listFilterStage === st.id
-                              ? "bg-slate-100 text-slate-900 font-bold border border-slate-300 dark:bg-slate-800 dark:text-white dark:border-slate-600 shadow-2xs"
-                              : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400"
+                              ? "bg-[#1B4F8A] text-white border border-[#1B4F8A] shadow-2xs"
+                              : "bg-white border border-slate-200/90 text-slate-600 hover:bg-slate-50 dark:bg-slate-900 dark:border-slate-800 dark:text-slate-400"
                           }`}
                         >
                           {st.label}
@@ -1508,7 +1694,7 @@ export default function DashboardPage() {
                         value={listSearchQuery}
                         onChange={(e) => setListSearchQuery(e.target.value)}
                         placeholder="マイリスト内を検索..."
-                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        className="w-full pl-8 pr-3 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A]"
                       />
                       <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
                     </div>
@@ -1517,49 +1703,99 @@ export default function DashboardPage() {
                   <button
                     onClick={handleCSVDownload}
                     disabled={csvExporting || companies.length === 0}
-                    className="inline-flex items-center justify-center gap-2 px-4 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 rounded-xl shadow-2xs transition-all active:scale-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap self-start sm:self-auto"
+                    className="inline-flex items-center justify-center gap-2 px-3.5 py-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-300/80 dark:border-slate-700 rounded-lg shadow-2xs transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed whitespace-nowrap self-start sm:self-auto"
                   >
                     {csvExporting ? (
-                      <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
                     ) : (
-                      <Download className="w-4 h-4 text-slate-600 dark:text-slate-400" />
+                      <Download className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
                     )}
                     <span>{csvExporting ? (locale === 'en' ? "Checking..." : "確認中...") : (locale === 'en' ? "Export CSV" : "マイリスト出力 (CSV)")}</span>
                   </button>
                 </div>
 
+                {/* Bulk Action Bar for Selected Companies */}
+                {selectedCompanyIds.length > 0 && (
+                  <div className="p-3 mx-4 sm:mx-5 my-2 bg-slate-900 text-white dark:bg-slate-800 rounded-lg flex flex-wrap items-center justify-between gap-3 text-xs shadow-xs animate-in fade-in">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold bg-white/20 text-white px-2 py-0.5 rounded-md font-mono text-[11px]">
+                        {selectedCompanyIds.length}社
+                      </span>
+                      <span className="font-medium text-slate-200">
+                        {locale === 'vi' ? 'doanh nghiệp đang được chọn' : locale === 'en' ? 'companies selected' : '社を選択中'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleCreateCampaignFromSelected}
+                        className="px-3.5 py-1.5 rounded-lg font-bold bg-[#1B4F8A] hover:bg-[#163e6d] text-white flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer text-xs"
+                      >
+                        <Send className="w-3.5 h-3.5" />
+                        <span>{locale === 'vi' ? 'Tạo chiến dịch Form DM cho các cty này' : locale === 'en' ? 'Launch Form Campaign' : '選択した企業宛てにフォーム営業を作成'}</span>
+                      </button>
+                      <button
+                        onClick={() => setSelectedCompanyIds([])}
+                        className="px-2.5 py-1.5 rounded-lg text-slate-400 hover:text-white transition-colors cursor-pointer text-xs"
+                      >
+                        {locale === 'vi' ? 'Bỏ chọn' : locale === 'en' ? 'Clear' : '選択解除'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
                 <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50/80 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[11px]">
-                      <th className="py-3.5 px-6">{locale === 'en' ? "Company Name" : "企業名"}</th>
-                      <th className="py-3.5 px-4">{locale === 'en' ? "Phone / Location" : "代表電話 / 所在地"}</th>
-                      <th className="py-3.5 px-4">{locale === 'en' ? "Scale (Employees / Capital)" : "規模 (従業員数 / 資本金)"}</th>
-                      <th className="py-3.5 px-4">{locale === 'en' ? "Sales Stage" : "営業進捗ステータス"}</th>
-                      <th className="py-3.5 px-6 text-right">{locale === 'en' ? "Actions" : "操作"}</th>
+                    <tr className="bg-slate-50/80 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[11px]">
+                      <th className="py-3 px-4 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          aria-label="Select All"
+                          checked={filteredCompanies.length > 0 && selectedCompanyIds.length === filteredCompanies.length}
+                          onChange={toggleSelectAll}
+                          className="rounded text-[#1B4F8A] focus:ring-[#1B4F8A] cursor-pointer"
+                        />
+                      </th>
+                      <th className="py-3 px-5">{locale === 'en' ? "Company Name" : "企業名"}</th>
+                      <th className="py-3 px-4">{locale === 'en' ? "Phone / Location" : "代表電話 / 所在地"}</th>
+                      <th className="py-3 px-4">{locale === 'en' ? "Scale (Employees / Capital)" : "規模 (従業員数 / 資本金)"}</th>
+                      <th className="py-3 px-4">{locale === 'en' ? "Sales Stage" : "営業進捗ステータス"}</th>
+                      <th className="py-3 px-6 text-right">{locale === 'en' ? "Actions" : "操作"}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                     {filteredCompanies.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="py-12 text-center text-xs text-slate-400">
+                        <td colSpan={6} className="py-12 text-center text-xs text-slate-400">
                           該当する企業は見つかりませんでした。
                         </td>
                       </tr>
                     ) : (
                       filteredCompanies.map((comp) => {
                         const stage = kanbanStages[comp.corporate_number] || "未連絡";
+                        const isSelected = selectedCompanyIds.includes(comp.corporate_number);
                         return (
                           <tr 
                             key={comp.corporate_number}
-                            className="hover:bg-slate-50/60 dark:hover:bg-[#151B22] transition-colors"
+                            className={`transition-colors ${isSelected ? "bg-blue-50/40 dark:bg-blue-950/20" : "hover:bg-slate-50/60 dark:hover:bg-[#151B22]"}`}
                           >
+                            {/* Checkbox */}
+                            <td className="py-3.5 px-4 text-center">
+                              <input
+                                type="checkbox"
+                                aria-label={`Select ${comp.company_name}`}
+                                checked={isSelected}
+                                onChange={() => toggleSelectCompany(comp.corporate_number)}
+                                className="rounded text-[#1B4F8A] focus:ring-[#1B4F8A] cursor-pointer"
+                              />
+                            </td>
+
                             {/* Name & JSIC */}
-                            <td className="py-4 px-6">
-                              <div className="flex flex-col gap-1 max-w-[280px]">
+                            <td className="py-3.5 px-5">
+                              <div className="flex flex-col gap-0.5 max-w-[280px]">
                                 <Link 
                                   href={`/company/${comp.corporate_number}`}
-                                  className="font-bold text-slate-900 hover:text-blue-600 dark:text-white dark:hover:text-blue-400 text-sm transition-colors truncate block"
+                                  className="font-bold text-slate-900 hover:text-[#1B4F8A] dark:text-white dark:hover:text-blue-400 text-sm transition-colors truncate block"
                                 >
                                   {comp.company_name}
                                 </Link>
@@ -1570,10 +1806,10 @@ export default function DashboardPage() {
                             </td>
 
                             {/* Phone / Location */}
-                            <td className="py-4 px-4 text-slate-600 dark:text-slate-300">
-                              <div className="flex flex-col gap-1">
+                            <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
+                              <div className="flex flex-col gap-0.5">
                                 <span className="font-semibold flex items-center gap-1">
-                                  <Phone className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                                  <Phone className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400 shrink-0" />
                                   {comp.phone_number || (locale === 'en' ? "Unregistered" : "未登録")}
                                 </span>
                                 <span className="text-[10px] text-slate-400">
@@ -1583,8 +1819,8 @@ export default function DashboardPage() {
                             </td>
 
                             {/* Scale */}
-                            <td className="py-4 px-4 text-slate-700 dark:text-slate-300">
-                              <div className="flex flex-col gap-1 font-mono">
+                            <td className="py-3.5 px-4 text-slate-700 dark:text-slate-300">
+                              <div className="flex flex-col gap-0.5 font-mono">
                                 <span>
                                   {comp.employee_count ? (locale === 'en' ? `${comp.employee_count.toLocaleString()} employees` : `${comp.employee_count.toLocaleString()}名`) : (locale === 'en' ? "Unregistered" : "未登録")}
                                 </span>
@@ -1595,15 +1831,15 @@ export default function DashboardPage() {
                             </td>
 
                             {/* Status */}
-                            <td className="py-4 px-4">
+                            <td className="py-3.5 px-4">
                               <select
                                 value={stage}
                                 onChange={(e) => updateKanbanStage(comp.corporate_number, e.target.value as KanbanStage)}
-                                className={`text-[10px] font-bold px-2.5 py-1.5 border rounded-lg focus:outline-none cursor-pointer ${
+                                className={`text-[10px] font-bold px-2.5 py-1 border rounded-lg focus:outline-none cursor-pointer ${
                                   stage === "未連絡" 
                                     ? "bg-slate-50 border-slate-200 text-slate-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
                                     : stage === "連絡済み"
-                                    ? "bg-blue-50 border-blue-200 text-blue-800 dark:bg-blue-950/40 dark:border-blue-900/50 dark:text-blue-300"
+                                    ? "bg-blue-50 border-blue-200 text-[#1B4F8A] dark:bg-blue-950/40 dark:border-blue-900/50 dark:text-blue-300"
                                     : stage === "商談中"
                                     ? "bg-amber-50 border-amber-200 text-amber-800 dark:bg-amber-950/40 dark:border-amber-900/50 dark:text-amber-300"
                                     : "bg-emerald-50 border-emerald-200 text-emerald-800 dark:bg-emerald-950/40 dark:border-emerald-900/50 dark:text-emerald-300"
@@ -1616,18 +1852,18 @@ export default function DashboardPage() {
                             </td>
 
                             {/* Actions */}
-                            <td className="py-4 px-6 text-right">
-                              <div className="flex items-center justify-end gap-2">
+                            <td className="py-3.5 px-6 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
                                 <Link
                                   href={`/company/${comp.corporate_number}`}
-                                  className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200 hover:border-blue-400 hover:text-blue-600 dark:border-slate-800 dark:hover:border-slate-700 text-slate-500 dark:text-slate-400 transition-all active:scale-95"
+                                  className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 hover:border-blue-400 hover:text-[#1B4F8A] dark:border-slate-800 dark:hover:border-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
                                   title={locale === 'en' ? "View Profile" : "企業プロフィール詳細"}
                                 >
                                   <Eye className="w-3.5 h-3.5" />
                                 </Link>
                                 <button
                                   onClick={() => toggleSaveCompany(comp.corporate_number)}
-                                  className="inline-flex items-center justify-center p-2 rounded-xl border border-slate-200 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 dark:border-slate-800 dark:hover:bg-rose-950/20 dark:hover:border-rose-900/40 dark:hover:text-rose-400 text-slate-400 transition-all active:scale-95 cursor-pointer"
+                                  className="inline-flex items-center justify-center p-1.5 rounded-lg border border-slate-200 hover:bg-rose-50 hover:border-rose-200 hover:text-rose-600 dark:border-slate-800 dark:hover:bg-rose-950/20 dark:hover:border-rose-900/40 dark:hover:text-rose-400 text-slate-400 transition-colors cursor-pointer"
                                   title={locale === 'en' ? "Remove from My List" : "マイリストから削除"}
                                 >
                                   <Trash2 className="w-3.5 h-3.5" />
@@ -1648,7 +1884,7 @@ export default function DashboardPage() {
 
         {/* Tab 2 Contents: Kanban Board */}
         {activeTab === "kanban" && (
-          <section className="grid grid-cols-1 md:grid-cols-4 gap-5 items-start">
+          <section className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
             {stages.map((stage) => {
               const stageCompanies = companies.filter(
                 (comp) => (kanbanStages[comp.corporate_number] || "未連絡") === stage
@@ -1657,11 +1893,11 @@ export default function DashboardPage() {
               return (
                 <div 
                   key={stage}
-                  className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-4 shadow-xs flex flex-col gap-4 max-h-[80vh] overflow-y-auto"
+                  className="bg-white border border-slate-200/90 dark:bg-[#1C2128] dark:border-slate-800 rounded-xl p-4 shadow-xs flex flex-col gap-4 max-h-[80vh] overflow-y-auto"
                 >
                   {/* Column Header */}
                   <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                    <span className="font-extrabold text-xs text-slate-800 dark:text-white tracking-tight flex items-center gap-1.5">
+                    <span className="font-bold text-xs text-slate-800 dark:text-white tracking-tight flex items-center gap-1.5">
                       <span className={`w-2.5 h-2.5 rounded-full ${
                         stage === "未連絡" 
                           ? "bg-slate-400" 
@@ -1673,27 +1909,27 @@ export default function DashboardPage() {
                       }`} />
                       {stageLabels[stage] || stage}
                     </span>
-                    <span className="text-[10px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
                       {stageCompanies.length} {locale === 'en' ? "companies" : "社"}
                     </span>
                   </div>
 
                   {/* Column Cards */}
-                  <div className="flex flex-col gap-3 min-h-[160px]">
+                  <div className="flex flex-col gap-2.5 min-h-[160px]">
                     {stageCompanies.length === 0 ? (
-                      <div className="py-12 text-center text-[11px] text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl flex flex-col items-center justify-center gap-1">
+                      <div className="py-12 text-center text-[11px] text-slate-400 dark:text-slate-500 border border-dashed border-slate-200 dark:border-slate-800 rounded-lg flex flex-col items-center justify-center gap-1">
                         <span>対象企業はありません</span>
                       </div>
                     ) : (
                       stageCompanies.map((comp) => (
                         <div
                           key={comp.corporate_number}
-                          className={`p-4 rounded-2xl border-l-4 border border-slate-200 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700 transition-all shadow-2xs ${getStageColor(stage)} flex flex-col gap-3 group`}
+                          className={`p-3.5 rounded-lg border-l-4 border border-slate-200/90 hover:border-slate-300 dark:border-slate-800 dark:hover:border-slate-700 transition-colors shadow-2xs ${getStageColor(stage)} flex flex-col gap-2.5 group`}
                         >
                           <div className="flex flex-col gap-1">
                             <Link 
                               href={`/company/${comp.corporate_number}`}
-                              className="font-bold text-xs text-slate-900 hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400 tracking-tight line-clamp-2 leading-relaxed transition-colors block"
+                              className="font-bold text-xs text-slate-900 hover:text-[#1B4F8A] dark:text-slate-100 dark:hover:text-blue-400 tracking-tight line-clamp-2 leading-relaxed transition-colors block"
                             >
                               {comp.company_name}
                             </Link>
@@ -1712,7 +1948,7 @@ export default function DashboardPage() {
                               <button
                                 onClick={() => moveCard(comp.corporate_number, "left")}
                                 disabled={stage === "未連絡"}
-                                className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
+                                className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
                                 title="左に移動"
                               >
                                 <MoveLeft className="w-3.5 h-3.5" />
@@ -1720,7 +1956,7 @@ export default function DashboardPage() {
                               <button
                                 onClick={() => moveCard(comp.corporate_number, "right")}
                                 disabled={stage === "成約"}
-                                className="p-1 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
+                                className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 disabled:opacity-20 disabled:cursor-not-allowed cursor-pointer"
                                 title="右に移動"
                               >
                                 <MoveRight className="w-3.5 h-3.5" />
@@ -1740,27 +1976,27 @@ export default function DashboardPage() {
         {/* Tab 3 Contents: Export History */}
         {activeTab === "exports" && (
           <div className="flex flex-col gap-4">
-            <div className="bg-slate-50 border border-slate-200 dark:bg-slate-900/40 dark:border-slate-800 rounded-2xl p-4 text-xs text-slate-700 dark:text-slate-300 flex items-start gap-3 shadow-2xs">
+            <div className="bg-slate-50 border border-slate-200/90 dark:bg-slate-900/40 dark:border-slate-800 rounded-xl p-4 text-xs text-slate-700 dark:text-slate-300 flex items-start gap-3 shadow-2xs">
               <AlertTriangle className="w-4.5 h-4.5 shrink-0 text-amber-500 mt-0.5" />
               <div className="flex flex-col gap-0.5">
-                <span className="font-extrabold text-[11px] uppercase tracking-wider text-slate-900 dark:text-white block">ダウンロード有効期限に関するご注意</span>
+                <span className="font-bold text-[11px] uppercase tracking-wider text-slate-900 dark:text-white block">ダウンロード有効期限に関するご注意</span>
                 <p className="leading-relaxed text-slate-600 dark:text-slate-400">
                   作成されたエクスポートファイル（ZIP）の<strong>保存期間は7日間</strong>です。7日を経過するとデータはサーバーから自動的に削除され、再ダウンロードできなくなりますので、お早めに端末へ保存してください。
                 </p>
               </div>
             </div>
             
-            <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs">
+            <section className="bg-white border border-slate-200/90 dark:bg-[#1C2128] dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
               {loadingExports ? (
                 <div className="py-20 text-center flex flex-col items-center justify-center gap-3">
-                  <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
+                  <Loader2 className="w-6 h-6 animate-spin text-[#1B4F8A] dark:text-blue-400" />
                   <span className="text-xs text-slate-400">履歴を読み込み中...</span>
                 </div>
               ) : exportJobs.length === 0 ? (
                 <div className="py-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
                   <Download className="w-12 h-12 text-slate-300 dark:text-slate-600" />
                   <div>
-                    <h4 className="font-extrabold text-slate-800 dark:text-white text-sm mb-1">エクスポート履歴はありません</h4>
+                    <h4 className="font-bold text-slate-800 dark:text-white text-sm mb-1">エクスポート履歴はありません</h4>
                     <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
                       企業検索からCSV出力を実行すると、ここにダウンロード履歴が追加されます。
                     </p>
@@ -1770,13 +2006,13 @@ export default function DashboardPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs border-collapse">
                     <thead>
-                      <tr className="bg-slate-50/80 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[11px]">
-                        <th className="py-3.5 px-6">タスクID / 作成日時</th>
-                        <th className="py-3.5 px-4">ダウンロード期限 (7日間)</th>
-                        <th className="py-3.5 px-4">適用フィルター</th>
-                        <th className="py-3.5 px-4">取得件数</th>
-                        <th className="py-3.5 px-4">ステータス</th>
-                        <th className="py-3.5 px-6 text-right">操作</th>
+                      <tr className="bg-slate-50/80 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[11px]">
+                        <th className="py-3 px-6">タスクID / 作成日時</th>
+                        <th className="py-3 px-4">ダウンロード期限 (7日間)</th>
+                        <th className="py-3 px-4">適用フィルター</th>
+                        <th className="py-3 px-4">取得件数</th>
+                        <th className="py-3 px-4">ステータス</th>
+                        <th className="py-3 px-6 text-right">操作</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
@@ -1806,37 +2042,37 @@ export default function DashboardPage() {
 
                         return (
                           <tr key={job.id} className="hover:bg-slate-50/60 dark:hover:bg-[#151B22] transition-colors">
-                            <td className="py-4 px-6">
-                              <div className="flex flex-col gap-1">
+                            <td className="py-3.5 px-6">
+                              <div className="flex flex-col gap-0.5">
                                 <span className="font-mono font-bold text-slate-900 dark:text-slate-100 truncate max-w-[160px]" title={job.id}>{job.id}</span>
                                 <span className="text-[10px] text-slate-400">{formattedDate}</span>
                               </div>
                             </td>
-                            <td className="py-4 px-4 text-slate-600 dark:text-slate-300">
+                            <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300">
                               <span className={`text-[10px] font-semibold ${isExpired ? "text-rose-500 font-bold" : "text-slate-500"}`}>
                                 {isExpired ? "期限切れ (消去済)" : formattedExpiry}
                               </span>
                             </td>
-                            <td className="py-4 px-4">
+                            <td className="py-3.5 px-4">
                               {renderFilterBadges(job.filters, locale)}
                             </td>
-                            <td className="py-4 px-4 font-mono font-bold text-slate-900 dark:text-white">
+                            <td className="py-3.5 px-4 font-mono font-bold text-slate-900 dark:text-white">
                               {job.total_records ? `${job.total_records.toLocaleString()}行` : "-"}
                             </td>
-                            <td className="py-4 px-4">
+                            <td className="py-3.5 px-4">
                               {job.status === "completed" ? (
-                                <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 text-[9px] font-bold">出力完了</span>
+                                <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 text-[9px] font-semibold">出力完了</span>
                               ) : job.status === "processing" ? (
-                                <span className="px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 text-[9px] font-bold">生成中</span>
+                                <span className="px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/40 text-[#1B4F8A] dark:text-blue-300 border border-blue-200 text-[9px] font-semibold">生成中</span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 text-[9px] font-bold">失敗</span>
+                                <span className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 text-[9px] font-semibold">失敗</span>
                               )}
                             </td>
-                            <td className="py-4 px-6 text-right">
+                            <td className="py-3.5 px-6 text-right">
                               {job.status === "completed" && !isExpired && job.file_path ? (
                                 <a
                                   href={`/api/export/download?jobId=${job.id}`}
-                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold shadow-xs transition-colors"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B4F8A] hover:bg-[#163e6d] text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
                                 >
                                   <Download className="w-3.5 h-3.5" />
                                   <span>ダウンロード</span>
@@ -1858,17 +2094,17 @@ export default function DashboardPage() {
 
         {/* Tab 4 Contents: Purchase History */}
         {activeTab === "payments" && (
-          <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs">
+          <section className="bg-white border border-slate-200/90 dark:bg-[#1C2128] dark:border-slate-800 rounded-xl overflow-hidden shadow-xs">
             {loadingPayments ? (
               <div className="py-20 text-center flex flex-col items-center justify-center gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
+                <Loader2 className="w-6 h-6 animate-spin text-[#1B4F8A] dark:text-blue-400" />
                 <span className="text-xs text-slate-400">購入履歴を読み込み中...</span>
               </div>
             ) : paymentHistory.length === 0 ? (
               <div className="py-16 text-center text-slate-400 flex flex-col items-center justify-center gap-3">
                 <FileText className="w-12 h-12 text-slate-300 dark:text-slate-600" />
                 <div>
-                  <h4 className="font-extrabold text-slate-800 dark:text-white text-sm mb-1">購入履歴はありません</h4>
+                  <h4 className="font-bold text-slate-800 dark:text-white text-sm mb-1">購入履歴はありません</h4>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
                     Stripeで追加のCSVダウンロード容量またはプランをご購入いただくと、ここに履歴とインボイス領収書が表示されます。
                   </p>
@@ -1878,12 +2114,12 @@ export default function DashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border-collapse">
                   <thead>
-                    <tr className="bg-slate-50/80 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[11px]">
-                      <th className="py-3.5 px-6">取引ID / 決済日時</th>
-                      <th className="py-3.5 px-4">購入プラン</th>
-                      <th className="py-3.5 px-4">付与容量</th>
-                      <th className="py-3.5 px-4">決済金額 (税込)</th>
-                      <th className="py-3.5 px-6 text-right">インボイス領収書</th>
+                    <tr className="bg-slate-50/80 dark:bg-slate-800/40 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200/80 dark:border-slate-800 uppercase tracking-wider text-[11px]">
+                      <th className="py-3 px-6">取引ID / 決済日時</th>
+                      <th className="py-3 px-4">購入プラン</th>
+                      <th className="py-3 px-4">付与容量</th>
+                      <th className="py-3 px-4">決済金額 (税込)</th>
+                      <th className="py-3 px-6 text-right">インボイス領収書</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
@@ -1899,13 +2135,13 @@ export default function DashboardPage() {
                       
                       return (
                         <tr key={pay.id} className="hover:bg-slate-50/60 dark:hover:bg-[#151B22] transition-colors">
-                          <td className="py-4 px-6">
-                            <div className="flex flex-col gap-1">
+                          <td className="py-3.5 px-6">
+                            <div className="flex flex-col gap-0.5">
                               <span className="font-mono font-bold text-slate-900 dark:text-slate-100 truncate max-w-[180px]" title={pay.id}>{pay.id}</span>
                               <span className="text-[10px] text-slate-400">{formattedDate} (JST)</span>
                             </div>
                           </td>
-                          <td className="py-4 px-4 font-bold text-slate-900 dark:text-slate-100">
+                          <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-slate-100">
                             {pay.pack_id === "10k" ? "CSV 10k行追加パック" :
                              pay.pack_id === "50k" ? "CSV 50k行追加パック" :
                              pay.pack_id === "100k" ? "CSV 100k行追加パック" :
@@ -1914,21 +2150,21 @@ export default function DashboardPage() {
                              pay.pack_id === "enterprise" ? "ENTERPRISEプラン (月額)" :
                              "カスタムパック"}
                           </td>
-                          <td className="py-4 px-4 font-mono font-bold text-slate-600 dark:text-slate-300">
+                          <td className="py-3.5 px-4 font-mono font-bold text-slate-600 dark:text-slate-300">
                             +{pay.lines_added.toLocaleString()} 行
                           </td>
-                          <td className="py-4 px-4 font-mono font-black text-blue-600 dark:text-blue-400 text-sm">
+                          <td className="py-3.5 px-4 font-mono font-bold text-[#1B4F8A] dark:text-blue-400 text-sm">
                             ¥{pay.amount_jpy.toLocaleString()}
                           </td>
-                          <td className="py-4 px-6 text-right">
+                          <td className="py-3.5 px-6 text-right">
                             {pay.invoice_url ? (
                               <a
                                 href={`/api/stripe/invoice?id=${pay.id}&email=${encodeURIComponent(user?.email || "")}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 transition-colors shadow-2xs"
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white border border-slate-300/80 hover:bg-slate-50 rounded-lg dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 transition-colors shadow-2xs"
                               >
-                                <FileText className="w-3.5 h-3.5 text-blue-600" />
+                                <FileText className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
                                 <span>領収書 (印刷)</span>
                               </a>
                             ) : (
@@ -1947,13 +2183,13 @@ export default function DashboardPage() {
 
         {/* Tab 5 Contents: Settings with Live Preview */}
         {activeTab === "settings" && (
-          <section className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs w-full flex flex-col gap-6">
+          <section className="bg-white border border-slate-200/90 dark:bg-[#1C2128] dark:border-slate-800 rounded-xl p-6 sm:p-7 shadow-xs w-full flex flex-col gap-6">
             <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 border border-blue-100 flex items-center justify-center shrink-0">
-                <Settings className="w-5 h-5" />
+              <div className="w-9 h-9 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950 dark:text-blue-400 border border-blue-200/80 flex items-center justify-center shrink-0">
+                <Settings className="w-4.5 h-4.5" />
               </div>
               <div>
-                <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white tracking-tight">
                   領収書・インボイス設定
                 </h2>
                 <span className="text-[11px] text-slate-400 block mt-0.5">
@@ -1964,13 +2200,13 @@ export default function DashboardPage() {
 
             {loadingBilling ? (
               <div className="py-12 text-center flex flex-col items-center justify-center gap-3">
-                <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent" />
+                <Loader2 className="w-6 h-6 animate-spin text-[#1B4F8A] dark:text-blue-400" />
                 <span className="text-xs text-slate-400">設定を読み込み中...</span>
               </div>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 {/* Form fields */}
-                <form onSubmit={handleSaveBilling} className="lg:col-span-7 flex flex-col gap-5 text-xs">
+                <form onSubmit={handleSaveBilling} className="lg:col-span-7 flex flex-col gap-4 text-xs">
                   {/* Billing Name */}
                   <div className="flex flex-col gap-1.5">
                     <label className="font-bold text-slate-700 dark:text-slate-300">
@@ -1981,7 +2217,7 @@ export default function DashboardPage() {
                       value={billingName}
                       onChange={(e) => setBillingName(e.target.value)}
                       placeholder="例: 株式会社サンプル, ○○ 個人事業主"
-                      className="px-4 py-2.5 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-blue-500 text-xs transition-all"
+                      className="px-3.5 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-900 rounded-lg focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A] text-xs transition-colors"
                     />
                     <span className="text-[10px] text-slate-400">
                       空欄の場合はご登録メールアドレス（{user?.email}）が使用されます。
@@ -1998,7 +2234,7 @@ export default function DashboardPage() {
                       onChange={(e) => setBillingAddress(e.target.value)}
                       placeholder="例: 〒100-0001 東京都千代田区千代田1-1 サンプルビル5F"
                       rows={2}
-                      className="px-4 py-2.5 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-blue-500 text-xs transition-all resize-none"
+                      className="px-3.5 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-900 rounded-lg focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A] text-xs transition-colors resize-none"
                     />
                   </div>
 
@@ -2013,7 +2249,7 @@ export default function DashboardPage() {
                         value={billingTaxId}
                         onChange={(e) => setBillingTaxId(e.target.value)}
                         placeholder="例: T1234567890123"
-                        className="px-4 py-2.5 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-blue-500 text-xs transition-all font-mono"
+                        className="px-3.5 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-900 rounded-lg focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A] text-xs transition-colors font-mono"
                       />
                     </div>
 
@@ -2026,7 +2262,7 @@ export default function DashboardPage() {
                         value={billingPhone}
                         onChange={(e) => setBillingPhone(e.target.value)}
                         placeholder="例: 03-1234-5678"
-                        className="px-4 py-2.5 border border-slate-200 dark:border-slate-800 dark:bg-slate-900 rounded-xl focus:outline-none focus:border-blue-500 text-xs transition-all font-mono"
+                        className="px-3.5 py-2 border border-slate-300 dark:border-slate-700 dark:bg-slate-900 rounded-lg focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A] text-xs transition-colors font-mono"
                       />
                     </div>
                   </div>
@@ -2037,7 +2273,7 @@ export default function DashboardPage() {
                       社判・会社ロゴ画像 (PNG / JPG / SVG, 最大500KB)
                     </label>
                     <div className="flex items-center gap-3">
-                      <label className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl font-bold text-xs cursor-pointer transition-colors flex items-center gap-1.5">
+                      <label className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg font-semibold text-xs cursor-pointer transition-colors flex items-center gap-1.5 border border-slate-200 dark:border-slate-700">
                         <Upload className="w-3.5 h-3.5" />
                         <span>{uploadingLogo ? "アップロード中..." : "画像を選択"}</span>
                         <input
@@ -2064,7 +2300,7 @@ export default function DashboardPage() {
                     <button
                       type="submit"
                       disabled={savingBilling}
-                      className="px-6 py-2.5 font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="px-6 py-2.5 font-bold text-white bg-[#1B4F8A] hover:bg-[#163e6d] disabled:opacity-50 rounded-lg shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
                     >
                       {savingBilling ? (
                         <>
@@ -2079,19 +2315,19 @@ export default function DashboardPage() {
                 </form>
 
                 {/* Right: Live Preview of Receipt */}
-                <div className="lg:col-span-5 bg-slate-50 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 flex flex-col gap-3">
+                <div className="lg:col-span-5 bg-slate-50 dark:bg-slate-900/40 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 flex flex-col gap-3">
                   <div className="flex items-center justify-between border-b border-slate-200/80 dark:border-slate-800 pb-3">
                     <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <FileText className="w-3.5 h-3.5 text-blue-600" />
+                      <FileText className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
                       領収書プレビュー（印刷イメージ）
                     </span>
                     <span className="text-[10px] text-slate-400 font-mono">PREVIEW</span>
                   </div>
 
-                  <div className="bg-white dark:bg-[#151B22] border border-slate-200 dark:border-slate-800 rounded-xl p-4 flex flex-col gap-3 shadow-2xs">
+                  <div className="bg-white dark:bg-[#151B22] border border-slate-200/90 dark:border-slate-800 rounded-lg p-4 flex flex-col gap-3 shadow-2xs">
                     <div className="flex justify-between items-start">
                       <div>
-                        <h4 className="text-base font-black text-slate-900 dark:text-white">領 収 書</h4>
+                        <h4 className="text-base font-bold text-slate-900 dark:text-white">領 収 書</h4>
                         <span className="text-[9px] text-slate-400 block mt-0.5">（適格請求書等保存方式対応）</span>
                       </div>
                       {logoUrl ? (
@@ -2130,268 +2366,404 @@ export default function DashboardPage() {
         )}
 
         {/* Tab 6 Contents: Developer API Settings */}
-        {activeTab === "developer" && (
-          <section className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
-            <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-xs flex flex-col gap-6">
-              <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 border border-blue-100 flex items-center justify-center shrink-0">
-                  <Terminal className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
-                    API連携・APIキー設定
-                  </h2>
-                  <span className="text-[11px] text-slate-400 block mt-0.5">
-                    外部システム（CRM、SFA、社内データベース等）と連携するためのAPIキーの生成と管理を行います
-                  </span>
-                </div>
-              </div>
+        {activeTab === "developer" && (() => {
+          const hasApiAccess = 
+            user?.role === "business" || 
+            user?.role === "enterprise" || 
+            user?.role === "admin" || 
+            quota?.plan === "business" || 
+            quota?.plan === "enterprise";
 
-              {/* Check Permissions */}
-              {user?.role !== "business" && user?.role !== "enterprise" ? (
-                // Premium CTA for Free/Pro
-                <div className="py-8 flex flex-col items-center max-w-xl mx-auto text-center gap-6">
-                  <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400 flex items-center justify-center shadow-xs border border-blue-200/60">
-                    <Key className="w-7 h-7" />
-                  </div>
-                  <div>
-                    <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-2">
-                      API連携機能はBUSINESSプラン以上でご利用いただけます
-                    </h3>
-                    <p className="text-xs text-slate-500 leading-relaxed">
-                      APIを導入することで、会社データベースの検索や購買シグナルの取得を完全自動化できます。
-                      HubSpotやSalesforceなどのCRMにリアルタイムにデータをインポートし、営業効率を最大化しましょう。
-                    </p>
-                  </div>
+          const baseUrl = typeof window !== "undefined" ? window.location.origin : "https://kigyoulist.com";
 
-                  {/* Feature highlights */}
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full text-left mt-2">
-                    <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">① リアルタイム同期</span>
-                      <p className="text-[10px] text-slate-400 leading-relaxed">CSVの手動ダウンロードとインポート作業が不要になり、完全に自動化されます。</p>
-                    </div>
-                    <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">② 開発者向けリファレンス</span>
-                      <p className="text-[10px] text-slate-400 leading-relaxed">cURL、Python、Node.jsのコード例があり、数行のコードですぐに接続可能です。</p>
-                    </div>
-                    <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">③ 柔軟なAPIクエリ</span>
-                      <p className="text-[10px] text-slate-400 leading-relaxed">都道府県、資本金、従業員数、企業シグナルなど、多彩な条件で絞り込めます。</p>
-                    </div>
-                  </div>
+          const getSnippet = () => {
+            if (selectedEndpoint === "companies") {
+              if (codeTab === "curl") {
+                return `curl -X GET "${baseUrl}/api/v1/companies?prefecture_code=13&limit=10" \\
+  -H "Authorization: Bearer <YOUR_API_KEY>"`;
+              } else if (codeTab === "python") {
+                return `import requests
 
-                  <Link
-                    href="/pricing"
-                    className="px-8 py-3 font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs active:scale-95 transition-all text-xs flex items-center gap-2 mt-2 cursor-pointer"
-                  >
-                    <Sparkles className="w-4 h-4" />
-                    <span>BUSINESSプランにアップグレード</span>
-                  </Link>
-                </div>
-              ) : (
-                // Business/Enterprise UI
-                <div className="flex flex-col gap-6">
-                  {/* Create Key Control */}
-                  <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-slate-50 dark:bg-slate-900/25 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl">
-                    <div>
-                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">APIキーの新規発行</span>
-                      <p className="text-[10px] text-slate-400">外部プログラムからの認証に使用するAPIキーを発行します。</p>
-                    </div>
-                    <button
-                      onClick={handleCreateApiKey}
-                      disabled={generatingKey}
-                      className="px-5 py-2.5 font-bold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-xl text-xs shadow-xs active:scale-95 transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
-                    >
-                      {generatingKey ? (
-                        <>
-                          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          <span>生成中...</span>
-                        </>
-                      ) : (
-                        <>
-                          <Key className="w-3.5 h-3.5" />
-                          <span>APIキーを発行する</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
-
-                  {/* Display New Raw Key Modal / Alert */}
-                  {newRawKey && (
-                    <div className="bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/40 rounded-2xl p-5 flex flex-col gap-3 animate-in slide-in-from-top duration-300">
-                      <div className="flex items-start gap-2.5">
-                        <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                        <div>
-                          <span className="text-xs font-black text-amber-800 dark:text-amber-400 block mb-1">【重要】APIキーが生成されました。必ずコピーしてください</span>
-                          <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">
-                            セキュリティ上の理由から、このAPIキーは画面を閉じると二度と表示されません。安全な場所にコピーして保存してください。
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-xl">
-                        <code className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400 break-all flex-1 select-all">
-                          {newRawKey}
-                        </code>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(newRawKey);
-                            setCopiedKeyId("new");
-                            setTimeout(() => setCopiedKeyId(null), 2000);
-                          }}
-                          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer"
-                          title="クリップボードにコピー"
-                        >
-                          {copiedKeyId === "new" ? (
-                            <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                          ) : (
-                            <Copy className="w-4 h-4 text-slate-500" />
-                          )}
-                        </button>
-                      </div>
-                      <button
-                        onClick={() => setNewRawKey(null)}
-                        className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold w-fit self-end transition-colors cursor-pointer"
-                      >
-                        コピー完了を確認して閉じる
-                      </button>
-                    </div>
-                  )}
-
-                  {/* API Key List Table */}
-                  <div className="flex flex-col gap-2.5">
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                      アクティブなAPIキー一覧
-                    </span>
-
-                    {loadingApiKeys ? (
-                      <div className="py-8 text-center flex flex-col items-center justify-center gap-2 border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900/10">
-                        <Loader2 className="w-6 h-6 animate-spin text-blue-600" />
-                        <span className="text-[10px] text-slate-400">APIキーを読み込み中...</span>
-                      </div>
-                    ) : apiKeys.length === 0 ? (
-                      <div className="py-8 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white/20 dark:bg-slate-900/5 text-slate-400 text-xs">
-                        発行済みのAPIキーはありません。「APIキーを発行する」ボタンをクリックして開始してください。
-                      </div>
-                    ) : (
-                      <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-2xl bg-white dark:bg-slate-900/10">
-                        <table className="w-full text-left text-xs whitespace-nowrap">
-                          <thead className="bg-slate-50/80 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold text-[10px] uppercase tracking-wider">
-                            <tr>
-                              <th className="px-4 py-3">キー (プレビュー)</th>
-                              <th className="px-4 py-3">ステータス</th>
-                              <th className="px-4 py-3">作成日時 (JST)</th>
-                              <th className="px-4 py-3">最終利用日時 (JST)</th>
-                              <th className="px-4 py-3">最終接続元 IP</th>
-                              <th className="px-4 py-3 text-right">操作</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
-                            {apiKeys.map((key) => {
-                              const createdJst = new Date(key.created_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
-                              const usedJst = key.last_used_at 
-                                ? new Date(key.last_used_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })
-                                : "未使用";
-
-                              return (
-                                <tr key={key.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
-                                  <td className="px-4 py-3 font-mono font-bold text-slate-800 dark:text-slate-200">
-                                    kigyou_live_...{key.api_key_preview.replace(/^\.\.\./, '')}
-                                  </td>
-                                  <td className="px-4 py-3">
-                                    {key.status === "active" ? (
-                                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 text-[9px] font-bold">有効</span>
-                                    ) : (
-                                      <span className="px-2 py-0.5 rounded-full bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 text-[9px] font-bold">無効化済</span>
-                                    )}
-                                  </td>
-                                  <td className="px-4 py-3 text-slate-400 font-mono">{createdJst}</td>
-                                  <td className="px-4 py-3 text-slate-400 font-mono">{usedJst}</td>
-                                  <td className="px-4 py-3 text-slate-400 font-mono">{key.last_ip || "-"}</td>
-                                  <td className="px-4 py-3 text-right">
-                                    {key.status === "active" && (
-                                      <button
-                                        onClick={() => handleRevokeApiKey(key.id)}
-                                        className="px-2.5 py-1 text-[10px] font-bold text-rose-600 border border-rose-200 hover:bg-rose-50 dark:border-rose-900/40 dark:hover:bg-rose-950/20 rounded-lg transition-all cursor-pointer"
-                                      >
-                                        無効化
-                                      </button>
-                                    )}
-                                  </td>
-                                </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* API Quick Reference Documentation with interactive tabs */}
-                  <div className="border-t border-slate-100 dark:border-slate-800 pt-6 mt-2 flex flex-col gap-4">
-                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
-                      <Terminal className="w-4 h-4 text-blue-600" />
-                      API クイックリファレンス & コードサンプル
-                    </span>
-
-                    <div className="bg-slate-900 text-slate-200 rounded-2xl p-5 font-mono text-xs flex flex-col gap-4 overflow-x-auto shadow-inner">
-                      <div>
-                        <span className="text-[10px] text-slate-400 block uppercase font-bold tracking-wider mb-1">API Base URL</span>
-                        <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800 text-blue-400 font-bold font-mono">
-                          {typeof window !== "undefined" ? window.location.origin : "https://kigyoulist.com"}
-                        </div>
-                      </div>
-
-                      {/* Code Sample Tabs */}
-                      <div className="border-t border-slate-800 pt-4 flex flex-col gap-2">
-                        <div className="flex items-center gap-2">
-                          {[
-                            { id: "curl", label: "cURL" },
-                            { id: "python", label: "Python" },
-                            { id: "node", label: "Node.js" }
-                          ].map(t => (
-                            <button
-                              key={t.id}
-                              onClick={() => setCodeTab(t.id as any)}
-                              className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-colors cursor-pointer ${
-                                codeTab === t.id
-                                  ? "bg-blue-600 text-white"
-                                  : "bg-slate-800 text-slate-400 hover:text-white"
-                              }`}
-                            >
-                              {t.label}
-                            </button>
-                          ))}
-                        </div>
-
-                        <pre className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-[11px] select-all font-mono leading-relaxed text-slate-200 overflow-x-auto">
-                          {codeTab === "curl" ? (
-`curl -X GET "${typeof window !== "undefined" ? window.location.origin : "https://kigyoulist.com"}/api/v1/companies?prefecture_code=13&limit=10" \\
-  -H "Authorization: Bearer <YOUR_API_KEY>"`
-                          ) : codeTab === "python" ? (
-`import requests
-
-url = "${typeof window !== "undefined" ? window.location.origin : "https://kigyoulist.com"}/api/v1/companies"
+url = "${baseUrl}/api/v1/companies"
 headers = {"Authorization": "Bearer <YOUR_API_KEY>"}
 params = {"prefecture_code": "13", "limit": 10}
 
 response = requests.get(url, headers=headers, params=params)
-print(response.json())`
-                          ) : (
-`const response = await fetch("${typeof window !== "undefined" ? window.location.origin : "https://kigyoulist.com"}/api/v1/companies?prefecture_code=13&limit=10", {
+print(response.json())`;
+              } else {
+                return `const response = await fetch("${baseUrl}/api/v1/companies?prefecture_code=13&limit=10", {
   headers: { "Authorization": "Bearer <YOUR_API_KEY>" }
 });
 const data = await response.json();
-console.log(data);`
-                          )}
-                        </pre>
+console.log(data);`;
+              }
+            } else if (selectedEndpoint === "quota") {
+              if (codeTab === "curl") {
+                return `curl -X GET "${baseUrl}/api/v1/quota" \\
+  -H "Authorization: Bearer <YOUR_API_KEY>"`;
+              } else if (codeTab === "python") {
+                return `import requests
+
+url = "${baseUrl}/api/v1/quota"
+headers = {"Authorization": "Bearer <YOUR_API_KEY>"}
+
+response = requests.get(url, headers=headers)
+print(response.json())`;
+              } else {
+                return `const response = await fetch("${baseUrl}/api/v1/quota", {
+  headers: { "Authorization": "Bearer <YOUR_API_KEY>" }
+});
+const data = await response.json();
+console.log(data);`;
+              }
+            } else {
+              if (codeTab === "curl") {
+                return `curl -X GET "${baseUrl}/api/v1/signals?signal_type=求人あり&limit=10" \\
+  -H "Authorization: Bearer <YOUR_API_KEY>"`;
+              } else if (codeTab === "python") {
+                return `import requests
+
+url = "${baseUrl}/api/v1/signals"
+headers = {"Authorization": "Bearer <YOUR_API_KEY>"}
+params = {"signal_type": "求人あり", "limit": 10}
+
+response = requests.get(url, headers=headers, params=params)
+print(response.json())`;
+              } else {
+                return `const response = await fetch("${baseUrl}/api/v1/signals?signal_type=求人あり&limit=10", {
+  headers: { "Authorization": "Bearer <YOUR_API_KEY>" }
+});
+const data = await response.json();
+console.log(data);`;
+              }
+            }
+          };
+
+          return (
+            <section className="flex flex-col gap-6 w-full animate-in fade-in duration-300">
+              <div className="bg-white border border-slate-200/90 dark:bg-[#1C2128] dark:border-slate-800 rounded-xl p-6 sm:p-7 shadow-xs flex flex-col gap-6">
+                <div className="flex items-center gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+                  <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200/80 flex items-center justify-center shrink-0">
+                    <Terminal className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight">
+                      {locale === 'en' ? "API Integration & API Key Management" : locale === 'vi' ? "Tích hợp API & Quản lý API Key" : "API連携・APIキー設定"}
+                    </h2>
+                    <span className="text-[11px] text-slate-400 block mt-0.5">
+                      {locale === 'en'
+                        ? "Generate and manage API keys for automated synchronization with CRM, SFA, or in-house databases"
+                        : locale === 'vi'
+                        ? "Tạo và quản lý API Key để đồng bộ dữ liệu tự động với CRM, SFA hoặc hệ cơ sở dữ liệu nội bộ"
+                        : "外部システム（CRM、SFA、社内データベース等）と連携するためのAPIキーの生成と管理を行います"}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Check Permissions */}
+                {!hasApiAccess ? (
+                  // Premium CTA for Free/Pro
+                  <div className="py-8 flex flex-col items-center max-w-xl mx-auto text-center gap-6">
+                    <div className="w-14 h-14 rounded-xl bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/60 dark:text-blue-300 flex items-center justify-center shadow-xs border border-blue-200/80">
+                      <Key className="w-7 h-7" />
+                    </div>
+                    <div>
+                      <h3 className="text-base font-bold text-slate-800 dark:text-slate-100 mb-2">
+                        {locale === 'en' 
+                          ? "API Integration is available exclusively on BUSINESS and ENTERPRISE plans"
+                          : locale === 'vi'
+                          ? "Tính năng Tích hợp API chỉ khả dụng từ gói BUSINESS trở lên"
+                          : "API連携機能はBUSINESSプラン以上でご利用いただけます"}
+                      </h3>
+                      <p className="text-xs text-slate-500 leading-relaxed">
+                        {locale === 'en'
+                          ? "Automate B2B company intelligence, live hiring signals, and qualified lead extraction directly into your CRM (Salesforce, HubSpot) or internal ERP pipelines."
+                          : locale === 'vi'
+                          ? "Tự động hóa hoàn toàn quy trình truy vấn dữ liệu 5 triệu doanh nghiệp Nhật Bản và tín hiệu tuyển dụng/mua sắm trực tiếp vào Salesforce, HubSpot hoặc hệ thống nội bộ."
+                          : "APIを導入することで、会社データベースの検索や購買シグナルの取得を完全自動化できます。HubSpotやSalesforceなどのCRMにリアルタイムにデータをインポートし、営業効率を最大化しましょう。"}
+                      </p>
+                    </div>
+
+                    {/* Feature highlights */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full text-left mt-2">
+                      <div className="p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">
+                          {locale === 'en' ? "① Real-time Sync" : locale === 'vi' ? "① Đồng bộ tức thì" : "① リアルタイム同期"}
+                        </span>
+                        <p className="text-[10px] text-slate-400 leading-relaxed">
+                          {locale === 'en' ? "No manual CSV exports required. Query companies on-demand via REST." : locale === 'vi' ? "Không cần tải file CSV thủ công. Tự động hóa qua API RESTful." : "CSVの手動ダウンロードとインポート作業が不要になり、完全に自動化されます。"}
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">
+                          {locale === 'en' ? "② Multi-language SDK" : locale === 'vi' ? "② Mẫu code đa ngôn ngữ" : "② 開発者向けリファレンス"}
+                        </span>
+                        <p className="text-[10px] text-slate-400 leading-relaxed">
+                          {locale === 'en' ? "Production-ready examples for cURL, Python, and Node.js." : locale === 'vi' ? "Có sẵn code mẫu cho cURL, Python và Node.js, tích hợp chỉ với vài dòng lệnh." : "cURL、Python、Node.jsのコード例があり、数行のコードですぐに接続可能です。"}
+                        </p>
+                      </div>
+                      <div className="p-4 rounded-xl border border-slate-200/90 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20">
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">
+                          {locale === 'en' ? "③ Granular Filters" : locale === 'vi' ? "③ Bộ lọc đa chiều" : "③ 柔軟なAPIクエリ"}
+                        </span>
+                        <p className="text-[10px] text-slate-400 leading-relaxed">
+                          {locale === 'en' ? "Query by prefecture, capital, headcount, and hiring/subsidy signals." : locale === 'vi' ? "Lọc chính xác theo tỉnh thành, vốn điều lệ, nhân sự và tín hiệu tăng trưởng." : "都道府県、資本金、従業員数、企業シグナルなど、多彩な条件で絞り込めます。"}
+                        </p>
+                      </div>
+                    </div>
+
+                    <Link
+                      href="/pricing"
+                      className="px-8 py-3 font-bold text-white bg-[#1B4F8A] hover:bg-[#163e6d] rounded-lg shadow-xs active:scale-95 transition-all text-xs flex items-center gap-2 mt-2 cursor-pointer"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      <span>{locale === 'en' ? "Upgrade to BUSINESS" : locale === 'vi' ? "Nâng cấp lên gói BUSINESS" : "BUSINESSプランにアップグレード"}</span>
+                    </Link>
+                  </div>
+                ) : (
+                  // Business/Enterprise UI
+                  <div className="flex flex-col gap-6">
+                    {/* Create Key Control */}
+                    <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 bg-slate-50 dark:bg-slate-900/25 border border-slate-200/90 dark:border-slate-800 p-4 rounded-xl">
+                      <div>
+                        <span className="text-xs font-bold text-slate-800 dark:text-slate-200 block mb-1">
+                          {locale === 'en' ? "Issue New API Key" : locale === 'vi' ? "Phát hành API Key mới" : "APIキーの新規発行"}
+                        </span>
+                        <p className="text-[10px] text-slate-400">
+                          {locale === 'en'
+                            ? "Generate a cryptographically secure token to authenticate your external applications."
+                            : locale === 'vi'
+                            ? "Tạo khóa bí mật chuẩn SHA-256 để xác thực an toàn từ ứng dụng bên ngoài."
+                            : "外部プログラムからの認証に使用するAPIキーを発行します。"}
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleCreateApiKey}
+                        disabled={generatingKey}
+                        className="px-5 py-2.5 font-bold text-white bg-[#1B4F8A] hover:bg-[#163e6d] disabled:opacity-50 rounded-lg text-xs shadow-xs active:scale-95 transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+                      >
+                        {generatingKey ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            <span>{locale === 'en' ? "Generating..." : locale === 'vi' ? "Đang tạo..." : "生成中..."}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Key className="w-3.5 h-3.5" />
+                            <span>{locale === 'en' ? "Generate API Key" : locale === 'vi' ? "Tạo API Key" : "APIキーを発行する"}</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Display New Raw Key Modal / Alert */}
+                    {newRawKey && (
+                      <div className="bg-amber-50 border border-amber-200 dark:bg-amber-950/20 dark:border-amber-900/40 rounded-xl p-5 flex flex-col gap-3 animate-in slide-in-from-top duration-300">
+                        <div className="flex items-start gap-2.5">
+                          <AlertTriangle className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
+                          <div>
+                            <span className="text-xs font-black text-amber-800 dark:text-amber-400 block mb-1">
+                              {locale === 'en'
+                                ? "【Important】 Your API Key has been generated. Please copy it now."
+                                : locale === 'vi'
+                                ? "【Quan trọng】 Khóa API của bạn đã được tạo. Hãy sao chép ngay bây giờ."
+                                : "【重要】APIキーが生成されました。必ずコピーしてください"}
+                            </span>
+                            <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                              {locale === 'en'
+                                ? "For security reasons, this raw token will never be displayed again. Store it securely in your environment variables or secret manager."
+                                : locale === 'vi'
+                                ? "Vì lý do bảo mật, chuỗi khóa này sẽ không bao giờ hiển thị lại sau khi bạn đóng thông báo này. Hãy lưu trữ an toàn."
+                                : "セキュリティ上の理由から、このAPIキーは画面を閉じると二度と表示されません。安全な場所にコピーして保存してください。"}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3 rounded-lg">
+                          <code className="text-xs font-mono font-bold text-[#1B4F8A] dark:text-blue-400 break-all flex-1 select-all">
+                            {newRawKey}
+                          </code>
+                          <button
+                            onClick={() => {
+                              navigator.clipboard.writeText(newRawKey);
+                              setCopiedKeyId("new");
+                              setTimeout(() => setCopiedKeyId(null), 2000);
+                            }}
+                            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer"
+                            title={locale === 'en' ? "Copy to clipboard" : locale === 'vi' ? "Sao chép vào bộ nhớ tạm" : "クリップボードにコピー"}
+                          >
+                            {copiedKeyId === "new" ? (
+                              <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                            ) : (
+                              <Copy className="w-4 h-4 text-slate-500" />
+                            )}
+                          </button>
+                        </div>
+                        <button
+                          onClick={() => setNewRawKey(null)}
+                          className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-[10px] font-bold w-fit self-end transition-colors cursor-pointer"
+                        >
+                          {locale === 'en' ? "I have saved my key — Close" : locale === 'vi' ? "Tôi đã lưu khóa — Đóng" : "コピー完了を確認して閉じる"}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* API Key List Table */}
+                    <div className="flex flex-col gap-2.5">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        {locale === 'en' ? "Active API Keys" : locale === 'vi' ? "Danh sách API Key đang hoạt động" : "アクティブなAPIキー一覧"}
+                      </span>
+
+                      {loadingApiKeys ? (
+                        <div className="py-8 text-center flex flex-col items-center justify-center gap-2 border border-slate-200/90 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900/10">
+                          <Loader2 className="w-6 h-6 animate-spin text-[#1B4F8A]" />
+                          <span className="text-[10px] text-slate-400">{locale === 'en' ? "Loading API keys..." : locale === 'vi' ? "Đang tải API key..." : "APIキーを読み込み中..."}</span>
+                        </div>
+                      ) : apiKeys.length === 0 ? (
+                        <div className="py-8 text-center border border-dashed border-slate-200/90 dark:border-slate-800 rounded-xl bg-white/20 dark:bg-slate-900/5 text-slate-400 text-xs">
+                          {locale === 'en'
+                            ? "No API keys created yet. Click 'Generate API Key' above to get started."
+                            : locale === 'vi'
+                            ? "Chưa có khóa API nào. Nhấn 'Tạo API Key' ở trên để bắt đầu."
+                            : "発行済みのAPIキーはありません。「APIキーを発行する」ボタンをクリックして開始してください。"}
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto border border-slate-200/90 dark:border-slate-800 rounded-xl bg-white dark:bg-slate-900/10">
+                          <table className="w-full text-left text-xs whitespace-nowrap">
+                            <thead className="bg-slate-50/80 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold text-[10px] uppercase tracking-wider">
+                              <tr>
+                                <th className="px-4 py-3">{locale === 'en' ? "Key Preview" : locale === 'vi' ? "Mã khóa (Rút gọn)" : "キー (プレビュー)"}</th>
+                                <th className="px-4 py-3">{locale === 'en' ? "Status" : locale === 'vi' ? "Trạng thái" : "ステータス"}</th>
+                                <th className="px-4 py-3">{locale === 'en' ? "Created (JST)" : locale === 'vi' ? "Ngày tạo (JST)" : "作成日時 (JST)"}</th>
+                                <th className="px-4 py-3">{locale === 'en' ? "Last Used (JST)" : locale === 'vi' ? "Dùng lần cuối (JST)" : "最終利用日時 (JST)"}</th>
+                                <th className="px-4 py-3">{locale === 'en' ? "Last Origin IP" : locale === 'vi' ? "IP kết nối gần nhất" : "最終接続元 IP"}</th>
+                                <th className="px-4 py-3 text-right">{locale === 'en' ? "Action" : locale === 'vi' ? "Hành động" : "操作"}</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-medium">
+                              {apiKeys.map((key) => {
+                                const createdJst = parseUTCDate(key.created_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" });
+                                const usedJst = key.last_used_at 
+                                  ? parseUTCDate(key.last_used_at).toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })
+                                  : (locale === 'en' ? "Unused" : locale === 'vi' ? "Chưa dùng" : "未使用");
+
+                                return (
+                                  <tr key={key.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/10">
+                                    <td className="px-4 py-3 font-mono font-bold text-slate-800 dark:text-slate-200">
+                                      kigyou_live_...{key.api_key_preview.replace(/^\.\.\./, '')}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      {key.status === "active" ? (
+                                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 text-[9px] font-bold">
+                                          {locale === 'en' ? "Active" : locale === 'vi' ? "Hoạt động" : "有効"}
+                                        </span>
+                                      ) : (
+                                        <span className="px-2 py-0.5 rounded-md bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 text-[9px] font-bold">
+                                          {locale === 'en' ? "Revoked" : locale === 'vi' ? "Đã vô hiệu" : "無効化済"}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-400 font-mono">{createdJst}</td>
+                                    <td className="px-4 py-3 text-slate-400 font-mono">{usedJst}</td>
+                                    <td className="px-4 py-3 text-slate-400 font-mono">{key.last_ip || "-"}</td>
+                                    <td className="px-4 py-3 text-right">
+                                      {key.status === "active" && (
+                                        <button
+                                          onClick={() => handleRevokeApiKey(key.id)}
+                                          className="px-2.5 py-1 text-[10px] font-bold text-rose-600 border border-rose-200 hover:bg-rose-50 dark:border-rose-900/40 dark:hover:bg-rose-950/20 rounded-lg transition-all cursor-pointer"
+                                        >
+                                          {locale === 'en' ? "Revoke" : locale === 'vi' ? "Vô hiệu hóa" : "無効化"}
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* API Quick Reference Documentation with interactive endpoint and code tabs */}
+                    <div className="border-t border-slate-100 dark:border-slate-800 pt-6 mt-2 flex flex-col gap-4">
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                        <Terminal className="w-4 h-4 text-[#1B4F8A]" />
+                        {locale === 'en' ? "API Quick Reference & Code Examples" : locale === 'vi' ? "Tài liệu API & Mẫu Code tương tác" : "API クイックリファレンス & コードサンプル"}
+                      </span>
+
+                      <div className="bg-[#0F1E36] text-slate-200 border border-blue-900/50 rounded-xl p-5 sm:p-6 font-mono text-xs flex flex-col gap-4 overflow-x-auto shadow-inner">
+                        <div>
+                          <span className="text-[10px] text-blue-300 block uppercase font-bold tracking-wider mb-1">API Base URL</span>
+                          <div className="bg-slate-950/80 p-2.5 rounded-lg border border-blue-900/40 text-blue-300 font-bold font-mono">
+                            {baseUrl}
+                          </div>
+                        </div>
+
+                        {/* Endpoint Selector Tabs */}
+                        <div className="flex flex-col gap-2 pt-2">
+                          <span className="text-[10px] text-blue-300 block uppercase font-bold tracking-wider">
+                            {locale === 'en' ? "Choose REST Endpoint" : locale === 'vi' ? "Chọn Endpoint REST" : "エンドポイントを選択"}
+                          </span>
+                          <div className="flex flex-wrap items-center gap-2">
+                            {[
+                              { id: "companies", label: "GET /api/v1/companies", desc: locale === 'en' ? "Search 5M+ Companies" : locale === 'vi' ? "Tìm kiếm 5M+ doanh nghiệp" : "企業DB検索" },
+                              { id: "quota", label: "GET /api/v1/quota", desc: locale === 'en' ? "Check Quota & Balance" : locale === 'vi' ? "Kiểm tra hạn mức & dung lượng" : "利用枠・残数照会" },
+                              { id: "signals", label: "GET /api/v1/signals", desc: locale === 'en' ? "Hiring & Business Signals" : locale === 'vi' ? "Tín hiệu tuyển dụng & dự thầu" : "企業購買シグナル" },
+                            ].map(ep => (
+                              <button
+                                key={ep.id}
+                                onClick={() => setSelectedEndpoint(ep.id as any)}
+                                className={`px-3 py-1.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer flex items-center gap-2 border ${
+                                  selectedEndpoint === ep.id
+                                    ? "bg-[#1B4F8A] text-white border-blue-400 shadow-xs"
+                                    : "bg-slate-800/80 text-slate-300 border-slate-700/80 hover:bg-slate-800 hover:text-white"
+                                }`}
+                              >
+                                <span>{ep.label}</span>
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-md ${
+                                  selectedEndpoint === ep.id ? "bg-[#163e6d] text-blue-100" : "bg-slate-900 text-slate-400"
+                                }`}>
+                                  {ep.desc}
+                                </span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Code Sample Language Tabs */}
+                        <div className="border-t border-slate-800 pt-3 flex flex-col gap-2">
+                          <div className="flex items-center gap-2">
+                            {[
+                              { id: "curl", label: "cURL" },
+                              { id: "python", label: "Python" },
+                              { id: "node", label: "Node.js" }
+                            ].map(t => (
+                              <button
+                                key={t.id}
+                                onClick={() => setCodeTab(t.id as any)}
+                                className={`px-3 py-1 text-[10px] font-bold rounded-lg transition-colors cursor-pointer ${
+                                  codeTab === t.id
+                                    ? "bg-[#1B4F8A] text-white"
+                                    : "bg-slate-800 text-slate-400 hover:text-white"
+                                }`}
+                              >
+                                {t.label}
+                              </button>
+                            ))}
+                          </div>
+
+                          <pre className="bg-slate-950/80 p-4 rounded-lg border border-blue-900/40 text-[11px] select-all font-mono leading-relaxed text-slate-200 overflow-x-auto">
+                            {getSnippet()}
+                          </pre>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
+                )}
+              </div>
+            </section>
+          );
+        })()}
 
         {/* Tab 7 Contents: Managed Companies */}
         {activeTab === "companies" && (
@@ -2400,7 +2772,10 @@ console.log(data);`
 
         {/* Tab 8 Contents: Form Marketing Outreach Campaigns */}
         {activeTab === "formCampaigns" && (
-          <FormCampaignsTab />
+          <FormCampaignsTab 
+            initialTargetCompanies={campaignInitialCompanies || undefined}
+            onClearInitialTarget={() => setCampaignInitialCompanies(null)}
+          />
         )}
 
       </main>
@@ -2415,8 +2790,8 @@ console.log(data);`
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => setShowUpsellModal(false)}
           />
-          <div className="relative w-full max-w-sm bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl z-10 flex flex-col gap-4 text-center">
-            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 text-blue-600 rounded-full flex items-center justify-center mx-auto shadow-xs border border-blue-200/60">
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 sm:p-7 shadow-2xl z-10 flex flex-col gap-4 text-center">
+            <div className="w-12 h-12 bg-blue-50 dark:bg-blue-950/40 text-[#1B4F8A] rounded-xl flex items-center justify-center mx-auto shadow-xs border border-blue-200/80">
               <Sparkles className="w-6 h-6" />
             </div>
             <div>
@@ -2428,7 +2803,7 @@ console.log(data);`
               </p>
             </div>
             
-            <div className="my-2 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-left text-xs border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1.5">
+            <div className="my-2 p-3.5 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-left text-xs border border-slate-200/90 dark:border-slate-800 flex flex-col gap-1.5">
               <div className="flex flex-col gap-1">
                 {[
                   { plan: "PROプラン", quota: "2,000行/月", price: "¥2,900" },
@@ -2438,7 +2813,7 @@ console.log(data);`
                   <div key={p.plan} className="flex items-center justify-between font-bold py-1.5 border-b border-slate-200/60 dark:border-slate-800 last:border-0">
                     <span className="text-slate-800 dark:text-slate-200">{p.plan}</span>
                     <div className="text-right">
-                      <span className="text-blue-600 dark:text-blue-400 font-extrabold">{p.price}/月</span>
+                      <span className="text-[#1B4F8A] dark:text-blue-400 font-extrabold">{p.price}/月</span>
                       <span className="text-[9px] text-slate-400 block">{p.quota}</span>
                     </div>
                   </div>
@@ -2449,7 +2824,7 @@ console.log(data);`
             <div className="flex flex-col gap-2">
               <Link
                 href="/pricing"
-                className="w-full py-3 text-xs font-bold text-center text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors block cursor-pointer"
+                className="w-full py-3 text-xs font-bold text-center text-white bg-[#1B4F8A] hover:bg-[#163e6d] rounded-lg shadow-xs transition-colors block cursor-pointer"
               >
                 料金プランを見る
               </Link>
@@ -2471,8 +2846,8 @@ console.log(data);`
             className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
             onClick={() => !cancellingSub && setShowCancelModal(false)}
           />
-          <div className="relative w-full max-w-sm bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl z-10 flex flex-col gap-4 text-center animate-in fade-in zoom-in-95 duration-200">
-            <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200/80 rounded-full flex items-center justify-center mx-auto shadow-xs">
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 sm:p-7 shadow-2xl z-10 flex flex-col gap-4 text-center animate-in fade-in zoom-in-95 duration-200">
+            <div className="w-12 h-12 bg-rose-50 dark:bg-rose-950/40 text-rose-600 border border-rose-200/80 rounded-xl flex items-center justify-center mx-auto shadow-xs">
               <Trash2 className="w-6 h-6" />
             </div>
             <div>
@@ -2486,7 +2861,7 @@ console.log(data);`
 
             {/* Quota Warning Message */}
             {quota && (
-              <div className="bg-rose-50 border border-rose-200/80 dark:bg-rose-950/20 dark:border-rose-900/30 rounded-2xl p-4 text-left flex flex-col gap-2 animate-in fade-in duration-300">
+              <div className="bg-rose-50 border border-rose-200/80 dark:bg-rose-950/20 dark:border-rose-900/30 rounded-xl p-4 text-left flex flex-col gap-2 animate-in fade-in duration-300">
                 <div className="flex gap-2 items-start text-xs font-bold text-rose-600 dark:text-rose-400">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>重要：残りの容量に関する警告</span>
@@ -2510,7 +2885,7 @@ console.log(data);`
               <button
                 onClick={handleCancelSubscription}
                 disabled={cancellingSub}
-                className="w-full py-3 text-xs font-bold text-center text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                className="w-full py-3 text-xs font-bold text-center text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-50 rounded-lg shadow-xs transition-colors flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
               >
                 {cancellingSub ? (
                   <>

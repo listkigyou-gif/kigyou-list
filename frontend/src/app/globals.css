@@ -162,4 +162,101 @@ body {
   animation: slide-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* ========================================================
+   JAPAN B2B DESIGN SYSTEM UTILITY CLASSES (信頼・明瞭・実用)
+   ======================================================== */
+.b2b-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  border-radius: 0.5rem;
+  background-color: #F1F5F9;
+  color: #1E293B;
+  border: 1px solid #E2E8F0;
+}
+.dark .b2b-kicker {
+  background-color: #1E293B;
+  color: #E2E8F0;
+  border-color: #334155;
+}
+
+.b2b-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E2E8F0;
+  border-radius: 0.75rem; /* 12px B2B crisp radius */
+  box-shadow: 0 1px 2px 0 rgba(15, 23, 42, 0.04);
+  transition: all 0.2s ease-in-out;
+}
+.b2b-card:hover {
+  border-color: #CBD5E1;
+  box-shadow: 0 4px 6px -1px rgba(15, 23, 42, 0.07);
+}
+.dark .b2b-card {
+  background-color: #161B22;
+  border-color: #30363D;
+  box-shadow: none;
+}
+.dark .b2b-card:hover {
+  border-color: #484F58;
+}
+
+.b2b-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  background-color: #1B4F8A;
+  border: 1px solid #143D6C;
+  border-radius: 0.5rem; /* 8px B2B button */
+  box-shadow: 0 1px 2px rgba(27, 79, 138, 0.2);
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+.b2b-btn-primary:hover {
+  background-color: #143D6C;
+}
+.b2b-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.b2b-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.625rem 1.25rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #1E293B;
+  background-color: #FFFFFF;
+  border: 1px solid #CBD5E1;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+.b2b-btn-secondary:hover {
+  background-color: #F8FAFC;
+  border-color: #94A3B8;
+  color: #0F172A;
+}
+.dark .b2b-btn-secondary {
+  background-color: #21262D;
+  border-color: #363B42;
+  color: #C9D1D9;
+}
+.dark .b2b-btn-secondary:hover {
+  background-color: #30363D;
+  color: #FFFFFF;
+}
+
+
 

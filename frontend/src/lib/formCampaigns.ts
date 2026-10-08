@@ -201,6 +201,31 @@ export async function initFormCampaignTables(): Promise<void> {
     );
   `;
 
+  const createCreditsSql = `
+    CREATE TABLE IF NOT EXISTS user_form_credits (
+      user_email TEXT PRIMARY KEY,
+      balance INTEGER DEFAULT 0,
+      total_purchased INTEGER DEFAULT 0,
+      total_used INTEGER DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
+  const createTransactionsSql = `
+    CREATE TABLE IF NOT EXISTS user_form_credit_transactions (
+      id TEXT PRIMARY KEY,
+      user_email TEXT NOT NULL,
+      amount INTEGER NOT NULL,
+      balance_after INTEGER NOT NULL,
+      type TEXT NOT NULL,
+      campaign_id TEXT,
+      campaign_name TEXT,
+      note TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `;
+
   if (DATABASE_URL && pgAvailable !== false) {
     try {
       const pool = getPGPool();
@@ -208,6 +233,8 @@ export async function initFormCampaignTables(): Promise<void> {
       try {
         await client.query(createTemplatesSql);
         await client.query(createCampaignsSql);
+        await client.query(createCreditsSql);
+        await client.query(createTransactionsSql);
         pgAvailable = true;
       } finally {
         client.release();
@@ -226,6 +253,8 @@ export async function initFormCampaignTables(): Promise<void> {
     const db = getSQLiteDB();
     db.exec(createTemplatesSql);
     db.exec(createCampaignsSql);
+    db.exec(createCreditsSql);
+    db.exec(createTransactionsSql);
   } catch (e) {
     console.error('Error initializing SQLite form campaign tables:', e);
   }
@@ -410,19 +439,70 @@ export async function saveUserCampaign(
     target_filters?: any;
     target_count?: number;
     cost_jpy?: number;
-    status?: "draft" | "pending_approval";
+    status?: "draft" | "pending_approval" | "pending_review";
   }
 ): Promise<FormCampaign> {
   const id = campaignData.id || `cmp_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
   const filtersJson = campaignData.target_filters 
     ? (typeof campaignData.target_filters === 'string' ? campaignData.target_filters : JSON.stringify(campaignData.target_filters))
     : null;
-  const targetCount = campaignData.target_count || 0;
-  const costJpy = campaignData.cost_jpy || 0;
-  const status = campaignData.status || 'draft';
+  const targetCount = Number(campaignData.target_count || 0);
+  const costJpy = Number(campaignData.cost_jpy || 0);
+  
+  // Normalize status
+  let status: "draft" | "pending_approval" = 'draft';
+  if (campaignData.status === 'pending_approval' || campaignData.status === 'pending_review') {
+    status = 'pending_approval';
+  }
 
-  const checkSql = `SELECT id FROM user_form_campaigns WHERE id = ? AND user_email = ?`;
+  const checkSql = `SELECT id, status, target_count, target_filters FROM user_form_campaigns WHERE id = ? AND user_email = ?`;
   const existing = await queryOne(checkSql, [id, email]);
+
+  // When editing an existing campaign, target conditions and counts are locked
+  const finalTargetCount = existing ? Number(existing.target_count || 0) : targetCount;
+  const finalFiltersJson = existing ? (existing.target_filters || filtersJson) : filtersJson;
+
+  // Credit wallet deduction logic:
+  // If moving to pending_approval from draft or new campaign, deduct credits
+  if (status === 'pending_approval') {
+    const isAlreadyPendingOrActive = existing && ['pending_approval', 'approved', 'processing'].includes(existing.status);
+    if (!isAlreadyPendingOrActive) {
+      if (finalTargetCount < 100) {
+        throw new Error("MIN_TARGET_100: 1キャンペーンあたりの配信件数は最低100件以上を指定してください（過剰申請の防止およびアプローチ効果担保のため）。");
+      }
+      if (!finalFiltersJson || finalFiltersJson === 'null' || finalFiltersJson === '{}' || finalFiltersJson === '""') {
+        throw new Error("TARGET_REQUIRED: 配信対象（ターゲット条件）が設定されていません。ターゲットを指定してください。");
+      }
+      const deducted = await deductFormCredits(email, finalTargetCount);
+      if (!deducted) {
+        const currentCredits = await getUserFormCredits(email);
+        throw new Error(`INSUFFICIENT_CREDITS: 保有クレジットが不足しています (必要: ${finalTargetCount} 件 / 保有: ${currentCredits.balance} 件)。クレジットを購入してください。`);
+      }
+      const after = await getUserFormCredits(email);
+      await recordCreditTransaction(email, {
+        amount: -finalTargetCount,
+        balance_after: after.balance,
+        type: 'reserve',
+        campaign_id: id,
+        campaign_name: campaignData.name,
+        note: `審査申請に伴う仮押さえ (${finalTargetCount.toLocaleString()}件)`
+      });
+    }
+  } else if (status === 'draft' && existing && existing.status === 'pending_approval') {
+    // Reverting from pending_approval to draft -> refund reserved credits
+    if (Number(existing.target_count) > 0) {
+      await refundFormCredits(email, Number(existing.target_count));
+      const after = await getUserFormCredits(email);
+      await recordCreditTransaction(email, {
+        amount: +Number(existing.target_count),
+        balance_after: after.balance,
+        type: 'refund',
+        campaign_id: id,
+        campaign_name: existing.name || campaignData.name,
+        note: `審査申請の取下げ（下書き復帰）による返還`
+      });
+    }
+  }
 
   if (existing) {
     const updateSql = `
@@ -443,8 +523,8 @@ export async function saveUserCampaign(
       campaignData.sender_website || null,
       campaignData.subject,
       campaignData.body,
-      filtersJson,
-      targetCount,
+      finalFiltersJson,
+      finalTargetCount,
       costJpy,
       status,
       id,
@@ -504,15 +584,68 @@ export async function saveUserCampaign(
 }
 
 export async function deleteUserCampaign(email: string, id: string): Promise<boolean> {
-  const sql = `DELETE FROM user_form_campaigns WHERE id = ? AND user_email = ? AND status = 'draft'`;
+  const checkSql = `SELECT id, name, target_count, status FROM user_form_campaigns WHERE id = ? AND user_email = ?`;
+  const existing = await queryOne(checkSql, [id, email]);
+  if (!existing) return false;
+
+  // Allow deleting draft, pending_approval, or rejected campaigns
+  // Disallow deleting active/completed campaigns ('processing', 'approved', 'completed')
+  if (!['draft', 'pending_approval', 'pending_review', 'rejected'].includes(existing.status)) {
+    return false;
+  }
+
+  // If campaign was pending approval, refund reserved credits to the user's wallet
+  if ((existing.status === 'pending_approval' || existing.status === 'pending_review') && Number(existing.target_count) > 0) {
+    await refundFormCredits(email, Number(existing.target_count));
+    const after = await getUserFormCredits(email);
+    await recordCreditTransaction(email, {
+      amount: +Number(existing.target_count),
+      balance_after: after.balance,
+      type: 'refund',
+      campaign_id: id,
+      campaign_name: existing.name || null,
+      note: `申請中キャンペーンの削除・取消による返還`
+    });
+  }
+
+  const sql = `DELETE FROM user_form_campaigns WHERE id = ? AND user_email = ?`;
   const count = await execute(sql, [id, email]);
+  return count > 0;
+}
+
+export async function revertCampaignToDraft(email: string, id: string): Promise<boolean> {
+  const checkSql = `SELECT id, name, target_count, status FROM user_form_campaigns WHERE id = ? AND user_email = ?`;
+  const existing = await queryOne(checkSql, [id, email]);
+  if (!existing) return false;
+
+  // Only allow reverting pending_approval campaigns
+  if (existing.status !== 'pending_approval') {
+    return false;
+  }
+
+  // Refund reserved credits
+  if (Number(existing.target_count) > 0) {
+    await refundFormCredits(email, Number(existing.target_count));
+    const after = await getUserFormCredits(email);
+    await recordCreditTransaction(email, {
+      amount: +Number(existing.target_count),
+      balance_after: after.balance,
+      type: 'refund',
+      campaign_id: id,
+      campaign_name: existing.name || null,
+      note: `審査申請の取下げ（下書き復帰）による返還`
+    });
+  }
+
+  const updateSql = `UPDATE user_form_campaigns SET status = 'draft', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_email = ?`;
+  const count = await execute(updateSql, [id, email]);
   return count > 0;
 }
 
 // ==========================================
 // ADMIN MODERATION
 // ==========================================
-export async function getAdminFormCampaigns(statusFilter?: string): Promise<FormCampaign[]> {
+export async function getAdminFormCampaigns(statusFilter?: string): Promise<any[]> {
   let sql = `SELECT * FROM user_form_campaigns`;
   const params: any[] = [];
   if (statusFilter && statusFilter !== 'all') {
@@ -522,19 +655,396 @@ export async function getAdminFormCampaigns(statusFilter?: string): Promise<Form
   sql += ` ORDER BY created_at DESC LIMIT 100`;
 
   const rows = await queryAll(sql, params);
-  return rows.map(r => ({ ...r, created_at: String(r.created_at), updated_at: String(r.updated_at) }));
+  return rows.map(r => ({
+    ...r,
+    title: r.name,
+    pitch_subject: r.subject,
+    pitch_body: r.body,
+    sender_company_name: r.sender_company,
+    created_at: String(r.created_at),
+    updated_at: String(r.updated_at)
+  }));
 }
 
 export async function adminUpdateCampaignStatus(
   campaignId: string,
   newStatus: 'approved' | 'rejected' | 'completed',
-  reason?: string
+  reason?: string,
+  metrics?: { success_count?: number; skipped_count?: number; report_file_url?: string }
 ): Promise<boolean> {
+  const checkSql = `SELECT user_email, name, target_count, status, success_count FROM user_form_campaigns WHERE id = ?`;
+  const cmp = await queryOne(checkSql, [campaignId]);
+  if (!cmp) return false;
+
+  const targetCount = Number(cmp.target_count || 0);
+
+  // If campaign is rejected by admin, refund reserved credits back to the customer's wallet
+  if (newStatus === 'rejected' && (cmp.status === 'pending_approval' || cmp.status === 'approved')) {
+    if (targetCount > 0) {
+      await refundFormCredits(cmp.user_email, targetCount);
+      const after = await getUserFormCredits(cmp.user_email);
+      await recordCreditTransaction(cmp.user_email, {
+        amount: +targetCount,
+        balance_after: after.balance,
+        type: 'refund',
+        campaign_id: campaignId,
+        campaign_name: cmp.name || null,
+        note: `管理者による却下・差し戻しに伴う全額返還`
+      });
+    }
+  }
+
+  // If campaign is marked completed (Approach 1: Auto-settle & Refund unsent targets)
+  let successCount = metrics?.success_count !== undefined ? Number(metrics.success_count) : Number(cmp.success_count || 0);
+  let skippedCount = metrics?.skipped_count !== undefined ? Number(metrics.skipped_count) : Math.max(0, targetCount - successCount);
+  let reportUrl = metrics?.report_file_url || null;
+
+  if (newStatus === 'completed' && ['approved', 'processing', 'pending_approval', 'sending'].includes(cmp.status)) {
+    const delivered = Math.min(successCount, targetCount);
+    const unused = Math.max(0, targetCount - delivered);
+
+    // Record delivered transaction
+    if (delivered > 0) {
+      const current = await getUserFormCredits(cmp.user_email);
+      await recordCreditTransaction(cmp.user_email, {
+        amount: -delivered,
+        balance_after: current.balance,
+        type: 'delivered',
+        campaign_id: campaignId,
+        campaign_name: cmp.name || null,
+        note: `配信完了による実消化（送信成功: ${delivered} 件）`
+      });
+    }
+
+    // Refund unused portion (due to Captcha, Disclaimer, Timeout)
+    if (unused > 0) {
+      await refundFormCredits(cmp.user_email, unused);
+      const after = await getUserFormCredits(cmp.user_email);
+      await recordCreditTransaction(cmp.user_email, {
+        amount: +unused,
+        balance_after: after.balance,
+        type: 'refund',
+        campaign_id: campaignId,
+        campaign_name: cmp.name || null,
+        note: `配信完了時の未達分返還（CAPTCHA・営業禁止等によるスキップ: ${unused} 件）`
+      });
+    }
+  }
+
   const sql = `
     UPDATE user_form_campaigns
-    SET status = ?, rejection_reason = ?, updated_at = CURRENT_TIMESTAMP
+    SET status = ?, 
+        rejection_reason = ?, 
+        success_count = COALESCE(?, success_count),
+        skipped_count = COALESCE(?, skipped_count),
+        report_file_url = COALESCE(?, report_file_url),
+        updated_at = CURRENT_TIMESTAMP
     WHERE id = ?
   `;
-  const count = await execute(sql, [newStatus, reason || null, campaignId]);
+  const count = await execute(sql, [
+    newStatus, 
+    reason || null, 
+    metrics?.success_count !== undefined ? metrics.success_count : null,
+    metrics?.skipped_count !== undefined ? metrics.skipped_count : null,
+    reportUrl,
+    campaignId
+  ]);
   return count > 0;
 }
+
+// ==========================================
+// FORM CREDIT WALLET SYSTEM (Ví Tín Dụng Gửi Form)
+// ==========================================
+export interface UserFormCredits {
+  user_email: string;
+  balance: number;
+  reserved: number; // Credits held for pending_approval campaigns
+  total_purchased: number;
+  total_used: number; // Actual forms sent
+}
+
+export async function getUserFormCredits(email: string): Promise<UserFormCredits> {
+  await initFormCampaignTables();
+  const sql = `SELECT user_email, balance, total_purchased, total_used FROM user_form_credits WHERE user_email = ?`;
+  const row = await queryOne(sql, [email]);
+  
+  // Calculate reserved credits in pending_approval
+  const reservedRow = await queryOne(
+    `SELECT COALESCE(SUM(target_count), 0) as reserved FROM user_form_campaigns WHERE user_email = ? AND status = 'pending_approval'`,
+    [email]
+  );
+  const reserved = Number(reservedRow?.reserved || 0);
+
+  // Calculate actual delivered forms
+  const sentRow = await queryOne(
+    `SELECT COALESCE(SUM(success_count), 0) as sent FROM user_form_campaigns WHERE user_email = ?`,
+    [email]
+  );
+  const realSent = Number(sentRow?.sent || 0);
+
+  if (!row) {
+    return {
+      user_email: email,
+      balance: 0,
+      reserved,
+      total_purchased: 0,
+      total_used: realSent
+    };
+  }
+  return {
+    user_email: row.user_email,
+    balance: Number(row.balance || 0),
+    reserved,
+    total_purchased: Number(row.total_purchased || 0),
+    total_used: realSent
+  };
+}
+
+export async function addFormCredits(email: string, amount: number): Promise<number> {
+  await initFormCampaignTables();
+  const current = await getUserFormCredits(email);
+  const newBalance = current.balance + amount;
+  const newPurchased = current.total_purchased + amount;
+
+  const checkSql = `SELECT user_email FROM user_form_credits WHERE user_email = ?`;
+  const existing = await queryOne(checkSql, [email]);
+
+  if (existing) {
+    const updateSql = `
+      UPDATE user_form_credits
+      SET balance = ?, total_purchased = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE user_email = ?
+    `;
+    await execute(updateSql, [newBalance, newPurchased, email]);
+  } else {
+    const insertSql = `
+      INSERT INTO user_form_credits (user_email, balance, total_purchased, total_used, created_at, updated_at)
+      VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `;
+    await execute(insertSql, [email, newBalance, newPurchased]);
+  }
+
+  await recordCreditTransaction(email, {
+    amount: +amount,
+    balance_after: newBalance,
+    type: 'charge',
+    note: 'クレジット購入・チャージ'
+  });
+
+  return newBalance;
+}
+
+export async function deductFormCredits(email: string, amount: number): Promise<boolean> {
+  await initFormCampaignTables();
+  const current = await getUserFormCredits(email);
+  if (current.balance < amount) {
+    return false;
+  }
+  const newBalance = Math.max(0, current.balance - amount);
+
+  const updateSql = `
+    UPDATE user_form_credits
+    SET balance = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE user_email = ?
+  `;
+  const affected = await execute(updateSql, [newBalance, email]);
+  return affected > 0;
+}
+
+export async function refundFormCredits(email: string, amount: number): Promise<number> {
+  await initFormCampaignTables();
+  const current = await getUserFormCredits(email);
+  const newBalance = current.balance + amount;
+
+  const updateSql = `
+    UPDATE user_form_credits
+    SET balance = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE user_email = ?
+  `;
+  await execute(updateSql, [newBalance, email]);
+  return newBalance;
+}
+
+export async function getAllUserFormCredits(): Promise<Record<string, UserFormCredits>> {
+  await initFormCampaignTables();
+  const sql = `SELECT user_email, balance, total_purchased, total_used FROM user_form_credits`;
+  const rows = await queryAll(sql);
+  const map: Record<string, UserFormCredits> = {};
+  for (const r of rows) {
+    const reservedRow = await queryOne(
+      `SELECT COALESCE(SUM(target_count), 0) as reserved FROM user_form_campaigns WHERE user_email = ? AND status = 'pending_approval'`,
+      [r.user_email]
+    );
+    const sentRow = await queryOne(
+      `SELECT COALESCE(SUM(success_count), 0) as sent FROM user_form_campaigns WHERE user_email = ?`,
+      [r.user_email]
+    );
+    map[r.user_email] = {
+      user_email: r.user_email,
+      balance: Number(r.balance || 0),
+      reserved: Number(reservedRow?.reserved || 0),
+      total_purchased: Number(r.total_purchased || 0),
+      total_used: Number(sentRow?.sent || 0)
+    };
+  }
+  return map;
+}
+
+export async function adminSetFormCredits(
+  email: string, 
+  balance: number, 
+  totalPurchased?: number
+): Promise<boolean> {
+  await initFormCampaignTables();
+  const current = await getUserFormCredits(email);
+  const safeBalance = Math.max(0, Math.floor(balance));
+  const newPurchased = typeof totalPurchased === 'number' 
+    ? Math.max(0, Math.floor(totalPurchased)) 
+    : Math.max(current.total_purchased, safeBalance);
+
+  const checkSql = `SELECT user_email FROM user_form_credits WHERE user_email = ?`;
+  const existing = await queryOne(checkSql, [email]);
+
+  if (existing) {
+    const updateSql = `
+      UPDATE user_form_credits
+      SET balance = ?, total_purchased = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE user_email = ?
+    `;
+    await execute(updateSql, [safeBalance, newPurchased, email]);
+  } else {
+    const insertSql = `
+      INSERT INTO user_form_credits (user_email, balance, total_purchased, total_used, created_at, updated_at)
+      VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `;
+    await execute(insertSql, [email, safeBalance, newPurchased]);
+  }
+  return true;
+}
+
+// ==========================================
+// CREDIT TRANSACTION LOGS & AUDIT TRAIL
+// ==========================================
+export interface FormCreditTransaction {
+  id: string;
+  user_email: string;
+  amount: number;
+  balance_after: number;
+  type: 'charge' | 'reserve' | 'refund' | 'delivered';
+  campaign_id: string | null;
+  campaign_name: string | null;
+  note: string | null;
+  created_at: string;
+}
+
+export async function recordCreditTransaction(
+  email: string,
+  data: {
+    amount: number;
+    balance_after: number;
+    type: 'charge' | 'reserve' | 'refund' | 'delivered';
+    campaign_id?: string | null;
+    campaign_name?: string | null;
+    note?: string | null;
+  }
+): Promise<void> {
+  try {
+    await initFormCampaignTables();
+    const id = `tx_${Date.now()}_${crypto.randomBytes(3).toString('hex')}`;
+    const insertSql = `
+      INSERT INTO user_form_credit_transactions 
+      (id, user_email, amount, balance_after, type, campaign_id, campaign_name, note, created_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+    `;
+    await execute(insertSql, [
+      id,
+      email,
+      data.amount,
+      data.balance_after,
+      data.type,
+      data.campaign_id || null,
+      data.campaign_name || null,
+      data.note || null
+    ]);
+  } catch (err) {
+    console.error("Failed to record credit transaction:", err);
+  }
+}
+
+export async function getUserCreditTransactions(
+  email: string, 
+  limit: number = 100
+): Promise<FormCreditTransaction[]> {
+  await initFormCampaignTables();
+  const sql = `
+    SELECT * FROM user_form_credit_transactions
+    WHERE user_email = ?
+    ORDER BY created_at DESC
+    LIMIT ?
+  `;
+  const rows = await queryAll(sql, [email, limit]);
+  return rows.map(r => ({
+    id: String(r.id),
+    user_email: String(r.user_email),
+    amount: Number(r.amount || 0),
+    balance_after: Number(r.balance_after || 0),
+    type: r.type,
+    campaign_id: r.campaign_id || null,
+    campaign_name: r.campaign_name || null,
+    note: r.note || null,
+    created_at: String(r.created_at)
+  }));
+}
+
+export async function submitCampaignForApproval(
+  email: string, 
+  id: string
+): Promise<{ success: boolean; error?: string }> {
+  await initFormCampaignTables();
+  const checkSql = `SELECT * FROM user_form_campaigns WHERE id = ? AND user_email = ?`;
+  const existing = await queryOne(checkSql, [id, email]);
+  if (!existing) return { success: false, error: "Campaign not found" };
+
+  if (existing.status !== 'draft' && existing.status !== 'rejected') {
+    return { success: false, error: "Campaign is already submitted or approved." };
+  }
+
+  const targetCount = Number(existing.target_count || 0);
+  if (targetCount < 100) {
+    return { success: false, error: "MIN_TARGET_100: 1キャンペーンあたりの配信件数は最低100件以上必要です。" };
+  }
+
+  const currentCredits = await getUserFormCredits(email);
+  if (currentCredits.balance < targetCount) {
+    return { 
+      success: false, 
+      error: `INSUFFICIENT_CREDITS: 保有クレジット残高が不足しています (必要: ${targetCount.toLocaleString()} 件 / 保有: ${currentCredits.balance.toLocaleString()} 件)。クレジットを購入してください。` 
+    };
+  }
+
+  const deducted = await deductFormCredits(email, targetCount);
+  if (!deducted) {
+    return { success: false, error: "クレジットの差し引きに失敗しました。" };
+  }
+
+  const updateSql = `
+    UPDATE user_form_campaigns 
+    SET status = 'pending_approval', rejection_reason = null, updated_at = CURRENT_TIMESTAMP 
+    WHERE id = ? AND user_email = ?
+  `;
+  await execute(updateSql, [id, email]);
+
+  const after = await getUserFormCredits(email);
+  await recordCreditTransaction(email, {
+    amount: -targetCount,
+    balance_after: after.balance,
+    type: 'reserve',
+    campaign_id: id,
+    campaign_name: existing.name || null,
+    note: `審査申請に伴う仮押さえ (${targetCount.toLocaleString()}件)`
+  });
+
+  return { success: true };
+}
+
+

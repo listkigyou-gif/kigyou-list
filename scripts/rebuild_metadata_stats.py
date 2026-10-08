@@ -235,6 +235,13 @@ def rebuild_metadata():
     sig_map = {row[0]: row[1] for row in sig_rows}
     print(f"Signal counts calculated in {time.time() - t_sigs:.2f} seconds.")
     
+    cursor.execute("SELECT count(1) FROM companies WHERE contact_form_url IS NOT NULL AND contact_form_url != '';")
+    forms_cnt = cursor.fetchone()[0]
+    cursor.execute("SELECT count(1) FROM companies WHERE email_address IS NOT NULL AND email_address != '';")
+    emails_cnt = cursor.fetchone()[0]
+    cursor.execute("SELECT count(1) FROM companies WHERE website_url IS NOT NULL AND website_url != '';")
+    websites_cnt = cursor.fetchone()[0]
+
     cursor.execute("DELETE FROM database_stats;")
     cursor.executemany("""
         INSERT INTO database_stats (stat_key, stat_value)
@@ -248,7 +255,10 @@ def rebuild_metadata():
         ("signal_bidding", sig_map.get("調達案件", 0)),
         ("signal_award", sig_map.get("表彰", 0)),
         ("signal_certification", sig_map.get("届出認定", 0)),
-        ("signal_patent", sig_map.get("特許", 0))
+        ("signal_patent", sig_map.get("特許", 0)),
+        ("signal_contact_form", forms_cnt),
+        ("signal_email", emails_cnt),
+        ("signal_website", websites_cnt)
     ])
     
     # 7. Populate Sitemap Companies

@@ -25,8 +25,8 @@ export const Footer: React.FC = () => {
           <LocaleLink href="/pricing" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
             {t.footer.pricing}
           </LocaleLink>
-          <LocaleLink href="/blog" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
-            {t.footer.blog}
+          <LocaleLink href="/form-marketing" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+            {t.header.formDm}
           </LocaleLink>
           <LocaleLink href="/terms" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
             {t.footer.terms}

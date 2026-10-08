@@ -418,24 +418,24 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
         {isLoggedIn && (
           <Link
             href={`/${locale}/dashboard?tab=exports`}
-            className="px-4 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 dark:text-slate-200 dark:hover:text-white bg-white hover:bg-slate-50 border border-slate-200 hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700 rounded-xl transition-all shadow-sm flex items-center gap-1.5 shrink-0 active:scale-[0.98]"
+            className="px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white bg-white hover:bg-slate-50 border border-slate-300 dark:bg-slate-800 dark:border-slate-700 rounded-lg transition-all shadow-2xs flex items-center gap-1.5 shrink-0 active:scale-[0.98]"
           >
-            <History className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+            <History className="w-3.5 h-3.5 text-slate-400" />
             <span>{d.history}</span>
           </Link>
         )}
         <button
           onClick={handleExportClick}
           disabled={loading || totalCount <= 0}
-          className={`px-4 py-2 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 border border-emerald-500/10 rounded-xl shadow-md shadow-emerald-500/10 hover:shadow-emerald-500/20 active:scale-[0.98] transition-all flex items-center gap-2 shrink-0 ${(loading || totalCount <= 0) ? "opacity-50 cursor-not-allowed active:scale-100" : ""
+          className={`px-3.5 py-2 text-xs font-bold text-slate-800 dark:text-slate-100 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-750 border border-slate-300 dark:border-slate-700 rounded-lg shadow-2xs active:scale-[0.98] transition-all flex items-center gap-1.5 shrink-0 cursor-pointer ${(loading || totalCount <= 0) ? "opacity-50 cursor-not-allowed active:scale-100" : ""
             }`}
         >
           {loading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
+            <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-500" />
           ) : (
-            <Download className="w-4 h-4" />
+            <Download className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
           )}
-          {statusMessage || d.downloadBtn}
+          <span>{statusMessage || d.downloadBtn}</span>
         </button>
       </div>
 
@@ -490,7 +490,7 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                   onClick={() => setShowConfirmModal(false)}
                   className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
                 >
-                  <span>{locale === 'ja' ? 'フォーム営業代行の詳細・料金を見る →' : locale === 'vi' ? 'Xem chi tiết dịch vụ gửi form →' : 'View Form DM Service Details →'}</span>
+                  <span>{locale === 'ja' ? 'フォーム自動営業の詳細・料金を見る →' : locale === 'vi' ? 'Xem chi tiết dịch vụ gửi Form tự động →' : 'View Automated Form DM Details →'}</span>
                 </Link>
               </div>
 
@@ -525,15 +525,15 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
             </button>
 
             {/* Premium Package Options */}
-            {/* DFY Form Outreach Alternative */}
+            {/* Automated Form Outreach Alternative */}
             <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-indigo-200/80 dark:border-indigo-850 text-left flex items-center justify-between gap-3">
               <div>
                 <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300 font-bold text-xs">
                   <Send className="w-3.5 h-3.5 text-indigo-500" />
-                  <span>{locale === 'ja' ? 'リスト購入不要！フォーム送信代行（丸投げ）' : locale === 'vi' ? 'Không cần mua data! Gói gửi form trọn gói' : 'No data purchase needed! DFY Form Outreach'}</span>
+                  <span>{locale === 'ja' ? 'リスト購入不要！フォーム自動営業（セルフ配信）' : locale === 'vi' ? 'Không cần mua data! Tự động gửi Form tiếp cận' : 'No data purchase needed! Automated Form Outreach'}</span>
                 </div>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  {locale === 'ja' ? 'リスト選定・送信・レポート納品まで丸投げ。1件20円〜' : locale === 'vi' ? 'Gửi form trọn gói từ A-Z, chỉ từ 20 JPY/form' : 'Full-service outreach starting from 20 JPY/form'}
+                  {locale === 'ja' ? '絞り込んだターゲット企業へ完全自動で配信。1件13.8円〜' : locale === 'vi' ? 'Tự động tiếp cận danh sách đã lọc, chỉ từ 13.8 JPY/form' : 'Automated outreach to filtered lists from 13.8 JPY/form'}
                 </p>
               </div>
               <Link
@@ -541,7 +541,7 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                 onClick={() => setShowBuyModal(false)}
                 className="shrink-0 px-3 py-1.5 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all shadow-xs"
               >
-                {locale === 'ja' ? '代行プラン' : locale === 'vi' ? 'Xem gói' : 'View Plan'}
+                {locale === 'ja' ? '自動配信プラン' : locale === 'vi' ? 'Gói gửi tự động' : 'View Plan'}
               </Link>
             </div>
 

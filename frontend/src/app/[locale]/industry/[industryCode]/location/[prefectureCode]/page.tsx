@@ -42,17 +42,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const isEn = locale === 'en';
   const isVi = locale === 'vi';
 
+  const pageTitle = isVi
+    ? `Danh sách công ty ${industryMappedName} tại ${prefName} (Mới nhất 2026) | Kigyou-list`
+    : isEn
+    ? `${prefName} ${industryMappedName} Companies (2026 List) | Kigyou-list`
+    : `${prefName}の${industryMappedName}企業一覧（2026年最新） | Kigyou-list`;
+
+  const pageDesc = isVi
+    ? `Duyệt danh bạ các doanh nghiệp hoạt động trong lĩnh vực ${industryMappedName} tại ${prefName}, Nhật Bản. Chi tiết thông tin liên hệ, mã số thuế, số điện thoại, quy mô nhân sự, vốn điều lệ và các tín hiệu tuyển dụng.`
+    : isEn
+    ? `Browse ${prefName} ${industryMappedName} company list. Details include address, telephone, capital, employee counts, current hiring status, and historical subsidies.`
+    : `${prefName}で稼働している${industryMappedName}の企業データベースです。企業名、電話番号、登記住所、資本金、従業員数、最新の採用活動、補助金受給履歴などの購買シグナルを網羅しています。`;
+
+  const ogLocale = isEn ? 'en_US' : isVi ? 'vi_VN' : 'ja_JP';
+
   return {
-    title: isVi
-      ? `Danh sách công ty ${industryMappedName} tại ${prefName} (Mới nhất 2026) | Kigyou-list`
-      : isEn
-      ? `${prefName} ${industryMappedName} Companies (2026 List) | Kigyou-list`
-      : `${prefName}の${industryMappedName}企業一覧（2026年最新） | Kigyou-list`,
-    description: isVi
-      ? `Duyệt danh bạ các doanh nghiệp hoạt động trong lĩnh vực ${industryMappedName} tại ${prefName}, Nhật Bản. Chi tiết thông tin liên hệ, mã số thuế, số điện thoại, quy mô nhân sự, vốn điều lệ và các tín hiệu tuyển dụng.`
-      : isEn
-      ? `Browse ${prefName} ${industryMappedName} company list. Details include address, telephone, capital, employee counts, current hiring status, and historical subsidies.`
-      : `${prefName}で稼働している${industryMappedName}の企業データベースです。企業名、電話番号、登記住所、資本金、従業員数、最新の採用活動、補助金受給履歴などの購買シグナルを網羅しています。`,
+    title: pageTitle,
+    description: pageDesc,
     keywords: isVi
       ? [`${prefName} ${industryMappedName}`, `danh sách công ty ${prefName}`, `danh bạ doanh nghiệp ${industryMappedName}`]
       : isEn
@@ -64,8 +70,31 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
         ja: `/ja/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
         en: `/en/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
         vi: `/vi/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
+        'x-default': `/ja/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
       }
-    }
+    },
+    openGraph: {
+      title: pageTitle,
+      description: pageDesc,
+      url: `https://kigyoulist.com/${locale}/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
+      siteName: 'Kigyou-list',
+      locale: ogLocale,
+      type: 'website',
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: pageTitle,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: pageTitle,
+      description: pageDesc,
+      images: ['/og-image.png'],
+    },
   };
 }
 

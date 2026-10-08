@@ -1,6 +1,20 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [
+      {
+        source: '/:locale(ja|en|vi)/blog/:path*',
+        destination: '/:locale/form-marketing',
+        permanent: true,
+      },
+      {
+        source: '/:locale(ja|en|vi)/blog',
+        destination: '/:locale/form-marketing',
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return [
       {

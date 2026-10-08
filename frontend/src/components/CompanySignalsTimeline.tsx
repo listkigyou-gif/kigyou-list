@@ -73,51 +73,51 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
       case '求人あり':
         return {
           title: t.company.signalTypes.hiring,
-          iconColor: "bg-emerald-500 text-white",
+          iconColor: "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/70",
           IconComponent: Briefcase,
         };
       case '補助金受給':
         return {
           title: t.company.signalTypes.subsidy,
-          iconColor: "bg-orange-500 text-white",
+          iconColor: "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/70 dark:border-amber-800/70",
           IconComponent: DollarSign,
         };
       case '調達案件':
         return {
           title: t.company.signalTypes.bidding,
-          iconColor: "bg-blue-500 text-white",
+          iconColor: "bg-blue-50 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200/70 dark:border-blue-800/70",
           IconComponent: DollarSign,
         };
       case '表彰':
         return {
           title: t.company.signalTypes.awards,
-          iconColor: "bg-rose-500 text-white",
+          iconColor: "bg-purple-50 text-purple-700 dark:bg-purple-950/40 dark:text-purple-300 border border-purple-200/70 dark:border-purple-800/70",
           IconComponent: Award,
         };
       case '届出認定':
         return {
           title: t.company.signalTypes.certifications,
-          iconColor: "bg-teal-500 text-white",
+          iconColor: "bg-teal-50 text-teal-700 dark:bg-teal-950/40 dark:text-teal-300 border border-teal-200/70 dark:border-teal-800/70",
           IconComponent: Award,
         };
       case '特許':
         return {
           title: t.company.signalTypes.patents,
-          iconColor: "bg-amber-500 text-white",
+          iconColor: "bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300 border border-sky-200/70 dark:border-sky-800/70",
           IconComponent: Lightbulb,
         };
       default:
         const translatedType = type === 'その他' ? (locale === 'vi' ? 'Khác' : locale === 'en' ? 'Other' : 'その他') : type;
         return {
           title: t.company.signalTypes.other.replace("{type}", translatedType),
-          iconColor: "bg-slate-500 text-white",
+          iconColor: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/70",
           IconComponent: FileText,
         };
     }
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       {Object.entries(groupedSignals).map(([type, list]) => {
         const isExpanded = !!expandedGroups[type];
         const meta = getGroupMetadata(type);
@@ -128,7 +128,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
         return (
           <div 
             key={type} 
-            className="border border-slate-200 dark:border-slate-800 rounded-2xl overflow-hidden bg-white dark:bg-[#1C2128]/25 shadow-sm"
+            className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden bg-white dark:bg-[#1C2128]/25 shadow-2xs"
           >
             {/* Group Header (Accordion Toggle) */}
             <button
@@ -137,7 +137,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
               aria-expanded={isExpanded}
             >
               <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-xl ${meta.iconColor} flex items-center justify-center shadow-sm`}>
+                <div className={`w-8 h-8 rounded-lg ${meta.iconColor} flex items-center justify-center shrink-0`}>
                   <Icon className="w-4 h-4" />
                 </div>
                 <div className="text-left">

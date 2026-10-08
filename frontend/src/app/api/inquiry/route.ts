@@ -10,6 +10,8 @@ import {
   isUserCompanyOwner,
   ALLOWED_EDIT_FIELDS 
 } from "@/lib/db";
+import { isAdmin, isAdminEmail } from "@/lib/adminAuth";
+import { revalidatePath } from "next/cache";
 
 async function sendNotificationEmail(
   toEmail: string, 
@@ -64,11 +66,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: true, message: "お問い合わせの送信が完了しました。" });
     }
 
-    // 2. Extract IP and Rate Limit
+    // Check if requester is Administrator
+    const isRequestAdmin = 
+      isAdmin(request) || 
+      isAdminEmail(requester_email) || 
+      isAdminEmail(request.headers.get("x-admin-email"));
+
+    // 2. Extract IP and Rate Limit (Skip for admin)
     const forwardedFor = request.headers.get("x-forwarded-for");
     const ip = forwardedFor ? forwardedFor.split(",")[0] : "unknown_ip";
     
-    if (ip !== "unknown_ip") {
+    if (!isRequestAdmin && ip !== "unknown_ip") {
       const allowed = await checkRateLimit(ip);
       if (!allowed) {
         return NextResponse.json({ 
@@ -79,8 +87,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // If General / Enterprise API / Partnership inquiry
-    if (type === "general" || type === "api" || type === "partner") {
+    // If General / Enterprise API / Partnership / Form Marketing / Billing inquiry
+    if (type === "general" || type === "api" || type === "partner" || type === "form_marketing" || type === "billing" || type === "enterprise") {
       if (!requester_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requester_email)) {
         return NextResponse.json({ 
           error: locale === "vi" ? "Vui lòng nhập địa chỉ email hợp lệ." : "有効なメールアドレスを入力してください。" 
@@ -107,7 +115,12 @@ export async function POST(request: Request) {
 
       // Send alert to admin
       const adminEmails = (process.env.ADMIN_EMAILS || "trungkim8694@gmail.com,listkigyou@gmail.com").split(",");
-      const typeLabel = type === "api" ? "法人API・データ購入" : type === "partner" ? "業務提携・広告" : "一般お問い合わせ";
+      const typeLabel = 
+        type === "form_marketing" ? "フォーム営業・配信代行相談" :
+        type === "api" ? "法人API・データ一括購入" : 
+        type === "billing" || type === "enterprise" ? "料金・見積・請求書払い" :
+        type === "partner" ? "業務提携・広告" : 
+        "一般お問い合わせ";
       for (const adm of adminEmails) {
         await sendNotificationEmail(
           adm.trim(),
@@ -173,9 +186,9 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Verify Turnstile CAPTCHA if configured
+    // Verify Turnstile CAPTCHA if configured (Skip for admin)
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
-    if (turnstileSecret && turnstileToken) {
+    if (!isRequestAdmin && turnstileSecret && turnstileToken) {
       const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
@@ -198,8 +211,8 @@ export async function POST(request: Request) {
     // CASE A: UNPUBLISH / HIDE REQUEST (Auto-Approved with Rollback)
     // -------------------------------------------------------------
     if (type === "hide") {
-      // Check if verified owner or if OTP is required for requester
-      const isOwner = await isUserCompanyOwner(requester_email, corporate_number);
+      // Check if verified owner or if requester is admin
+      const isOwner = isRequestAdmin || await isUserCompanyOwner(requester_email, corporate_number);
       if (!isOwner) {
         if (!otp_code) {
           return NextResponse.json({ 
@@ -356,15 +369,15 @@ export async function POST(request: Request) {
       }
 
       const currentCompany = await getCompanyByNumber(corporate_number);
-      const isOwner = await isUserCompanyOwner(requester_email, corporate_number);
+      const isOwner = isRequestAdmin || await isUserCompanyOwner(requester_email, corporate_number);
 
       // Check if email_address is being changed/updated
       const currentEmail = (currentCompany?.email_address || "").trim().toLowerCase();
       const newEmail = (activeUpdates.email_address || "").trim().toLowerCase();
       const isEmailChanging = Boolean(newEmail && newEmail !== currentEmail);
 
-      // RULE 1: Sửa email bắt buộc nhập OTP gửi về chính email mới đó
-      if (isEmailChanging) {
+      // RULE 1: Sửa email bắt buộc nhập OTP gửi về chính email mới đó (Admin bypasses OTP)
+      if (isEmailChanging && !isRequestAdmin) {
         const emailOtp = body.email_otp_code || body.otp_code;
         if (!emailOtp) {
           return NextResponse.json({
@@ -393,7 +406,7 @@ export async function POST(request: Request) {
       }
       const summaryMsg = updateDescriptions.join(", ");
 
-      // SUB-CASE B0: If verified company owner -> AUTO-APPROVE IMMEDIATELY
+      // SUB-CASE B0: If verified company owner or Admin -> AUTO-APPROVE IMMEDIATELY
       if (isOwner) {
         const inqResult = await createInquiry(
           corporate_number,
@@ -402,7 +415,9 @@ export async function POST(request: Request) {
           requester_email,
           person_in_charge,
           mobile_number,
-          `【公式オーナー即時更新】更新項目: [${summaryMsg}]`,
+          isRequestAdmin 
+            ? `【管理者直接即時反映】更新項目: [${summaryMsg}]`
+            : `【公式オーナー即時更新】更新項目: [${summaryMsg}]`,
           ip,
           "auto_approved"
         );
@@ -420,6 +435,15 @@ export async function POST(request: Request) {
             inqResult.id,
             "auto_approved"
           );
+        }
+
+        try {
+          revalidatePath(`/[locale]/company/${corporate_number}`, 'page');
+          revalidatePath(`/ja/company/${corporate_number}`);
+          revalidatePath(`/vi/company/${corporate_number}`);
+          revalidatePath(`/en/company/${corporate_number}`);
+        } catch (e) {
+          console.warn("revalidatePath warning in inquiry:", e);
         }
 
         // Send confirmation email
@@ -453,9 +477,13 @@ export async function POST(request: Request) {
           success: true,
           auto_approved: true,
           type: "update",
-          message: locale === "vi"
-            ? "Thông tin doanh nghiệp đã được cập nhật thành công!"
-            : "企業情報が正常に更新されました。"
+          message: isRequestAdmin
+            ? (locale === "vi" 
+                ? "Thông tin doanh nghiệp đã được cập nhật trực tiếp vào cơ sở dữ liệu bởi Quản trị viên (Không cần OTP / Phê duyệt)!" 
+                : "管理者特権により、企業情報がデータベースに直接更新・反映されました（承認・OTP不要）。")
+            : (locale === "vi"
+                ? "Thông tin doanh nghiệp đã được cập nhật thành công!"
+                : "企業情報が正常に更新されました。")
         });
       }
 

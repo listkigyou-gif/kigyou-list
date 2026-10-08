@@ -214,7 +214,13 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
   const prefectures = JSON.parse(JSON.stringify(prefecturesResult));
   const industries = JSON.parse(JSON.stringify(industriesResult));
   const cities = JSON.parse(JSON.stringify(citiesResult));
-  const companies = JSON.parse(JSON.stringify(searchResult.companies));
+  const companies = searchResult.companies.map((c: any) => ({
+    ...c,
+    has_email: Boolean(c.email_address),
+    has_contact_form: Boolean(c.contact_form_url),
+    email_address: null,
+    contact_form_url: null,
+  }));
   const totalCount = searchResult.totalCount;
   const industryMap = { ...industryMapResult };
 

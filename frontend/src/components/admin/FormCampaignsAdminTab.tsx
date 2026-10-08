@@ -28,17 +28,22 @@ import { parseUTCDate } from "@/lib/dateUtils";
 interface FormCampaignAdmin {
   id: string;
   user_email: string;
-  title: string;
+  name?: string;
+  title?: string;
   status: "draft" | "pending_approval" | "approved" | "processing" | "completed" | "rejected" | "cancelled";
   target_count: number;
   template_id: string | null;
-  pitch_subject: string;
-  pitch_body: string;
-  sender_company_name: string;
+  subject?: string;
+  pitch_subject?: string;
+  body?: string;
+  pitch_body?: string;
+  sender_company?: string;
+  sender_company_name?: string;
   sender_name: string;
   sender_email: string;
   sender_phone: string | null;
   sender_website: string | null;
+  target_filters?: string | null;
   rejection_reason: string | null;
   created_at: string;
   updated_at: string;
@@ -110,7 +115,7 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
           action === "approve"
             ? "キャンペーンを承認しました。配信キューに追加されました。"
             : action === "reject"
-            ? "キャンペーンを却下しました。"
+            ? "キャンペーンを却下しました（予約されたクレジットはユーザーのウォレットへ即時自動返還されました）。"
             : "キャンペーンを完了に設定しました。"
         );
         setRejectingCampaign(null);
@@ -132,41 +137,41 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800 animate-pulse">
             <Clock className="w-3.5 h-3.5" />
-            審査待ち (Pending)
+            審査中（予約枠）
           </span>
         );
       case "approved":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            承認済み・配信待機 (Approved)
+            承認済み・配信待機
           </span>
         );
       case "processing":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
-            配信中 (Sending)
+            自動配信中
           </span>
         );
       case "completed":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
             <Check className="w-3.5 h-3.5" />
-            配信完了 (Completed)
+            配信完了
           </span>
         );
       case "rejected":
         return (
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300 border border-red-200 dark:border-red-800">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
             <XCircle className="w-3.5 h-3.5" />
-            却下・差し戻し (Rejected)
+            要修正・却下（枠返還済）
           </span>
         );
       case "draft":
         return (
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-            下書き (Draft)
+            下書き
           </span>
         );
       default:
@@ -182,10 +187,10 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
     if (statusFilter !== "all" && c.status !== statusFilter) return false;
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchTitle = c.title?.toLowerCase().includes(q);
-      const matchEmail = c.user_email?.toLowerCase().includes(q);
-      const matchCompany = c.sender_company_name?.toLowerCase().includes(q);
-      const matchSubject = c.pitch_subject?.toLowerCase().includes(q);
+      const matchTitle = (c.name || c.title || "").toLowerCase().includes(q);
+      const matchEmail = (c.user_email || "").toLowerCase().includes(q);
+      const matchCompany = (c.sender_company || c.sender_company_name || "").toLowerCase().includes(q);
+      const matchSubject = (c.subject || c.pitch_subject || "").toLowerCase().includes(q);
       if (!matchTitle && !matchEmail && !matchCompany && !matchSubject) return false;
     }
     return true;
@@ -250,7 +255,7 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
             { id: "approved", label: "承認済み", count: campaigns.filter((c) => c.status === "approved").length },
             { id: "processing", label: "配信中", count: campaigns.filter((c) => c.status === "processing").length },
             { id: "completed", label: "配信完了", count: completedCount },
-            { id: "rejected", label: "却下", count: campaigns.filter((c) => c.status === "rejected").length },
+            { id: "rejected", label: "要修正・却下", count: campaigns.filter((c) => c.status === "rejected").length },
             { id: "draft", label: "下書き", count: campaigns.filter((c) => c.status === "draft").length },
           ].map((tab) => (
             <button
@@ -258,7 +263,7 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
               onClick={() => setStatusFilter(tab.id)}
               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                 statusFilter === tab.id
-                  ? "bg-blue-600 text-white shadow-xs"
+                  ? "bg-[#1B4F8A] text-white shadow-xs"
                   : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
               }`}
             >
@@ -340,17 +345,17 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
                     </td>
 
                     <td className="py-3.5 px-4">
-                      <div className="font-bold text-slate-900 dark:text-white max-w-sm truncate" title={camp.title}>
-                        {camp.title}
+                      <div className="font-bold text-slate-900 dark:text-white max-w-sm truncate" title={camp.name || camp.title}>
+                        {camp.name || camp.title || "（キャンペーン名未設定）"}
                       </div>
-                      <div className="text-[11px] text-slate-500 dark:text-slate-400 max-w-sm truncate mt-0.5" title={camp.pitch_subject}>
-                        件名: {camp.pitch_subject || "（未設定）"}
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 max-w-sm truncate mt-0.5" title={camp.subject || camp.pitch_subject}>
+                        件名: {camp.subject || camp.pitch_subject || "（未設定）"}
                       </div>
                     </td>
 
                     <td className="py-3.5 px-4">
                       <div className="font-semibold text-slate-800 dark:text-slate-200 truncate">
-                        {camp.sender_company_name || "会社名未設定"}
+                        {camp.sender_company || camp.sender_company_name || "会社名未設定"}
                       </div>
                       <div className="text-[11px] text-slate-500 truncate mt-0.5">
                         {camp.user_email}
@@ -439,14 +444,14 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
             </div>
 
             <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">
-              {inspectCampaign.title}
+              {inspectCampaign.name || inspectCampaign.title || "（キャンペーン名未設定）"}
             </h3>
 
             {/* Sender Details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800 rounded-2xl text-xs mb-4">
               <div>
                 <span className="text-slate-400 block text-[10px] font-bold uppercase">送信元企業</span>
-                <span className="font-bold text-slate-900 dark:text-white">{inspectCampaign.sender_company_name}</span>
+                <span className="font-bold text-slate-900 dark:text-white">{inspectCampaign.sender_company || inspectCampaign.sender_company_name || "会社名未設定"}</span>
               </div>
               <div>
                 <span className="text-slate-400 block text-[10px] font-bold uppercase">担当者名</span>
@@ -478,6 +483,34 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
               </div>
             </div>
 
+            {/* Target Audience Information */}
+            <div className="mb-4 p-3.5 bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-800/60 rounded-xl text-xs">
+              <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-700 dark:text-indigo-400 block mb-1">
+                配信対象ターゲット条件 (Target Filters)
+              </span>
+              <div className="font-semibold text-slate-800 dark:text-slate-200">
+                {inspectCampaign.target_filters ? (
+                  (() => {
+                    try {
+                      const tf = JSON.parse(inspectCampaign.target_filters);
+                      if (tf.label) return tf.label;
+                      if (tf.type === "my_list") return `マイリスト全件（${tf.saved_count || 0}社）`;
+                      if (tf.type === "custom_companies") return `選択された個別企業リスト（${tf.company_count || 0}社）`;
+                      if (tf.type === "preset_filter") return `業種: ${tf.industry || "全業種"} / 地域: ${tf.prefecture || "全国"}`;
+                      return JSON.stringify(tf);
+                    } catch {
+                      return inspectCampaign.target_filters;
+                    }
+                  })()
+                ) : (
+                  <span className="text-rose-500 font-bold">⚠️ ターゲット未設定 (注意: 送信対象が空です)</span>
+                )}
+              </div>
+              <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                申請件数: <strong className="text-slate-900 dark:text-white font-mono">{inspectCampaign.target_count?.toLocaleString() || 0}</strong> 件
+              </div>
+            </div>
+
             {/* Pitch Subject & Body */}
             <div className="space-y-3 mb-6">
               <div>
@@ -485,7 +518,7 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
                   営業件名 (Pitch Subject)
                 </label>
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs font-bold text-slate-900 dark:text-white">
-                  {inspectCampaign.pitch_subject}
+                  {inspectCampaign.subject || inspectCampaign.pitch_subject || "（未設定）"}
                 </div>
               </div>
 
@@ -494,7 +527,7 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
                   営業本文 (Pitch Message Body)
                 </label>
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-800 dark:text-slate-200 whitespace-pre-wrap font-mono leading-relaxed max-h-60 overflow-y-auto">
-                  {inspectCampaign.pitch_body}
+                  {inspectCampaign.body || inspectCampaign.pitch_body || ""}
                 </div>
               </div>
 

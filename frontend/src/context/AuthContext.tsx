@@ -6,7 +6,7 @@ import { useSession, signIn, signOut } from "next-auth/react";
 export interface User {
   email: string;
   name: string;
-  role: "free" | "trial" | "pro" | "business" | "enterprise";
+  role: "free" | "trial" | "pro" | "business" | "enterprise" | "admin";
 }
 
 export type KanbanStage = "未連絡" | "連絡済み" | "商談中" | "成約";

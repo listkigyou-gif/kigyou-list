@@ -7,7 +7,19 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/_next/', '/static/', '/api/'],
+        disallow: [
+          '/_next/',
+          '/static/',
+          '/api/',
+          '/*/dashboard',
+          '/*/dashboard/',
+          '/*/admin',
+          '/*/admin/',
+          '/*/login',
+          '/*/login/',
+          '/*/unsubscribe',
+          '/*/unsubscribe/',
+        ],
       },
       // Block AI scrapers from training models
       {
@@ -59,7 +71,10 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/_next/', '/static/', '/api/'],
       }
     ],
-    sitemap: `${baseUrl}/sitemap.xml`,
+    sitemap: [
+      `${baseUrl}/sitemap.xml`,
+      `${baseUrl}/sitemap-index.xml`,
+    ],
   };
 }
 

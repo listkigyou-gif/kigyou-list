@@ -7,11 +7,16 @@ import { auth } from "@/auth";
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-    const email = searchParams.get("email");
+    const id = searchParams.get("id") || searchParams.get("jobId");
+    let email = searchParams.get("email");
 
-    if (!id || !email) {
-      return NextResponse.json({ error: "Missing required parameters: id and email" }, { status: 400 });
+    const session = await auth();
+    if (!email && session?.user?.email) {
+      email = session.user.email;
+    }
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing required parameter: id or jobId" }, { status: 400 });
     }
 
     const job = await getExportJobById(id);
@@ -19,13 +24,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Export job not found" }, { status: 404 });
     }
 
-    // Verify ownership: requested email matches job email, or the requester is an admin
-    const normalizedRequestEmail = email.toLowerCase();
-    const normalizedJobEmail = job.user_email.toLowerCase();
-    
+    // Verify ownership: requester must be logged in with matching email, or is admin
     let isRequesterAdmin = isAdmin(request);
 
-    const session = await auth();
     if (session && session.user && session.user.email) {
       const sessionEmail = session.user.email.toLowerCase();
       if (isAdminEmail(sessionEmail)) {
@@ -33,7 +34,10 @@ export async function GET(request: Request) {
       }
     }
 
-    if (normalizedRequestEmail !== normalizedJobEmail && !isRequesterAdmin) {
+    const jobOwnerEmail = job.user_email.toLowerCase();
+    const currentRequesterEmail = (email || session?.user?.email || "").toLowerCase();
+
+    if (!isRequesterAdmin && (!currentRequesterEmail || currentRequesterEmail !== jobOwnerEmail)) {
       return NextResponse.json({ error: "Unauthorized access to download" }, { status: 403 });
     }
 

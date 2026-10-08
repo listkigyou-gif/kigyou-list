@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { getUserApiKeys, createUserApiKey, revokeUserApiKey, getUserQuota } from "@/lib/db";
+import { isAdminEmail } from "@/lib/adminAuth";
 
 /**
  * GET: Retrieve list of API keys for the current authenticated user.
@@ -38,11 +39,11 @@ export async function POST(request: Request) {
 
     const email = session.user.email;
     
-    // Check if user is eligible for API (must be business or enterprise)
+    // Check if user is eligible for API (must be business, enterprise, or system admin)
     const quota = await getUserQuota(email);
     const plan = quota ? quota.plan : "free";
 
-    if (plan !== "business" && plan !== "enterprise") {
+    if (plan !== "business" && plan !== "enterprise" && !isAdminEmail(email)) {
       return NextResponse.json({
         error: "API連携機能はBUSINESSプラン以上でご利用いただけます。"
       }, { status: 403 });

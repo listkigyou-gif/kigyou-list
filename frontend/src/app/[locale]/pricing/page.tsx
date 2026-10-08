@@ -553,29 +553,29 @@ export default function PricingPage() {
 
         {/* Service Type Switcher Tabs */}
         <section className="max-w-xl mx-auto w-full">
-          <div className="p-1 bg-slate-200/80 dark:bg-slate-800/80 rounded-2xl flex items-center gap-1 border border-slate-300/60 dark:border-slate-700/60 shadow-inner">
+          <div className="p-1 bg-slate-100 dark:bg-slate-800/80 rounded-lg flex items-center gap-1 border border-slate-200/90 dark:border-slate-700 shadow-2xs">
             <button
               type="button"
               onClick={() => handleTabChange("data")}
-              className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              className={`flex-1 py-2 px-4 rounded-md font-bold text-xs sm:text-sm text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 pricingTab === "data"
-                  ? "bg-white dark:bg-[#1C2128] text-slate-900 dark:text-white shadow-xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750"
+                  ? "bg-white dark:bg-[#161B22] text-[#1B4F8A] dark:text-blue-400 shadow-2xs border border-slate-200/80 dark:border-slate-700"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
-              <Database className={`w-4 h-4 ${pricingTab === "data" ? "text-blue-600 dark:text-blue-400" : "text-slate-400"}`} />
+              <Database className={`w-4 h-4 ${pricingTab === "data" ? "text-[#1B4F8A] dark:text-blue-400" : "text-slate-400"}`} />
               <span>{isEn ? "Corporate Data & CSV" : isVi ? "Dữ liệu & Xuất CSV" : "企業データ・CSV抽出"}</span>
             </button>
             <button
               type="button"
               onClick={() => handleTabChange("form")}
-              className={`flex-1 py-2.5 px-4 rounded-xl font-bold text-xs sm:text-sm text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              className={`flex-1 py-2 px-4 rounded-md font-bold text-xs sm:text-sm text-center transition-all flex items-center justify-center gap-2 cursor-pointer ${
                 pricingTab === "form"
-                  ? "bg-white dark:bg-[#1C2128] text-slate-900 dark:text-white shadow-xs"
-                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/50 dark:hover:bg-slate-750"
+                  ? "bg-white dark:bg-[#161B22] text-[#1B4F8A] dark:text-blue-400 shadow-2xs border border-slate-200/80 dark:border-slate-700"
+                  : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
               }`}
             >
-              <Send className={`w-4 h-4 ${pricingTab === "form" ? "text-indigo-600 dark:text-indigo-400" : "text-slate-400"}`} />
+              <Send className={`w-4 h-4 ${pricingTab === "form" ? "text-[#1B4F8A] dark:text-blue-400" : "text-slate-400"}`} />
               <span>{isEn ? "Form Outreach" : isVi ? "Gửi Form Tiếp Cận" : "フォーム営業 (配信)"}</span>
             </button>
           </div>
@@ -593,31 +593,31 @@ export default function PricingPage() {
 
             {/* Form Outreach Service SaaS Callout in Pricing */}
             <section className="max-w-5xl mx-auto w-full">
-              <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-lg relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-indigo-900/60">
+              <div className="p-6 sm:p-7 rounded-xl bg-slate-900 dark:bg-[#161B22] text-white shadow-xs relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800">
                 <div className="flex-1">
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[10px] font-black uppercase tracking-wider mb-3">
-                    <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 text-blue-300 border border-blue-400/20 text-xs font-semibold mb-3">
+                    <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                     <span>{isEn ? "SELF-SERVE OUTBOUND SAAS" : isVi ? "NỀN TẢNG TIẾP CẬN TỰ ĐỘNG" : "セルフサービス型 フォーム営業"}</span>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-black mb-2">
+                  <h2 className="text-xl sm:text-2xl font-bold mb-2">
                     {isEn ? "Automated Contact Form Outreach SaaS" : isVi ? "Tự Động Gửi Form Marketing Trực Tuyến" : "問い合わせフォーム営業配信プラットフォーム"}
                   </h2>
-                  <p className="text-xs sm:text-sm text-slate-350 leading-relaxed max-w-2xl">
+                  <p className="text-xs sm:text-sm text-slate-350 leading-relaxed max-w-2xl font-normal">
                     {isEn
-                      ? "Looking to pitch decision-makers directly? Filter hyper-targeted prospects from our 5M+ database and dispatch your pitch directly to verified corporate contact forms starting at 20 JPY/form."
+                      ? "Looking to pitch decision-makers directly? Filter hyper-targeted prospects from our 5M+ database and dispatch your pitch directly to verified corporate contact forms starting at 16.1 JPY/form."
                       : isVi
-                      ? "Muốn chào hàng trực tiếp đến ban lãnh đạo công ty? Lọc tệp khách hàng từ 5 triệu doanh nghiệp và tự động gửi thông điệp chào hàng vào Form liên hệ ngay trên hệ thống (chỉ từ 20 JPY/form)."
-                      : "自社でリストを精査し、手動でフォーム送信する工数はもう不要。500万社DBからターゲットを抽出し、管理画面から自社の営業文面を即時オンライン配信（1件20円〜）。"}
+                      ? "Muốn chào hàng trực tiếp đến ban lãnh đạo công ty? Lọc tệp khách hàng từ 5 triệu doanh nghiệp và tự động gửi thông điệp chào hàng vào Form liên hệ ngay trên hệ thống (chỉ từ 16.1 JPY/form)."
+                      : "自社でリストを精査し、手動でフォーム送信する工数はもう不要。500万社DBからターゲットを抽出し、管理画面から自社の営業文面を即時オンライン配信（1件16.1円〜）。"}
                   </p>
                 </div>
                 <div className="shrink-0 flex flex-col sm:flex-row items-center gap-3">
                   <button
                     type="button"
                     onClick={() => handleTabChange("form")}
-                    className="px-6 py-3 rounded-xl font-bold text-xs text-slate-900 bg-white hover:bg-slate-100 shadow-md transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
+                    className="px-5 py-2.5 rounded-lg font-bold text-xs text-white bg-[#1B4F8A] hover:bg-[#163e6d] shadow-2xs transition-all active:scale-[0.98] flex items-center gap-2 cursor-pointer"
                   >
                     <span>{isEn ? "View Form Outreach Plans" : isVi ? "Xem Bảng Giá Gửi Form" : "フォーム営業プランを見る"}</span>
-                    <ArrowRight className="w-4 h-4 text-indigo-600" />
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               </div>
@@ -687,34 +687,34 @@ export default function PricingPage() {
             return (
               <div 
                 key={plan.id}
-                className={`rounded-2xl border flex flex-col justify-between transition-all duration-200 relative ${
+                className={`rounded-xl border flex flex-col justify-between transition-all duration-200 relative ${
                   plan.recommended
-                    ? "bg-white border-2 border-[#1B4F8A] shadow-md dark:bg-[#161B22] dark:border-blue-500 z-10"
-                    : "bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 shadow-xs"
+                    ? "bg-white border-2 border-[#1B4F8A] shadow-xs dark:bg-[#161B22] dark:border-blue-500 z-10"
+                    : "bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 shadow-2xs"
                 }`}
               >
                 {plan.recommended && (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full bg-[#1B4F8A] text-[10px] font-bold text-white uppercase tracking-wider shadow-xs flex items-center gap-1.5 border border-white/20">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#1B4F8A] text-[10px] font-bold text-white uppercase tracking-wider shadow-2xs flex items-center gap-1.5 border border-white/20 whitespace-nowrap">
                     <Star className="w-2.5 h-2.5 fill-white" />
                     {t.pricing.bestValue}
                   </div>
                 )}
 
                 {/* Plan Header */}
-                <div className="p-6 sm:p-7 flex flex-col border-b border-slate-100 dark:border-slate-800/80">
+                <div className="p-5 sm:p-6 flex flex-col border-b border-slate-100 dark:border-slate-800/80">
                   <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     {plan.name}
                   </span>
-                  <div className="mt-3 flex items-baseline gap-2 flex-wrap">
-                    <span className="text-3xl sm:text-4xl font-mono font-bold text-slate-900 dark:text-white tracking-tight">
+                  <div className="mt-2.5 flex items-baseline gap-2 flex-wrap">
+                    <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                       {plan.id === "free" ? (isEn ? "Free" : isVi ? "Miễn phí" : "無料") : `¥${currentPrice.toLocaleString()}`}
                     </span>
                     {plan.id !== "free" && <span className="text-xs text-slate-500 font-medium">/ {t.pricing.month}</span>}
                   </div>
 
                   {plan.id !== "free" ? (
-                    <div className="mt-2 flex items-center gap-2 text-xs">
-                      <span className="line-through text-slate-400 font-mono">
+                    <div className="mt-1.5 flex items-center gap-2 text-xs">
+                      <span className="line-through text-slate-400">
                         ¥{listPrice.toLocaleString()}
                       </span>
                       <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
@@ -722,18 +722,18 @@ export default function PricingPage() {
                       </span>
                     </div>
                   ) : (
-                    <div className="mt-2 text-xs text-emerald-700 dark:text-emerald-400 font-bold text-[10px] bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/50 px-2 py-0.5 rounded w-fit">
+                    <div className="mt-1.5 text-xs text-emerald-700 dark:text-emerald-400 font-bold text-[10px] bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-900/50 px-2 py-0.5 rounded w-fit">
                       {t.pricing.initialCost}
                     </div>
                   )}
 
-                  <p className="mt-4 text-xs text-slate-600 dark:text-slate-400 leading-relaxed min-h-[40px]">
+                  <p className="mt-3 text-xs text-slate-600 dark:text-slate-400 leading-relaxed min-h-[38px] font-normal">
                     {plan.description}
                   </p>
 
-                  <div className="mt-5 p-3 bg-slate-50 dark:bg-[#0D1117] rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <div className="mt-4 p-2.5 bg-slate-50 dark:bg-[#0D1117] rounded-lg border border-slate-100 dark:border-slate-800 flex items-center justify-between">
                     <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{t.pricing.exportQuota}</span>
-                    <strong className="text-xs font-mono font-bold text-[#1B4F8A] dark:text-blue-400 flex items-center gap-1.5">
+                    <strong className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 flex items-center gap-1.5">
                       <Coins className="w-3.5 h-3.5" />
                       {plan.quota}
                     </strong>
@@ -741,20 +741,20 @@ export default function PricingPage() {
                 </div>
 
                 {/* Plan Features */}
-                <div className="p-6 sm:p-7 flex-grow flex flex-col gap-4">
+                <div className="p-5 sm:p-6 flex-grow flex flex-col gap-3.5">
                   <h5 className="text-[10px] font-bold text-slate-400 tracking-wider uppercase">
                     {t.pricing.featuresTitle}
                   </h5>
-                  <ul className="flex flex-col gap-3">
+                  <ul className="flex flex-col gap-2.5">
                     {plan.features.map((feature, idx) => {
                       const isComingSoon = feature.includes("(開発中)") || feature.includes("（開発中）") || feature.includes("(In Dev)");
                       const cleanFeature = feature.replace(/\s*[\(（](開発中|In Dev)[\)）]/, "");
                       return (
-                        <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-300">
+                        <li key={idx} className="flex items-start gap-2 text-xs text-slate-600 dark:text-slate-300">
                           {isComingSoon ? (
-                            <Clock className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                            <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0 mt-0.5" />
                           ) : (
-                            <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                            <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                           )}
                           <span className={`leading-relaxed flex flex-wrap items-center gap-1.5 ${isComingSoon ? "text-slate-400 dark:text-slate-500" : ""}`}>
                             {cleanFeature}
@@ -771,17 +771,17 @@ export default function PricingPage() {
                 </div>
 
                 {/* Action CTA */}
-                <div className="p-6 sm:p-7 pt-0 mt-auto">
+                <div className="p-5 sm:p-6 pt-0 mt-auto">
                   <button
                     onClick={() => handleCheckoutClick(plan)}
                     disabled={plan.id === "free" && isLoggedIn}
-                    className={`w-full py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
+                    className={`w-full py-2.5 px-4 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
                       plan.id === "free" && isLoggedIn
                         ? "bg-slate-50 text-slate-400 border border-slate-200 dark:bg-slate-900/10 dark:border-slate-800 dark:text-slate-500 cursor-default shadow-none"
                         : plan.recommended
-                        ? "bg-[#1B4F8A] hover:bg-[#153e6d] text-white shadow-sm shadow-[#1B4F8A]/20 cursor-pointer active:scale-[0.99]"
+                        ? "bg-[#1B4F8A] hover:bg-[#163e6d] text-white shadow-2xs cursor-pointer active:scale-[0.99]"
                         : plan.id === "pro"
-                        ? "bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 shadow-xs cursor-pointer active:scale-[0.99]"
+                        ? "bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 shadow-2xs cursor-pointer active:scale-[0.99]"
                         : "border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-[#161B22] dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-2xs cursor-pointer active:scale-[0.99]"
                     }`}
                   >
@@ -821,57 +821,57 @@ export default function PricingPage() {
             {packs.map((pack) => (
               <div 
                 key={pack.id}
-                className={`rounded-2xl border p-6 sm:p-7 flex flex-col justify-between transition-all duration-200 relative ${
+                className={`rounded-xl border p-5 sm:p-6 flex flex-col justify-between transition-all duration-200 relative ${
                   pack.recommended
-                    ? "bg-white border-2 border-emerald-600 shadow-sm dark:bg-[#161B22] dark:border-emerald-500 z-10"
-                    : "bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 shadow-xs"
+                    ? "bg-white border-2 border-[#1B4F8A] shadow-xs dark:bg-[#161B22] dark:border-blue-500 z-10"
+                    : "bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 shadow-2xs"
                 }`}
               >
                 {pack.recommended && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3.5 py-0.5 rounded-full bg-emerald-700 text-[9px] font-bold text-white uppercase tracking-wider shadow-xs flex items-center gap-1 border border-white/20">
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-[#1B4F8A] text-[10px] font-bold text-white uppercase tracking-wider shadow-2xs flex items-center gap-1 border border-white/20 whitespace-nowrap">
                     <Coins className="w-2.5 h-2.5 fill-white" />
                     {t.pricing.packBestValue}
                   </div>
                 )}
 
-                <div className="flex flex-col gap-4">
+                <div className="flex flex-col gap-3.5">
                   <div className="flex justify-between items-start">
                     <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                       {pack.name}
                     </span>
                     {pack.recommended && (
-                      <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 px-2 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-900/40">
+                      <span className="text-[10px] font-bold text-[#1B4F8A] bg-blue-50 dark:bg-blue-950/40 px-2 py-0.5 rounded border border-blue-200/60 dark:border-blue-900/40">
                         {t.pricing.packRecommend}
                       </span>
                     )}
                   </div>
                   
-                  <div className="flex items-baseline gap-2 mt-2">
-                    <span className="text-3xl font-mono font-bold text-slate-900 dark:text-white tracking-tight">
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <span className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                       ¥{pack.price.toLocaleString()}
                     </span>
                     <span className="text-xs text-slate-500 font-medium">/ {t.pricing.packPricingSuffix}</span>
                   </div>
 
-                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed min-h-[36px]">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed min-h-[36px] font-normal">
                     {pack.description}
                   </p>
 
-                  <div className="p-3 bg-slate-50 dark:bg-[#0D1117] rounded-xl border border-slate-100 dark:border-slate-800 flex items-center justify-between mt-2">
+                  <div className="p-2.5 bg-slate-50 dark:bg-[#0D1117] rounded-lg border border-slate-100 dark:border-slate-800 flex items-center justify-between mt-1">
                     <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">{t.pricing.exportQuota}</span>
-                    <strong className="text-xs font-mono font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1.5">
+                    <strong className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 flex items-center gap-1.5">
                       <Coins className="w-3.5 h-3.5" />
                       +{pack.allowance.toLocaleString()} 行
                     </strong>
                   </div>
                 </div>
 
-                <div className="mt-6">
+                <div className="mt-5">
                   <button
                     onClick={() => handlePackCheckoutClick(pack)}
-                    className={`w-full py-3 px-4 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99] ${
+                    className={`w-full py-2.5 px-4 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer active:scale-[0.99] ${
                       pack.recommended
-                        ? "bg-emerald-700 hover:bg-emerald-800 text-white shadow-sm shadow-emerald-700/20"
+                        ? "bg-[#1B4F8A] hover:bg-[#163e6d] text-white shadow-2xs"
                         : "border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-[#161B22] dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-2xs"
                     }`}
                   >
@@ -884,12 +884,12 @@ export default function PricingPage() {
           </div>
 
           {/* Guidelines / Notices */}
-          <div className="bg-slate-50 border border-slate-200/80 dark:bg-[#12161E] dark:border-slate-800 rounded-2xl p-5 md:p-6 flex flex-col gap-2 text-xs text-slate-600 dark:text-slate-400 mt-2 max-w-7xl mx-auto w-full">
+          <div className="bg-slate-50 border border-slate-200/80 dark:bg-[#12161E] dark:border-slate-800 rounded-xl p-5 md:p-6 flex flex-col gap-2 text-xs text-slate-600 dark:text-slate-400 mt-2 max-w-7xl mx-auto w-full">
             <h5 className="font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5 mb-1 text-xs">
-              <Info className="w-4 h-4 text-emerald-600 shrink-0" />
+              <Info className="w-4 h-4 text-[#1B4F8A] shrink-0" />
               {t.pricing.packNoticeTitle}
             </h5>
-            <ul className="list-disc list-inside flex flex-col gap-1.5 text-xs leading-relaxed pl-1">
+            <ul className="list-disc list-inside flex flex-col gap-1.5 text-xs leading-relaxed pl-1 font-normal">
               <li>{t.pricing.packNoticeItem1}</li>
               <li>{t.pricing.packNoticeItem2}</li>
               <li>{t.pricing.packNoticeItem3}</li>
@@ -898,13 +898,13 @@ export default function PricingPage() {
         </section>
 
         {/* Competitors Price Comparison Table */}
-        <section className="bg-white border border-slate-200/80 dark:bg-[#161B22] dark:border-slate-800 rounded-2xl p-6 md:p-8 shadow-xs max-w-7xl mx-auto w-full flex flex-col gap-6 relative">
+        <section className="bg-white border border-slate-200/80 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-6 md:p-8 shadow-xs max-w-7xl mx-auto w-full flex flex-col gap-6 relative">
           <div className="text-center md:text-left relative flex flex-col gap-1.5">
             <span className="text-[11px] font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider">{t.pricing.comparisonTag}</span>
             <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               {t.pricing.comparisonTitle}
             </h3>
-            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl leading-relaxed font-normal">
               {t.pricing.comparisonDesc}
             </p>
           </div>
@@ -913,33 +913,33 @@ export default function PricingPage() {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 text-slate-600 dark:text-slate-400 font-bold uppercase tracking-wider">
-                  <th className="py-3.5 px-4 rounded-l-xl">{t.pricing.compHeaderItem}</th>
+                  <th className="py-3.5 px-4 rounded-l-lg">{t.pricing.compHeaderItem}</th>
                   <th className="py-3.5 px-4">{t.pricing.compHeaderOtherM}</th>
                   <th className="py-3.5 px-4">{t.pricing.compHeaderOtherB}</th>
-                  <th className="py-3.5 px-5 bg-blue-100/70 dark:bg-blue-950/60 text-[#1B4F8A] dark:text-blue-300 font-bold border-l border-r border-t border-blue-200/80 dark:border-blue-900/60 rounded-t-xl">{t.pricing.compHeaderOurPro}</th>
+                  <th className="py-3.5 px-5 bg-blue-100/70 dark:bg-blue-950/60 text-[#1B4F8A] dark:text-blue-300 font-bold border-l border-r border-t border-blue-200/80 dark:border-blue-900/60 rounded-t-lg">{t.pricing.compHeaderOurPro}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 text-slate-600 dark:text-slate-300 font-normal">
                 <tr className="hover:bg-slate-50/50 dark:hover:bg-[#12161E]">
                   <td className="py-4 px-4 font-semibold text-slate-800 dark:text-slate-200">{t.pricing.compRowPrice}</td>
-                  <td className="py-4 px-4 font-mono">¥30,000 〜 ¥100,000</td>
-                  <td className="py-4 px-4 font-mono">¥9,800 〜 ¥29,800</td>
-                  <td className="py-4 px-5 bg-blue-50/60 dark:bg-blue-950/20 font-mono font-bold text-rose-600 dark:text-rose-400 border-l border-r border-blue-200/60 dark:border-blue-900/40">
+                  <td className="py-4 px-4">¥30,000 〜 ¥100,000</td>
+                  <td className="py-4 px-4">¥9,800 〜 ¥29,800</td>
+                  <td className="py-4 px-5 bg-blue-50/60 dark:bg-blue-950/20 font-bold text-rose-600 dark:text-rose-400 border-l border-r border-blue-200/60 dark:border-blue-900/40">
                     {t.pricing.compRowPriceCampaign}
                   </td>
                 </tr>
                 <tr className="hover:bg-slate-50/50 dark:hover:bg-[#12161E]">
                   <td className="py-4 px-4 font-semibold text-slate-800 dark:text-slate-200">{t.pricing.compRowPriceUnit}</td>
-                  <td className="py-4 px-4 font-mono">¥20 〜 ¥60</td>
-                  <td className="py-4 px-4 font-mono">¥30 〜 ¥100</td>
-                  <td className="py-4 px-5 bg-blue-50/60 dark:bg-blue-950/20 font-mono font-bold text-slate-900 dark:text-white border-l border-r border-blue-200/60 dark:border-blue-900/40">
+                  <td className="py-4 px-4">¥20 〜 ¥60</td>
+                  <td className="py-4 px-4">¥30 〜 ¥100</td>
+                  <td className="py-4 px-5 bg-blue-50/60 dark:bg-blue-950/20 font-bold text-slate-900 dark:text-white border-l border-r border-blue-200/60 dark:border-blue-900/40">
                     {t.pricing.compRowPriceUnitValue}
                   </td>
                 </tr>
                 <tr className="hover:bg-slate-50/50 dark:hover:bg-[#12161E]">
                   <td className="py-4 px-4 font-semibold text-slate-800 dark:text-slate-200">{t.pricing.compRowInitial}</td>
-                  <td className="py-4 px-4 font-mono">¥100,000 ({isEn ? "On Contract" : isVi ? "Khi ký hợp đồng" : "契約時のみ"})</td>
-                  <td className="py-4 px-4 font-mono">¥0</td>
+                  <td className="py-4 px-4">¥100,000 ({isEn ? "On Contract" : isVi ? "Khi ký hợp đồng" : "契約時のみ"})</td>
+                  <td className="py-4 px-4">¥0</td>
                   <td className="py-4 px-5 bg-blue-50/60 dark:bg-blue-950/20 font-bold text-emerald-700 dark:text-emerald-400 border-l border-r border-blue-200/60 dark:border-blue-900/40">
                     {t.pricing.compRowInitialValue}
                   </td>
@@ -948,7 +948,7 @@ export default function PricingPage() {
                   <td className="py-4 px-4 font-semibold text-slate-800 dark:text-slate-200">{t.pricing.compRowFeatures}</td>
                   <td className="py-4 px-4">{isEn ? "Expensive" : isVi ? "Tính năng cao nhưng duy trì đắt" : "高機能だが維持費が高価"}</td>
                   <td className="py-4 px-4">{isEn ? "Free but limited" : isVi ? "Có gói miễn phí nhưng giới hạn" : "無料枠があるが件数制限"}</td>
-                  <td className="py-4 px-5 bg-blue-50/60 dark:bg-blue-950/20 font-semibold text-slate-900 dark:text-white border-l border-r border-b border-blue-200/60 dark:border-blue-900/40 rounded-b-xl">
+                  <td className="py-4 px-5 bg-blue-50/60 dark:bg-blue-950/20 font-semibold text-slate-900 dark:text-white border-l border-r border-b border-blue-200/60 dark:border-blue-900/40 rounded-b-lg">
                     {t.pricing.compRowFeaturesValue}
                   </td>
                 </tr>
@@ -956,8 +956,8 @@ export default function PricingPage() {
             </table>
           </div>
 
-          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-xl p-3.5 text-xs text-slate-600 dark:text-slate-400 dark:bg-[#12161E] dark:border-slate-800">
-            <Info className="w-4 h-4 text-blue-600 shrink-0" />
+          <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/80 rounded-lg p-3 text-xs text-slate-600 dark:text-slate-400 dark:bg-[#12161E] dark:border-slate-800">
+            <Info className="w-4 h-4 text-[#1B4F8A] shrink-0" />
             <span>
               {t.pricing.compNotice}
             </span>
@@ -967,87 +967,87 @@ export default function PricingPage() {
         {/* FAQs */}
         <section className="max-w-7xl mx-auto w-full flex flex-col gap-6">
           <div className="text-center">
-            <HelpCircle className="w-7 h-7 text-[#1B4F8A] dark:text-blue-400 mx-auto mb-2" />
+            <HelpCircle className="w-6 h-6 text-[#1B4F8A] dark:text-blue-400 mx-auto mb-1.5" />
             <h3 className="text-xl font-bold text-slate-900 dark:text-white">{t.pricing.faqTitle}</h3>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-            <div className="p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-2xl flex flex-col gap-2.5 shadow-xs transition-colors">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 mt-1">
+            <div className="p-4 sm:p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-lg flex flex-col gap-2 shadow-2xs transition-colors">
               <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono mt-0.5">Q</span>
+                <span className="w-5 h-5 rounded-md bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">Q</span>
                 <span>{t.pricing.faqQ1}</span>
               </h5>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5 font-normal">
                 {t.pricing.faqA1}
               </p>
             </div>
 
-            <div className="p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-2xl flex flex-col gap-2.5 shadow-xs transition-colors">
+            <div className="p-4 sm:p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-lg flex flex-col gap-2 shadow-2xs transition-colors">
               <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono mt-0.5">Q</span>
+                <span className="w-5 h-5 rounded-md bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">Q</span>
                 <span>{t.pricing.faqQ2}</span>
               </h5>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5 font-normal">
                 {t.pricing.faqA2}
               </p>
             </div>
 
-            <div className="p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-2xl flex flex-col gap-2.5 shadow-xs transition-colors">
+            <div className="p-4 sm:p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-lg flex flex-col gap-2 shadow-2xs transition-colors">
               <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono mt-0.5">Q</span>
+                <span className="w-5 h-5 rounded-md bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">Q</span>
                 <span>{t.pricing.faqQ3}</span>
               </h5>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5 font-normal">
                 {t.pricing.faqA3}
               </p>
             </div>
 
-            <div className="p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-2xl flex flex-col gap-2.5 shadow-xs transition-colors">
+            <div className="p-4 sm:p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-lg flex flex-col gap-2 shadow-2xs transition-colors">
               <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono mt-0.5">Q</span>
+                <span className="w-5 h-5 rounded-md bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">Q</span>
                 <span>{t.pricing.faqQ4}</span>
               </h5>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5 font-normal">
                 {t.pricing.faqA4}
               </p>
             </div>
 
-            <div className="p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-2xl flex flex-col gap-2.5 shadow-xs transition-colors">
+            <div className="p-4 sm:p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-lg flex flex-col gap-2 shadow-2xs transition-colors">
               <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono mt-0.5">Q</span>
+                <span className="w-5 h-5 rounded-md bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">Q</span>
                 <span>{t.pricing.faqQ5}</span>
               </h5>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5 font-normal">
                 {t.pricing.faqA5}
               </p>
             </div>
 
-            <div className="p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-2xl flex flex-col gap-2.5 shadow-xs transition-colors">
+            <div className="p-4 sm:p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-lg flex flex-col gap-2 shadow-2xs transition-colors">
               <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono mt-0.5">Q</span>
+                <span className="w-5 h-5 rounded-md bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">Q</span>
                 <span>{t.pricing.faqQ6}</span>
               </h5>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5 font-normal">
                 {t.pricing.faqA6}
               </p>
             </div>
 
-            <div className="p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-2xl flex flex-col gap-2.5 shadow-xs transition-colors">
+            <div className="p-4 sm:p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-lg flex flex-col gap-2 shadow-2xs transition-colors">
               <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono mt-0.5">Q</span>
+                <span className="w-5 h-5 rounded-md bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">Q</span>
                 <span>{t.pricing.faqQ7}</span>
               </h5>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5 font-normal">
                 {t.pricing.faqA7}
               </p>
             </div>
 
-            <div className="p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-2xl flex flex-col gap-2.5 shadow-xs transition-colors">
+            <div className="p-4 sm:p-5 bg-white border border-slate-200/80 hover:border-slate-300 dark:bg-[#161B22] dark:border-slate-800 dark:hover:border-slate-700 rounded-lg flex flex-col gap-2 shadow-2xs transition-colors">
               <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-start gap-2.5">
-                <span className="w-5 h-5 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono mt-0.5">Q</span>
+                <span className="w-5 h-5 rounded-md bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center font-bold text-[10px] shrink-0 mt-0.5">Q</span>
                 <span>{t.pricing.faqQ8}</span>
               </h5>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5 font-normal">
                 {t.pricing.faqA8}
               </p>
             </div>
@@ -1056,9 +1056,9 @@ export default function PricingPage() {
 
         {/* Bottom High-Converting CTA Banner */}
         <section className="max-w-7xl mx-auto w-full mt-4">
-          <div className="relative overflow-hidden rounded-3xl bg-slate-900 text-white p-8 sm:p-12 border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
-            <div className="space-y-3 max-w-xl">
-              <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider bg-blue-500/10 border border-blue-500/20 px-3 py-1 rounded-full w-fit mx-auto md:mx-0 block">
+          <div className="relative overflow-hidden rounded-xl bg-slate-900 text-white p-7 sm:p-10 border border-slate-800 shadow-md flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
+            <div className="space-y-2.5 max-w-xl">
+              <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-md w-fit mx-auto md:mx-0 block">
                 {isEn ? "START NOW FOR FREE" : isVi ? "BẮT ĐẦU HOÀN TOÀN MIỄN PHÍ" : "まずは無料プランからスタート"}
               </span>
               <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
@@ -1068,7 +1068,7 @@ export default function PricingPage() {
                   ? "Nâng tầm hiệu suất bán hàng B2B của bạn ngay hôm nay."
                   : "鮮度の高い法人データで、営業アプローチを加速しましょう。"}
               </h3>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-normal">
                 {isEn 
                   ? "Register in 10 seconds. Enjoy 20 daily free CSV downloads without entering credit card details."
                   : isVi 
@@ -1080,14 +1080,14 @@ export default function PricingPage() {
             <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
               <LocaleLink
                 href="/auth/register"
-                className="w-full sm:w-auto px-6 py-3.5 bg-primary hover:bg-primary-hover text-white text-xs sm:text-sm font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+                className="w-full sm:w-auto px-5 py-3 bg-[#1B4F8A] hover:bg-[#163e6d] text-white text-xs sm:text-sm font-bold rounded-lg shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
               >
                 <span>{isEn ? "Create Free Account (10s)" : isVi ? "Đăng ký miễn phí (10 giây)" : "無料会員登録 (10秒)"}</span>
                 <ArrowRight className="w-4 h-4" />
               </LocaleLink>
               <LocaleLink
                 href="/contact"
-                className="w-full sm:w-auto px-6 py-3.5 bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-5 py-3 bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>{isEn ? "Contact Sales" : isVi ? "Liên hệ tư vấn" : "お問い合わせ・ご相談"}</span>
               </LocaleLink>
@@ -1104,16 +1104,16 @@ export default function PricingPage() {
       <div className="flex flex-col gap-12 w-full animate-in fade-in duration-300">
         {/* Form DM Hero / Value Prop Banner */}
         <section className="max-w-5xl mx-auto w-full">
-          <div className="p-7 sm:p-9 rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-indigo-900/60">
+          <div className="p-7 sm:p-8 rounded-xl bg-slate-900 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 border border-slate-800">
             <div className="flex-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-400/30 text-[10px] font-black uppercase tracking-wider mb-3">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/15 text-blue-300 border border-blue-400/25 text-[11px] font-bold tracking-wider mb-3">
+                <Sparkles className="w-3.5 h-3.5 text-blue-400" />
                 <span>{isEn ? "SELF-SERVE OUTBOUND SAAS" : isVi ? "NỀN TẢNG TIẾP CẬN TỰ ĐỘNG B2B" : "セルフサービス型 フォーム営業"}</span>
               </div>
-              <h2 className="text-xl sm:text-2xl font-black mb-2 tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-bold mb-2 tracking-tight text-white">
                 {isEn ? "Automated Contact Form Outreach SaaS" : isVi ? "Nền Tảng Tự Động Gửi Form Marketing" : "問い合わせフォーム営業配信プラットフォーム"}
               </h2>
-              <p className="text-xs sm:text-sm text-slate-350 leading-relaxed max-w-2xl">
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
                 {isEn
                   ? "Zero setup fee, zero monthly commitments. Filter hyper-targeted prospects from our 5M+ database and dispatch your pitch directly to verified corporate contact forms starting at 20 JPY/form."
                   : isVi
@@ -1124,7 +1124,7 @@ export default function PricingPage() {
             <div className="shrink-0 flex flex-col sm:flex-row items-center gap-3">
               <LocaleLink
                 href="/dashboard?tab=formCampaigns"
-                className="px-6 py-3.5 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-500 shadow-lg shadow-indigo-600/30 transition-all active:scale-[0.98] flex items-center gap-2"
+                className="px-5 py-2.5 rounded-lg font-bold text-xs text-white bg-[#1B4F8A] hover:bg-[#163e6d] shadow-2xs transition-all active:scale-[0.98] flex items-center gap-2"
               >
                 <span>{isEn ? "Create Campaign in Dashboard" : isVi ? "Tạo chiến dịch trên Dashboard" : "管理画面でキャンペーン作成"}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -1139,7 +1139,7 @@ export default function PricingPage() {
         </section>
 
         <section className="flex flex-col items-center gap-2">
-          <div className="p-2 bg-slate-100 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 rounded-xl flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200 px-4 py-2 shadow-xs">
+          <div className="p-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 rounded-lg flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200 px-4 py-2 shadow-2xs">
             <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
             <span>{isEn ? "Special Campaign Discount (30% OFF) Applied" : isVi ? "Áp dụng giá ưu đãi chiến dịch (Giảm 30%)" : "今月のキャンペーン特別価格 (30% OFF) 適用中"}</span>
           </div>
@@ -1155,11 +1155,11 @@ export default function PricingPage() {
         {/* Form DM 3 Pricing Cards */}
         <section className="max-w-6xl mx-auto w-full">
           <div className="text-center max-w-2xl mx-auto mb-10">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-bold mb-3">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-50 dark:bg-blue-950/50 text-[#1B4F8A] dark:text-blue-300 border border-blue-200/70 dark:border-blue-800 text-[11px] font-bold mb-3">
               <Coins className="w-3.5 h-3.5" />
               <span>{isEn ? "Pay-As-You-Go Volume Plans" : isVi ? "Bảng Giá Gửi Form Minh Bạch" : "送信ボリューム別プラン（都度課金）"}</span>
             </div>
-            <h3 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white mb-2">
+            <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
               {isEn ? "Select Your Outreach Volume" : isVi ? "Chọn Quy Mô Gửi Phù Hợp" : "成果に直結する配信プラン"}
             </h3>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
@@ -1169,9 +1169,9 @@ export default function PricingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto items-stretch">
             {/* 1,000 Plan */}
-            <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-7 shadow-xs flex flex-col justify-between">
+            <div className="bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
               <div>
-                <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+                <h4 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1">
                   {isEn ? "Starter (1,000 Forms)" : isVi ? "Gói Starter 1.000 Form" : "1,000 件プラン"}
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
@@ -1179,7 +1179,7 @@ export default function PricingPage() {
                 </p>
 
                 <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-3xl font-black text-slate-900 dark:text-white">¥19,600</span>
+                  <span className="text-3xl font-bold font-mono text-slate-900 dark:text-white">¥19,600</span>
                   <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
@@ -1194,23 +1194,23 @@ export default function PricingPage() {
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "5M+ target list filtering" : isVi ? "Lọc tệp khách hàng từ 5M DB" : "ターゲット企業リスト抽出"}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "AI anti-sales disclaimer skip" : isVi ? "AI quét bỏ qua form cấm quảng cáo" : "AI営業お断り自動除外"}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "Industry templates library" : isVi ? "Thư viện mẫu kịch bản chuẩn Keigo" : "業種別テンプレート活用"}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "Pre-dispatch compliance check" : isVi ? "Kiểm duyệt tuân thủ Tokushoho" : "運営による事前法令・NGワード審査"}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "Realtime logs & CSV report" : isVi ? "Báo cáo CSV và theo dõi trực tiếp" : "リアルタイム進捗 ＆ CSVレポート"}</span>
                   </li>
                 </ul>
@@ -1219,7 +1219,7 @@ export default function PricingPage() {
               <button
                 type="button"
                 onClick={() => handleFormCheckoutClick(formPlans[0])}
-                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                className="mt-8 w-full py-2.5 rounded-lg font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
               >
                 <CreditCard className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                 <span>{isEn ? "Pay with Stripe (1,000 Forms)" : isVi ? "Thanh toán Stripe (1.000 Form)" : "Stripe決済で1,000件枠を購入"}</span>
@@ -1227,13 +1227,13 @@ export default function PricingPage() {
             </div>
 
             {/* 3,000 Plan (RECOMMENDED) */}
-            <div className="bg-white dark:bg-[#1C2128] border-2 border-indigo-600 dark:border-indigo-500 rounded-2xl p-6 sm:p-7 shadow-lg shadow-indigo-500/10 flex flex-col justify-between relative">
-              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-[10px] font-black uppercase tracking-wider shadow-xs whitespace-nowrap">
+            <div className="bg-white dark:bg-[#1C2128] border-2 border-[#1B4F8A] rounded-xl p-6 sm:p-7 shadow-xs flex flex-col justify-between relative">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3 py-1 rounded-md bg-[#1B4F8A] text-white text-[10px] font-bold tracking-wider shadow-2xs whitespace-nowrap">
                 {isEn ? "★ MOST POPULAR & BEST VALUE" : isVi ? "★ Phổ biến & Tối ưu nhất" : "★ 一番人気・推奨プラン"}
               </div>
 
               <div>
-                <h4 className="text-lg font-bold text-indigo-700 dark:text-indigo-400 mb-1">
+                <h4 className="text-base sm:text-lg font-bold text-[#1B4F8A] dark:text-blue-400 mb-1">
                   {isEn ? "Standard (3,000 Forms)" : isVi ? "Gói Standard 3.000 Form" : "3,000 件プラン"}
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
@@ -1241,7 +1241,7 @@ export default function PricingPage() {
                 </p>
 
                 <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-3xl font-black text-indigo-700 dark:text-indigo-300">¥48,300</span>
+                  <span className="text-3xl font-bold font-mono text-[#1B4F8A] dark:text-blue-300">¥48,300</span>
                   <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
@@ -1256,25 +1256,25 @@ export default function PricingPage() {
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "5M+ target list filtering" : isVi ? "Lọc tệp khách hàng từ 5M DB" : "ターゲット企業リスト抽出"}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "AI anti-sales disclaimer skip" : isVi ? "AI quét bỏ qua form cấm quảng cáo" : "AI営業お断り自動除外"}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span className="font-bold text-slate-900 dark:text-white">
                       {isEn ? "Dynamic placeholder tags ({company_name})" : isVi ? "Tự động chèn {company_name}, {address}" : "企業名・住所などの自動差し込みタグ対応"}
                     </span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "Priority 2-hour compliance check" : isVi ? "Ưu tiên kiểm duyệt trong 2 giờ" : "優先スピード審査（最短2時間）"}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "Realtime logs & CSV report" : isVi ? "Báo cáo CSV và theo dõi trực tiếp" : "リアルタイム進捗 ＆ CSVレポート"}</span>
                   </li>
                 </ul>
@@ -1283,7 +1283,7 @@ export default function PricingPage() {
               <button
                 type="button"
                 onClick={() => handleFormCheckoutClick(formPlans[1])}
-                className="mt-8 w-full py-3.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 shadow-md shadow-indigo-500/20 text-center transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                className="mt-8 w-full py-3 rounded-lg font-bold text-xs text-white bg-[#1B4F8A] hover:bg-[#163e6d] shadow-2xs text-center transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
               >
                 <CreditCard className="w-4 h-4" />
                 <span>{isEn ? "Pay with Stripe (3,000 Forms)" : isVi ? "Thanh toán Stripe (3.000 Form)" : "Stripe決済で3,000件枠を購入"}</span>
@@ -1291,9 +1291,9 @@ export default function PricingPage() {
             </div>
 
             {/* 5,000+ Plan */}
-            <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 sm:p-7 shadow-xs flex flex-col justify-between">
+            <div className="bg-white dark:bg-[#1C2128] border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 sm:p-7 shadow-2xs flex flex-col justify-between">
               <div>
-                <h4 className="text-lg font-bold text-slate-900 dark:text-white mb-1">
+                <h4 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-1">
                   {isEn ? "Enterprise (5,000 Forms)" : isVi ? "Gói Enterprise 5.000 Form" : "5,000 件プラン"}
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
@@ -1301,7 +1301,7 @@ export default function PricingPage() {
                 </p>
 
                 <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-3xl font-black text-slate-900 dark:text-white">¥69,300</span>
+                  <span className="text-3xl font-bold font-mono text-slate-900 dark:text-white">¥69,300</span>
                   <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
@@ -1316,23 +1316,23 @@ export default function PricingPage() {
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "5M+ target list filtering" : isVi ? "Lọc tệp khách hàng từ 5M DB" : "ターゲット企業リスト抽出"}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "AI anti-sales disclaimer skip" : isVi ? "AI quét bỏ qua form cấm quảng cáo" : "AI営業お断り自動除外"}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "Advanced filter & tags" : isVi ? "Hỗ trợ tùy biến nâng cao" : "自動差し込みタグ＆高度な除外設定"}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "Priority scheduling & staggered dispatch" : isVi ? "Chia lịch gửi tối ưu theo ngày" : "最優先審査 ＆ 分割配信スケジュール対応"}</span>
                   </li>
                   <li className="flex items-center gap-2">
-                    <Check className="w-4 h-4 text-emerald-500 shrink-0" />
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>{isEn ? "Realtime logs & CSV report" : isVi ? "Báo cáo CSV và theo dõi trực tiếp" : "リアルタイム進捗 ＆ CSVレポート"}</span>
                   </li>
                 </ul>
@@ -1341,7 +1341,7 @@ export default function PricingPage() {
               <button
                 type="button"
                 onClick={() => handleFormCheckoutClick(formPlans[2])}
-                className="mt-8 w-full py-3 rounded-xl font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+                className="mt-8 w-full py-2.5 rounded-lg font-bold text-xs text-slate-700 bg-slate-100 hover:bg-slate-200 dark:text-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-center transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
               >
                 <CreditCard className="w-4 h-4 text-slate-600 dark:text-slate-300" />
                 <span>{isEn ? "Pay with Stripe (5,000 Forms)" : isVi ? "Thanh toán Stripe (5.000 Form)" : "Stripe決済で5,000件枠を購入"}</span>
@@ -1358,7 +1358,7 @@ export default function PricingPage() {
                 ? "※ Các nhu cầu gửi từ 10.000 form trở lên, gửi theo danh sách riêng hoặc tích hợp API vui lòng liên hệ tư vấn."
                 : "※ 10,000件以上の大口配信、貴社保有ハウスリストへの配信代行、API連携などのご相談も承っております。"}
             </p>
-            <LocaleLink href="/contact" className="text-indigo-600 dark:text-indigo-400 hover:underline font-bold inline-flex items-center gap-1">
+            <LocaleLink href="/contact" className="text-[#1B4F8A] dark:text-blue-400 hover:underline font-bold inline-flex items-center gap-1">
               <span>{isEn ? "Inquire about Enterprise / Bulk Outreach" : isVi ? "Liên hệ tư vấn gói Doanh nghiệp lớn" : "大口・エンタープライズ配信のご相談はこちら"}</span>
               <ChevronRight className="w-3.5 h-3.5" />
             </LocaleLink>
@@ -1368,7 +1368,7 @@ export default function PricingPage() {
         {/* 4-Step Process Section */}
         <section className="max-w-5xl mx-auto w-full py-4">
           <div className="text-center max-w-2xl mx-auto mb-8">
-            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2">
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
               {isEn ? "How It Works: 4 Simple Steps" : isVi ? "Quy Trình 4 Bước Đơn Giản" : "配信開始までのカンタン4ステップ"}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -1377,23 +1377,23 @@ export default function PricingPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="p-5 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2 shadow-xs">
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 font-mono font-bold text-xs flex items-center justify-center">01</div>
+            <div className="p-5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 flex flex-col gap-2 shadow-2xs">
+              <div className="w-7 h-7 rounded-md bg-blue-50 text-[#1B4F8A] border border-blue-200/60 dark:bg-blue-950/50 dark:text-blue-300 font-mono font-bold text-xs flex items-center justify-center">01</div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">{isEn ? "Target Filtering" : isVi ? "Lọc đối tượng" : "ターゲット抽出"}</h4>
               <p className="text-xs text-slate-500 leading-relaxed">{isEn ? "Filter target companies from 5M+ database by industry, capital, and headcount." : isVi ? "Lọc doanh nghiệp mục tiêu theo ngành nghề, vốn, nhân sự từ hệ thống." : "500万社DBから業種・資本金・従業員数・地域でアプローチ先を絞り込み。"}</p>
             </div>
-            <div className="p-5 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2 shadow-xs">
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 font-mono font-bold text-xs flex items-center justify-center">02</div>
+            <div className="p-5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 flex flex-col gap-2 shadow-2xs">
+              <div className="w-7 h-7 rounded-md bg-blue-50 text-[#1B4F8A] border border-blue-200/60 dark:bg-blue-950/50 dark:text-blue-300 font-mono font-bold text-xs flex items-center justify-center">02</div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">{isEn ? "Pitch Template" : isVi ? "Soạn kịch bản" : "営業文面の作成"}</h4>
               <p className="text-xs text-slate-500 leading-relaxed">{isEn ? "Choose from Keigo templates or input your customized pitch copy." : isVi ? "Dùng mẫu kịch bản kính ngữ có sẵn hoặc nhập nội dung tùy chỉnh của bạn." : "業種別テンプレートを活用し、自社サービスの特徴を当てはめて作成。"}</p>
             </div>
-            <div className="p-5 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2 shadow-xs">
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 font-mono font-bold text-xs flex items-center justify-center">03</div>
+            <div className="p-5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 flex flex-col gap-2 shadow-2xs">
+              <div className="w-7 h-7 rounded-md bg-blue-50 text-[#1B4F8A] border border-blue-200/60 dark:bg-blue-950/50 dark:text-blue-300 font-mono font-bold text-xs flex items-center justify-center">03</div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">{isEn ? "Review & Payment" : isVi ? "Thanh toán & Duyệt" : "決済＆事前審査"}</h4>
               <p className="text-xs text-slate-500 leading-relaxed">{isEn ? "Online credit card payment and fast Tokushoho compliance review by staff." : isVi ? "Thanh toán trực tuyến và đội ngũ duyệt tuân thủ Tokushoho trong 2-4h." : "カード決済完了後、運営スタッフが特商法表記とNGワードを迅速審査。"}</p>
             </div>
-            <div className="p-5 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2 shadow-xs">
-              <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 font-mono font-bold text-xs flex items-center justify-center">04</div>
+            <div className="p-5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 flex flex-col gap-2 shadow-2xs">
+              <div className="w-7 h-7 rounded-md bg-blue-50 text-[#1B4F8A] border border-blue-200/60 dark:bg-blue-950/50 dark:text-blue-300 font-mono font-bold text-xs flex items-center justify-center">04</div>
               <h4 className="text-sm font-bold text-slate-900 dark:text-white">{isEn ? "Dispatch & CSV Logs" : isVi ? "Gửi & Tải báo cáo" : "自動配信＆レポート"}</h4>
               <p className="text-xs text-slate-500 leading-relaxed">{isEn ? "Automated delivery runs with AI skips; download complete CSV logs anytime." : isVi ? "Hệ thống tự động gửi form và cho phép tải file báo cáo CSV bất cứ lúc nào." : "AI除外を適用して自動配信。完了後は送信証跡CSVを即座にダウンロード。"}</p>
             </div>
@@ -1403,7 +1403,7 @@ export default function PricingPage() {
         {/* 4 Core Features / Safeguards */}
         <section className="max-w-5xl mx-auto w-full">
           <div className="text-center max-w-2xl mx-auto mb-8">
-            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2">
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
               {isEn ? "Why Choose Kigyou-list Form Outreach" : isVi ? "4 Lợi Thế Vượt Trội Của Hệ Thống" : "Kigyou-list が選ばれる4つの強み"}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -1412,8 +1412,8 @@ export default function PricingPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex items-start gap-4 shadow-xs">
-              <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400 flex items-center justify-center shrink-0">
+            <div className="p-5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 flex items-start gap-4 shadow-2xs">
+              <div className="w-9 h-9 rounded-lg bg-blue-50 text-[#1B4F8A] border border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
@@ -1426,8 +1426,8 @@ export default function PricingPage() {
               </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex items-start gap-4 shadow-xs">
-              <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
+            <div className="p-5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 flex items-start gap-4 shadow-2xs">
+              <div className="w-9 h-9 rounded-lg bg-blue-50 text-[#1B4F8A] border border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
                 <FileText className="w-5 h-5" />
               </div>
               <div>
@@ -1440,8 +1440,8 @@ export default function PricingPage() {
               </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex items-start gap-4 shadow-xs">
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 flex items-center justify-center shrink-0">
+            <div className="p-5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 flex items-start gap-4 shadow-2xs">
+              <div className="w-9 h-9 rounded-lg bg-blue-50 text-[#1B4F8A] border border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
                 <Target className="w-5 h-5" />
               </div>
               <div>
@@ -1454,8 +1454,8 @@ export default function PricingPage() {
               </div>
             </div>
 
-            <div className="p-6 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 flex items-start gap-4 shadow-xs">
-              <div className="w-10 h-10 rounded-xl bg-purple-50 text-purple-600 dark:bg-purple-950/40 dark:text-purple-400 flex items-center justify-center shrink-0">
+            <div className="p-5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 flex items-start gap-4 shadow-2xs">
+              <div className="w-9 h-9 rounded-lg bg-blue-50 text-[#1B4F8A] border border-blue-200/60 dark:bg-blue-950/40 dark:text-blue-400 flex items-center justify-center shrink-0">
                 <BarChart3 className="w-5 h-5" />
               </div>
               <div>
@@ -1473,7 +1473,7 @@ export default function PricingPage() {
         {/* Form Outreach FAQs */}
         <section className="max-w-4xl mx-auto w-full">
           <div className="text-center mb-6">
-            <HelpCircle className="w-7 h-7 text-indigo-600 dark:text-indigo-400 mx-auto mb-2" />
+            <HelpCircle className="w-7 h-7 text-[#1B4F8A] dark:text-blue-400 mx-auto mb-2" />
             <h3 className="text-xl font-bold text-slate-900 dark:text-white">
               {isEn ? "Frequently Asked Questions (Form Outreach)" : isVi ? "Câu Hỏi Thường Gặp (Form Outreach)" : "フォーム営業に関するよくあるご質問"}
             </h3>
@@ -1483,10 +1483,10 @@ export default function PricingPage() {
             {formFaqs.map((faq, idx) => (
               <div
                 key={idx}
-                className="p-5 bg-white border border-slate-200/80 dark:bg-[#161B22] dark:border-slate-800 rounded-2xl shadow-xs"
+                className="p-4.5 bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 rounded-lg shadow-2xs"
               >
                 <h5 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white flex items-start gap-2.5 mb-2">
-                  <span className="w-5 h-5 rounded-lg bg-indigo-50 text-indigo-600 dark:bg-indigo-950/50 dark:text-indigo-400 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono mt-0.5">Q</span>
+                  <span className="w-5 h-5 rounded-md bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-300 flex items-center justify-center font-bold text-[10px] shrink-0 font-mono mt-0.5">Q</span>
                   <span>{faq.q}</span>
                 </h5>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-7.5">
@@ -1499,15 +1499,15 @@ export default function PricingPage() {
 
         {/* Bottom Form DM CTA */}
         <section className="max-w-5xl mx-auto w-full">
-          <div className="relative overflow-hidden rounded-3xl bg-slate-900 text-white p-8 sm:p-10 border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
+          <div className="relative overflow-hidden rounded-xl bg-slate-900 text-white p-7 sm:p-9 border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
             <div className="space-y-2 max-w-xl">
-              <span className="text-[11px] font-bold text-indigo-400 uppercase tracking-wider bg-indigo-500/10 border border-indigo-500/20 px-3 py-1 rounded-full w-fit mx-auto md:mx-0 block">
+              <span className="text-[11px] font-bold text-blue-300 uppercase tracking-wider bg-blue-500/15 border border-blue-500/25 px-2.5 py-1 rounded-md w-fit mx-auto md:mx-0 block">
                 {isEn ? "READY TO LAUNCH" : isVi ? "BẮT ĐẦU NGAY" : "最短即日オンライン配信"}
               </span>
-              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
+              <h3 className="text-2xl sm:text-3xl font-bold tracking-tight">
                 {isEn ? "Start Your Form Outreach Campaign" : isVi ? "Khởi Tạo Chiến Dịch Tiếp Cận B2B Ngay" : "自社の営業文面を管理画面で即時配信"}
               </h3>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
                 {isEn
                   ? "Zero setup fees. Filter prospects and create your campaign draft in dashboard right now."
                   : isVi
@@ -1518,7 +1518,7 @@ export default function PricingPage() {
             <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
               <LocaleLink
                 href="/dashboard?tab=formCampaigns"
-                className="w-full sm:w-auto px-6 py-3.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs sm:text-sm font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
+                className="w-full sm:w-auto px-5 py-2.5 bg-[#1B4F8A] hover:bg-[#163e6d] text-white text-xs sm:text-sm font-bold rounded-lg shadow-2xs transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
               >
                 <span>{isEn ? "Go to Form DM Dashboard" : isVi ? "Đến Dashboard Gửi Form" : "管理画面でキャンペーン作成"}</span>
                 <ArrowRight className="w-4 h-4" />
@@ -1526,7 +1526,7 @@ export default function PricingPage() {
               <button
                 type="button"
                 onClick={() => handleTabChange("data")}
-                className="w-full sm:w-auto px-5 py-3.5 bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs sm:text-sm font-bold rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>{isEn ? "View Data Plans" : isVi ? "Xem bảng giá Dữ liệu" : "企業データプランを見る"}</span>
               </button>
@@ -1547,8 +1547,8 @@ export default function PricingPage() {
             onClick={() => setShowCheckoutModal(null)}
           />
           
-          <div className="relative w-full max-w-sm bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-2xl z-10 flex flex-col gap-4 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-11 h-11 bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/40 dark:text-blue-300 rounded-xl flex items-center justify-center mx-auto border border-blue-100 dark:border-blue-900/40">
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 shadow-xl z-10 flex flex-col gap-4 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-10 h-10 bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/40 dark:text-blue-300 rounded-lg flex items-center justify-center mx-auto border border-blue-200/60 dark:border-blue-900/40">
               <CreditCard className="w-5 h-5" />
             </div>
 
@@ -1566,7 +1566,7 @@ export default function PricingPage() {
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   {isEn ? "Selected Package" : isVi ? "Gói đã chọn" : "選択したパッケージ"}
                 </label>
-                <div className="p-3 bg-slate-50 dark:bg-[#0D1117] rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1 text-xs">
+                <div className="p-3 bg-slate-50 dark:bg-[#0D1117] rounded-lg border border-slate-200/90 dark:border-slate-800 flex flex-col gap-1 text-xs">
                   <div className="flex justify-between items-center font-bold">
                     <span className="text-slate-800 dark:text-slate-200">{showCheckoutModal.name}</span>
                     <span className="text-rose-600 font-mono">
@@ -1607,11 +1607,11 @@ export default function PricingPage() {
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   disabled={isLoggedIn && !!user?.email}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-white border border-slate-200/80 focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A] dark:bg-[#0D1117] dark:border-slate-700 dark:text-white"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-lg bg-white border border-slate-300 focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A] dark:bg-[#0D1117] dark:border-slate-700 dark:text-white"
                 />
               </div>
 
-              <div className="flex items-start gap-2 mt-1 mb-2 bg-slate-50 dark:bg-[#0D1117] p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800">
+              <div className="flex items-start gap-2 mt-1 mb-2 bg-slate-50 dark:bg-[#0D1117] p-2.5 rounded-lg border border-slate-200/90 dark:border-slate-800">
                 <input
                   type="checkbox"
                   id="agree-subscribe-terms"
@@ -1639,7 +1639,7 @@ export default function PricingPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 text-xs font-bold text-white bg-[#1B4F8A] hover:bg-[#153e6d] rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full py-2.5 text-xs font-bold text-white bg-[#1B4F8A] hover:bg-[#163e6d] rounded-lg shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1660,7 +1660,7 @@ export default function PricingPage() {
               </div>
             </form>
 
-            <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 bg-slate-50 dark:bg-[#0D1117] py-2 rounded-xl border border-slate-200/50 dark:border-slate-800">
+            <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 bg-slate-50 dark:bg-[#0D1117] py-2 rounded-lg border border-slate-200/60 dark:border-slate-800">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               <span>{isEn ? "Try free membership first." : isVi ? "Bạn có thể đăng ký thử gói miễn phí trước." : "現在ご登録は無料でお試しいただけます。"}</span>
             </div>
@@ -1676,8 +1676,8 @@ export default function PricingPage() {
             onClick={() => setShowPackCheckoutModal(null)}
           />
           
-          <div className="relative w-full max-w-sm bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-2xl z-10 flex flex-col gap-4 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-11 h-11 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 rounded-xl flex items-center justify-center mx-auto border border-emerald-100 dark:border-emerald-900/40">
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 shadow-xl z-10 flex flex-col gap-4 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-10 h-10 bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/40 dark:text-blue-300 rounded-lg flex items-center justify-center mx-auto border border-blue-200/60 dark:border-blue-900/40">
               <CreditCard className="w-5 h-5" />
             </div>
 
@@ -1695,9 +1695,9 @@ export default function PricingPage() {
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   {isEn ? "Selected Package" : isVi ? "Gói bổ sung đã chọn" : "選択したパッケージ"}
                 </label>
-                <div className="p-3 bg-slate-50 dark:bg-[#0D1117] rounded-xl border border-slate-200/80 dark:border-slate-800 flex justify-between items-center text-xs font-bold">
+                <div className="p-3 bg-slate-50 dark:bg-[#0D1117] rounded-lg border border-slate-200/90 dark:border-slate-800 flex justify-between items-center text-xs font-bold">
                   <span className="text-slate-800 dark:text-slate-200">{showPackCheckoutModal.name}</span>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-mono font-bold">
+                  <span className="text-[#1B4F8A] dark:text-blue-300 font-mono font-bold">
                     ¥{showPackCheckoutModal.price.toLocaleString()}
                   </span>
                 </div>
@@ -1714,29 +1714,29 @@ export default function PricingPage() {
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   disabled={isLoggedIn && !!user?.email}
-                  className="w-full px-3.5 py-2.5 text-xs rounded-xl bg-white border border-slate-200/80 focus:outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600 dark:bg-[#0D1117] dark:border-slate-700 dark:text-white"
+                  className="w-full px-3.5 py-2.5 text-xs rounded-lg bg-white border border-slate-300 focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A] dark:bg-[#0D1117] dark:border-slate-700 dark:text-white"
                 />
               </div>
 
-              <div className="flex items-start gap-2 mt-1 mb-2 bg-slate-50 dark:bg-[#0D1117] p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-800">
+              <div className="flex items-start gap-2 mt-1 mb-2 bg-slate-50 dark:bg-[#0D1117] p-2.5 rounded-lg border border-slate-200/90 dark:border-slate-800">
                 <input
                   type="checkbox"
                   id="agree-pack-terms"
                   required
-                  className="rounded border-slate-300 text-emerald-700 focus:ring-emerald-600 h-3.5 w-3.5 mt-0.5 cursor-pointer"
+                  className="rounded border-slate-300 text-[#1B4F8A] focus:ring-[#1B4F8A] h-3.5 w-3.5 mt-0.5 cursor-pointer"
                 />
                 <label htmlFor="agree-pack-terms" className="text-[11px] text-slate-600 dark:text-slate-400 leading-normal cursor-pointer selection:bg-transparent">
                   {isEn ? (
                     <>
-                      I agree to the <a href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold">Terms of Service</a> and <a href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold">Act on Specified Commercial Transactions</a>.
+                      I agree to the <a href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-[#1B4F8A] dark:text-blue-400 hover:underline font-bold">Terms of Service</a> and <a href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-[#1B4F8A] dark:text-blue-400 hover:underline font-bold">Act on Specified Commercial Transactions</a>.
                     </>
                   ) : isVi ? (
                     <>
-                      Tôi đồng ý với <a href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold">Điều khoản dịch vụ</a> và <a href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold">Luật giao dịch thương mại đặc định</a>.
+                      Tôi đồng ý với <a href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-[#1B4F8A] dark:text-blue-400 hover:underline font-bold">Điều khoản dịch vụ</a> và <a href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-[#1B4F8A] dark:text-blue-400 hover:underline font-bold">Luật giao dịch thương mại đặc định</a>.
                     </>
                   ) : (
                     <>
-                      <a href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold">利用規約</a>および<a href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-emerald-700 dark:text-emerald-400 hover:underline font-bold">特定商取引法に基づく表記</a>に同意します。
+                      <a href={`/${locale}/terms`} target="_blank" rel="noopener noreferrer" className="text-[#1B4F8A] dark:text-blue-400 hover:underline font-bold">利用規約</a>および<a href={`/${locale}/tokushoho`} target="_blank" rel="noopener noreferrer" className="text-[#1B4F8A] dark:text-blue-400 hover:underline font-bold">特定商取引法に基づく表記</a>に同意します。
                     </>
                   )}
                 </label>
@@ -1746,7 +1746,7 @@ export default function PricingPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-2.5 text-xs font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="w-full py-2.5 text-xs font-bold text-white bg-[#1B4F8A] hover:bg-[#163e6d] rounded-lg shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   {loading ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -1767,7 +1767,7 @@ export default function PricingPage() {
               </div>
             </form>
 
-            <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 bg-slate-50 dark:bg-[#0D1117] py-2 rounded-xl border border-slate-200/50 dark:border-slate-800">
+            <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 bg-slate-50 dark:bg-[#0D1117] py-2 rounded-lg border border-slate-200/60 dark:border-slate-800">
               <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
               <span>{isEn ? "Secure checkout encrypted via Stripe." : isVi ? "Thanh toán an toàn được mã hóa qua Stripe." : "Stripe社による暗号化された安全な決済処理が施されます"}</span>
             </div>
@@ -1783,8 +1783,8 @@ export default function PricingPage() {
             onClick={() => setShowFormCheckoutModal(null)}
           />
           
-          <div className="relative w-full max-w-sm bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-6 shadow-2xl z-10 flex flex-col gap-4 text-center animate-in zoom-in-95 duration-200">
-            <div className="w-11 h-11 bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 rounded-xl flex items-center justify-center mx-auto border border-indigo-100 dark:border-indigo-900/40">
+          <div className="relative w-full max-w-sm bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-xl p-6 shadow-xl z-10 flex flex-col gap-4 text-center animate-in zoom-in-95 duration-200">
+            <div className="w-10 h-10 bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/40 dark:text-blue-300 rounded-lg flex items-center justify-center mx-auto border border-blue-200/60 dark:border-blue-900/40">
               <CreditCard className="w-5 h-5" />
             </div>
 
@@ -1802,10 +1802,10 @@ export default function PricingPage() {
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                   {isEn ? "Selected Package" : isVi ? "Gói đã chọn" : "選択したプラン"}
                 </label>
-                <div className="p-3 bg-slate-50 dark:bg-[#0D1117] rounded-xl border border-slate-200/80 dark:border-slate-800 flex flex-col gap-1 text-xs">
+                <div className="p-3 bg-slate-50 dark:bg-[#0D1117] rounded-lg border border-slate-200/90 dark:border-slate-800 flex flex-col gap-1 text-xs">
                   <div className="flex justify-between items-center font-bold">
                     <span className="text-slate-800 dark:text-slate-200">{showFormCheckoutModal.name}</span>
-                    <span className="text-indigo-600 font-mono">
+                    <span className="text-[#1B4F8A] dark:text-blue-300 font-mono">
                       ¥{showFormCheckoutModal.campaignPrice.toLocaleString()}
                     </span>
                   </div>
@@ -1830,7 +1830,7 @@ export default function PricingPage() {
                   value={emailInput}
                   onChange={(e) => setEmailInput(e.target.value)}
                   placeholder="name@company.com"
-                  className="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0D1117] text-slate-800 dark:text-slate-200 outline-none focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
+                  className="w-full text-xs px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-[#0D1117] text-slate-800 dark:text-slate-200 outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A]"
                 />
               </div>
 
@@ -1838,7 +1838,7 @@ export default function PricingPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.99]"
+                  className="w-full py-2.5 bg-[#1B4F8A] hover:bg-[#163e6d] text-white text-xs font-bold rounded-lg shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 active:scale-[0.99]"
                 >
                   {loading ? (
                     <>
@@ -1862,8 +1862,8 @@ export default function PricingPage() {
               </div>
             </form>
 
-            <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 bg-slate-50 dark:bg-[#0D1117] py-2 rounded-xl border border-slate-200/50 dark:border-slate-800">
-              <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+            <div className="flex items-center justify-center gap-1.5 text-[10px] text-slate-500 bg-slate-50 dark:bg-[#0D1117] py-2 rounded-lg border border-slate-200/60 dark:border-slate-800">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#1B4F8A] shrink-0" />
               <span>{isEn ? "Secure checkout encrypted via Stripe." : isVi ? "Thanh toán an toàn được mã hóa qua Stripe." : "Stripe社による暗号化された安全な決済処理が施されます"}</span>
             </div>
           </div>

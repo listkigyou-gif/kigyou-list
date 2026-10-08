@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { 
   Building2, MapPin, Phone, Globe, Mail, Printer, Calendar, 
-  Briefcase, FileText, ChevronRight, BarChart3, Clock, Share2, ExternalLink, ShieldCheck, MessageSquare
+  Briefcase, FileText, ChevronRight, BarChart3, Clock, Share2, ExternalLink, ShieldCheck, MessageSquare, Lock
 } from 'lucide-react';
 import { formatShortDate, toISOStringLocal } from '@/lib/dateUtils';
 import { 
@@ -14,6 +14,7 @@ import { Header } from '@/components/Header';
 import { UnlockCard } from '@/components/UnlockCard';
 import { ObfuscatedPhone } from '@/components/ObfuscatedPhone';
 import { CompanyActions } from '@/components/CompanyActions';
+import { CompanyPRSection } from '@/components/CompanyPRSection';
 import { UnlockCTA } from '@/components/UnlockCTA';
 import { Footer } from '@/components/Footer';
 import { CompanyFinancials } from '@/components/CompanyFinancials';
@@ -52,28 +53,28 @@ function formatJapaneseCurrency(amount: number | string | null, locale: string):
   if (isNaN(num)) return "";
   
   if (locale === 'en') {
-    if (num >= 1_000_000_000_000) return `¥${(num / 1_000_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}T JPY`;
-    if (num >= 1_000_000_000) return `¥${(num / 1_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}B JPY`;
-    if (num >= 1_000_000) return `¥${(num / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M JPY`;
-    return `¥${num.toLocaleString()} JPY`;
+    if (num >= 1_000_000_000_000) return `¥${(num / 1_000_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}T JPY`;
+    if (num >= 1_000_000_000) return `¥${(num / 1_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}B JPY`;
+    if (num >= 1_000_000) return `¥${(num / 1_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}M JPY`;
+    return `¥${num.toLocaleString('en-US')} JPY`;
   }
   if (locale === 'vi') {
-    if (num >= 1_000_000_000_000) return `${(num / 1_000_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })} nghìn tỷ JPY`;
-    if (num >= 100_000_000) return `${(num / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })} trăm triệu JPY`;
-    if (num >= 10_000) return `${(num / 10_000).toLocaleString(undefined, { maximumFractionDigits: 0 })} vạn JPY`;
-    return `¥${num.toLocaleString()} JPY`;
+    if (num >= 1_000_000_000_000) return `${(num / 1_000_000_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} nghìn tỷ JPY`;
+    if (num >= 100_000_000) return `${(num / 100_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} trăm triệu JPY`;
+    if (num >= 10_000) return `${(num / 10_000).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} vạn JPY`;
+    return `¥${num.toLocaleString('vi-VN')} JPY`;
   }
   // Japanese
   if (num >= 1_000_000_000_000) {
-    return `${(num / 1_000_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}兆円`;
+    return `${(num / 1_000_000_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}兆円`;
   }
   if (num >= 100_000_000) {
-    return `${(num / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}億円`;
+    return `${(num / 100_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}億円`;
   }
   if (num >= 10_000) {
-    return `${(num / 10_000).toLocaleString(undefined, { maximumFractionDigits: 0 })}万円`;
+    return `${(num / 10_000).toLocaleString('ja-JP', { maximumFractionDigits: 0 })}万円`;
   }
-  return `¥${num.toLocaleString()}`;
+  return `¥${num.toLocaleString('ja-JP')}`;
 }
 
 function generateDynamicSummary(
@@ -154,46 +155,49 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const industryName = primaryIndustry ? primaryIndustry.industry_name : null;
   const summary = generateDynamicSummary(company, locale, industryName, company.prefecture_name);
 
-  if (locale === 'en') {
-    return {
-      title: `${companyName} - Company Profile, Financials, Contact | Kigyou-list`,
-      description: summary,
-      alternates: {
-        canonical: `/en/company/${companyId}`,
-        languages: {
-          ja: `/ja/company/${companyId}`,
-          en: `/en/company/${companyId}`,
-          vi: `/vi/company/${companyId}`,
-        }
+  const pageTitle = locale === 'en'
+    ? `${companyName} - Company Profile, Financials, Contact | Kigyou-list`
+    : locale === 'vi'
+    ? `${companyName} - Thông tin doanh nghiệp, tài chính, liên hệ | Kigyou-list`
+    : `${companyName} - 企業基本情報・財務情報・連絡先 | Kigyou-list`;
+
+  const ogLocale = locale === 'en' ? 'en_US' : locale === 'vi' ? 'vi_VN' : 'ja_JP';
+
+  return {
+    title: pageTitle,
+    description: summary,
+    alternates: {
+      canonical: `/${locale}/company/${companyId}`,
+      languages: {
+        ja: `/ja/company/${companyId}`,
+        en: `/en/company/${companyId}`,
+        vi: `/vi/company/${companyId}`,
+        'x-default': `/ja/company/${companyId}`,
       },
-    };
-  } else if (locale === 'vi') {
-    return {
-      title: `${companyName} - Thông tin doanh nghiệp, tài chính, liên hệ | Kigyou-list`,
+    },
+    openGraph: {
+      title: pageTitle,
       description: summary,
-      alternates: {
-        canonical: `/vi/company/${companyId}`,
-        languages: {
-          ja: `/ja/company/${companyId}`,
-          en: `/en/company/${companyId}`,
-          vi: `/vi/company/${companyId}`,
-        }
-      },
-    };
-  } else {
-    return {
-      title: `${companyName} - 企業基本情報・財務情報・連絡先 | Kigyou-list`,
+      url: `https://kigyoulist.com/${locale}/company/${companyId}`,
+      siteName: 'Kigyou-list',
+      locale: ogLocale,
+      type: 'profile',
+      images: [
+        {
+          url: '/og-image.png',
+          width: 1200,
+          height: 630,
+          alt: `${companyName} - Kigyou-list`,
+        },
+      ],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: pageTitle,
       description: summary,
-      alternates: {
-        canonical: `/ja/company/${companyId}`,
-        languages: {
-          ja: `/ja/company/${companyId}`,
-          en: `/en/company/${companyId}`,
-          vi: `/vi/company/${companyId}`,
-        }
-      },
-    };
-  }
+      images: ['/og-image.png'],
+    },
+  };
 }
 
 export default async function CompanyDetailPage({ params }: PageProps) {
@@ -274,6 +278,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     "taxID": company.corporate_number,
     "identifier": company.corporate_number,
     "description": summary,
+    "mainEntityOfPage": `https://kigyoulist.com/${locale}/company/${company.corporate_number}`,
     "dateModified": toISOStringLocal(company.updated_at),
     "address": {
       "@type": "PostalAddress",
@@ -285,9 +290,15 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     },
     "telephone": company.phone_number || undefined,
     "faxNumber": company.fax_number || undefined,
-    "email": company.email_address || undefined,
     "url": company.website_url || undefined,
     "foundingDate": company.establishment_date || undefined,
+    ...(company.employee_count ? {
+      "numberOfEmployees": {
+        "@type": "QuantitativeValue",
+        "value": company.employee_count
+      }
+    } : {}),
+    ...(industryName ? { "knowsAbout": industryName } : {}),
     ...(snsUrlList.length > 0 ? { "sameAs": snsUrlList } : {})
   };
 
@@ -361,7 +372,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         </nav>
 
         {/* Company Title Banner (Enterprise Trust Card) */}
-        <section className="bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-5">
+        <section className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="flex flex-row gap-4 sm:gap-5 items-start min-w-0">
             {/* Crisp Corporate Badge with Dynamic Logo & Fallback */}
             <CompanyLogo
@@ -373,16 +384,16 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             <div className="flex flex-col gap-2 min-w-0">
               {/* Trust Badges Row */}
               <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
+                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
                   company.status === '閉鎖' || company.status === '解散'
-                    ? 'text-rose-700 bg-rose-50 dark:bg-rose-950/30 dark:text-rose-400 border-rose-200/70 dark:border-rose-900/40'
-                    : 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200/70 dark:border-emerald-900/40'
+                    ? 'text-rose-700 bg-rose-50 dark:bg-rose-950/30 dark:text-rose-400 border-rose-200 dark:border-rose-900/40'
+                    : 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/40'
                 }`}>
                   {localizedStatus}
                 </span>
 
                 {company.is_claimed && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-300 dark:border-emerald-800 shadow-2xs">
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
                     <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                     {locale === 'en' ? 'Verified Business' : locale === 'vi' ? 'Chính chủ đã xác minh' : '公式認証企業'}
                   </span>
@@ -392,18 +403,18 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   <Link 
                     key={idx}
                     href={`/${locale}/industry/${ind.industry_code}/location/${company.prefecture_code}`}
-                    className="text-[11px] font-medium text-slate-650 hover:text-primary bg-slate-100 hover:bg-slate-200/70 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white px-2.5 py-0.5 rounded-full border border-slate-200/70 dark:border-slate-700/70 transition-colors"
+                    className="text-[11px] font-medium text-slate-700 hover:text-[#1B4F8A] bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 transition-colors"
                   >
                     {ind.industry_code}.{(t.majorIndustries as Record<string, string>)?.[ind.industry_code] || ind.industry_name}
                   </Link>
                 ))}
 
-                <span className="inline-flex items-center text-[11px] font-medium text-slate-650 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2.5 py-0.5 rounded-full border border-slate-200/70 dark:border-slate-700/70 font-mono">
+                <span className="inline-flex items-center text-[11px] font-medium text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 font-mono">
                   {t.company.corporateNumber.replace('{number}', company.corporate_number)}
                 </span>
                 
                 {/* Data freshness trust badge */}
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-650 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200/70 dark:border-slate-700/70 font-mono">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 font-mono">
                   <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                   {locale === 'en' ? 'Updated' : locale === 'vi' ? 'Cập nhật' : '更新'}: {formatShortDate(company.updated_at)}
                 </span>
@@ -423,13 +434,14 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             companyName={companyName} 
             websiteUrl={company.website_url} 
             phone={company.phone_number}
-            email={company.email_address}
+            email=""
             fax={company.fax_number}
             representativeName={company.representative_name}
             prTitle={company.pr_title}
             prMessage={company.pr_message}
             isClaimed={Boolean(company.is_claimed)}
             claimedAt={company.claimed_at}
+            claimedByEmail={company.claimed_by_email}
           />
         </section>
 
@@ -440,10 +452,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
           <div className="lg:col-span-2 flex flex-col gap-5 lg:gap-6">
             
             {/* 1. Basic Info Section */}
-            <section className="bg-white border border-slate-200/80 dark:bg-[#161B22] dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs">
+            <section className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs">
               <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-150 dark:border-slate-800">
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-primary" />
+                  <FileText className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                   {t.company.basicInfo}
                 </h2>
                 <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 font-mono">
@@ -452,24 +464,17 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 </div>
               </div>
 
-              {/* Official Verified Company PR Message */}
-              {company.is_claimed && company.pr_message && (
-                <div className="mb-5 p-4 rounded-2xl bg-gradient-to-r from-emerald-50/70 to-teal-50/40 dark:from-emerald-950/30 dark:to-teal-950/20 border border-emerald-200/80 dark:border-emerald-850">
-                  <div className="flex items-center gap-2 mb-1.5 text-xs font-bold text-emerald-900 dark:text-emerald-300">
-                    <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                    <span>{company.pr_title || (locale === 'en' ? 'Official Representative Message' : locale === 'vi' ? 'Thông điệp chính thức từ Doanh nghiệp' : '企業公式メッセージ')}</span>
-                    {company.claimed_by_name && (
-                      <span className="text-[10px] text-emerald-700/70 dark:text-emerald-400 font-normal">（{company.claimed_by_name}）</span>
-                    )}
-                  </div>
-                  <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-line">
-                    {company.pr_message}
-                  </p>
-                </div>
-              )}
+              {/* Official Verified Company PR Message / CTA to Claim & Publish */}
+              <CompanyPRSection
+                corporateNumber={company.corporate_number}
+                isClaimed={Boolean(company.is_claimed)}
+                prTitle={company.pr_title}
+                prMessage={company.pr_message}
+                locale={locale}
+              />
 
               {/* Dynamic Summary/Overview paragraph for SEO and users */}
-              <div className="mb-5 p-3.5 rounded-xl bg-slate-50/70 dark:bg-slate-800/30 border border-slate-200/60 dark:border-slate-800/70">
+              <div className="mb-5 p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800">
                 <p className="text-xs sm:text-sm leading-relaxed text-slate-650 dark:text-slate-300">
                   {onPageSummary}
                 </p>
@@ -582,9 +587,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
             {/* 2. Financial Chart Section */}
             {financials && financials.length > 0 && (
-              <section className="bg-white border border-slate-200/80 dark:bg-[#161B22] dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs">
+              <section className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs">
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white pb-3.5 mb-4 border-b border-slate-150 dark:border-slate-800 flex items-center gap-2">
-                  <BarChart3 className="w-5 h-5 text-primary" />
+                  <BarChart3 className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                   {t.company.financialTrend}
                 </h2>
 
@@ -593,9 +598,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             )}
 
             {/* 3. Intent Signals Section */}
-            <section className="bg-white border border-slate-200/80 dark:bg-[#161B22] dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs">
+            <section className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs">
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white pb-3.5 mb-4 border-b border-slate-150 dark:border-slate-800 flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-primary" />
+                <Calendar className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                 {t.company.signalTimeline}
               </h2>
 
@@ -613,9 +618,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
           <div className="flex flex-col gap-5 lg:gap-6">
             
             {/* Contact Details Panel */}
-            <section id="contact" className="bg-white border border-slate-200/80 dark:bg-[#161B22] dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs">
+            <section id="contact" className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs">
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white pb-3.5 mb-4 border-b border-slate-150 dark:border-slate-800 flex items-center gap-2">
-                <Phone className="w-5 h-5 text-primary" />
+                <Phone className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                 {t.company.contactInfo}
               </h2>
 
@@ -623,7 +628,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 
                 {/* 1. Phone number (PUBLIC) */}
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-primary dark:text-blue-400 border border-blue-100 dark:border-blue-900/40 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#1B4F8A] dark:text-blue-400 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shrink-0">
                     <Phone className="w-4 h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -655,7 +660,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
                 {/* 2. Website URL (PUBLIC) */}
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 border border-teal-100 dark:border-teal-900/40 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#1B4F8A] dark:text-blue-400 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shrink-0">
                     <Globe className="w-4 h-4" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -665,7 +670,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                         href={company.website_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-primary hover:underline font-medium break-all dark:text-teal-400 inline-flex items-center gap-1 text-xs sm:text-sm"
+                        className="text-[#1B4F8A] hover:underline font-medium break-all dark:text-blue-400 inline-flex items-center gap-1 text-xs sm:text-sm"
                       >
                         <span>{company.website_url}</span>
                         <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-60" />
@@ -679,7 +684,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 {/* 2b. SNS Social Media Profiles */}
                 {hasSns && (
                   <div className="flex items-start gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-100 dark:border-indigo-900/40 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#1B4F8A] dark:text-blue-400 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shrink-0">
                       <Share2 className="w-4 h-4" />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -692,7 +697,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                             href={snsMap.twitter} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-slate-900 text-white hover:bg-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 transition-colors shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                             title="X (Twitter)"
                           >
                             <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
@@ -704,10 +709,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                             href={snsMap.facebook} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-[#1877F2] text-white hover:bg-[#166fe5] transition-colors shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                             title="Facebook"
                           >
-                            <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                            <svg className="w-3 h-3 fill-current text-[#1877F2]" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                             <span>Facebook</span>
                           </a>
                         )}
@@ -716,10 +721,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                             href={snsMap.wantedly} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-[#00A4BB] text-white hover:bg-[#008fA4] transition-colors shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                             title="Wantedly"
                           >
-                            <span className="font-bold text-[11px]">W</span>
+                            <span className="font-bold text-[11px] text-[#00A4BB]">W</span>
                             <span>Wantedly</span>
                           </a>
                         )}
@@ -728,10 +733,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                             href={snsMap.note} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-[#2cb696] text-white hover:bg-[#259b80] transition-colors shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                             title="note"
                           >
-                            <span className="font-bold text-[11px]">n</span>
+                            <span className="font-bold text-[11px] text-[#2cb696]">n</span>
                             <span>note</span>
                           </a>
                         )}
@@ -740,10 +745,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                             href={snsMap.linkedin} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-[#0A66C2] text-white hover:bg-[#095196] transition-colors shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                             title="LinkedIn"
                           >
-                            <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+                            <svg className="w-3 h-3 fill-current text-[#0A66C2]" viewBox="0 0 24 24"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.28 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.75M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
                             <span>LinkedIn</span>
                           </a>
                         )}
@@ -752,10 +757,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                             href={snsMap.line} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-[#06C755] text-white hover:bg-[#05b04c] transition-colors shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                             title="LINE"
                           >
-                            <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.019 9.608.391.084.922.258 1.057.592.121.303.079.778.039 1.085l-.171 1.027c-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967 1.739-1.907 2.589-3.843 2.589-5.992z"/></svg>
+                            <svg className="w-3 h-3 fill-current text-[#06C755]" viewBox="0 0 24 24"><path d="M24 10.304c0-5.369-5.383-9.738-12-9.738-6.616 0-12 4.369-12 9.738 0 4.814 4.269 8.846 10.019 9.608.391.084.922.258 1.057.592.121.303.079.778.039 1.085l-.171 1.027c-.053.303-.242 1.186 1.039.647 1.281-.54 6.911-4.069 9.428-6.967 1.739-1.907 2.589-3.843 2.589-5.992z"/></svg>
                             <span>LINE</span>
                           </a>
                         )}
@@ -764,10 +769,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                             href={snsMap.youtube} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-[#FF0000] text-white hover:bg-[#cc0000] transition-colors shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                             title="YouTube"
                           >
-                            <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+                            <svg className="w-3 h-3 fill-current text-[#FF0000]" viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
                             <span>YouTube</span>
                           </a>
                         )}
@@ -776,10 +781,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                             href={snsMap.instagram} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-lg bg-pink-600 text-white hover:bg-pink-700 transition-colors shadow-xs"
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                             title="Instagram"
                           >
-                            <svg className="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+                            <svg className="w-3 h-3 fill-current text-pink-600" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
                             <span>Instagram</span>
                           </a>
                         )}
@@ -790,7 +795,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
                 {/* 3. FAX number (BLURRED) */}
                 <div className="flex items-start gap-3 relative">
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/60 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#1B4F8A] dark:text-blue-400 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shrink-0">
                     <Printer className="w-4 h-4" />
                   </div>
                   <div>
@@ -807,45 +812,55 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   </div>
                 </div>
 
-                {/* 4. Email address (BLURRED) */}
+                {/* 4. Email address (Protected - Available via CSV Export) */}
                 <div className="flex items-start gap-3 relative">
-                  <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200/70 dark:border-slate-700/60 flex items-center justify-center shrink-0">
+                  <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#1B4F8A] dark:text-blue-400 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shrink-0">
                     <Mail className="w-4 h-4" />
                   </div>
-                  <div>
+                  <div className="min-w-0 flex-1">
                     <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-0.5">
                       {t.company.email}
                     </span>
-                    <div data-nosnippet>
-                      <UnlockCard type="inline" requiredPlan="pro" fallbackText={locale === 'en' ? "contact@company.co.jp (Sample)" : "contact@company.co.jp (サンプル)"}>
-                        <span className="text-slate-850 dark:text-slate-100 font-semibold break-all">
-                          {company.email_address || t.company.unregistered}
+                    {company.email_address ? (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1 rounded-md text-xs select-none">
+                          <Lock className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                          <span>{locale === 'en' ? 'Email Registered' : locale === 'vi' ? 'Có email liên hệ' : 'メールアドレスあり'}</span>
                         </span>
-                      </UnlockCard>
-                    </div>
+                        <span className="text-xs text-slate-500 dark:text-slate-400">
+                          {locale === 'en' 
+                            ? '• Available via CSV Download (1 Credit/Row)' 
+                            : locale === 'vi' 
+                            ? '• Cung cấp trong file CSV khi tải về (1 dòng / 1 credit)' 
+                            : '• CSVダウンロードで提供（1行1クレジット）'}
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-slate-400 text-xs font-medium">{t.company.unregistered}</span>
+                    )}
                   </div>
                 </div>
 
-                {/* 5. Contact Form Status (Protected - No direct link) */}
+                {/* 5. Contact Form Status (Protected - Available via CSV / Form Outreach) */}
                 {company.contact_form_url && (
                   <div className="flex items-start gap-3 relative">
-                    <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border border-emerald-200/70 dark:border-emerald-800/60 flex items-center justify-center shrink-0">
+                    <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#1B4F8A] dark:text-blue-400 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shrink-0">
                       <MessageSquare className="w-4 h-4" />
                     </div>
-                    <div>
+                    <div className="min-w-0 flex-1">
                       <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-0.5">
                         {locale === 'en' ? 'Contact Form' : locale === 'vi' ? 'Biểu mẫu liên hệ' : 'お問い合わせフォーム'}
                       </span>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/70 px-2.5 py-0.5 rounded text-xs select-none">
+                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2.5 py-0.5 rounded-md text-xs select-none">
                           <span>{locale === 'en' ? 'Form Available' : locale === 'vi' ? 'Có form liên hệ' : 'フォームあり'}</span>
                         </span>
                         <span className="text-xs text-slate-500 dark:text-slate-400">
                           {locale === 'en' 
-                            ? '• Outreach supported via Form Campaign' 
+                            ? '• Outreach supported / URL in CSV' 
                             : locale === 'vi' 
-                            ? '• Hỗ trợ tiếp cận qua dịch vụ Gửi Form' 
-                            : '• フォーム営業代行対応（自動アプローチ可能）'}
+                            ? '• Hỗ trợ gửi Form tự động & URL trong file CSV' 
+                            : '• フォーム営業代行対応（URLはCSV出力で提供）'}
                         </span>
                       </div>
                     </div>
@@ -860,12 +875,12 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             </section>
 
             {/* SEO internal linking matrix (Related & Nearby Companies) */}
-            <section className="bg-white border border-slate-200/80 dark:bg-[#161B22] dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs flex flex-col gap-6">
+            <section className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs flex flex-col gap-6">
 
               {/* Same Industry Links (同業他社) */}
               <div>
                 <h3 className="font-bold text-xs uppercase tracking-wider text-slate-850 dark:text-white mb-3 pb-2 border-b border-slate-150 dark:border-slate-800 flex items-center gap-2">
-                  <Briefcase className="w-4 h-4 text-primary" />
+                  <Briefcase className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                   {t.company.sameIndustry}
                 </h3>
                 {sameIndustry.length > 0 ? (
@@ -933,7 +948,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               {/* Nearby Prefecture Links (近隣企業) */}
               <div>
                 <h3 className="font-bold text-xs uppercase tracking-wider text-slate-850 dark:text-white mb-3 pb-2 border-b border-slate-150 dark:border-slate-800 flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-primary" />
+                  <MapPin className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                   {t.company.nearby}
                 </h3>
                 {nearby.length > 0 ? (

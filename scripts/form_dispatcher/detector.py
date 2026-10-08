@@ -205,3 +205,61 @@ def analyze_form_structure(soup: BeautifulSoup, form_url: str) -> Dict[str, Any]
         "method": (best_form.get("method") or "post").upper(),
         "mapped_fields": mapped_fields
     }
+
+
+def check_captcha_or_bot_protection(html_text: str) -> Dict[str, Any]:
+    """
+    Scans HTML for CAPTCHA (reCAPTCHA, Turnstile, hCaptcha, image/math verification)
+    or anti-bot WAF challenges.
+    
+    Approach 1: Auto-skip and refund credits rather than getting stuck or failing silently.
+    """
+    if not html_text:
+        return {"has_protection": False, "type": None, "reason": ""}
+        
+    lower = html_text.lower()
+    
+    # 1. Google reCAPTCHA
+    if "recaptcha" in lower or "g-recaptcha" in lower or "google.com/recaptcha" in lower:
+        return {
+            "has_protection": True,
+            "type": "CAPTCHA_RECAPTCHA",
+            "reason": "Google reCAPTCHA detected"
+        }
+        
+    # 2. Cloudflare Turnstile / Bot Management
+    if "cf-turnstile" in lower or "challenges.cloudflare.com" in lower:
+        return {
+            "has_protection": True,
+            "type": "CAPTCHA_TURNSTILE",
+            "reason": "Cloudflare Turnstile challenge detected"
+        }
+    if "just a moment..." in lower and "cloudflare" in lower:
+        return {
+            "has_protection": True,
+            "type": "BLOCKED_WAF",
+            "reason": "Cloudflare WAF / Bot challenge screen"
+        }
+
+    # 3. hCaptcha
+    if "hcaptcha" in lower or "h-captcha" in lower:
+        return {
+            "has_protection": True,
+            "type": "CAPTCHA_HCAPTCHA",
+            "reason": "hCaptcha protection detected"
+        }
+
+    # 4. Japanese Image/Text Captcha Keywords
+    jp_captcha_keywords = [
+        "画像認証", "セキュリティコードを入力", "ひらがな認証", 
+        "スパム防止のため", "文字認証", "キャプチャ"
+    ]
+    for kw in jp_captcha_keywords:
+        if kw in html_text:
+            return {
+                "has_protection": True,
+                "type": "CAPTCHA_IMAGE_TEXT",
+                "reason": f"Japanese CAPTCHA keyword '{kw}' detected"
+            }
+
+    return {"has_protection": False, "type": None, "reason": ""}

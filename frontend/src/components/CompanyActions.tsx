@@ -3,9 +3,10 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { Plus, Check, Lock, ShieldCheck, CheckCircle2 } from "lucide-react";
+import { Plus, Check, ShieldCheck, CheckCircle2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { CompanyManagementModal } from "./CompanyManagementModal";
+import { isAdminEmail } from "@/lib/adminAuth";
 
 interface CompanyActionsProps {
   corporateNumber: string;
@@ -19,6 +20,7 @@ interface CompanyActionsProps {
   prMessage?: string | null;
   isClaimed?: boolean;
   claimedAt?: string | null;
+  claimedByEmail?: string | null;
 }
 
 export const CompanyActions: React.FC<CompanyActionsProps> = ({ 
@@ -33,12 +35,14 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
   prMessage = "",
   isClaimed = false,
   claimedAt = null,
+  claimedByEmail = null,
 }) => {
-  const { isLoggedIn, isCompanySaved, toggleSaveCompany, setAuthModalOpen } = useAuth();
+  const { isLoggedIn, user, isCompanySaved, toggleSaveCompany, setAuthModalOpen } = useAuth();
   const { locale } = useLanguage();
   const searchParams = useSearchParams();
 
   const isEn = locale === "en";
+  const isUserAdmin = Boolean(user?.email && isAdminEmail(user.email));
   const [mounted, setMounted] = useState(false);
   const [manageModalOpen, setManageModalOpen] = useState(false);
 
@@ -49,6 +53,10 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
     if (claimParam === "1" || claimParam === "true") {
       setManageModalOpen(true);
     }
+
+    const handleOpenModal = () => setManageModalOpen(true);
+    window.addEventListener("open-company-claim-modal", handleOpenModal);
+    return () => window.removeEventListener("open-company-claim-modal", handleOpenModal);
   }, [searchParams]);
 
   if (!mounted) {
@@ -61,12 +69,6 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
           <Plus className="w-3.5 h-3.5" />
           {isEn ? "Save to My List" : "マイリストに保存"}
         </button>
-        <button
-          disabled
-          className="inline-flex items-center justify-center px-4 py-2 text-[11px] font-medium text-white bg-primary/70 rounded-lg w-full sm:w-auto"
-        >
-          {isEn ? "View Contact Info" : "連絡先を表示"}
-        </button>
       </div>
     );
   }
@@ -77,10 +79,19 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
     <>
       <div className="flex flex-col sm:flex-row gap-2.5 items-center w-full sm:w-auto">
         {/* UNIFIED SINGLE ENTRY POINT: Official Management & Claim Button */}
-        {isClaimed ? (
+        {isUserAdmin ? (
           <button
             onClick={() => setManageModalOpen(true)}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 rounded-xl shadow-xs transition-all active:scale-[0.98] w-full sm:w-auto"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-amber-900 bg-amber-50 hover:bg-amber-100/90 dark:bg-amber-950/40 dark:text-amber-200 border border-amber-300 dark:border-amber-800 rounded-lg shadow-xs transition-all active:scale-[0.98] w-full sm:w-auto"
+            title={isEn ? "Super Admin Direct Edit (No OTP)" : "管理者特権編集（OTP不要・即時保存）"}
+          >
+            <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <span>{isEn ? "Admin Direct Edit" : "管理者・情報編集（即時保存）"}</span>
+          </button>
+        ) : isClaimed ? (
+          <button
+            onClick={() => setManageModalOpen(true)}
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 rounded-lg shadow-xs transition-all active:scale-[0.98] w-full sm:w-auto"
             title={isEn ? "Official Verified Business - Click to manage info" : "公式認証企業（クリックして情報管理）"}
           >
             <CheckCircle2 className="w-4 h-4 text-emerald-600" />
@@ -89,7 +100,7 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
         ) : (
           <button
             onClick={() => setManageModalOpen(true)}
-            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800/80 rounded-xl shadow-xs transition-all active:scale-[0.98] w-full sm:w-auto group"
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-bold text-emerald-700 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100/80 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-300/80 dark:border-emerald-800/80 rounded-lg shadow-xs transition-all active:scale-[0.98] w-full sm:w-auto group"
             title={isEn ? "Official Business Claim & Info Management (Free)" : "公式オーナー認証・情報管理（無料）"}
           >
             <ShieldCheck className="w-4 h-4 text-emerald-600 group-hover:scale-110 transition-transform" />
@@ -106,7 +117,7 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
               toggleSaveCompany(corporateNumber);
             }
           }}
-          className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-xl transition-colors duration-150 w-full sm:w-auto ${
+          className={`inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors duration-150 w-full sm:w-auto ${
             isSaved
               ? "bg-amber-50 hover:bg-amber-100/80 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200/80 dark:border-amber-900/60"
               : "bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 dark:bg-[#1C2128] dark:hover:bg-slate-800 dark:text-slate-300 dark:hover:text-white border border-slate-200/80 dark:border-slate-800"
@@ -124,21 +135,6 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
             </>
           )}
         </button>
-
-        {/* View Contact Button */}
-        <a
-          href="#contact"
-          onClick={(e) => {
-            if (!isLoggedIn) {
-              e.preventDefault();
-              setAuthModalOpen(true);
-            }
-          }}
-          className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-primary hover:bg-[#153e6d] rounded-xl shadow-xs transition-colors duration-150 active:scale-[0.98] w-full sm:w-auto"
-        >
-          {!isLoggedIn && <Lock className="w-3.5 h-3.5" />}
-          <span>{isEn ? "View Contact Info" : "連絡先を表示"}</span>
-        </a>
       </div>
 
       {/* Unified Enterprise Management & Claim Modal */}
@@ -155,6 +151,7 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
         initialPrTitle={prTitle}
         initialPrMessage={prMessage}
         isClaimed={isClaimed}
+        claimedByEmail={claimedByEmail}
         onSuccess={() => {
           setTimeout(() => window.location.reload(), 1500);
         }}

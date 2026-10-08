@@ -4,12 +4,13 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { 
   Building2, Search, MapPin, X, Phone, Globe, Clock,
-  ChevronLeft, ChevronRight, SlidersHorizontal, Lock, ExternalLink, MessageSquare, Send
+  ChevronLeft, ChevronRight, SlidersHorizontal, Lock, ExternalLink, MessageSquare, Send, Mail
 } from "lucide-react";
 import { formatShortDate } from "@/lib/dateUtils";
 import { SearchSidebar } from "@/components/SearchSidebar";
 import { ExportCSVButton } from "@/components/ExportCSVButton";
 import { FormCampaignModal } from "@/components/FormCampaignModal";
+import { FormOutreachRequirementModal, OutreachRequirementType } from "@/components/FormOutreachRequirementModal";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { getIndustryName } from "@/lib/locale-mapping";
@@ -22,28 +23,28 @@ function formatJapaneseCurrency(amount: number | string | null | undefined, loca
   if (isNaN(num)) return "";
   
   if (locale === 'en') {
-    if (num >= 1_000_000_000_000) return `¥${(num / 1_000_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}T JPY`;
-    if (num >= 1_000_000_000) return `¥${(num / 1_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}B JPY`;
-    if (num >= 1_000_000) return `¥${(num / 1_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}M JPY`;
-    return `¥${num.toLocaleString()} JPY`;
+    if (num >= 1_000_000_000_000) return `¥${(num / 1_000_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}T JPY`;
+    if (num >= 1_000_000_000) return `¥${(num / 1_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}B JPY`;
+    if (num >= 1_000_000) return `¥${(num / 1_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}M JPY`;
+    return `¥${num.toLocaleString('en-US')} JPY`;
   }
   if (locale === 'vi') {
-    if (num >= 1_000_000_000_000) return `${(num / 1_000_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })} nghìn tỷ JPY`;
-    if (num >= 100_000_000) return `${(num / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })} trăm triệu JPY`;
-    if (num >= 10_000) return `${(num / 10_000).toLocaleString(undefined, { maximumFractionDigits: 0 })} vạn JPY`;
-    return `¥${num.toLocaleString()} JPY`;
+    if (num >= 1_000_000_000_000) return `${(num / 1_000_000_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} nghìn tỷ JPY`;
+    if (num >= 100_000_000) return `${(num / 100_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} trăm triệu JPY`;
+    if (num >= 10_000) return `${(num / 10_000).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} vạn JPY`;
+    return `¥${num.toLocaleString('vi-VN')} JPY`;
   }
   // Japanese
   if (num >= 1_000_000_000_000) {
-    return `${(num / 1_000_000_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}兆円`;
+    return `${(num / 1_000_000_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}兆円`;
   }
   if (num >= 100_000_000) {
-    return `${(num / 100_000_000).toLocaleString(undefined, { maximumFractionDigits: 1 })}億円`;
+    return `${(num / 100_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}億円`;
   }
   if (num >= 10_000) {
-    return `${(num / 10_000).toLocaleString(undefined, { maximumFractionDigits: 0 })}万円`;
+    return `${(num / 10_000).toLocaleString('ja-JP', { maximumFractionDigits: 0 })}万円`;
   }
-  return `¥${num.toLocaleString()}`;
+  return `¥${num.toLocaleString('ja-JP')}`;
 }
 
 interface Company {
@@ -81,6 +82,8 @@ interface Company {
   has_financials?: boolean;
   logo_url?: string | null;
   contact_form_url?: string | null;
+  has_contact_form?: boolean;
+  has_email?: boolean;
   email_type?: string | null;
 }
 
@@ -189,39 +192,7 @@ const SearchSkeletonCard: React.FC = () => {
   );
 };
 
-// ContactTeaserBadge — replaces inline FAX/Email on list cards to prevent bulk copying
-const ContactTeaserBadge: React.FC<{ corporateNumber: string }> = ({ corporateNumber }) => {
-  const { isLoggedIn, setAuthModalOpen } = useAuth();
-  const { locale, t } = useLanguage();
 
-  if (!isLoggedIn) {
-    return (
-      <button
-        type="button"
-        onClick={(e) => { e.preventDefault(); e.stopPropagation(); setAuthModalOpen(true); }}
-        className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200/90 hover:border-slate-300 dark:border-slate-700/80 dark:hover:border-slate-600 bg-slate-50 hover:bg-slate-100/90 dark:bg-slate-800/50 dark:hover:bg-slate-800 text-slate-600 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white text-xs font-medium transition-colors cursor-pointer select-none"
-        title={t.search.contactUnlockTooltip}
-      >
-        <Lock className="w-3 h-3 shrink-0 group-hover:rotate-6 transition-transform duration-200" />
-        <span className="hidden sm:inline">{t.search.contactUnlockBadge}</span>
-        <span className="inline sm:hidden">{locale === 'ja' ? '(FAX・メール) →' : locale === 'vi' ? '(FAX/Email) →' : '(FAX/Email) →'}</span>
-      </button>
-    );
-  }
-
-  return (
-    <Link
-      href={`/${locale}/company/${corporateNumber}#contact`}
-      className="group inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border border-slate-200/90 hover:border-slate-300 dark:border-slate-700/80 dark:hover:border-slate-600 bg-slate-50 hover:bg-slate-100/90 dark:bg-slate-800/50 dark:hover:bg-slate-800 text-slate-600 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400 text-xs font-medium transition-colors"
-      title={t.search.contactUnlockTooltip}
-      onClick={(e) => e.stopPropagation()}
-    >
-      <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:text-slate-500 dark:group-hover:text-blue-400 shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-      <span className="hidden sm:inline">{t.search.contactUnlockBadge}</span>
-      <span className="inline sm:hidden">{locale === 'ja' ? '(FAX・メール) →' : locale === 'vi' ? '(FAX/Email) →' : '(FAX/Email) →'}</span>
-    </Link>
-  );
-};
 
 export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   initialCompanies,
@@ -232,6 +203,9 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   initialFilters
 }) => {
   const { locale, t } = useLanguage();
+  const { user, isLoggedIn } = useAuth();
+  const [formCredits, setFormCredits] = useState<number | null>(null);
+
   // 1. Local States
   const [companies, setCompanies] = useState<Company[]>(initialCompanies);
   const [totalCount, setTotalCount] = useState<number>(initialTotalCount);
@@ -239,6 +213,43 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [isFormCampaignModalOpen, setIsFormCampaignModalOpen] = useState(false);
+  const [requirementModalType, setRequirementModalType] = useState<OutreachRequirementType | null>(null);
+
+  const isProOrHigher = Boolean(user && (user.role === 'pro' || user.role === 'business' || user.role === 'enterprise' || user.role === 'admin'));
+
+  const handleOpenFormCampaign = () => {
+    if (!isProOrHigher) {
+      setRequirementModalType("PRO_REQUIRED");
+      return;
+    }
+    if (!hasContactForm) {
+      setRequirementModalType("CONTACT_FORM_REQUIRED");
+      return;
+    }
+    setIsFormCampaignModalOpen(true);
+  };
+
+  const handleApplyContactFilterAndProceed = () => {
+    setRequirementModalType(null);
+    handleFilterChange({ contact_form: true }, true);
+    setIsFormCampaignModalOpen(true);
+  };
+
+  // Fetch user form outreach credits
+  useEffect(() => {
+    if (isLoggedIn) {
+      fetch("/api/user/form-credits")
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          if (data?.credits && typeof data.credits.balance === "number") {
+            setFormCredits(data.credits.balance);
+          }
+        })
+        .catch((err) => console.error("Failed to load form credits:", err));
+    } else {
+      setFormCredits(null);
+    }
+  }, [isLoggedIn, isFormCampaignModalOpen]);
   
   // Individual filter states
   const [keyword, setKeyword] = useState(initialFilters.keyword || "");
@@ -961,26 +972,26 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
           </div>
 
           {/* Active Filters Summary */}
-          <div className="flex flex-wrap gap-1.5 text-xs">
+          <div className="flex flex-wrap items-center gap-1.5 text-xs">
             {keyword && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.keywordLabel}: {keyword}
-                <button type="button" onClick={() => handleFilterChange({ keyword: "" }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ keyword: "" }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {prefCode && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.areaLabel}: {(() => {
                   const prefName = prefectures.find(p => p.code === prefCode)?.name || prefCode;
                   return (t.prefectures as Record<string, string>)?.[prefName] || prefName;
                 })()}
-                <button type="button" onClick={() => handleFilterChange({ prefecture: null }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ prefecture: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {city && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.cityLabel}: {city}
-                <button type="button" onClick={() => handleFilterChange({ city: null }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ city: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {indCode && (() => {
@@ -998,145 +1009,204 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               }
               const displayIndustryName = (t.majorIndustries as Record<string, string>)?.[indCode] || selectedIndustryName;
               return (
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                   {t.search.industryLabel}: {displayIndustryName}
-                  <button type="button" onClick={() => handleFilterChange({ industry: null }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                  <button type="button" onClick={() => handleFilterChange({ industry: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
                 </span>
               );
             })()}
             {(minEmp !== undefined || maxEmp !== undefined) && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.employees}: {getEmployeesChipText()}
-                <button type="button" onClick={() => handleFilterChange({ min_employees: null, max_employees: null }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ min_employees: null, max_employees: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {(minCap !== undefined || maxCap !== undefined) && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.capital}: {getCapitalChipText()}
-                <button type="button" onClick={() => handleFilterChange({ min_capital: null, max_capital: null }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ min_capital: null, max_capital: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {hasHiring && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50/80 text-blue-900 border border-blue-200/70 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.hiring}
-                <button type="button" onClick={() => handleFilterChange({ hiring: false }, true)}><X className="w-3 h-3 text-blue-500 hover:text-blue-700 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ hiring: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {hasSubsidy && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50/80 text-blue-900 border border-blue-200/70 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.subsidy}
-                <button type="button" onClick={() => handleFilterChange({ subsidy: false }, true)}><X className="w-3 h-3 text-blue-500 hover:text-blue-700 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ subsidy: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {hasBidding && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50/80 text-blue-900 border border-blue-200/70 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.bidding}
-                <button type="button" onClick={() => handleFilterChange({ bidding: false }, true)}><X className="w-3 h-3 text-blue-500 hover:text-blue-700 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ bidding: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {(minEstYear !== undefined || maxEstYear !== undefined) && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.establishmentYear}: {getEstYearChipText()}
-                <button type="button" onClick={() => handleFilterChange({ min_establishment_year: null, max_establishment_year: null }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ min_establishment_year: null, max_establishment_year: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {hasAward && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50/80 text-blue-900 border border-blue-200/70 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.award}
-                <button type="button" onClick={() => handleFilterChange({ award: false }, true)}><X className="w-3 h-3 text-blue-500 hover:text-blue-700 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ award: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {hasCertification && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50/80 text-blue-900 border border-blue-200/70 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.certification}
-                <button type="button" onClick={() => handleFilterChange({ certification: false }, true)}><X className="w-3 h-3 text-blue-500 hover:text-blue-700 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ certification: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {hasPatent && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50/80 text-blue-900 border border-blue-200/70 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.patent}
-                <button type="button" onClick={() => handleFilterChange({ patent: false }, true)}><X className="w-3 h-3 text-blue-500 hover:text-blue-700 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ patent: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {hasFinancials && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-blue-50/80 text-blue-900 border border-blue-200/70 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/60 font-medium">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.hasFinancials}
-                <button type="button" onClick={() => handleFilterChange({ financials: false }, true)}><X className="w-3 h-3 text-blue-500 hover:text-blue-700 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ financials: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {(minSales !== undefined || maxSales !== undefined) && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.sales}: {getSalesChipText(minSales, maxSales, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}
-                <button type="button" onClick={() => handleFilterChange({ min_sales: null, max_sales: null }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ min_sales: null, max_sales: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
 
             {(minOpIncome !== undefined || maxOpIncome !== undefined) && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.operatingIncome}: {getSalesChipText(minOpIncome, maxOpIncome, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}
-                <button type="button" onClick={() => handleFilterChange({ min_operating_income: null, max_operating_income: null }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ min_operating_income: null, max_operating_income: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {(minOrdIncome !== undefined || maxOrdIncome !== undefined) && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.ordinaryIncome}: {getSalesChipText(minOrdIncome, maxOrdIncome, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}
-                <button type="button" onClick={() => handleFilterChange({ min_ordinary_income: null, max_ordinary_income: null }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ min_ordinary_income: null, max_ordinary_income: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {(minNetIncome !== undefined || maxNetIncome !== undefined) && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.netIncome}: {getSalesChipText(minNetIncome, maxNetIncome, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}
-                <button type="button" onClick={() => handleFilterChange({ min_net_income: null, max_net_income: null }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ min_net_income: null, max_net_income: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {hasEmail && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.emailLabel}
-                <button type="button" onClick={() => handleFilterChange({ email: false }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ email: false, email_type: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {hasPhone && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.phoneLabel}
-                <button type="button" onClick={() => handleFilterChange({ phone: false }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ phone: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {hasWebsite && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.websiteLabel}
-                <button type="button" onClick={() => handleFilterChange({ website: false }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ website: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {hasFax && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.faxLabel}
-                <button type="button" onClick={() => handleFilterChange({ fax: false }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ fax: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
+              </span>
+            )}
+            {hasContactForm && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-950 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-800 text-xs font-semibold shadow-2xs">
+                <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-black tracking-wide">FORM</span>
+                <span>{locale === 'en' ? 'Contact Form' : locale === 'vi' ? 'Biểu mẫu liên hệ' : 'お問い合わせフォーム'}</span>
+                <button type="button" onClick={() => handleFilterChange({ contact_form: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-emerald-700 dark:text-emerald-400 ml-0.5" /></button>
+              </span>
+            )}
+            {emailType && (
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
+                {locale === 'en' ? 'Email:' : locale === 'vi' ? 'Loại Email:' : 'Email種別:'} {
+                  emailType === 'RECRUIT' ? (locale === 'en' ? 'Recruiting' : locale === 'vi' ? 'Tuyển dụng' : '採用') :
+                  emailType === 'PR' ? (locale === 'en' ? 'PR' : locale === 'vi' ? 'Truyền thông/PR' : '広報・PR') :
+                  emailType === 'SALES' ? (locale === 'en' ? 'Sales' : locale === 'vi' ? 'Kinh doanh' : '営業') :
+                  (locale === 'en' ? 'General' : locale === 'vi' ? 'Chung' : '代表・総合')
+                }
+                <button type="button" onClick={() => handleFilterChange({ email_type: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
             {companyStatus && (
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
                 {t.search.statusLabel}: {
                   companyStatus === '活動中' ? (locale === 'en' ? 'Active' : locale === 'vi' ? 'Đang hoạt động' : '活動中') :
                   companyStatus === '閉鎖' ? (locale === 'en' ? 'Closed' : locale === 'vi' ? 'Đã đóng cửa' : '閉鎖') :
                   companyStatus === '解散' ? (locale === 'en' ? 'Dissolved' : locale === 'vi' ? 'Đã giải thể' : '解散') :
                   companyStatus
                 }
-                <button type="button" onClick={() => handleFilterChange({ status: null }, true)}><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-1" /></button>
+                <button type="button" onClick={() => handleFilterChange({ status: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
               </span>
             )}
+            {/* Clear All active chips button */}
+            <button
+              type="button"
+              onClick={() => handleFilterChange({
+                prefecture: null,
+                city: null,
+                industry: null,
+                min_employees: null,
+                max_employees: null,
+                min_capital: null,
+                max_capital: null,
+                hiring: false,
+                subsidy: false,
+                bidding: false,
+                min_establishment_year: null,
+                max_establishment_year: null,
+                award: false,
+                certification: false,
+                patent: false,
+                financials: false,
+                min_sales: null,
+                max_sales: null,
+                email: false,
+                phone: false,
+                website: false,
+                fax: false,
+                contact_form: false,
+                email_type: null,
+                status: null,
+                min_operating_income: null,
+                max_operating_income: null,
+                min_ordinary_income: null,
+                max_ordinary_income: null,
+                min_net_income: null,
+                max_net_income: null,
+                keyword: "",
+              }, true)}
+              className="text-xs font-semibold text-slate-400 hover:text-[#1B4F8A] dark:hover:text-blue-400 ml-1 py-1 transition-colors cursor-pointer"
+            >
+              {t.search.clear}
+            </button>
           </div>
         </div>
 
         {/* Stats Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400 bg-white border border-slate-200/60 dark:bg-[#1C2128] dark:border-slate-800 p-4 rounded-2xl shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400 bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 p-3.5 sm:p-4 rounded-xl shadow-2xs">
           <span>
             {totalCount > 0 ? (
-              t.search.companiesFound.replace("{count}", totalCount >= 10000 ? "10,000+" : totalCount.toLocaleString())
+              t.search.companiesFound.replace("{count}", totalCount.toLocaleString())
             ) : (
               t.search.companiesFoundZero
             )}
           </span>
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-start gap-3 sm:gap-4">
             <ExportCSVButton 
               totalCount={totalCount}
               keyword={keyword}
@@ -1164,6 +1234,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                 has_website: hasWebsite,
                 has_fax: hasFax,
                 has_contact_form: hasContactForm,
+                email_type: emailType,
                 company_status: companyStatus,
                 min_operating_income: minOpIncome,
                 max_operating_income: maxOpIncome,
@@ -1173,18 +1244,71 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                 max_net_income: maxNetIncome
               }}
             />
-            <button
-              type="button"
-              onClick={() => setIsFormCampaignModalOpen(true)}
-              className="px-3.5 py-2 text-xs font-bold text-white bg-gradient-to-r from-blue-700 via-indigo-600 to-purple-600 hover:from-blue-600 hover:to-indigo-500 rounded-xl shadow-md shadow-indigo-500/15 active:scale-[0.98] transition-all flex items-center gap-1.5 shrink-0 cursor-pointer"
-              title={locale === 'ja' ? "このリストへのお問い合わせフォーム営業代行（丸投げプラン）" : locale === 'vi' ? "Dịch vụ gửi form trọn gói đến danh sách này" : "Form DM Outreach Service for this list"}
-            >
-              <Send className="w-3.5 h-3.5" />
-              <span>{locale === 'ja' ? 'フォーム営業代行 (丸投げ)' : locale === 'vi' ? 'Gửi Form trọn gói' : 'Form Outreach (DFY)'}</span>
-              <span className="text-[9px] bg-amber-400 text-amber-950 font-black px-1.5 py-0.2 rounded-full uppercase">NEW</span>
-            </button>
-            <span className="hidden sm:inline border-l border-slate-200 dark:border-slate-800 h-4" />
-            <span>{t.search.pageIndicator.replace("{page}", String(page)).replace("{totalPages}", String(totalPages || 1))}</span>
+            <div className="relative flex flex-col items-end">
+              <button
+                type="button"
+                onClick={handleOpenFormCampaign}
+                className={`px-3.5 py-2 text-xs font-bold rounded-lg shadow-2xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-[0.98] ${
+                  !isProOrHigher 
+                    ? "text-slate-300 bg-slate-700 hover:bg-slate-650 border border-slate-600" 
+                    : !hasContactForm
+                    ? "text-white bg-[#1B4F8A] hover:bg-[#143D6C] border border-[#143D6C] ring-2 ring-amber-400/50"
+                    : "text-white bg-[#1B4F8A] hover:bg-[#143D6C] border border-[#143D6C]"
+                }`}
+                title={
+                  !isProOrHigher
+                    ? (locale === 'ja' 
+                        ? "【Proプラン以上限定】フォーム営業を利用するにはProプランへのアップグレードと「お問い合わせフォーム」絞り込みが必要です" 
+                        : locale === 'vi' 
+                        ? "【Yêu cầu gói PRO】Cần nâng cấp lên gói PRO và lọc 'Biểu mẫu liên hệ' để dùng tính năng này" 
+                        : "【PRO Plan Required】Upgrade to PRO and filter by 'Contact Form' to use automated outreach")
+                    : !hasContactForm
+                    ? (locale === 'ja'
+                        ? "【条件必須】「連絡先情報の有無 ＞ お問い合わせフォーム」の絞り込みが必要です"
+                        : locale === 'vi'
+                        ? "【Điều kiện bắt buộc】Vui lòng tích chọn bộ lọc 'Biểu mẫu liên hệ'"
+                        : "【Required Filter】Please check 'Contact Form' under Contact Presence")
+                    : (locale === 'ja' 
+                        ? "抽出したこのターゲットリストへフォーム営業を自動配信（セルフ型）" 
+                        : locale === 'vi' 
+                        ? "Tự tạo chiến dịch gửi Form tự động theo danh sách đã lọc" 
+                        : "Automated Form Outreach to this filtered list (Self-serve)")
+                }
+              >
+                {!isProOrHigher ? (
+                  <Lock className="w-3.5 h-3.5 text-amber-300" />
+                ) : (
+                  <Send className="w-3.5 h-3.5" />
+                )}
+                <span>{locale === 'ja' ? 'この条件でフォーム営業 (自動配信)' : locale === 'vi' ? 'Gửi Form tự động (Self-serve)' : 'Automated Form Outreach'}</span>
+                {!isProOrHigher ? (
+                  <span className="text-[9px] bg-amber-400 text-amber-950 font-black px-1.5 py-0.2 rounded uppercase flex items-center gap-0.5">
+                    PRO
+                  </span>
+                ) : !hasContactForm ? (
+                  <span className="text-[9px] bg-amber-400 text-amber-950 font-black px-1.5 py-0.2 rounded uppercase">
+                    {locale === 'ja' ? '要条件' : locale === 'vi' ? 'CẦN LỌC' : 'REQ'}
+                  </span>
+                ) : (
+                  <span className="text-[9px] bg-amber-400 text-amber-950 font-black px-1.5 py-0.2 rounded uppercase">NEW</span>
+                )}
+              </button>
+              {isLoggedIn && formCredits !== null && (
+                <span className="text-[10px] mt-1 text-slate-400 dark:text-slate-500">
+                  {locale === 'ja' ? (
+                    <>送信残高: <strong className="text-slate-600 dark:text-slate-300 font-bold">{formCredits.toLocaleString()}</strong> 件</>
+                  ) : locale === 'vi' ? (
+                    <>Hạn ngạch: <strong className="text-slate-600 dark:text-slate-300 font-bold">{formCredits.toLocaleString()}</strong> form</>
+                  ) : (
+                    <>Quota: <strong className="text-slate-600 dark:text-slate-300 font-bold">{formCredits.toLocaleString()}</strong> credits</>
+                  )}
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-2.5 h-[34px]">
+              <span className="hidden sm:inline border-l border-slate-200 dark:border-slate-800 h-4" />
+              <span>{t.search.pageIndicator.replace("{page}", String(page)).replace("{totalPages}", String(totalPages || 1))}</span>
+            </div>
           </div>
         </div>
 
@@ -1204,113 +1328,125 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               {companies.map((company) => (
               <div 
                 key={company.corporate_number}
-                className="bg-white border border-slate-200/90 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-xs hover:border-slate-400/60 dark:hover:border-slate-700 transition-colors"
+                className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-4 sm:p-5 shadow-2xs hover:border-slate-350 dark:hover:border-slate-700 transition-all"
               >
-                {/* Company Header: Outer Logo + (Badges & Company Name) */}
-                <div className="flex flex-row gap-3.5 sm:gap-4 items-start min-w-0 mb-3">
-                  {/* Crisp Corporate Badge with Dynamic Logo & Fallback */}
+                {/* 1. Header: Logo + (Tags, Meta, and Company Name) */}
+                <div className="flex flex-row gap-3.5 sm:gap-4 items-start min-w-0 mb-3.5">
                   <CompanyLogo
                     websiteUrl={company.website_url}
                     logoUrl={company.logo_url}
                     companyName={company.company_name}
-                    className="w-12 h-12 sm:w-14 sm:h-14 shrink-0"
+                    className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 mt-0.5"
                     size={128}
                   />
 
-                  {/* Right Column: Badges on Top, Company Name Below */}
-                  <div className="flex-1 min-w-0 flex flex-col gap-1.5 sm:gap-2">
-                    {/* Top Badges Row - 活動中 và các tag thụt vào bên phải logo */}
-                    <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        <span className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border ${
+                  <div className="flex-1 min-w-0">
+                    {/* Top Row: Status, Prefecture, Industry & Metadata */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${
                           company.status === '閉鎖' || company.status === '解散'
-                            ? 'text-rose-700 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-400 border-rose-200/70 dark:border-rose-900/60'
-                            : 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200/70 dark:border-emerald-900/60'
+                            ? 'text-rose-700 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-400 border-rose-200/80 dark:border-rose-900/60'
+                            : 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-900/60'
                         }`}>
                           {company.status === '活動中' ? t.search.active : company.status === '閉鎖' ? t.search.closed : company.status === '解散' ? t.search.dissolved : company.status}
                         </span>
 
                         {company.prefecture_name && (
-                          <span className="text-slate-650 dark:text-slate-300 text-[11px] font-medium inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200/70 dark:border-slate-700/70">
-                            <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          <span className="text-slate-600 dark:text-slate-300 text-[11px] font-medium inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+                            <MapPin className="w-3 h-3 text-slate-400" />
                             {(t.prefectures as Record<string, string>)?.[company.prefecture_name] || company.prefecture_name}
                           </span>
                         )}
 
                         {company.industries?.filter(ind => ind.classification_level === '大分類').map((ind, idx) => (
-                          <span key={idx} className="text-[11px] font-medium text-slate-650 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2.5 py-0.5 rounded-full border border-slate-200/70 dark:border-slate-700/70">
+                          <span key={idx} className="text-[11px] font-medium text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
                             {ind.industry_code}.{(t.majorIndustries as Record<string, string>)?.[ind.industry_code] || ind.industry_name}
                           </span>
                         ))}
                       </div>
-                      
-                      <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                        {/* Data freshness trust signal */}
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-650 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200/70 dark:border-slate-700/70 font-mono">
-                          <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                          {locale === 'en' ? 'Updated' : locale === 'vi' ? 'Cập nhật' : '更新'}: {formatShortDate(company.updated_at)}
+
+                      {/* Right Meta: Updated Date & Corporate Number */}
+                      <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-slate-400" />
+                          <span>{locale === 'en' ? 'Updated' : locale === 'vi' ? 'Cập nhật' : '更新'}: {formatShortDate(company.updated_at)}</span>
                         </span>
-                        <div className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-650 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-full border border-slate-200/70 dark:border-slate-700/70 font-mono">
+                        <span className="text-slate-300 dark:text-slate-700">|</span>
+                        <div className="inline-flex items-center gap-1">
                           <span>{t.company.corporateNumber ? t.company.corporateNumber.replace('{number}', company.corporate_number) : company.corporate_number}</span>
-                          <CopyTextButton text={company.corporate_number} className="!px-0.5 !py-0 hover:!bg-transparent" />
+                          <CopyTextButton text={company.corporate_number} className="!px-0.5 !py-0 hover:!bg-transparent text-slate-400 hover:text-slate-600" />
                         </div>
                       </div>
                     </div>
 
                     {/* Company Name */}
-                    <div>
-                      <h3 className="text-lg sm:text-xl font-bold leading-snug text-slate-900 dark:text-white hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors break-words">
-                        <Link href={`/${locale}/company/${company.corporate_number}`}>
-                          {company.company_name_en && locale === 'en' ? company.company_name_en : company.company_name}
-                        </Link>
-                      </h3>
-                    </div>
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors break-words leading-snug">
+                      <Link href={`/${locale}/company/${company.corporate_number}`}>
+                        {company.company_name_en && locale === 'en' ? company.company_name_en : company.company_name}
+                      </Link>
+                    </h3>
                   </div>
                 </div>
 
-                {/* Matrix Details */}
-                <div className="flex flex-col gap-2 py-2.5 border-t border-b border-slate-100 dark:border-slate-850 text-xs">
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-                    <div className="bg-slate-50/70 dark:bg-[#1e2430]/40 p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-center min-w-0">
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium whitespace-nowrap mb-0.5">{locale === 'vi' ? 'Tên phiên âm' : locale === 'en' ? 'Furigana' : 'フリガナ'}</span>
-                      <strong className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate">
+                {/* 2. Unified Specification Panel (企業スペック表) */}
+                <div className="bg-slate-50/80 dark:bg-slate-800/40 rounded-lg p-3 sm:px-4 sm:py-3 border border-slate-200/80 dark:border-slate-700/80 text-xs">
+                  {/* 4 Core Data Points */}
+                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+                    <div className="min-w-0">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-0.5">
+                        {locale === 'vi' ? 'Tên phiên âm' : locale === 'en' ? 'Furigana' : 'フリガナ'}
+                      </span>
+                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate block">
                         {company.company_name_kana || t.company.unregistered}
-                      </strong>
+                      </span>
                     </div>
-                    
-                    <div className="bg-slate-50/70 dark:bg-[#1e2430]/40 p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-center min-w-0">
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium whitespace-nowrap mb-0.5">{t.company.capital}</span>
-                      <strong className="text-slate-800 dark:text-slate-200 font-bold font-mono text-xs truncate">
+
+                    <div className="min-w-0">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-0.5">
+                        {t.company.capital}
+                      </span>
+                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate block">
                         {company.capital_amount ? formatJapaneseCurrency(company.capital_amount, locale) : t.company.unregistered}
-                      </strong>
+                      </span>
                     </div>
-                    
-                    <div className="bg-slate-50/70 dark:bg-[#1e2430]/40 p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-center min-w-0">
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium whitespace-nowrap mb-0.5">{t.company.employees}</span>
-                      <strong className="text-slate-800 dark:text-slate-200 font-bold font-mono text-xs truncate">
-                        {company.employee_count ? (locale === 'en' ? `${company.employee_count.toLocaleString()} employees` : locale === 'vi' ? `${company.employee_count.toLocaleString()} nhân viên` : `${company.employee_count.toLocaleString()}名`) : t.company.unregistered}
-                      </strong>
+
+                    <div className="min-w-0">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-0.5">
+                        {t.company.employees}
+                      </span>
+                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate block">
+                        {company.employee_count 
+                          ? (locale === 'en' ? `${company.employee_count.toLocaleString('en-US')} employees` : locale === 'vi' ? `${company.employee_count.toLocaleString('vi-VN')} nhân viên` : `${company.employee_count.toLocaleString('ja-JP')}名`) 
+                          : t.company.unregistered}
+                      </span>
                     </div>
-                    
-                    <div className="bg-slate-50/70 dark:bg-[#1e2430]/40 p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex flex-col justify-center min-w-0">
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium whitespace-nowrap mb-0.5">{t.search.establishmentYear}</span>
-                      <strong className="text-slate-800 dark:text-slate-200 font-bold font-mono text-xs truncate">
-                        {company.establishment_date ? (locale === 'en' ? `Est. ${company.establishment_date.substring(0, 4)}` : locale === 'vi' ? `Năm ${company.establishment_date.substring(0, 4)}` : `${company.establishment_date.substring(0, 4)}年`) : t.company.unregistered}
-                      </strong>
+
+                    <div className="min-w-0">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-0.5">
+                        {t.search.establishmentYear}
+                      </span>
+                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate block">
+                        {company.establishment_date 
+                          ? (locale === 'en' ? `Est. ${company.establishment_date.substring(0, 4)}` : locale === 'vi' ? `Năm ${company.establishment_date.substring(0, 4)}` : `${company.establishment_date.substring(0, 4)}年`) 
+                          : t.company.unregistered}
+                      </span>
                     </div>
                   </div>
-                  
-                  {/* Tags Row - Full Width */}
-                  <div className="bg-slate-50/70 dark:bg-[#1e2430]/40 p-2 rounded-xl border border-slate-100 dark:border-slate-850/60 flex items-center flex-wrap gap-1.5 min-w-0">
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium whitespace-nowrap">{t.company.tags}:</span>
-                    <div className="flex flex-wrap items-center gap-1 max-h-[52px] overflow-y-auto scrollbar-thin">
+
+                  {/* Tags (事業種目) Integrated within Spec Panel */}
+                  <div className="pt-2.5 mt-2.5 border-t border-slate-200/70 dark:border-slate-700/60 flex items-center gap-2 flex-wrap min-w-0">
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium shrink-0">
+                      {t.company.tags}:
+                    </span>
+                    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
                       {(() => {
                         const mediumInds = company.industries?.filter(ind => ind.classification_level === '中分類') || [];
                         if (mediumInds.length > 0) {
                           return mediumInds.map((ind, idx) => (
                             <span 
                               key={idx} 
-                              className="text-xs font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60"
+                              className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
                             >
                               {ind.industry_code}.{getIndustryName(ind.industry_name, locale)}
                             </span>
@@ -1324,7 +1460,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                           tags.map((tag, idx) => (
                             <span 
                               key={idx} 
-                              className="text-xs font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-700/60"
+                              className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
                             >
                               {getIndustryName(tag.trim(), locale)}
                             </span>
@@ -1337,19 +1473,20 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                   </div>
                 </div>
 
-                {/* Contact details & Action */}
+                {/* 3. Footer: Contacts & Primary Action */}
                 <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
-                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-xs">
+                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
                     <span className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
-                      <Phone className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-                      <span className="font-mono">{company.phone_number ? `TEL: ${company.phone_number}` : `TEL: ${t.company.unregistered}`}</span>
+                      <Phone className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{company.phone_number ? `TEL: ${company.phone_number}` : `TEL: ${t.company.unregistered}`}</span>
                     </span>
+
                     {company.website_url ? (
                       <a 
                         href={company.website_url} 
                         target="_blank" 
                         rel="noopener noreferrer" 
-                        className="flex items-center gap-1 font-medium text-[#1B4F8A] hover:text-[#163e6d] dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
+                        className="flex items-center gap-1 font-medium text-[#1B4F8A] hover:underline dark:text-blue-400 transition-colors"
                       >
                         <Globe className="w-3.5 h-3.5" />
                         <span>Website</span>
@@ -1358,30 +1495,37 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     ) : (
                       <span className="flex items-center gap-1.5 font-medium text-slate-400">
                         <Globe className="w-3.5 h-3.5" />
-                        Website: {t.company.none}
+                        <span>Website: {t.company.none}</span>
                       </span>
                     )}
 
-                    {company.contact_form_url && (
+                    {(company.has_contact_form || company.contact_form_url) && (
                       <span 
-                        className="inline-flex items-center gap-1 font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/80 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800/70 px-2 py-0.5 rounded text-xs select-none"
+                        className="inline-flex items-center gap-1 font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 px-2 py-0.5 rounded-md text-xs select-none"
                         title={locale === 'en' ? "Contact form available (Outreach supported)" : locale === 'vi' ? "Có form liên hệ (Hỗ trợ gửi form tiếp thị)" : "お問い合わせフォームあり（フォーム営業代行対応）"}
                       >
-                        <MessageSquare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                        <MessageSquare className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
                         <span>{locale === 'en' ? 'Form Available' : locale === 'vi' ? 'Có form' : 'フォームあり'}</span>
                       </span>
                     )}
 
-                    {/* Contact Teaser — FAX/Email only shown on detail page */}
-                    <ContactTeaserBadge corporateNumber={company.corporate_number} />
+                    {(company.has_email || company.email_address) && (
+                      <span 
+                        className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 px-2 py-0.5 rounded-md text-xs select-none"
+                        title={locale === 'en' ? "Email address registered (Available in CSV export)" : locale === 'vi' ? "Có email liên hệ (Cung cấp trong file CSV)" : "メールアドレス登録あり（CSVエクスポートで提供）"}
+                      >
+                        <Mail className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                        <span>{locale === 'en' ? 'Email Available' : locale === 'vi' ? 'Có email' : 'メールあり'}</span>
+                      </span>
+                    )}
                   </div>
 
                   <Link 
-                    href={`/company/${company.corporate_number}`}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-[#1B4F8A] dark:text-blue-400 bg-blue-50/80 dark:bg-blue-950/40 hover:bg-[#1B4F8A] hover:text-white dark:hover:bg-blue-600 dark:hover:text-white rounded-lg border border-blue-200/70 dark:border-blue-900/60 transition-colors"
+                    href={`/${locale}/company/${company.corporate_number}`}
+                    className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#1B4F8A] hover:bg-[#163e6d] rounded-lg shadow-2xs transition-colors shrink-0"
                   >
                     <span>{locale === 'vi' ? 'Xem chi tiết' : locale === 'en' ? 'Company Details' : '詳細プロフィール'}</span>
-                    <span aria-hidden="true">→</span>
+                    <ChevronRight className="w-3.5 h-3.5 text-blue-200" />
                   </Link>
                 </div>
               </div>
@@ -1459,6 +1603,13 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
         )}
       </main>
 
+      <FormOutreachRequirementModal
+        isOpen={requirementModalType !== null}
+        type={requirementModalType}
+        onClose={() => setRequirementModalType(null)}
+        onApplyContactFilterAndProceed={handleApplyContactFilterAndProceed}
+      />
+
       <FormCampaignModal
         isOpen={isFormCampaignModalOpen}
         onClose={() => setIsFormCampaignModalOpen(false)}
@@ -1484,6 +1635,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
           hasWebsite,
           hasFax,
           hasContactForm,
+          emailType,
           companyStatus
         }}
       />

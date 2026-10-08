@@ -17,7 +17,7 @@ export const UnlockCTA: React.FC = () => {
 
   if (!mounted) return null;
 
-  const isProOrHigher = user && (user.role === 'pro' || user.role === 'business' || user.role === 'enterprise');
+  const isProOrHigher = Boolean(user && (user.role === 'pro' || user.role === 'business' || user.role === 'enterprise' || user.role === 'admin'));
 
   // If already Pro or higher, no need to show any unlock CTA
   if (isLoggedIn && isProOrHigher) return null;

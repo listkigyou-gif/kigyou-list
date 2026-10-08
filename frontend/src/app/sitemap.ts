@@ -1,5 +1,5 @@
 import { MetadataRoute } from 'next';
-import { getSitemapCompanies, getSitemapCompaniesCount, getActiveIndustryPrefecturePairs, getBlogPosts } from '@/lib/db';
+import { getSitemapCompanies, getSitemapCompaniesCount, getActiveIndustryPrefecturePairs } from '@/lib/db';
 
 export const revalidate = 86400; // Cache sitemap for 24 hours, rebuild in background
 
@@ -46,16 +46,28 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
         priority: 0.85,
       });
       corePages.push({
-        url: `${baseUrl}/${loc}/blog`,
+        url: `${baseUrl}/${loc}/form-marketing`,
         lastModified: new Date(),
-        changeFrequency: 'daily',
-        priority: 0.80,
+        changeFrequency: 'weekly',
+        priority: 0.85,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/pricing`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.85,
       });
       corePages.push({
         url: `${baseUrl}/${loc}/contact`,
         lastModified: new Date(),
         changeFrequency: 'monthly',
         priority: 0.5,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/tokushoho`,
+        lastModified: new Date(),
+        changeFrequency: 'monthly',
+        priority: 0.4,
       });
       corePages.push({
         url: `${baseUrl}/${loc}/terms`,
@@ -70,24 +82,6 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
         priority: 0.3,
       });
     });
-
-    // 1.5. Dynamic Blog Pages (Localized)
-    const blogPages: MetadataRoute.Sitemap = [];
-    try {
-      for (const loc of locales) {
-        const posts = await getBlogPosts(1000, 0, loc);
-        posts.forEach(post => {
-          blogPages.push({
-            url: `${baseUrl}/${loc}/blog/${post.slug}`,
-            lastModified: post.published_at ? new Date(post.published_at) : new Date(),
-            changeFrequency: 'weekly',
-            priority: 0.7,
-          });
-        });
-      }
-    } catch (error) {
-      console.error('Error generating dynamic blog pages sitemap:', error);
-    }
 
     // 2. Category Matrix Pages (Prefecture × Industry JSIC) (pSEO) (Localized)
     const categoryPages: MetadataRoute.Sitemap = [];
@@ -109,7 +103,7 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
       console.error('Error generating dynamic categories sitemap:', error);
     }
 
-    return [...corePages, ...blogPages, ...categoryPages];
+    return [...corePages, ...categoryPages];
   }
 
   // Otherwise, it is a numeric ID representing a company profile chunk
