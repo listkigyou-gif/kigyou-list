@@ -21,7 +21,10 @@
     "frontend/.next/**": true,
     "crawlers/**/data/**": true,
     "crawlers/**/logs/**": true,
-    "crawlers/hellowork/**": true
+    "crawlers/hellowork/**": true,
+    ".note_user_profile/**": true,
+    "scripts/.note_profile/**": true,
+    "scripts/form_dispatcher/reports/**": true
   },
   "search.exclude": {
     "**/node_modules": true,
@@ -42,7 +45,10 @@
     "frontend/.next/**": true,
     "crawlers/**/data/**": true,
     "crawlers/**/logs/**": true,
-    "crawlers/hellowork/**": true
+    "crawlers/hellowork/**": true,
+    ".note_user_profile/**": true,
+    "scripts/.note_profile/**": true,
+    "scripts/form_dispatcher/reports/**": true
   },
   "files.watcherExclude": {
     "**/.git/objects/**": true,
@@ -63,6 +69,9 @@
     "frontend/.next/**": true,
     "crawlers/**/data/**": true,
     "crawlers/**/logs/**": true,
-    "crawlers/hellowork/**": true
+    "crawlers/hellowork/**": true,
+    ".note_user_profile/**": true,
+    "scripts/.note_profile/**": true,
+    "scripts/form_dispatcher/reports/**": true
   }
 }

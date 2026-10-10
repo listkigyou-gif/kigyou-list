@@ -29,3 +29,16 @@ qc
 crawlers/website/pass2_progress.json
 frontend/test*
 frontend/scratch*
+.note_user_profile/
+scripts/.note_profile/
+scripts/note_state.json
+scripts/check_current_user.py
+scripts/*.png
+scripts/form_dispatcher/reports/
+scripts/inspect_*.py
+scripts/probe_*.py
+scripts/debug_*.py
+scripts/sniff_*.py
+scripts/save_note_state.py
+scripts/check_notes.py
+scripts/test_*.py

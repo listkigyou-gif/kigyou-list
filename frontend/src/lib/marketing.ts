@@ -9,6 +9,7 @@ const pool = new Pool({
 
 export interface TargetFilters {
   prefecture_name?: string;
+  industry_code?: string;
   min_employees?: number;
   has_website?: boolean;
   exclude_recent_days?: number;
@@ -350,6 +351,14 @@ export async function getMarketingStats() {
       SELECT * FROM marketing_campaigns ORDER BY created_at DESC LIMIT 5
     `);
 
+    // Major JSIC industries
+    const industriesRes = await client.query(`
+      SELECT industry_code, industry_name 
+      FROM m_industries 
+      WHERE classification_level = '大分類' 
+      ORDER BY industry_code
+    `);
+
     return {
       total_companies_with_email: parseInt(totalEmailRes.rows[0].count, 10),
       total_suppressed: parseInt(totalSuppressedRes.rows[0].count, 10),
@@ -357,6 +366,7 @@ export async function getMarketingStats() {
       total_campaigns: parseInt(totalCampaignsRes.rows[0].count, 10),
       top_prefectures: prefBreakdownRes.rows,
       recent_campaigns: recentCampaignsRes.rows,
+      industries: industriesRes.rows,
     };
   } finally {
     client.release();
@@ -381,6 +391,27 @@ function buildAudienceWhere(filters: TargetFilters) {
   if (filters.prefecture_name && filters.prefecture_name !== 'all') {
     conditions.push(`c.prefecture_name = $${paramIdx++}`);
     params.push(filters.prefecture_name);
+  }
+
+  if (filters.industry_code && filters.industry_code !== 'all') {
+    const isMajor = /^[A-Z]$/.test(filters.industry_code);
+    if (isMajor) {
+      conditions.push(`EXISTS (
+        SELECT 1 FROM company_industries ci
+        WHERE ci.corporate_number = c.corporate_number
+          AND (ci.industry_code = $${paramIdx} OR ci.industry_path LIKE $${paramIdx} || '%')
+      )`);
+      params.push(filters.industry_code);
+      paramIdx++;
+    } else {
+      conditions.push(`EXISTS (
+        SELECT 1 FROM company_industries ci
+        WHERE ci.corporate_number = c.corporate_number
+          AND (ci.industry_code = $${paramIdx} OR ci.industry_path LIKE '%' || $${paramIdx} || '%')
+      )`);
+      params.push(filters.industry_code);
+      paramIdx++;
+    }
   }
 
   if (filters.min_employees && filters.min_employees > 0) {

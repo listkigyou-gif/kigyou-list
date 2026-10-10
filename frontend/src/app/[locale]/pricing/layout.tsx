@@ -62,11 +62,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   };
 }
 
+import { getTranslations } from "@/lib/i18n";
+
 export default async function PricingLayout({
   children,
   params,
 }: Readonly<LayoutProps>) {
   const { locale } = await params;
+  const t = getTranslations(locale);
 
   // Product Schema with Offers
   const productSchema = {
@@ -98,11 +101,63 @@ export default async function PricingLayout({
     ]
   };
 
+  // FAQPage Schema
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": t.pricing.faqQ1,
+        "acceptedAnswer": { "@type": "Answer", "text": t.pricing.faqA1 }
+      },
+      {
+        "@type": "Question",
+        "name": t.pricing.faqQ2,
+        "acceptedAnswer": { "@type": "Answer", "text": t.pricing.faqA2 }
+      },
+      {
+        "@type": "Question",
+        "name": t.pricing.faqQ3,
+        "acceptedAnswer": { "@type": "Answer", "text": t.pricing.faqA3 }
+      },
+      {
+        "@type": "Question",
+        "name": t.pricing.faqQ4,
+        "acceptedAnswer": { "@type": "Answer", "text": t.pricing.faqA4 }
+      },
+      {
+        "@type": "Question",
+        "name": t.pricing.faqQ5,
+        "acceptedAnswer": { "@type": "Answer", "text": t.pricing.faqA5 }
+      },
+      {
+        "@type": "Question",
+        "name": t.pricing.faqQ6,
+        "acceptedAnswer": { "@type": "Answer", "text": t.pricing.faqA6 }
+      },
+      {
+        "@type": "Question",
+        "name": t.pricing.faqQ7,
+        "acceptedAnswer": { "@type": "Answer", "text": t.pricing.faqA7 }
+      },
+      {
+        "@type": "Question",
+        "name": t.pricing.faqQ8,
+        "acceptedAnswer": { "@type": "Answer", "text": t.pricing.faqA8 }
+      }
+    ]
+  };
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
       {children}
     </>

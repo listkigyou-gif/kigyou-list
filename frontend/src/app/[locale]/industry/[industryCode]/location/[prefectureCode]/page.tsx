@@ -254,6 +254,15 @@ export default async function CategoryPage({ params }: PageProps) {
     })
   };
 
+  const collectionPageSchema = {
+    "@context": "https://schema.org",
+    "@type": "CollectionPage",
+    "name": `${prefName} ${industryMappedName}`,
+    "description": d.introDesc,
+    "url": `https://kigyoulist.com/${locale}/industry/${industryCode}/location/${prefectureCode}`,
+    "mainEntity": itemListSchema
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
       {/* Schema Injection */}
@@ -263,7 +272,7 @@ export default async function CategoryPage({ params }: PageProps) {
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(collectionPageSchema) }}
       />
 
       {/* Header */}

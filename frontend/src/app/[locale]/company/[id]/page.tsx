@@ -276,7 +276,14 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     "name": companyName,
     "legalName": company.company_name,
     "taxID": company.corporate_number,
-    "identifier": company.corporate_number,
+    "identifier": [
+      company.corporate_number,
+      {
+        "@type": "PropertyValue",
+        "name": "Japan National Tax Agency Corporate Number (法人番号)",
+        "value": company.corporate_number
+      }
+    ],
     "description": summary,
     "mainEntityOfPage": `https://kigyoulist.com/${locale}/company/${company.corporate_number}`,
     "dateModified": toISOStringLocal(company.updated_at),
@@ -299,6 +306,17 @@ export default async function CompanyDetailPage({ params }: PageProps) {
       }
     } : {}),
     ...(industryName ? { "knowsAbout": industryName } : {}),
+    ...(industryCode ? { "isicV4": industryCode } : {}),
+    ...(company.phone_number ? {
+      "contactPoint": [
+        {
+          "@type": "ContactPoint",
+          "telephone": company.phone_number,
+          "contactType": "customer service",
+          "availableLanguage": ["Japanese", "English"]
+        }
+      ]
+    } : {}),
     ...(snsUrlList.length > 0 ? { "sameAs": snsUrlList } : {})
   };
 
@@ -473,11 +491,27 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 locale={locale}
               />
 
-              {/* Dynamic Summary/Overview paragraph for SEO and users */}
-              <div className="mb-5 p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800">
-                <p className="text-xs sm:text-sm leading-relaxed text-slate-650 dark:text-slate-300">
+              {/* Dynamic Answer-First Entity Overview block for AI Extractors & Google Search Snippets */}
+              <div 
+                className="mb-5 p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800"
+                itemScope 
+                itemType="https://schema.org/Corporation"
+              >
+                <meta itemProp="name" content={companyName} />
+                <meta itemProp="taxID" content={company.corporate_number} />
+                <p className="text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300" itemProp="description">
                   {onPageSummary}
                 </p>
+                <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 font-mono">
+                  <span>
+                    {locale === 'en' 
+                      ? 'Source: Japan National Tax Agency (国税庁) & METI gBizINFO' 
+                      : locale === 'vi' 
+                      ? 'Nguồn: Cổng Pháp Nhân Quốc Gia Nhật Bản (NTA) & METI gBizINFO' 
+                      : '出典：国税庁法人番号公表サイト・経済産業省gBizINFO'}
+                  </span>
+                  <span>法人番号: {company.corporate_number}</span>
+                </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-3.5 text-sm">

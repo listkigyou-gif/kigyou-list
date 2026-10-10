@@ -12,19 +12,15 @@ import {
   CheckCircle2,
   AlertTriangle,
   Play,
-  Pause,
-  Filter,
   Sparkles,
-  ExternalLink,
-  ChevronRight,
-  Info,
   Clock,
-  Building,
   Check,
   Trash2,
   Plus,
   Loader2,
 } from "lucide-react";
+import { useLanguage } from "@/context/LanguageContext";
+import { InternalFormMarketingSubTab } from "./InternalFormMarketingSubTab";
 
 interface MarketingStats {
   total_companies_with_email: number;
@@ -33,6 +29,7 @@ interface MarketingStats {
   total_campaigns: number;
   top_prefectures: { prefecture_name: string; email_count: string }[];
   recent_campaigns: any[];
+  industries?: { industry_code: string; industry_name: string }[];
 }
 
 interface Template {
@@ -58,8 +55,231 @@ interface MarketingTabProps {
   getAdminHeaders: () => Record<string, string>;
 }
 
+const I18N = {
+  ja: {
+    kpiDbEmails: "DB内保有メール数",
+    kpiDbDesc: "メールアドレス保有の日本企業",
+    kpiSentEmails: "総配信済みメール数",
+    kpiSentDesc: "高い到達・配信実績",
+    kpiSuppressed: "配信停止（オプトアウト）",
+    kpiSuppressedDesc: "法令遵守・自動配信除外",
+    kpiCampaigns: "作成済みキャンペーン",
+    kpiCampaignsDesc: "ターゲット別セグメント管理",
+    tabCompose: "キャンペーン作成・配信",
+    tabHistory: "配信履歴",
+    tabSuppressions: "配信停止リスト（オプトアウト）",
+    step1Title: "1. 配信ターゲット企業の抽出",
+    lblPrefecture: "都道府県",
+    allJapan: (count: string) => `🇯🇵 日本全国すべて（${count}件）`,
+    lblIndustry: "JSIC 産業分類",
+    allIndustries: "すべての産業分類（全業種）",
+    lblEmployees: "従業員規模",
+    empAll: "すべての規模",
+    emp10: "10名以上",
+    emp30: "30名以上",
+    emp50: "50名以上",
+    emp100: "100名以上",
+    chkWebsite: "公式Webサイトを保有する企業のみ",
+    lblAntiSpam: "スパム防止：直近に配信済みの企業を除外",
+    daysAgo: "日以内",
+    btnCalculate: "ターゲット件数を算出",
+    availableCount: (count: string) => `配信対象: ${count} 社`,
+    step3Title: "3. テスト送信＆安全配信設定",
+    lblTestEmail: "テストメール送信先アドレス:",
+    btnSendTest: "テスト送信",
+    testSuccess: (email: string) => `テストメールを ${email} に正常送信しました。受信トレイまたは迷惑メールフォルダをご確認ください。`,
+    testError: "テストメール送信に失敗しました。",
+    lblBatchSize: "配信バッチサイズ（1回あたり）:",
+    optBatch10: "10件 / 回",
+    optBatch20: "20件 / 回（推奨）",
+    optBatch50: "50件 / 回",
+    optBatch100: "100件 / 回",
+    tokushohoNotice: "ℹ️ 特定電子メール法・特商法に基づき、各メール間に600msの間隔を設け、オプトアウト（配信停止）リンクを自動付与して安全に配信します。",
+    btnStartBatch: (size: number) => `配信を開始する（${size}件）`,
+    btnSendingBatch: (size: number) => `配信中（${size}件）...`,
+    progressTitle: "配信進捗:",
+    progressFinished: "全件配信が完了しました！",
+    progressRemaining: (count: string) => `残り ${count} 社`,
+    sentSuccess: "成功:",
+    sentFailed: "失敗:",
+    step2Title: "2. メッセージ作成（B2B敬語対応）",
+    btnLivePreview: "プレビュー確認 (Live Preview)",
+    lblPresetTemplates: "プリセットテンプレートを選択:",
+    badgeKeigo: "敬語最適化",
+    lblCampaignName: "管理用キャンペーン名",
+    phCampaignName: "例: 2026年10月度 東京都新規開拓アプローチ",
+    lblSubject: "メール件名 (Subject)",
+    lblInsertVars: "変数の挿入（クリックで追加）:",
+    lblBodyHtml: "メール本文 (HTML / テキスト)",
+    historyTitle: "配信キャンペーン履歴",
+    historyDesc: "配信数、送信成功・失敗の推移を確認",
+    thTime: "送信日時",
+    thCampaignName: "キャンペーン名",
+    thSubject: "件名",
+    thTargetCount: "対象件数",
+    thSent: "送信成功",
+    thFailed: "失敗",
+    thStatus: "ステータス",
+    thDetails: "詳細",
+    noCampaigns: "配信キャンペーンの履歴がありません。",
+    btnViewLogs: "ログ確認",
+    logsModalTitle: "キャンペーン配信ログ詳細",
+    noLogs: "このキャンペーンのログはありません。",
+    statusSent: "送信完了",
+    statusFailed: "送信失敗",
+    statusCompleted: "完了",
+    statusSending: "送信中",
+    companyLabel: "企業",
+    suppressionsTitle: "配信除外リスト（オプトアウト）",
+    suppressionsDesc: "配信停止（オプトアウト）を希望された企業や無効なメールアドレスの一覧です。特定電子メール法に基づき、今後のすべての配信から恒久的に自動除外されます。",
+    phSuppressionInput: "除外アドレスを入力 (例: info@example.co.jp)",
+    btnAddSuppression: "除外リストに追加",
+    thSuppressedAt: "登録日時",
+    thEmail: "メールアドレス",
+    thReason: "除外理由",
+    thAction: "操作",
+    noSuppressions: "除外リストに登録されたメールアドレスはありません。",
+    btnRemoveSuppression: "解除",
+    confirmRemoveSuppression: (email: string) => `メールアドレス「${email}」を配信除外リストから削除してもよろしいですか？`,
+    alertEnterSubjectBody: "メール件名と本文を入力してください。",
+    confirmBatchSend: (size: number) => `選択したターゲット企業に向けて、${size}件のB2Bメール配信を開始しますか？\n\n（ドメイン信頼性を維持するため、安全な配信間隔を設けて送信されます）`,
+    alertValidEmail: "有効なメールアドレスを入力してください。",
+    previewModalTitle: "送信メールプレビュー（実データ反映）",
+    previewModalDesc: (name: string) => `サンプル企業の実際のデータで変数を展開しています: ${name}`,
+    previewPreparing: "プレビューを生成中...",
+    sampleText: "サンプル",
+    btnClose: "閉じる",
+    vars: [
+      { label: "{{company_name}}（会社名）", tag: "{{company_name}}" },
+      { label: "{{representative_name}}（代表者名）", tag: "{{representative_name}}" },
+      { label: "{{prefecture}}（都道府県）", tag: "{{prefecture}}" },
+      { label: "{{city}}（市区町村）", tag: "{{city}}" },
+      { label: "{{corporate_number}}（法人番号）", tag: "{{corporate_number}}" },
+      { label: "{{company_page_url}}（企業詳細URL）", tag: "{{company_page_url}}" },
+      { label: "{{unsubscribe_url}}（配信停止URL）", tag: "{{unsubscribe_url}}" },
+    ],
+  },
+  vi: {
+    kpiDbEmails: "Email Sẵn Có Trong DB",
+    kpiDbDesc: "Doanh nghiệp Nhật đã có email",
+    kpiSentEmails: "Tổng Email Đã Gửi",
+    kpiSentDesc: "Tỷ lệ thành công cao",
+    kpiSuppressed: "Đã Hủy Nhận (Opt-out)",
+    kpiSuppressedDesc: "Tự động chặn gửi vĩnh viễn",
+    kpiCampaigns: "Chiến Dịch Đã Tạo",
+    kpiCampaignsDesc: "Quản lý theo phân khúc",
+    tabCompose: "Soạn & Bắn Chiến Dịch",
+    tabHistory: "Lịch Sử Chiến Dịch",
+    tabSuppressions: "Danh Sách Chặn (Opt-out)",
+    step1Title: "1. Lọc Tệp Khách Hàng Mục Tiêu",
+    lblPrefecture: "Tỉnh / Thành phố",
+    allJapan: (count: string) => `🇯🇵 Toàn bộ Nhật Bản (${count} email)`,
+    lblIndustry: "Ngành nghề JSIC",
+    allIndustries: "Tất cả ngành nghề JSIC",
+    lblEmployees: "Quy mô nhân sự",
+    empAll: "Tất cả quy mô",
+    emp10: "Từ 10 nhân viên trở lên",
+    emp30: "Từ 30 nhân viên trở lên",
+    emp50: "Từ 50 nhân viên trở lên",
+    emp100: "Từ 100 nhân viên trở lên",
+    chkWebsite: "Chỉ chọn công ty có Website chính thức",
+    lblAntiSpam: "Chống Spam: Loại trừ công ty đã nhận email gần đây",
+    daysAgo: "ngày qua",
+    btnCalculate: "Kiểm tra số lượng mục tiêu",
+    availableCount: (count: string) => `Khả dụng: ${count} công ty`,
+    step3Title: "3. Gửi Thử Nghiệm & Điều Phối An Toàn",
+    lblTestEmail: "Gửi 1 email test trước vào hòm thư:",
+    btnSendTest: "Gửi Test",
+    testSuccess: (email: string) => `Đã gửi email thử nghiệm thành công tới ${email}! Hãy kiểm tra hộp thư đến (hoặc thư mục Spam).`,
+    testError: "Gửi thử nghiệm thất bại.",
+    lblBatchSize: "Quy mô đợt gửi (Batch Size):",
+    optBatch10: "10 emails / đợt",
+    optBatch20: "20 emails / đợt (Khuyên dùng)",
+    optBatch50: "50 emails / đợt",
+    optBatch100: "100 emails / đợt",
+    tokushohoNotice: "ℹ️ Mỗi email sẽ được gửi cách nhau 600ms và tự động kèm link Hủy nhận (オプトアウト) theo đúng quy định luật Tokushoho Nhật Bản.",
+    btnStartBatch: (size: number) => `Bắt Đầu Bắn Đợt Này (${size} email)`,
+    btnSendingBatch: (size: number) => `Đang gửi đợt ${size} emails...`,
+    progressTitle: "Tiến độ đợt gửi:",
+    progressFinished: "Hoàn thành tệp!",
+    progressRemaining: (count: string) => `Còn ${count} công ty`,
+    sentSuccess: "Thành công:",
+    sentFailed: "Thất bại:",
+    step2Title: "2. Mẫu Thư & Soạn Thảo Nội Dung (Chuẩn Keigo Nhật B2B)",
+    btnLivePreview: "Xem Trước (Live Preview)",
+    lblPresetTemplates: "Chọn mẫu thư tiếng Nhật có sẵn:",
+    badgeKeigo: "Chuẩn Keigo",
+    lblCampaignName: "Tên chiến dịch quản trị",
+    phCampaignName: "VD: Giới thiệu Kigyou-List cho DN Tokyo Tháng 10",
+    lblSubject: "Tiêu đề email (Subject)",
+    lblInsertVars: "Bấm chèn nhanh biến cá nhân hóa:",
+    lblBodyHtml: "Nội dung email (HTML / Rich text)",
+    historyTitle: "Lịch Sử Các Chiến Dịch Email",
+    historyDesc: "Theo dõi số lượng email đã gửi, thành công và thất bại",
+    thTime: "Thời Gian",
+    thCampaignName: "Tên Chiến Dịch",
+    thSubject: "Tiêu Đề Email",
+    thTargetCount: "Tổng Mục Tiêu",
+    thSent: "Đã Gửi",
+    thFailed: "Thất Bại",
+    thStatus: "Trạng Thái",
+    thDetails: "Chi Tiết",
+    noCampaigns: "Chưa có chiến dịch nào được tạo.",
+    btnViewLogs: "Xem logs",
+    logsModalTitle: "Nhật Ký Gửi Thư Của Chiến Dịch",
+    noLogs: "Không có nhật ký nào cho chiến dịch này.",
+    statusSent: "Đã gửi",
+    statusFailed: "Thất bại",
+    statusCompleted: "Hoàn thành",
+    statusSending: "Đang gửi",
+    companyLabel: "Công ty",
+    suppressionsTitle: "Danh Sách Chặn Gửi (Opt-out / Suppressions)",
+    suppressionsDesc: "Các email đã bấm hủy nhận tin (配信停止) theo luật Nhật hoặc bị từ chối sẽ được lưu tại đây để vĩnh viễn không gửi lại.",
+    phSuppressionInput: "chặn-email@example.co.jp",
+    btnAddSuppression: "Thêm chặn thủ công",
+    thSuppressedAt: "Thời Gian Chặn",
+    thEmail: "Địa Chỉ Email",
+    thReason: "Lý Do",
+    thAction: "Thao Tác",
+    noSuppressions: "Chưa có email nào trong danh sách chặn.",
+    btnRemoveSuppression: "Gỡ chặn",
+    confirmRemoveSuppression: (email: string) => `Xóa email ${email} khỏi danh sách chặn gửi?`,
+    alertEnterSubjectBody: "Vui lòng nhập đầy đủ tiêu đề và nội dung email!",
+    confirmBatchSend: (size: number) => `Xác nhận bắt đầu gửi đợt ${size} email B2B tới tệp khách hàng đã chọn?\n\n(Hệ thống sẽ gửi an toàn có giãn cách để đảm bảo uy tín tên miền)`,
+    alertValidEmail: "Vui lòng nhập địa chỉ email hợp lệ!",
+    previewModalTitle: "Xem Trước Email Gửi Đi (Dữ Liệu Thật)",
+    previewModalDesc: (name: string) => `Đã tự động thay thế các biến bằng dữ liệu của công ty mẫu: ${name}`,
+    previewPreparing: "Đang chuẩn bị bản xem trước...",
+    sampleText: "Mẫu",
+    btnClose: "Đóng",
+    vars: [
+      { label: "{{company_name}} (Tên công ty)", tag: "{{company_name}}" },
+      { label: "{{representative_name}} (Đại diện)", tag: "{{representative_name}}" },
+      { label: "{{prefecture}} (Tỉnh thành)", tag: "{{prefecture}}" },
+      { label: "{{city}} (Thành phố)", tag: "{{city}}" },
+      { label: "{{corporate_number}} (Mã số thuế)", tag: "{{corporate_number}}" },
+      { label: "{{company_page_url}} (Link bài viết)", tag: "{{company_page_url}}" },
+      { label: "{{unsubscribe_url}} (Link hủy)", tag: "{{unsubscribe_url}}" },
+    ],
+  },
+};
+
 export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps) {
+  let locale = "ja";
+  try {
+    const lang = useLanguage();
+    if (lang && lang.locale) {
+      locale = lang.locale;
+    }
+  } catch {
+    // Fallback to ja if accessed outside LanguageProvider
+  }
+  const isVi = locale === "vi";
+  const isJa = locale === "ja";
+  const t = isVi ? I18N.vi : I18N.ja;
+
   const [subTab, setSubTab] = useState<"campaign" | "history" | "suppressions">("campaign");
+  const [marketingChannel, setMarketingChannel] = useState<"email" | "form">("email");
 
   // Global marketing state
   const [stats, setStats] = useState<MarketingStats | null>(null);
@@ -68,6 +288,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
 
   // Audience filters
   const [prefecture, setPrefecture] = useState<string>("all");
+  const [industryCode, setIndustryCode] = useState<string>("all");
   const [minEmployees, setMinEmployees] = useState<string>("");
   const [hasWebsite, setHasWebsite] = useState<boolean>(false);
   const [excludeDays, setExcludeDays] = useState<number>(30);
@@ -165,6 +386,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
         body: JSON.stringify({
           filters: {
             prefecture_name: prefecture,
+            industry_code: industryCode,
             min_employees: minEmployees ? parseInt(minEmployees, 10) : undefined,
             has_website: hasWebsite,
             exclude_recent_days: excludeDays,
@@ -200,6 +422,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
         body: JSON.stringify({
           filters: {
             prefecture_name: prefecture,
+            industry_code: industryCode,
             min_employees: minEmployees ? parseInt(minEmployees, 10) : undefined,
             has_website: hasWebsite,
             exclude_recent_days: excludeDays,
@@ -215,49 +438,46 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
           html: data.rendered_html,
           sampleCompany: data.sample_company,
         });
-        setTargetCount(data.total_count);
       }
     } catch (err) {
-      console.error("Failed to generate preview:", err);
+      console.error("Failed to load preview:", err);
     } finally {
       setPreviewLoading(false);
     }
   };
 
-  // Send Test Email
+  // Send single test email
   const handleSendTest = async () => {
     if (!testEmail || !testEmail.includes("@")) {
-      setTestMessage({ type: "error", text: "Vui lòng nhập địa chỉ email hợp lệ để test." });
+      setTestMessage({ type: "error", text: t.alertValidEmail });
       return;
     }
-
     setSendingTest(true);
     setTestMessage(null);
     try {
-      const res = await fetch("/api/admin/marketing/send-test", {
+      const res = await fetch("/api/admin/marketing/test-send", {
         method: "POST",
         headers: { ...getAdminHeaders(), "Content-Type": "application/json" },
         body: JSON.stringify({
-          test_email: testEmail,
+          recipient_email: testEmail,
           subject,
           body_html: bodyHtml,
-          sample_company: previewData?.sampleCompany,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
         setTestMessage({
           type: "success",
-          text: `Đã gửi email thử nghiệm thành công tới ${testEmail}! Hãy kiểm tra hộp thư đến (hoặc thư mục Spam).`,
+          text: t.testSuccess(testEmail),
         });
       } else {
         setTestMessage({
           type: "error",
-          text: data.error || "Gửi thử nghiệm thất bại.",
+          text: data.error || t.testError,
         });
       }
     } catch (err: any) {
-      setTestMessage({ type: "error", text: err.message || "Lỗi kết nối khi gửi thử nghiệm." });
+      setTestMessage({ type: "error", text: err.message || t.testError });
     } finally {
       setSendingTest(false);
     }
@@ -266,13 +486,11 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
   // Send Batch
   const handleSendBatch = async () => {
     if (!subject.trim() || !bodyHtml.trim()) {
-      alert("Vui lòng nhập đầy đủ tiêu đề và nội dung email!");
+      alert(t.alertEnterSubjectBody);
       return;
     }
 
-    const confirmed = window.confirm(
-      `Xác nhận bắt đầu gửi đợt ${batchSize} email B2B tới tệp khách hàng đã chọn?\n\n(Hệ thống sẽ gửi an toàn có giãn cách để đảm bảo uy tín tên miền)`
-    );
+    const confirmed = window.confirm(t.confirmBatchSend(batchSize));
     if (!confirmed) return;
 
     setIsSendingBatch(true);
@@ -289,6 +507,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
           body_html: bodyHtml,
           filters: {
             prefecture_name: prefecture,
+            industry_code: industryCode,
             min_employees: minEmployees ? parseInt(minEmployees, 10) : undefined,
             has_website: hasWebsite,
             exclude_recent_days: excludeDays,
@@ -309,10 +528,10 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
         }));
         fetchStats();
       } else {
-        setBatchError(data.error || "Có lỗi xảy ra khi gửi đợt email này.");
+        setBatchError(data.error || "Error occurred during batch dispatch.");
       }
     } catch (err: any) {
-      setBatchError(err.message || "Lỗi kết nối máy chủ khi gửi đợt.");
+      setBatchError(err.message || "Server connection error.");
     } finally {
       setIsSendingBatch(false);
     }
@@ -365,7 +584,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
 
   const handleAddSuppression = async () => {
     if (!newSuppressionEmail || !newSuppressionEmail.includes("@")) {
-      alert("Vui lòng nhập địa chỉ email hợp lệ!");
+      alert(t.alertValidEmail);
       return;
     }
     setAddingSuppression(true);
@@ -386,7 +605,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
   };
 
   const handleRemoveSuppression = async (email: string) => {
-    if (!window.confirm(`Xóa email ${email} khỏi danh sách chặn gửi?`)) return;
+    if (!window.confirm(t.confirmRemoveSuppression(email))) return;
     try {
       const res = await fetch(`/api/admin/marketing/suppressions?email=${encodeURIComponent(email)}`, {
         method: "DELETE",
@@ -414,26 +633,72 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
     setBodyHtml((prev) => prev + " " + tag + " ");
   };
 
+  const totalCompaniesWithEmailText = stats?.total_companies_with_email != null
+    ? stats.total_companies_with_email.toLocaleString()
+    : "";
+
   return (
     <div className="flex flex-col gap-6">
-      {/* Top Marketing Stats KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Marketing Dual Channel Selector */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-100 dark:bg-slate-900/80 p-2 rounded-2xl border border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMarketingChannel("email")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+              marketingChannel === "email"
+                ? "bg-white dark:bg-[#1C2128] text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200 dark:border-slate-700"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            <Mail className="w-4 h-4" />
+            <span>{isJa ? "📧 メール営業配信（Cold Email）" : "📧 Email Marketing"}</span>
+          </button>
+
+          <button
+            onClick={() => setMarketingChannel("form")}
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+              marketingChannel === "form"
+                ? "bg-white dark:bg-[#1C2128] text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-700"
+                : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+            }`}
+          >
+            <Send className="w-4 h-4" />
+            <span>{isJa ? "📝 問い合わせフォーム営業（Form DM）" : "📝 Form DM Marketing"}</span>
+          </button>
+        </div>
+
+        <div className="flex items-center gap-2 px-3 text-[11px] text-slate-500 font-medium">
+          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+          <span>{isJa ? "アウトバウンド自動化チャネル" : "Kênh tiếp thị tự động kép"}</span>
+        </div>
+      </div>
+
+      {marketingChannel === "form" ? (
+        <InternalFormMarketingSubTab adminEmail={adminEmail} getAdminHeaders={getAdminHeaders} />
+      ) : (
+        <>
+          {/* Top Marketing Stats KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Email Sẵn Có Trong DB</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.kpiDbEmails}</span>
             <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
               <Mail className="w-5 h-5" />
             </div>
           </div>
           <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">
-            {loadingStats ? <Loader2 className="w-5 h-5 animate-spin" /> : stats?.total_companies_with_email.toLocaleString() || "137,900"}
+            {loadingStats ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              stats?.total_companies_with_email?.toLocaleString() || "0"
+            )}
           </div>
-          <p className="text-xs text-slate-500 mt-1">Doanh nghiệp Nhật đã có email</p>
+          <p className="text-xs text-slate-500 mt-1">{t.kpiDbDesc}</p>
         </div>
 
         <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tổng Email Đã Gửi</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.kpiSentEmails}</span>
             <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <Send className="w-5 h-5" />
             </div>
@@ -441,12 +706,12 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
           <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">
             {loadingStats ? <Loader2 className="w-5 h-5 animate-spin" /> : stats?.total_sent.toLocaleString() || "0"}
           </div>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">Tỷ lệ thành công cao</p>
+          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">{t.kpiSentDesc}</p>
         </div>
 
         <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Đã Hủy Nhận (Opt-out)</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.kpiSuppressed}</span>
             <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center">
               <Ban className="w-5 h-5" />
             </div>
@@ -454,12 +719,12 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
           <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">
             {loadingStats ? <Loader2 className="w-5 h-5 animate-spin" /> : stats?.total_suppressed.toLocaleString() || "0"}
           </div>
-          <p className="text-xs text-slate-500 mt-1">Tự động chặn gửi vĩnh viễn</p>
+          <p className="text-xs text-slate-500 mt-1">{t.kpiSuppressedDesc}</p>
         </div>
 
         <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Chiến Dịch Đã Tạo</span>
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">{t.kpiCampaigns}</span>
             <div className="w-9 h-9 rounded-xl bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 flex items-center justify-center">
               <Clock className="w-5 h-5" />
             </div>
@@ -467,7 +732,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
           <div className="text-2xl font-black text-slate-900 dark:text-white mt-2">
             {loadingStats ? <Loader2 className="w-5 h-5 animate-spin" /> : stats?.total_campaigns.toLocaleString() || "0"}
           </div>
-          <p className="text-xs text-slate-500 mt-1">Quản lý theo phân khúc</p>
+          <p className="text-xs text-slate-500 mt-1">{t.kpiCampaignsDesc}</p>
         </div>
       </div>
 
@@ -481,8 +746,10 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
               : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
           }`}
         >
-          <Mail className="w-4 h-4" /> Soạn & Bắn Chiến Dịch
+          <Mail className="w-4 h-4" />
+          <span>{t.tabCompose}</span>
         </button>
+
         <button
           onClick={() => setSubTab("history")}
           className={`px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 transition-all ${
@@ -491,8 +758,10 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
               : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
           }`}
         >
-          <Clock className="w-4 h-4" /> Lịch Sử Chiến Dịch
+          <Clock className="w-4 h-4" />
+          <span>{t.tabHistory}</span>
         </button>
+
         <button
           onClick={() => setSubTab("suppressions")}
           className={`px-4 py-2 text-sm font-bold rounded-xl flex items-center gap-2 transition-all ${
@@ -501,21 +770,22 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
               : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
           }`}
         >
-          <Ban className="w-4 h-4" /> Danh Sách Chặn (Opt-out)
+          <Ban className="w-4 h-4" />
+          <span>{t.tabSuppressions}</span>
         </button>
       </div>
 
-      {/* SUBTAB 1: CAMPAIGN CREATOR & DISPATCHER */}
+      {/* SUBTAB 1: CAMPAIGN BUILDER & DISPATCHER */}
       {subTab === "campaign" && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column: Filter & Settings (4 cols) */}
+          {/* Left Column: Target Selector (4 cols) */}
           <div className="lg:col-span-4 flex flex-col gap-6">
-            {/* Step 1: Target Audience Filter */}
-            <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
-              <div className="flex items-center justify-between mb-4">
+            {/* Step 1: Filter Audience */}
+            <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
                 <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-sm">
-                  <Filter className="w-4 h-4 text-blue-500" />
-                  1. Lọc Tệp Khách Hàng Mục Tiêu
+                  <Users className="w-4 h-4 text-blue-500" />
+                  {t.step1Title}
                 </h3>
               </div>
 
@@ -523,7 +793,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                 {/* Prefecture */}
                 <div>
                   <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
-                    Tỉnh / Thành phố
+                    {t.lblPrefecture}
                   </label>
                   <select
                     value={prefecture}
@@ -533,10 +803,58 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                     }}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
-                    <option value="all">🇯🇵 Toàn bộ Nhật Bản (137,900 email)</option>
+                    <option value="all">
+                      {t.allJapan(totalCompaniesWithEmailText || "...")}
+                    </option>
                     {stats?.top_prefectures?.map((p) => (
                       <option key={p.prefecture_name} value={p.prefecture_name}>
-                        {p.prefecture_name} ({parseInt(p.email_count, 10).toLocaleString()} email)
+                        {p.prefecture_name} ({parseInt(p.email_count, 10).toLocaleString()} {isVi ? "email" : "件"})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* JSIC Industry Classification */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
+                    {t.lblIndustry}
+                  </label>
+                  <select
+                    value={industryCode}
+                    onChange={(e) => {
+                      setIndustryCode(e.target.value);
+                      setTargetCount(null);
+                    }}
+                    className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                  >
+                    <option value="all">🏢 {t.allIndustries}</option>
+                    {(stats?.industries && stats.industries.length > 0
+                      ? stats.industries
+                      : [
+                          { industry_code: "A", industry_name: "農業・林業" },
+                          { industry_code: "B", industry_name: "漁業" },
+                          { industry_code: "C", industry_name: "鉱業・採石業・砂利採取業" },
+                          { industry_code: "D", industry_name: "建設業" },
+                          { industry_code: "E", industry_name: "製造業" },
+                          { industry_code: "F", industry_name: "電気・ガス・熱供給・水道業" },
+                          { industry_code: "G", industry_name: "情報通信業 (IT・通信)" },
+                          { industry_code: "H", industry_name: "運輸業・郵便業" },
+                          { industry_code: "I", industry_name: "卸売業・小売業" },
+                          { industry_code: "J", industry_name: "金融業・保険業" },
+                          { industry_code: "K", industry_name: "不動産業・物品賃貸業" },
+                          { industry_code: "L", industry_name: "学術研究・専門・技術サービス業" },
+                          { industry_code: "M", industry_name: "宿泊業・飲食サービス業" },
+                          { industry_code: "N", industry_name: "生活関連サービス業・娯楽業" },
+                          { industry_code: "O", industry_name: "教育・学習支援業" },
+                          { industry_code: "P", industry_name: "医療・福祉" },
+                          { industry_code: "Q", industry_name: "複合サービス事業" },
+                          { industry_code: "R", industry_name: "サービス業（他に分類されないもの）" },
+                          { industry_code: "S", industry_name: "公務（他に分類されるものを除く）" },
+                          { industry_code: "T", industry_name: "分類不能の産業" },
+                        ]
+                    ).map((ind) => (
+                      <option key={ind.industry_code} value={ind.industry_code}>
+                        {ind.industry_code}. {ind.industry_name}
                       </option>
                     ))}
                   </select>
@@ -545,7 +863,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                 {/* Min Employees */}
                 <div>
                   <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
-                    Quy mô nhân sự
+                    {t.lblEmployees}
                   </label>
                   <select
                     value={minEmployees}
@@ -555,11 +873,11 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                     }}
                     className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
-                    <option value="">Tất cả quy mô</option>
-                    <option value="10">Từ 10 nhân viên trở lên</option>
-                    <option value="30">Từ 30 nhân viên trở lên</option>
-                    <option value="50">Từ 50 nhân viên trở lên</option>
-                    <option value="100">Từ 100 nhân viên trở lên</option>
+                    <option value="">{t.empAll}</option>
+                    <option value="10">{t.emp10}</option>
+                    <option value="30">{t.emp30}</option>
+                    <option value="50">{t.emp50}</option>
+                    <option value="100">{t.emp100}</option>
                   </select>
                 </div>
 
@@ -575,15 +893,15 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                     }}
                     className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <label htmlFor="hasWebsite" className="text-xs font-medium text-slate-700 dark:text-slate-300">
-                    Chỉ chọn công ty có Website chính thức
+                  <label htmlFor="hasWebsite" className="text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer">
+                    {t.chkWebsite}
                   </label>
                 </div>
 
-                {/* Exclude Recent Days */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
-                    Chống Spam: Loại trừ công ty đã nhận email gần đây
+                {/* Exclude Recently Emailed */}
+                <div className="space-y-1.5 pt-1 border-t border-slate-100 dark:border-slate-800">
+                  <label className="block text-xs font-bold text-slate-600 dark:text-slate-400">
+                    {t.lblAntiSpam}
                   </label>
                   <div className="flex items-center gap-2">
                     <input
@@ -595,9 +913,9 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                         setExcludeDays(parseInt(e.target.value, 10) || 0);
                         setTargetCount(null);
                       }}
-                      className="w-20 px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500"
+                      className="w-20 px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
                     />
-                    <span className="text-xs text-slate-500">ngày qua</span>
+                    <span className="text-xs text-slate-500">{t.daysAgo}</span>
                   </div>
                 </div>
 
@@ -606,14 +924,14 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                   type="button"
                   onClick={handleCalculateAudience}
                   disabled={calculatingCount}
-                  className="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all"
+                  className="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
                   {calculatingCount ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   ) : (
                     <Users className="w-3.5 h-3.5" />
                   )}
-                  {targetCount !== null ? `Khả dụng: ${targetCount.toLocaleString()} công ty` : "Kiểm tra số lượng mục tiêu"}
+                  {targetCount !== null ? t.availableCount(targetCount.toLocaleString()) : t.btnCalculate}
                 </button>
               </div>
             </div>
@@ -622,13 +940,13 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
             <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
               <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-sm">
                 <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                3. Gửi Thử Nghiệm & Điều Phối An Toàn
+                {t.step3Title}
               </h3>
 
               {/* Test Send */}
               <div className="bg-slate-50 dark:bg-slate-800/40 rounded-xl p-3 border border-slate-100 dark:border-slate-750">
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
-                  Gửi 1 email test trước vào hòm thư:
+                  {t.lblTestEmail}
                 </label>
                 <div className="flex gap-2">
                   <input
@@ -642,10 +960,10 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                     type="button"
                     onClick={handleSendTest}
                     disabled={sendingTest}
-                    className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all disabled:opacity-50"
+                    className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
                   >
                     {sendingTest ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                    Gửi Test
+                    {t.btnSendTest}
                   </button>
                 </div>
                 {testMessage && (
@@ -663,39 +981,39 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Quy mô đợt gửi (Batch Size):
+                    {t.lblBatchSize}
                   </label>
                   <select
                     value={batchSize}
                     onChange={(e) => setBatchSize(parseInt(e.target.value, 10))}
                     className="px-2 py-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs font-bold"
                   >
-                    <option value={10}>10 emails / đợt</option>
-                    <option value={20}>20 emails / đợt (Khuyên dùng)</option>
-                    <option value={50}>50 emails / đợt</option>
-                    <option value={100}>100 emails / đợt</option>
+                    <option value={10}>{t.optBatch10}</option>
+                    <option value={20}>{t.optBatch20}</option>
+                    <option value={50}>{t.optBatch50}</option>
+                    <option value={100}>{t.optBatch100}</option>
                   </select>
                 </div>
 
                 <p className="text-[11px] text-slate-500 leading-tight">
-                  ℹ️ Mỗi email sẽ được gửi cách nhau 600ms và tự động kèm link Hủy nhận (オプトアウト) theo đúng quy định luật Tokushoho Nhật Bản.
+                  {t.tokushohoNotice}
                 </p>
 
                 <button
                   type="button"
                   onClick={handleSendBatch}
                   disabled={isSendingBatch}
-                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  className="w-full py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-md hover:shadow-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {isSendingBatch ? (
                     <>
                       <Loader2 className="w-4 h-4 animate-spin" />
-                      Đang gửi đợt {batchSize} emails...
+                      {t.btnSendingBatch(batchSize)}
                     </>
                   ) : (
                     <>
                       <Play className="w-4 h-4 fill-white" />
-                      Bắt Đầu Bắn Đợt Này ({batchSize} email)
+                      {t.btnStartBatch(batchSize)}
                     </>
                   )}
                 </button>
@@ -710,18 +1028,18 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                 {batchProgress && (
                   <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl p-3 space-y-2">
                     <div className="flex items-center justify-between text-xs font-bold">
-                      <span className="text-slate-600 dark:text-slate-400">Tiến độ đợt gửi:</span>
+                      <span className="text-slate-600 dark:text-slate-400">{t.progressTitle}</span>
                       <span className="text-blue-600 dark:text-blue-400">
-                        {batchProgress.isFinished ? "Hoàn thành tệp!" : `Còn ${batchProgress.remaining.toLocaleString()} công ty`}
+                        {batchProgress.isFinished ? t.progressFinished : t.progressRemaining(batchProgress.remaining.toLocaleString())}
                       </span>
                     </div>
                     <div className="flex items-center gap-4 text-xs font-medium">
                       <span className="text-emerald-600 flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" /> Thành công: {batchProgress.sentInBatch}
+                        <Check className="w-3.5 h-3.5" /> {t.sentSuccess} {batchProgress.sentInBatch}
                       </span>
                       {batchProgress.failedInBatch > 0 && (
                         <span className="text-rose-600 flex items-center gap-1">
-                          <Ban className="w-3.5 h-3.5" /> Thất bại: {batchProgress.failedInBatch}
+                          <Ban className="w-3.5 h-3.5" /> {t.sentFailed} {batchProgress.failedInBatch}
                         </span>
                       )}
                     </div>
@@ -737,23 +1055,23 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2 text-sm">
                   <Sparkles className="w-4 h-4 text-amber-500" />
-                  2. Mẫu Thư & Soạn Thảo Nội Dung (Chuẩn Keigo Nhật B2B)
+                  {t.step2Title}
                 </h3>
 
                 <button
                   type="button"
                   onClick={handleOpenPreview}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Eye className="w-3.5 h-3.5 text-blue-500" />
-                  Xem Trước (Live Preview)
+                  {t.btnLivePreview}
                 </button>
               </div>
 
               {/* Template selector */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5">
-                  Chọn mẫu thư tiếng Nhật có sẵn:
+                  {t.lblPresetTemplates}
                 </label>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
                   {templates.map((tpl) => (
@@ -761,7 +1079,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                       key={tpl.id}
                       type="button"
                       onClick={() => handleSelectTemplate(tpl.id)}
-                      className={`p-3 text-left rounded-xl border transition-all text-xs flex flex-col justify-between ${
+                      className={`p-3 text-left rounded-xl border transition-all text-xs flex flex-col justify-between cursor-pointer ${
                         selectedTemplateId === tpl.id
                           ? "border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 text-blue-900 dark:text-blue-300 font-bold shadow-xs"
                           : "border-slate-200 dark:border-slate-700 hover:border-slate-300 text-slate-700 dark:text-slate-300"
@@ -769,7 +1087,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                     >
                       <span className="line-clamp-2 leading-relaxed">{tpl.name}</span>
                       <span className="text-[10px] text-slate-400 mt-2 flex items-center gap-1">
-                        <CheckCircle2 className="w-3 h-3 text-blue-500" /> Chuẩn Keigo
+                        <CheckCircle2 className="w-3 h-3 text-blue-500" /> {t.badgeKeigo}
                       </span>
                     </button>
                   ))}
@@ -779,13 +1097,13 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
               {/* Campaign Name */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  Tên chiến dịch quản trị
+                  {t.lblCampaignName}
                 </label>
                 <input
                   type="text"
                   value={campaignName}
                   onChange={(e) => setCampaignName(e.target.value)}
-                  placeholder="VD: Giới thiệu Kigyou-List cho DN Tokyo Tháng 10"
+                  placeholder={t.phCampaignName}
                   className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-medium focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -793,7 +1111,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
               {/* Subject */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  Tiêu đề email (Subject)
+                  {t.lblSubject}
                 </label>
                 <input
                   type="text"
@@ -806,23 +1124,15 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
               {/* Variable pills helper */}
               <div>
                 <span className="text-[11px] font-bold text-slate-500 mb-1.5 block">
-                  Bấm chèn nhanh biến cá nhân hóa:
+                  {t.lblInsertVars}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { label: "{{company_name}} (Tên công ty)", tag: "{{company_name}}" },
-                    { label: "{{representative_name}} (Đại diện)", tag: "{{representative_name}}" },
-                    { label: "{{prefecture}} (Tỉnh thành)", tag: "{{prefecture}}" },
-                    { label: "{{city}} (Thành phố)", tag: "{{city}}" },
-                    { label: "{{corporate_number}} (Mã số thuế)", tag: "{{corporate_number}}" },
-                    { label: "{{company_page_url}} (Link bài viết)", tag: "{{company_page_url}}" },
-                    { label: "{{unsubscribe_url}} (Link hủy)", tag: "{{unsubscribe_url}}" },
-                  ].map((item) => (
+                  {t.vars.map((item) => (
                     <button
                       key={item.tag}
                       type="button"
                       onClick={() => insertVariableTag(item.tag)}
-                      className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/40 text-slate-700 dark:text-slate-300 text-[11px] font-mono rounded-lg border border-slate-200 dark:border-slate-700 transition-colors"
+                      className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/40 text-slate-700 dark:text-slate-300 text-[11px] font-mono rounded-lg border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
                     >
                       + {item.label}
                     </button>
@@ -833,7 +1143,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
               {/* Body HTML */}
               <div>
                 <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1">
-                  Nội dung email (HTML / Rich text)
+                  {t.lblBodyHtml}
                 </label>
                 <textarea
                   rows={14}
@@ -852,13 +1162,13 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
         <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-base text-slate-900 dark:text-white">Lịch Sử Các Chiến Dịch Email</h3>
-              <p className="text-xs text-slate-500 mt-0.5">Theo dõi số lượng email đã gửi, thành công và thất bại</p>
+              <h3 className="font-bold text-base text-slate-900 dark:text-white">{t.historyTitle}</h3>
+              <p className="text-xs text-slate-500 mt-0.5">{t.historyDesc}</p>
             </div>
             <button
               onClick={fetchCampaignsHistory}
-              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
-              title="Làm mới"
+              className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
+              title="Refresh"
             >
               <RefreshCcw className="w-4 h-4 text-slate-500" />
             </button>
@@ -868,21 +1178,21 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
             <table className="w-full text-left text-xs whitespace-nowrap">
               <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="px-4 py-3 rounded-tl-xl">Thời Gian</th>
-                  <th className="px-4 py-3">Tên Chiến Dịch</th>
-                  <th className="px-4 py-3">Tiêu Đề Email</th>
-                  <th className="px-4 py-3">Tổng Mục Tiêu</th>
-                  <th className="px-4 py-3">Đã Gửi</th>
-                  <th className="px-4 py-3">Thất Bại</th>
-                  <th className="px-4 py-3">Trạng Thái</th>
-                  <th className="px-4 py-3 rounded-tr-xl">Chi Tiết</th>
+                  <th className="px-4 py-3 rounded-tl-xl">{t.thTime}</th>
+                  <th className="px-4 py-3">{t.thCampaignName}</th>
+                  <th className="px-4 py-3">{t.thSubject}</th>
+                  <th className="px-4 py-3">{t.thTargetCount}</th>
+                  <th className="px-4 py-3">{t.thSent}</th>
+                  <th className="px-4 py-3">{t.thFailed}</th>
+                  <th className="px-4 py-3">{t.thStatus}</th>
+                  <th className="px-4 py-3 rounded-tr-xl">{t.thDetails}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {campaignsList.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="px-4 py-8 text-center text-slate-500">
-                      Chưa có chiến dịch nào được tạo.
+                      {t.noCampaigns}
                     </td>
                   </tr>
                 ) : (
@@ -912,16 +1222,16 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                               : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                           }`}
                         >
-                          {c.status}
+                          {c.status === "completed" ? t.statusCompleted : c.status === "sending" ? t.statusSending : c.status}
                         </span>
                       </td>
                       <td className="px-4 py-3">
                         <button
                           type="button"
                           onClick={() => handleViewCampaignLogs(c.id)}
-                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-[11px] font-bold"
+                          className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-[11px] font-bold cursor-pointer"
                         >
-                          Xem logs
+                          {t.btnViewLogs}
                         </button>
                       </td>
                     </tr>
@@ -936,17 +1246,17 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
               <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-6 max-w-2xl w-full max-h-[80vh] flex flex-col shadow-xl">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                  <h4 className="font-bold text-sm text-slate-900 dark:text-white">Nhật Ký Gửi Thư Của Chiến Dịch</h4>
+                  <h4 className="font-bold text-sm text-slate-900 dark:text-white">{t.logsModalTitle}</h4>
                   <button
                     onClick={() => setSelectedCampaignLogs(null)}
-                    className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                    className="text-slate-400 hover:text-slate-600 dark:hover:white cursor-pointer"
                   >
                     ✕
                   </button>
                 </div>
                 <div className="flex-1 overflow-y-auto py-3 space-y-2 text-xs">
                   {selectedCampaignLogs.logs.length === 0 ? (
-                    <p className="text-center py-6 text-slate-400">Không có nhật ký nào cho chiến dịch này.</p>
+                    <p className="text-center py-6 text-slate-400">{t.noLogs}</p>
                   ) : (
                     selectedCampaignLogs.logs.map((log) => (
                       <div
@@ -954,7 +1264,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                         className="p-3 bg-slate-50 dark:bg-slate-800/40 rounded-xl flex items-center justify-between"
                       >
                         <div>
-                          <div className="font-bold text-slate-900 dark:text-white">{log.company_name || "Công ty"}</div>
+                          <div className="font-bold text-slate-900 dark:text-white">{log.company_name || t.companyLabel}</div>
                           <div className="text-slate-500 font-mono text-[11px]">{log.recipient_email}</div>
                         </div>
                         <div className="text-right">
@@ -963,7 +1273,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                               log.status === "sent" ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
                             }`}
                           >
-                            {log.status === "sent" ? "Đã gửi" : log.error_message || "Thất bại"}
+                            {log.status === "sent" ? t.statusSent : log.error_message || t.statusFailed}
                           </span>
                           <div className="text-[10px] text-slate-400 mt-0.5">
                             {new Date(log.sent_at).toLocaleTimeString("ja-JP")}
@@ -986,10 +1296,10 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
             <div>
               <h3 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
                 <Ban className="w-5 h-5 text-rose-500" />
-                Danh Sách Chặn Gửi (Opt-out / Suppressions)
+                {t.suppressionsTitle}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Các email đã bấm hủy nhận tin (配信停止) theo luật Nhật hoặc bị từ chối sẽ được lưu tại đây để vĩnh viễn không gửi lại.
+                {t.suppressionsDesc}
               </p>
             </div>
 
@@ -999,15 +1309,15 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                 type="email"
                 value={newSuppressionEmail}
                 onChange={(e) => setNewSuppressionEmail(e.target.value)}
-                placeholder="chặn-email@example.co.jp"
+                placeholder={t.phSuppressionInput}
                 className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs"
               />
               <button
                 onClick={handleAddSuppression}
                 disabled={addingSuppression}
-                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl flex items-center gap-1 transition-all disabled:opacity-50"
+                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl flex items-center gap-1 transition-all disabled:opacity-50 cursor-pointer"
               >
-                <Plus className="w-3.5 h-3.5" /> Thêm chặn thủ công
+                <Plus className="w-3.5 h-3.5" /> {t.btnAddSuppression}
               </button>
             </div>
           </div>
@@ -1016,17 +1326,17 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
             <table className="w-full text-left text-xs whitespace-nowrap">
               <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
                 <tr>
-                  <th className="px-4 py-3 rounded-tl-xl">Thời Gian Chặn</th>
-                  <th className="px-4 py-3">Địa Chỉ Email</th>
-                  <th className="px-4 py-3">Lý Do</th>
-                  <th className="px-4 py-3 rounded-tr-xl text-right">Thao Tác</th>
+                  <th className="px-4 py-3 rounded-tl-xl">{t.thSuppressedAt}</th>
+                  <th className="px-4 py-3">{t.thEmail}</th>
+                  <th className="px-4 py-3">{t.thReason}</th>
+                  <th className="px-4 py-3 rounded-tr-xl text-right">{t.thAction}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {suppressionsList.length === 0 ? (
                   <tr>
                     <td colSpan={4} className="px-4 py-8 text-center text-slate-500">
-                      Chưa có email nào trong danh sách chặn.
+                      {t.noSuppressions}
                     </td>
                   </tr>
                 ) : (
@@ -1050,10 +1360,10 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
                         <button
                           type="button"
                           onClick={() => handleRemoveSuppression(item.email)}
-                          className="px-2.5 py-1 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg text-xs font-bold transition-colors"
+                          className="px-2.5 py-1 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-900/30 rounded-lg text-xs font-bold transition-colors cursor-pointer"
                         >
                           <Trash2 className="w-3.5 h-3.5 inline mr-1" />
-                          Gỡ chặn
+                          {t.btnRemoveSuppression}
                         </button>
                       </td>
                     </tr>
@@ -1073,16 +1383,15 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
               <div>
                 <h4 className="font-bold text-base text-slate-900 dark:text-white flex items-center gap-2">
                   <Eye className="w-5 h-5 text-blue-500" />
-                  Xem Trước Email Gửi Đi (Dữ Liệu Thật)
+                  {t.previewModalTitle}
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Đã tự động thay thế các biến bằng dữ liệu của công ty mẫu:{" "}
-                  <strong>{previewData?.sampleCompany?.company_name || "Mẫu"}</strong>
+                  {t.previewModalDesc(previewData?.sampleCompany?.company_name || t.sampleText)}
                 </p>
               </div>
               <button
                 onClick={() => setShowPreviewModal(false)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1"
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-white p-1 cursor-pointer"
               >
                 ✕
               </button>
@@ -1092,7 +1401,7 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
               {previewLoading ? (
                 <div className="py-12 text-center">
                   <Loader2 className="w-8 h-8 animate-spin text-blue-600 mx-auto mb-2" />
-                  <p className="text-xs text-slate-500">Đang chuẩn bị bản xem trước...</p>
+                  <p className="text-xs text-slate-500">{t.previewPreparing}</p>
                 </div>
               ) : (
                 <>
@@ -1117,13 +1426,15 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
             <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
               <button
                 onClick={() => setShowPreviewModal(false)}
-                className="px-5 py-2 bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold rounded-xl"
+                className="px-5 py-2 bg-slate-900 text-white hover:bg-slate-800 text-xs font-bold rounded-xl cursor-pointer"
               >
-                Đóng
+                {t.btnClose}
               </button>
             </div>
           </div>
         </div>
+      )}
+        </>
       )}
     </div>
   );

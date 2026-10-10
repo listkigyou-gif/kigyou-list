@@ -6,7 +6,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { LocaleLink } from "./LocaleLink";
 
 export const Footer: React.FC = () => {
-  const { t } = useLanguage();
+  const { t, locale } = useLanguage();
 
   return (
     <footer data-nosnippet className="bg-white border-t border-slate-200 dark:bg-[#0D1117] dark:border-slate-800 py-10 transition-colors mt-auto">
@@ -21,6 +21,9 @@ export const Footer: React.FC = () => {
         <div className="flex flex-wrap justify-center gap-x-4 gap-y-2.5 sm:gap-6 text-xs font-medium text-slate-500 dark:text-slate-400">
           <LocaleLink href="/directory" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
             {t.footer.directory}
+          </LocaleLink>
+          <LocaleLink href="/compare" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+            {locale === "en" ? "Comparison" : locale === "vi" ? "So sánh dịch vụ" : "他社比較・選ばれる理由"}
           </LocaleLink>
           <LocaleLink href="/pricing" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
             {t.footer.pricing}

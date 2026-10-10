@@ -79,6 +79,80 @@ export default async function Home({ params }: PageParams) {
     "logo": "https://kigyoulist.com/icon.svg"
   };
 
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": isJa ? "データの更新頻度と出典について教えてください。" : isVi ? "Dữ liệu được cập nhật từ đâu và tần suất thế nào?" : "Where is the data sourced and how often is it updated?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": isJa
+            ? "国税庁の法人番号公表サイト、法務省、経済産業省のgBizINFOなどの公的オープンデータをベースに、週次・月次で更新しています。連絡先情報（電話・Webフォーム・メール）も独自のクローラーにより常時鮮度を保っています。"
+            : isVi
+            ? "Dữ liệu được đồng bộ từ Cổng thông tin Quốc thuế, Bộ Tư pháp, METI gBizINFO hàng tuần. Thông tin kênh liên hệ (Web form, phone, email) được bot rà quét cập nhật liên tục."
+            : "Sourced from the National Tax Agency, Ministry of Justice, and METI gBizINFO, updated weekly and monthly."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": isJa ? "フォーム営業で苦情やクレームが来る心配はありませんか？" : isVi ? "Gửi Form tự động có rủi ro bị khiếu nại không?" : "Are there risks of spam complaints with automated form outreach?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": isJa
+            ? "当システムはAIにより、Webサイト上の「営業お断り」「特定目的以外の送信禁止」といった免責事項を自動検出し、該当企業への送信を自動でスキップします。また、日本のビジネスマナー・敬語に準拠した文面設定により、クレーム発生率を極めて低く抑えています。"
+            : isVi
+            ? "Hệ thống tích hợp AI tự động quét và bỏ qua các website có ghi chú 'Cấm chào hàng/Cấm quảng cáo'. Ngoài ra văn phong sử dụng chuẩn kính ngữ Keigo giúp tỷ lệ phàn nàn giảm xuống mức tối thiểu."
+            : "Our AI engine automatically detects and skips websites that specify 'No commercial solicitations', keeping risk minimal."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": isJa ? "どのような業種・ターゲットにアプローチできますか？" : isVi ? "Có thể tiếp cận những ngành nghề và đối tượng nào?" : "Which industries and targets can we reach?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": isJa
+            ? "IT・通信、製造、建設、不動産、医療、飲食、士業など、日本標準産業分類（JSIC）の全業種に対応しています。都道府県や市区町村別の絞り込みに加え、「資本金1,000万円以上」「求人中」などの条件を掛け合わせることで、貴社に最適なターゲットを抽出できます。"
+            : isVi
+            ? "Phủ khắp toàn bộ các ngành như IT, sản xuất, xây dựng, bất động sản, y tế, dịch vụ... Có thể kết hợp lọc địa lý, vốn điều lệ và các tín hiệu tuyển dụng."
+            : "Covers all JSIC industries nationwide with cross-filtering by capital, geography, and intent signals."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": isJa ? "無料会員でもどこまで利用できますか？" : isVi ? "Tài khoản miễn phí có thể làm được những gì?" : "What can free accounts do?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": isJa
+            ? "無料登録を行うだけで、全国500万社の基本情報（社名、所在地、業種、法人番号）の検索および月50件までのCSVダウンロードが可能です。連絡先フィルター（フォーム・メール）や大量CSV出力、フォーム自動営業をご利用いただく場合はProプラン以上をご利用ください。"
+            : isVi
+            ? "Đăng ký miễn phí có thể tìm kiếm dữ liệu cơ bản của 5 triệu cty và xuất 50 dòng CSV/tháng. Để dùng bộ lọc kênh liên lạc và gửi Form tự động, bạn có thể nâng cấp Pro bất kỳ lúc nào."
+            : "Free accounts can search all 5M companies and export up to 50 rows per month. Upgrade to PRO to unlock contact filters and form outreach."
+        }
+      }
+    ]
+  };
+
+  const datasetSchema = {
+    "@context": "https://schema.org",
+    "@type": "Dataset",
+    "name": "Kigyou-list Japan Corporate Intelligence Database",
+    "description": "Comprehensive B2B directory covering over 5,000,000 registered Japanese corporate entities across 47 prefectures and all JSIC industries.",
+    "url": `https://kigyoulist.com/${locale}`,
+    "license": `https://kigyoulist.com/${locale}/terms`,
+    "isAccessibleForFree": true,
+    "creator": {
+      "@type": "Organization",
+      "name": "TQC Corporation",
+      "url": "https://kigyoulist.com"
+    },
+    "spatialCoverage": {
+      "@type": "Place",
+      "name": "Japan"
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 font-sans antialiased selection:bg-[#1B4F8A]/15 selection:text-[#1B4F8A]">
       {/* Schema Injection */}
@@ -89,6 +163,14 @@ export default async function Home({ params }: PageParams) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetSchema) }}
       />
 
       {/* Global Sleek Header */}

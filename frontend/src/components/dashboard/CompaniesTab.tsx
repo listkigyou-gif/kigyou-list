@@ -17,6 +17,7 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
+  Unlink,
 } from "lucide-react";
 import Link from "next/link";
 import { CompanyManagementModal } from "@/components/CompanyManagementModal";
@@ -94,6 +95,29 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
   useEffect(() => {
     fetchUserCompanies();
   }, [userEmail]);
+
+  const handleDetachCompany = async (corporateNumber: string, companyName: string) => {
+    const confirmMsg = isJa
+      ? `「${companyName}」を自社管理企業リストから解除してもよろしいですか？\n\n（※企業ページに掲載されたPR情報等は削除されませんが、あなたの管理対象外となります）`
+      : `Bạn có chắc chắn muốn gỡ liên kết doanh nghiệp 「${companyName}」 khỏi danh sách quản lý không?\n\n(Nội dung PR đã lưu trên trang công ty vẫn được bảo lưu)`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+      const res = await fetch("/api/user/companies/detach", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ corporate_number: corporateNumber, user_email: userEmail }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        fetchUserCompanies();
+      } else {
+        alert(data.error || (isJa ? "解除に失敗しました。" : "Gỡ liên kết thất bại."));
+      }
+    } catch {
+      alert(isJa ? "通信エラーが発生しました。" : "Lỗi kết nối.");
+    }
+  };
 
   const getDocTypeLabel = (type: string) => {
     switch (type) {
@@ -295,6 +319,16 @@ export function CompaniesTab({ userEmail, locale }: CompaniesTabProps) {
                   <span>{isJa ? "公開ページ" : "Xem trang"}</span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                 </Link>
+
+                <button
+                  type="button"
+                  onClick={() => handleDetachCompany(comp.corporate_number, comp.company_name)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs font-medium transition-colors cursor-pointer border border-transparent hover:border-rose-200 dark:hover:border-rose-900"
+                  title={isJa ? "自社管理リストから解除" : "Gỡ khỏi danh sách quản lý"}
+                >
+                  <Unlink className="w-3.5 h-3.5" />
+                  <span>{isJa ? "解除" : "Gỡ"}</span>
+                </button>
               </div>
             </div>
           ))}

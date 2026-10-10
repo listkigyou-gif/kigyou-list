@@ -21,55 +21,43 @@ export default function robots(): MetadataRoute.Robots {
           '/*/unsubscribe/',
         ],
       },
-      // Block AI scrapers from training models
+      // AI Search & Knowledge Grounding Bots (Allow to cite and index public directory/profiles)
       {
-        userAgent: 'GPTBot',
-        disallow: '/',
-      },
-      {
-        userAgent: 'ClaudeBot',
-        disallow: '/',
-      },
-      {
-        userAgent: 'Google-Extended',
-        disallow: '/',
-      },
-      {
-        userAgent: 'Applebot-Extended',
-        disallow: '/',
-      },
-      {
-        userAgent: 'cohere-ai',
-        disallow: '/',
-      },
-      {
-        userAgent: 'OMgili',
-        disallow: '/',
-      },
-      {
-        userAgent: 'Diffbot',
-        disallow: '/',
-      },
-      {
-        userAgent: 'Bytespider',
-        disallow: '/',
-      },
-      // Allow real-time search/referral AI assistants to cite and show results
-      {
-        userAgent: 'OAI-SearchBot',
+        userAgent: [
+          'OAI-SearchBot',
+          'GPTBot',
+          'Claude-SearchBot',
+          'ClaudeBot',
+          'PerplexityBot',
+          'Google-Extended',
+          'Applebot',
+          'Applebot-Extended',
+          'cohere-ai',
+        ],
         allow: '/',
-        disallow: ['/_next/', '/static/', '/api/'],
+        disallow: [
+          '/_next/',
+          '/static/',
+          '/api/',
+          '/*/dashboard',
+          '/*/dashboard/',
+          '/*/admin',
+          '/*/admin/',
+          '/*/login',
+          '/*/login/',
+          '/*/unsubscribe',
+          '/*/unsubscribe/',
+        ],
       },
+      // Block abusive scrapers that do not provide traffic attribution or search citations
       {
-        userAgent: 'Claude-SearchBot',
-        allow: '/',
-        disallow: ['/_next/', '/static/', '/api/'],
+        userAgent: [
+          'Bytespider',
+          'Diffbot',
+          'OMgili',
+        ],
+        disallow: '/',
       },
-      {
-        userAgent: 'PerplexityBot',
-        allow: '/',
-        disallow: ['/_next/', '/static/', '/api/'],
-      }
     ],
     sitemap: [
       `${baseUrl}/sitemap.xml`,

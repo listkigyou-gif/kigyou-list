@@ -1247,13 +1247,20 @@ export default function DashboardPage() {
             {/* Sidebar Plan & Quota Card (ご利用枠・残高) */}
             <div className="flex flex-col gap-2.5 p-3.5 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 rounded-2xl shadow-2xs text-xs">
               {/* Header Title */}
-              <div className="flex items-center justify-between pb-1.5 border-b border-slate-200/70 dark:border-slate-800">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  {locale === 'en' ? "Quotas & Balances" : locale === 'vi' ? "Hạn mức & Số dư" : "ご利用枠・残高"}
-                </span>
-                <span className="font-extrabold text-[#1B4F8A] dark:text-blue-400 text-[10px] px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-900">
-                  {currentPlanInfo.label}
-                </span>
+              <div className="flex flex-col gap-1 pb-1.5 border-b border-slate-200/70 dark:border-slate-800">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    {locale === 'en' ? "Quotas & Balances" : locale === 'vi' ? "Hạn mức & Số dư" : "ご利用枠・残高"}
+                  </span>
+                  <span className="font-extrabold text-[#1B4F8A] dark:text-blue-400 text-[10px] px-2 py-0.5 rounded-md bg-blue-50 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-900">
+                    {currentPlanInfo.label}
+                  </span>
+                </div>
+                {quota?.last_reset_date && (
+                  <div className="text-[9.5px] text-slate-500 dark:text-slate-400 font-medium">
+                    {getSubscriptionPeriodText(quota.last_reset_date, quota.plan)}
+                  </div>
+                )}
               </div>
 
               {/* Resource 1: CSV Export Quota */}
@@ -1307,12 +1314,6 @@ export default function DashboardPage() {
                   <span>{locale === 'en' ? "No expiry • Batch delivery" : locale === 'vi' ? "Không hết hạn • Chia nhỏ gửi tự do" : "有効期限なし・100件〜随時配信"}</span>
                 </div>
               </div>
-
-              {quota?.last_reset_date && (
-                <div className="text-[9px] text-slate-400 border-t border-slate-200/70 dark:border-slate-800 pt-1.5 flex justify-between items-center">
-                  <span className="truncate">{getSubscriptionPeriodText(quota.last_reset_date, quota.plan)}</span>
-                </div>
-              )}
 
               {/* Action Buttons: Plan Change / Cancel */}
               <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-200/70 dark:border-slate-800">

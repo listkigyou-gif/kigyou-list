@@ -133,7 +133,49 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Update company claim status
+    // 3. Update company
+    if (isRequestAdmin && !isCompanyOwner) {
+      // ADMIN DATA MODERATION MODE:
+      // Update company fields (PR message, title, etc.) WITHOUT assigning Admin as Owner in user_companies
+      await client.query(
+        `UPDATE companies SET
+          pr_title = COALESCE($1, pr_title),
+          pr_message = COALESCE($2, pr_message),
+          updated_at = NOW()
+        WHERE corporate_number = $3`,
+        [
+          pr_title !== undefined ? pr_title.trim() : null,
+          pr_message !== undefined ? pr_message.trim() : null,
+          corporate_number,
+        ]
+      );
+
+      // Invalidate memory cache and revalidate Next.js ISR cache
+      invalidateCompanyCache(corporate_number);
+      try {
+        revalidatePath(`/[locale]/company/${corporate_number}`, 'page');
+        revalidatePath(`/ja/company/${corporate_number}`);
+        revalidatePath(`/vi/company/${corporate_number}`);
+        revalidatePath(`/en/company/${corporate_number}`);
+      } catch (e) {
+        console.warn("revalidatePath warning:", e);
+      }
+
+      return NextResponse.json({
+        success: true,
+        admin_override: true,
+        message: isJa
+          ? '管理者権限で企業PR情報を直接更新しました。（※自社管理リストには追加されません）'
+          : 'Đã cập nhật thông tin PR với quyền Quản trị viên (không liên kết vào danh sách sở hữu cá nhân).',
+        company: {
+          corporate_number,
+          pr_title,
+          pr_message,
+        },
+      });
+    }
+
+    // NORMAL OWNER CLAIM MODE (Official company representative):
     await client.query(
       `UPDATE companies SET
         is_claimed = TRUE,

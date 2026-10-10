@@ -35,6 +35,7 @@ export async function POST(request: Request) {
 
     const targetFilters: TargetFilters = {
       prefecture_name: filters.prefecture_name || undefined,
+      industry_code: filters.industry_code || undefined,
       min_employees: filters.min_employees ? parseInt(filters.min_employees, 10) : undefined,
       has_website: Boolean(filters.has_website),
       exclude_recent_days: filters.exclude_recent_days !== undefined ? parseInt(filters.exclude_recent_days, 10) : 30,
