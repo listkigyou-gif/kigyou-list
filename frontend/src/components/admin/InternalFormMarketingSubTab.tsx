@@ -98,6 +98,9 @@ export function InternalFormMarketingSubTab({
   const [creatingCampaign, setCreatingCampaign] = useState(false);
   const [createdCampaign, setCreatedCampaign] = useState<any | null>(null);
   const [copiedCmd, setCopiedCmd] = useState(false);
+  const [serverLimit, setServerLimit] = useState(100);
+  const [startingServerWorker, setStartingServerWorker] = useState(false);
+  const [serverWorkerStarted, setServerWorkerStarted] = useState(false);
 
   // History & Logs
   const [campaignsList, setCampaignsList] = useState<any[]>([]);
@@ -309,8 +312,36 @@ export function InternalFormMarketingSubTab({
     }
   };
 
-  const getRunnerCliCommand = (campaignId: string) => {
-    return `cd C:\\kigyou-list; python scripts/form_dispatcher/internal_runner.py --campaign-id ${campaignId} --warp --concurrency 5 --rotate-every 5 --live`;
+  const getRunnerCliCommand = (campaignId: string, mode?: string) => {
+    if (mode === "server_proxy" || createdCampaign?.execution_mode === "server_proxy") {
+      return `cd C:\\kigyou-list; python scripts/form_dispatcher/server_worker.py --campaign-id ${campaignId} --live --limit 100`;
+    }
+    return `cd C:\\kigyou-list; python scripts/form_dispatcher/internal_runner.py --campaign-id ${campaignId} --warp --concurrency 5 --rotate-every 5 --live --limit 100`;
+  };
+
+  const handleStartServerWorker = async (campaignId: string) => {
+    setStartingServerWorker(true);
+    try {
+      const res = await fetch(`/api/admin/internal-form-marketing/campaigns/${campaignId}/start-server`, {
+        method: "POST",
+        headers: getAdminHeaders(),
+        body: JSON.stringify({
+          limit: serverLimit,
+          concurrency: 3,
+          live: true,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setServerWorkerStarted(true);
+      } else {
+        alert(data.error || "Không thể khởi chạy Server Worker");
+      }
+    } catch (e: any) {
+      alert("Lỗi kết nối Server: " + e.message);
+    } finally {
+      setStartingServerWorker(false);
+    }
   };
 
   const copyToClipboard = (text: string) => {
@@ -666,7 +697,7 @@ export function InternalFormMarketingSubTab({
                 </button>
               </div>
 
-              {/* Show Created Campaign CLI Box */}
+              {/* Show Created Campaign Action Box */}
               {createdCampaign && (
                 <div className="mt-5 p-4 rounded-xl bg-slate-900 text-slate-100 border border-slate-800 space-y-3">
                   <div className="flex items-center justify-between">
@@ -679,24 +710,103 @@ export function InternalFormMarketingSubTab({
                     </span>
                   </div>
 
-                  <p className="text-xs text-slate-300">
-                    {isJa
-                      ? "以下のコマンドをターミナルで実行すると、ローカル環境（Playwright + WARP）から自動配信が開始されます："
-                      : "Mở Terminal trên máy tính và chạy lệnh sau để bắt đầu bắn Form tự động qua WARP:"}
-                  </p>
+                  {createdCampaign.execution_mode === "server_proxy" ? (
+                    <div className="space-y-3 pt-1">
+                      <div className="p-3 rounded-lg bg-purple-950/40 border border-purple-800/60 text-xs text-purple-200 space-y-1">
+                        <div className="flex items-center gap-1.5 font-bold text-purple-300">
+                          <Server className="w-4 h-4 text-purple-400" />
+                          <span>{isJa ? "サーバー実行モード（専用プロキシ経由）" : "Chế độ chạy nền trên Server (Dedicated Proxy)"}</span>
+                        </div>
+                        <p className="text-[11px] text-purple-300/80">
+                          {isJa
+                            ? "サーバー上のバックグラウンドWorkerが自動でプロキシプールを経由して配信します。PCの電源を切っても実行は継続されます。"
+                            : "Tiến trình chạy nền trên Server qua Proxy chuyên dụng. Bạn có thể tắt máy tính mà chiến dịch vẫn tự động chạy."}
+                        </p>
+                      </div>
 
-                  <div className="relative">
-                    <pre className="p-3 rounded-lg bg-black/60 font-mono text-[11px] text-emerald-300 overflow-x-auto whitespace-pre-wrap select-all">
-                      {getRunnerCliCommand(createdCampaign.id)}
-                    </pre>
-                    <button
-                      onClick={() => copyToClipboard(getRunnerCliCommand(createdCampaign.id))}
-                      className="absolute top-2 right-2 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-bold flex items-center gap-1 border border-slate-700"
-                    >
-                      {copiedCmd ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-                      <span>{copiedCmd ? (isJa ? "コピー済" : "Đã copy") : (isJa ? "コピー" : "Copy")}</span>
-                    </button>
-                  </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-1">
+                          <label className="block text-[11px] font-bold text-slate-400 mb-1">
+                            {isJa ? "配信リミット（件数）:" : "Số lượng gửi mẻ này:"}
+                          </label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={5000}
+                            value={serverLimit}
+                            onChange={(e) => setServerLimit(Math.max(1, parseInt(e.target.value) || 10))}
+                            className="w-full text-xs rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-white font-mono"
+                          />
+                        </div>
+
+                        <div className="flex-1 flex flex-col justify-end">
+                          <button
+                            onClick={() => handleStartServerWorker(createdCampaign.id)}
+                            disabled={startingServerWorker || serverWorkerStarted}
+                            className="w-full py-2 px-3 rounded-lg bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold shadow flex items-center justify-center gap-1.5 transition-all disabled:opacity-50 cursor-pointer"
+                          >
+                            {startingServerWorker ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : serverWorkerStarted ? (
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-300" />
+                            ) : (
+                              <Zap className="w-3.5 h-3.5 fill-white" />
+                            )}
+                            <span>
+                              {serverWorkerStarted
+                                ? (isJa ? "配信開始済" : "Đã kích hoạt")
+                                : (isJa ? "サーバーで実行開始" : "Khởi chạy trên Server")}
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {serverWorkerStarted && (
+                        <div className="p-2.5 rounded-lg bg-emerald-950/50 border border-emerald-800 text-[11px] text-emerald-300 flex items-center justify-between">
+                          <span>{isJa ? "✓ サーバーWorkerが起動しました！進捗は配信履歴で確認できます。" : "✓ Server Worker đã được kích hoạt! Bạn có thể xem tiến độ tại mục Lịch sử."}</span>
+                        </div>
+                      )}
+
+                      <div className="pt-2">
+                        <span className="text-[10px] text-slate-400">
+                          {isJa ? "※ VPS等で直接CLI実行する場合:" : "Hoặc chạy lệnh thủ công qua SSH Server:"}
+                        </span>
+                        <div className="relative mt-1">
+                          <pre className="p-2.5 rounded-lg bg-black/60 font-mono text-[10px] text-purple-300 overflow-x-auto whitespace-pre-wrap select-all">
+                            {getRunnerCliCommand(createdCampaign.id, "server_proxy")}
+                          </pre>
+                          <button
+                            onClick={() => copyToClipboard(getRunnerCliCommand(createdCampaign.id, "server_proxy"))}
+                            className="absolute top-1.5 right-1.5 px-2 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-bold flex items-center gap-1 border border-slate-700"
+                          >
+                            {copiedCmd ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                            <span>{copiedCmd ? (isJa ? "コピー済" : "Đã copy") : (isJa ? "コピー" : "Copy")}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <>
+                      <p className="text-xs text-slate-300">
+                        {isJa
+                          ? "以下のコマンドをターミナルで実行すると、ローカル環境（Playwright + WARP）から自動配信が開始されます："
+                          : "Mở Terminal trên máy tính và chạy lệnh sau để bắt đầu bắn Form tự động qua WARP:"}
+                      </p>
+
+                      <div className="relative">
+                        <pre className="p-3 rounded-lg bg-black/60 font-mono text-[11px] text-emerald-300 overflow-x-auto whitespace-pre-wrap select-all">
+                          {getRunnerCliCommand(createdCampaign.id, "local_warp")}
+                        </pre>
+                        <button
+                          onClick={() => copyToClipboard(getRunnerCliCommand(createdCampaign.id, "local_warp"))}
+                          className="absolute top-2 right-2 px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-white text-[11px] font-bold flex items-center gap-1 border border-slate-700"
+                        >
+                          {copiedCmd ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                          <span>{copiedCmd ? (isJa ? "コピー済" : "Đã copy") : (isJa ? "コピー" : "Copy")}</span>
+                        </button>
+                      </div>
+                    </>
+                  )}
 
                   <div className="pt-1 flex items-center justify-between text-[11px] text-slate-400">
                     <span>{isJa ? "※ まずシミュレーションしたい場合は --dry-run を付与" : "Muốn chạy thử an toàn: thêm cờ --dry-run"}</span>
@@ -705,7 +815,7 @@ export function InternalFormMarketingSubTab({
                         setActiveSection("history");
                         fetchCampaignsHistory();
                       }}
-                      className="text-indigo-400 hover:underline flex items-center gap-1 font-bold"
+                      className="text-indigo-400 hover:underline flex items-center gap-1 font-bold cursor-pointer"
                     >
                       {isJa ? "履歴で確認する" : "Xem tiến độ tại Lịch sử"} &rarr;
                     </button>

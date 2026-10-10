@@ -98,7 +98,7 @@ export const INTERNAL_CAMPAIGN_PRESETS: InternalCampaignPreset[] = [
     sender_name: "栗本 賢之",
     sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
-    sender_phone: "03-6907-1219",
+    sender_phone: "",
     sender_website: "https://kigyoulist.com",
     subject: "【新規開拓の効率化】国内500万社・Webフォーム窓口付き企業リストのご案内",
     body: `{{company_name}}
@@ -131,12 +131,12 @@ https://kigyoulist.com/ja?utm_source=form_dm&utm_medium=outreach&utm_campaign=b2
 サービス名：Kigyou-list（500万社企業データベース）
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
 担当責任者：栗本 賢之
-電話番号：03-6907-1219
 メール：info@kigyoulist.com
 URL：https://kigyoulist.com
 
 ※本メッセージは貴社のWebフォーム公開趣旨に基づきご提案をお送りしております。
-※万が一、今後このようなご案内がご不要な場合は、大変お手数ですがその旨をご返信いただけますと幸いです。速やかに以降の送信除外リストへ登録いたします。
+▼配信停止（オプトアウト）はこちら：
+{{opt_out_url}}
 --------------------------------------------------`
   },
   {
@@ -155,7 +155,7 @@ URL：https://kigyoulist.com
     sender_name: "栗本 賢之",
     sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
-    sender_phone: "03-6907-1219",
+    sender_phone: "",
     sender_website: "https://kigyoulist.com/ja/form-marketing",
     subject: "【アポ獲得DX】AI安全除外付き・問い合わせフォーム営業代行のご提案",
     body: `{{company_name}}
@@ -190,11 +190,11 @@ https://kigyoulist.com/ja/form-marketing?utm_source=form_dm&utm_medium=outreach&
 販売業者：TQC株式会社（登録番号: T4013301048678）
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
 担当責任者：栗本 賢之
-電話番号：03-6907-1219
 メール：info@kigyoulist.com
 サービスURL：https://kigyoulist.com/ja/form-marketing
 
-※本連絡が不要な場合は、大変お手数ですが本メール/返信にてその旨をお知らせいただけますと幸いです。
+▼配信停止（オプトアウト）はこちら：
+{{opt_out_url}}
 --------------------------------------------------`
   },
   {
@@ -213,7 +213,7 @@ https://kigyoulist.com/ja/form-marketing?utm_source=form_dm&utm_medium=outreach&
     sender_name: "栗本 賢之",
     sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
-    sender_phone: "03-6907-1219",
+    sender_phone: "",
     sender_website: "https://kigyoulist.com",
     subject: "【公式認証・無料掲載】国内最大級企業DB「Kigyou-list」掲載情報のご確認のお願い",
     body: `{{company_name}}
@@ -249,11 +249,11 @@ https://kigyoulist.com/ja
 TQC株式会社・Kigyou-list 企業情報管理チーム
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
 担当責任者：栗本 賢之
-電話番号：03-6907-1219
 メールアドレス：info@kigyoulist.com
 URL：https://kigyoulist.com
 
-※情報確認に関するご案内となりますが、今後の連絡が不要な場合は大変お手数ですがご返信にてお知らせください。
+▼配信停止（オプトアウト）はこちら：
+{{opt_out_url}}
 --------------------------------------------------`
   },
   {
@@ -272,7 +272,7 @@ URL：https://kigyoulist.com
     sender_name: "栗本 賢之",
     sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
-    sender_phone: "03-6907-1219",
+    sender_phone: "",
     sender_website: "https://kigyoulist.com",
     subject: "【開発工数削減】国内500万社・法人データAPI連携（REST API）のご案内",
     body: `{{company_name}}
@@ -308,10 +308,10 @@ https://kigyoulist.com/ja/pricing?utm_source=form_dm&utm_medium=outreach&utm_cam
 販売業者：TQC株式会社（登録番号: T4013301048678）
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
 担当責任者：栗本 賢之
-電話番号：03-6907-1219
 メール：info@kigyoulist.com
 URL：https://kigyoulist.com
-※配信停止をご希望の場合は大変恐縮ですが本返信にてお知らせください。
+▼配信停止（オプトアウト）はこちら：
+{{opt_out_url}}
 --------------------------------------------------`
   },
   {
@@ -330,7 +330,7 @@ URL：https://kigyoulist.com
     sender_name: "栗本 賢之",
     sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
-    sender_phone: "03-6907-1219",
+    sender_phone: "",
     sender_website: "https://kigyoulist.com",
     subject: "【採用ニーズ検知】直近で求人募集中の企業リスト・人材紹介開拓のご案内",
     body: `{{company_name}}
@@ -364,10 +364,10 @@ https://kigyoulist.com/ja/search?utm_source=form_dm&utm_medium=outreach&utm_camp
 販売業者：TQC株式会社（登録番号: T4013301048678）
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
 担当責任者：栗本 賢之
-電話番号：03-6907-1219
 メール：info@kigyoulist.com
 URL：https://kigyoulist.com
-※配信停止をご希望の場合は本返信にてお知らせください。
+▼配信停止（オプトアウト）はこちら：
+{{opt_out_url}}
 --------------------------------------------------`
   }
 ];

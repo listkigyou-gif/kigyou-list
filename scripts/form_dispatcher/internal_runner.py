@@ -47,7 +47,7 @@ def get_pg_connection():
         raise ValueError("DATABASE_URL is not set in environment or frontend/.env.local")
     import psycopg2
     import psycopg2.extras
-    return psycopg2.connect(db_url)
+    return psycopg2.connect(db_url, connect_timeout=3)
 
 def fetch_campaign(campaign_id: str) -> Optional[Dict[str, Any]]:
     conn = get_pg_connection()
@@ -58,7 +58,7 @@ def fetch_campaign(campaign_id: str) -> Optional[Dict[str, Any]]:
     conn.close()
     return dict(row) if row else None
 
-def fetch_target_companies_pg(filters: Dict[str, Any], limit: int = 50) -> List[Dict[str, Any]]:
+def fetch_target_companies_pg(filters: Dict[str, Any], limit: int = 50, campaign_id: Optional[str] = None, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
     conn = get_pg_connection()
     import psycopg2.extras
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
@@ -95,6 +95,23 @@ def fetch_target_companies_pg(filters: Dict[str, Any], limit: int = 50) -> List[
     rec_days = filters.get("exclude_recent_days")
     if rec_days and int(rec_days) > 0:
         conditions.append(f"(c.last_form_dm_sent_at IS NULL OR c.last_form_dm_sent_at < NOW() - INTERVAL '{int(rec_days)} days')")
+
+    if campaign_id:
+        conditions.append("""NOT EXISTS (
+            SELECT 1 FROM internal_form_send_logs log
+            WHERE log.corporate_number = c.corporate_number
+              AND log.campaign_id = %s
+        )""")
+        params.append(campaign_id)
+
+    # Multi-tenant opt-out exclusion
+    user_scope = str(user_id) if user_id else "admin"
+    conditions.append("""NOT EXISTS (
+        SELECT 1 FROM form_marketing_opt_outs opt
+        WHERE opt.corporate_number = c.corporate_number
+          AND (opt.user_id = %s OR (opt.user_id IS NULL AND %s = 'admin'))
+    )""")
+    params.extend([user_scope, user_scope])
 
     where_clause = " AND ".join(conditions)
     query = f"""
@@ -145,8 +162,10 @@ def record_log_pg(campaign_id: str, company: Dict[str, Any], status: str, messag
         c.execute("UPDATE internal_form_campaigns SET sent_count = sent_count + 1, updated_at = NOW() WHERE id = %s", (campaign_id,))
         if corp_num:
             c.execute("UPDATE companies SET last_form_dm_sent_at = NOW() WHERE corporate_number = %s", (corp_num,))
-    elif status.startswith("SKIPPED") or status.startswith("BLOCKED"):
+    elif status.startswith("SKIPPED") or status.startswith("BLOCKED") or status in ("NO_FORM_ELEMENT", "ALREADY_CONTACTED", "DEAD_WEBSITE"):
         c.execute("UPDATE internal_form_campaigns SET skipped_count = skipped_count + 1, updated_at = NOW() WHERE id = %s", (campaign_id,))
+    elif status == "SUCCESS_DRY_RUN":
+        pass  # Dry-run success simulation, don't increment failure counter
     else:
         c.execute("UPDATE internal_form_campaigns SET failed_count = failed_count + 1, updated_at = NOW() WHERE id = %s", (campaign_id,))
 
@@ -156,13 +175,21 @@ def record_log_pg(campaign_id: str, company: Dict[str, Any], status: str, messag
 def complete_campaign_pg(campaign_id: str, duration_sec: int, report_url: str):
     conn = get_pg_connection()
     c = conn.cursor()
+    c.execute("SELECT total_targeted, (sent_count + skipped_count + failed_count) as total_done FROM internal_form_campaigns WHERE id = %s", (campaign_id,))
+    row = c.fetchone()
+    new_status = 'completed'
+    if row and row[0] and row[1] and row[1] < row[0]:
+        new_status = 'paused'  # Batch finished, still has remaining targets
+
     c.execute(
         """
         UPDATE internal_form_campaigns
-        SET status = 'completed', duration_seconds = %s, report_file_url = %s, completed_at = NOW(), updated_at = NOW()
+        SET status = %s, duration_seconds = COALESCE(duration_seconds, 0) + %s, report_file_url = %s, 
+            completed_at = CASE WHEN %s = 'completed' THEN NOW() ELSE completed_at END, 
+            updated_at = NOW()
         WHERE id = %s
         """,
-        (duration_sec, report_url, campaign_id)
+        (new_status, duration_sec, report_url, new_status, campaign_id)
     )
     conn.commit()
     conn.close()
@@ -183,7 +210,8 @@ def create_browser_session(playwright_instance, proxy_config: Optional[Dict[str,
     browser = playwright_instance.chromium.launch(headless=True, proxy=proxy_config)
     context = browser.new_context(
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-        viewport={"width": 1280, "height": 800}
+        viewport={"width": 1280, "height": 800},
+        ignore_https_errors=True
     )
     page = context.new_page()
     return browser, context, page
@@ -208,7 +236,8 @@ def worker_routine(
     dispatcher = FormDispatcher(
         sender_profile=sender_profile,
         dry_run=is_dry_run,
-        save_screenshot=save_screenshot
+        save_screenshot=save_screenshot,
+        save_failed_html=True
     )
 
     current_port_idx = (worker_id - 1) % len(warp_ports) if warp_ports else 0
@@ -253,7 +282,13 @@ def worker_routine(
                     browser, context, page = create_browser_session(p, curr_proxy_conf)
                 except Exception as rot_e:
                     print(f"  [!] Worker #{worker_id} rotation launch error: {rot_e}")
-                    break
+                    # Try next port instead of breaking
+                    current_port_idx = (current_port_idx + 1) % len(warp_ports)
+                    curr_proxy_conf, curr_proxy_label = resolve_proxy(current_port_idx)
+                    try:
+                        browser, context, page = create_browser_session(p, curr_proxy_conf)
+                    except Exception:
+                        pass
                 submissions_on_curr_proxy = 0
 
             with lock:
@@ -389,11 +424,16 @@ def main():
     print(f"[*] Sender: {campaign['sender_company']} ({campaign['sender_name']}) <{campaign['sender_email']}>")
 
     sender_profile = {
+        "campaign_id": str(campaign.get("id")),
+        "user_id": "admin",
         "company_name": campaign["sender_company"],
         "contact_name": campaign["sender_name"],
         "furigana": campaign.get("sender_furigana") or "クリモト ヨシユキ",
         "email": campaign["sender_email"],
         "phone": campaign.get("sender_phone") or "03-5555-0123",
+        "postal_code": "104-0061",
+        "prefecture": "東京都",
+        "address": "中央区銀座1-1-1",
         "website": campaign.get("sender_website") or "https://kigyoulist.com",
         "subject": campaign["subject"],
         "message_body": campaign["message_body"]
@@ -411,7 +451,7 @@ def main():
     if isinstance(filters, str):
         filters = json.loads(filters)
 
-    targets = fetch_target_companies_pg(filters, limit=args.limit)
+    targets = fetch_target_companies_pg(filters, limit=args.limit, campaign_id=args.campaign_id, user_id="admin")
     print(f"[*] Fetched {len(targets)} target companies matching audience criteria.")
 
     if not targets:
@@ -481,8 +521,8 @@ def main():
     complete_campaign_pg(args.campaign_id, total_duration, report_public_url)
 
     # 8. Print Executive Summary
-    success_count = sum(1 for r in results if r.get("status") == "SUCCESS_SENT")
-    skipped_count = sum(1 for r in results if "SKIPPED" in r.get("status", "") or "BLOCKED" in r.get("status", ""))
+    success_count = sum(1 for r in results if r.get("status") in ("SUCCESS_SENT", "SUCCESS_DRY_RUN"))
+    skipped_count = sum(1 for r in results if "SKIPPED" in r.get("status", "") or "BLOCKED" in r.get("status", "") or r.get("status") in ("NO_FORM_ELEMENT", "ALREADY_CONTACTED", "DEAD_WEBSITE"))
     failed_count = len(results) - success_count - skipped_count
 
     print("\n" + "=" * 78)

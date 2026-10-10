@@ -20,7 +20,8 @@ import time
 import argparse
 import sqlite3
 import csv
-from urllib.parse import urlparse
+import hashlib
+from urllib.parse import urlparse, quote
 from datetime import datetime
 from typing import Dict, Any, List
 
@@ -31,6 +32,11 @@ try:
         load_dotenv(env_local)
 except ImportError:
     pass
+
+def generate_opt_out_token(corporate_number: str, user_id: str) -> str:
+    secret = os.environ.get("AUTH_SECRET") or os.environ.get("NEXTAUTH_SECRET") or "kigyoulist_optout_secure_salt_2026"
+    raw = f"{corporate_number}:{user_id}:{secret}"
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
 def parse_proxy_url(proxy_str: str):
     if not proxy_str:
@@ -65,15 +71,47 @@ except ImportError:
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "kigyou-list.db")
 SCREENSHOT_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports", "screenshots")
+FAILED_SAMPLES_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "reports", "failed_samples")
+
+
+def katakana_to_hiragana(text: str) -> str:
+    """Converts Japanese Katakana characters to Hiragana."""
+    if not text:
+        return ""
+    result = []
+    for ch in text:
+        code = ord(ch)
+        if 0x30A1 <= code <= 0x30F6:
+            result.append(chr(code - 0x60))
+        else:
+            result.append(ch)
+    return "".join(result)
+
+
+def hiragana_to_katakana(text: str) -> str:
+    """Converts Japanese Hiragana characters to Katakana."""
+    if not text:
+        return ""
+    result = []
+    for ch in text:
+        code = ord(ch)
+        if 0x3041 <= code <= 0x3096:
+            result.append(chr(code + 0x60))
+        else:
+            result.append(ch)
+    return "".join(result)
 
 
 class FormDispatcher:
-    def __init__(self, sender_profile: Dict[str, str], dry_run: bool = True, save_screenshot: bool = False):
+    def __init__(self, sender_profile: Dict[str, str], dry_run: bool = True, save_screenshot: bool = False, save_failed_html: bool = True):
         self.sender = sender_profile
         self.dry_run = dry_run
         self.save_screenshot = save_screenshot
+        self.save_failed_html = save_failed_html
         if self.save_screenshot:
             os.makedirs(SCREENSHOT_DIR, exist_ok=True)
+        if self.save_failed_html:
+            os.makedirs(FAILED_SAMPLES_DIR, exist_ok=True)
 
     def dispatch_single_company(self, page: Page, company: Dict[str, Any]) -> Dict[str, Any]:
         url = company.get("contact_form_url") or company.get("website_url")
@@ -96,10 +134,29 @@ class FormDispatcher:
             return result
 
         try:
+            # Auto-accept JavaScript confirmation dialogs (window.confirm, alert)
+            try:
+                def _safe_dialog_accept(dialog):
+                    try:
+                        dialog.accept()
+                    except Exception:
+                        pass
+                page.on("dialog", _safe_dialog_accept)
+            except Exception:
+                pass
+
             # 1. Navigate to contact form URL
             print(f"  [>] Visiting {comp_name} ({corp_num}): {url}")
             page.goto(url, wait_until="domcontentloaded", timeout=25000)
             page.wait_for_timeout(1500)
+
+            # If dynamic SPA / Google Forms, wait for question inputs to render
+            if "docs.google.com/forms" in page.url or "forms.gle" in page.url or "formzu" in page.url:
+                try:
+                    page.wait_for_selector('div[role="listitem"], input[type="text"], textarea', timeout=6000)
+                    page.wait_for_timeout(1000)
+                except Exception:
+                    pass
 
             html_content = page.content()
 
@@ -127,19 +184,42 @@ class FormDispatcher:
                 hub_links = [
                     'お問い合わせフォーム', 'お問合せフォーム', '入力フォーム', 'フォームはこちら',
                     '入力画面へ', 'Webフォーム', 'メールフォーム', 'お問い合わせはこちら',
-                    'お問合せはこちら', 'Inquiry Form', 'Contact Form'
+                    'お問合せはこちら', 'Inquiry Form', 'Contact Form',
+                    'その他のお問い合わせ', 'その他お問い合わせ', 'その他', '一般のお問い合わせ',
+                    '一般お問合せ', '事業に関するお問い合わせ', 'サービスに関するお問い合わせ',
+                    '弊社に関するお問い合わせ', 'ビジネスに関するお問い合わせ', '総合お問い合わせ',
+                    '法人のお問い合わせ', '法人窓口', 'フォームを開く', 'お問い合わせ窓口', '各種お問い合わせ'
                 ]
+                hub_navigated = False
                 for kw in hub_links:
                     cand = page.locator(f'a:has-text("{kw}"), button:has-text("{kw}")')
-                    if cand.count() > 0:
+                    if cand.count() > 0 and cand.first.is_visible():
                         try:
                             print(f"  [↳] Hub page detected. Entering actual form via '{kw}'...")
                             cand.first.click(timeout=5000)
-                            page.wait_for_timeout(2000)
+                            page.wait_for_timeout(2500)
                             html_content = page.content()
+                            hub_navigated = True
                             break
                         except Exception:
                             pass
+
+                # Fallback: check links whose href contains contact/inquiry/toiawase/form
+                if not hub_navigated:
+                    cand_links = page.locator('a[href*="contact" i], a[href*="inquiry" i], a[href*="toiawase" i], a[href*="form" i]')
+                    for idx in range(min(cand_links.count(), 6)):
+                        lnk = cand_links.nth(idx)
+                        if lnk.is_visible():
+                            txt = lnk.inner_text().strip()
+                            if not any(bad in txt for bad in ['English', 'Privacy', 'プライバシー', '個人情報', '規約', 'English', 'Global']):
+                                print(f"  [↳] Hub candidate link detected ('{txt[:30]}'). Entering form...")
+                                try:
+                                    lnk.click(timeout=5000)
+                                    page.wait_for_timeout(2500)
+                                    html_content = page.content()
+                                    break
+                                except Exception:
+                                    pass
 
             # 3.2 Determine working scope (main page or active iframe)
             scope = page
@@ -166,10 +246,14 @@ class FormDispatcher:
             # --- A. Company Name ---
             company_selectors = [
                 'input[name*="company" i]', 'input[name*="kaisha" i]', 'input[id*="company" i]',
-                'input[placeholder*="会社" i]', 'input[placeholder*="法人" i]',
+                'input[name*="御社" i]', 'input[id*="御社" i]', 'input[name*="貴社" i]', 'input[id*="貴社" i]',
+                'input[name*="会社" i]', 'input[id*="会社" i]', 'input[name*="法人" i]', 'input[id*="法人" i]',
+                'input[placeholder*="会社" i]', 'input[placeholder*="法人" i]', 'input[placeholder*="貴社" i]', 'input[placeholder*="御社" i]',
                 'tr:has-text("会社名") input:not([type="hidden"])', 'tr:has-text("貴社名") input:not([type="hidden"])',
-                'tr:has-text("法人名") input:not([type="hidden"])', 'dl:has-text("会社名") input:not([type="hidden"])',
-                'dl:has-text("貴社名") input:not([type="hidden"])', 'label:has-text("会社名") input:not([type="hidden"])'
+                'tr:has-text("御社名") input:not([type="hidden"])', 'tr:has-text("法人名") input:not([type="hidden"])',
+                'dl:has-text("会社名") input:not([type="hidden"])', 'dl:has-text("貴社名") input:not([type="hidden"])',
+                'dl:has-text("御社名") input:not([type="hidden"])', 'label:has-text("会社名") input:not([type="hidden"])',
+                'label:has-text("御社名") input:not([type="hidden"])', 'label:has-text("貴社名") input:not([type="hidden"])'
             ]
             for sel in company_selectors:
                 c_loc = scope.locator(sel)
@@ -204,11 +288,15 @@ class FormDispatcher:
 
             if not is_split_name:
                 name_selectors = [
-                    'input[name*="name" i]:not([name*="company" i]):not([name*="kana" i])', 'input[id*="name" i]',
+                    'input[name*="name" i]:not([name*="company" i]):not([name*="kana" i])', 'input[id*="name" i]:not([id*="company" i]):not([id*="kana" i])',
+                    'input[name*="お名前" i]', 'input[id*="お名前" i]', 'input[name*="氏名" i]', 'input[id*="氏名" i]',
+                    'input[name*="名前" i]:not([name*="会社" i])', 'input[id*="名前" i]:not([id*="会社" i])',
+                    'input[name*="担当" i]', 'input[id*="担当" i]',
                     'input[placeholder*="氏名" i]', 'input[placeholder*="名前" i]', 'input[placeholder*="担当" i]',
                     'tr:has-text("お名前") input:not([type="hidden"])', 'tr:has-text("氏名") input:not([type="hidden"])',
                     'tr:has-text("ご担当") input:not([type="hidden"])', 'dl:has-text("お名前") input:not([type="hidden"])',
-                    'dl:has-text("氏名") input:not([type="hidden"])', 'label:has-text("お名前") input:not([type="hidden"])'
+                    'dl:has-text("氏名") input:not([type="hidden"])', 'label:has-text("お名前") input:not([type="hidden"])',
+                    'label:has-text("氏名") input:not([type="hidden"])'
                 ]
                 for sel in name_selectors:
                     n_loc = scope.locator(sel)
@@ -217,10 +305,20 @@ class FormDispatcher:
                             filled_fields += 1
                             break
 
-            # --- C. Furigana (Single or Split [セイ][メイ]) ---
-            kana_str = self.sender.get("furigana", "ヤマダ タロウ")
-            kana_parts = kana_str.strip().split()
-            sei_kana = kana_parts[0] if len(kana_parts) > 0 else kana_str
+            # --- C. Furigana (Single or Split [セイ][メイ] / Hiragana or Katakana) ---
+            kana_str = self.sender.get("furigana", "クリモト ヨシユキ")
+            # Auto-detect if form prefers Hiragana (ふりがな) vs Katakana (フリガナ)
+            prefers_hiragana = False
+            try:
+                f_sample = scope.locator('tr:has-text("ふりがな"), tr:has-text("ひらがな"), dl:has-text("ふりがな"), label:has-text("ふりがな"), input[placeholder*="ふりがな"]')
+                if f_sample.count() > 0 and f_sample.first.is_visible():
+                    prefers_hiragana = True
+            except Exception:
+                pass
+
+            effective_kana = katakana_to_hiragana(kana_str) if prefers_hiragana else kana_str
+            kana_parts = effective_kana.strip().split()
+            sei_kana = kana_parts[0] if len(kana_parts) > 0 else effective_kana
             mei_kana = kana_parts[1] if len(kana_parts) > 1 else sei_kana
 
             sei_k_selectors = ['input[name*="sei_kana" i]', 'input[name*="kana_sei" i]', 'input[placeholder*="セイ" i]', 'input[placeholder*="せい" i]']
@@ -241,14 +339,18 @@ class FormDispatcher:
 
             if not is_split_kana:
                 kana_selectors = [
-                    'input[name*="kana" i]', 'input[name*="furigana" i]', 'input[placeholder*="フリガナ" i]', 'input[placeholder*="ふりがな" i]',
+                    'input[name*="kana" i]', 'input[name*="furigana" i]', 'input[id*="kana" i]', 'input[id*="furigana" i]',
+                    'input[name*="フリガナ" i]', 'input[id*="フリガナ" i]', 'input[name*="ふりがな" i]', 'input[id*="ふりがな" i]',
+                    'input[name*="カナ" i]', 'input[id*="カナ" i]',
+                    'input[placeholder*="フリガナ" i]', 'input[placeholder*="ふりがな" i]',
                     'tr:has-text("フリガナ") input:not([type="hidden"])', 'tr:has-text("ふりがな") input:not([type="hidden"])',
-                    'dl:has-text("フリガナ") input:not([type="hidden"])', 'label:has-text("フリガナ") input:not([type="hidden"])'
+                    'dl:has-text("フリガナ") input:not([type="hidden"])', 'dl:has-text("ふりがな") input:not([type="hidden"])',
+                    'label:has-text("フリガナ") input:not([type="hidden"])', 'label:has-text("ふりがな") input:not([type="hidden"])'
                 ]
                 for sel in kana_selectors:
                     k_loc = scope.locator(sel)
                     if k_loc.count() > 0 and k_loc.first.is_visible():
-                        safe_fill(k_loc.first, kana_str)
+                        safe_fill(k_loc.first, effective_kana)
                         break
 
             # --- D. Email Address & Confirmation ---
@@ -276,37 +378,146 @@ class FormDispatcher:
                         break
 
             # --- E. Phone Number (Single or Split 3 boxes) ---
-            phone_val = self.sender.get("phone", "03-1234-5678")
+            phone_val = self.sender.get("phone", "03-5555-0123")
             p_parts = phone_val.split("-") if "-" in phone_val else [phone_val[:3], phone_val[3:7], phone_val[7:]]
             if len(p_parts) < 3:
-                p_parts = ["03", "1234", "5678"]
+                p_parts = ["03", "5555", "0123"]
 
-            # Check split phone inputs (e.g. tel1, tel2, tel3 or 3 inputs inside tel row)
-            is_split_phone = False
-            for container_sel in ['tr:has-text("電話")', 'dl:has-text("電話")', 'div:has-text("電話番号")']:
-                row = scope.locator(container_sel)
-                if row.count() > 0:
-                    inputs = row.first.locator('input[type="text"], input[type="tel"]')
-                    if inputs.count() >= 3:
-                        safe_fill(inputs.nth(0), p_parts[0])
-                        safe_fill(inputs.nth(1), p_parts[1])
-                        safe_fill(inputs.nth(2), p_parts[2])
+            phone_filled = False
+            # 1. Primary: Match explicit single phone field (never broad container)
+            phone_single_selectors = [
+                'input[type="tel"]', 'input[name="電話番号" i]', 'input[id="電話番号" i]',
+                'input[name*="tel" i]:not([name*="1"]):not([name*="2"]):not([name*="3"])',
+                'input[name*="phone" i]:not([name*="1"]):not([name*="2"]):not([name*="3"])',
+                'input[id*="tel" i]:not([id*="1"]):not([id*="2"]):not([id*="3"])',
+                'input[placeholder*="電話" i]', 'input[placeholder*="tel" i]'
+            ]
+            for sel in phone_single_selectors:
+                ph_loc = scope.locator(sel)
+                if ph_loc.count() > 0 and ph_loc.first.is_visible():
+                    if safe_fill(ph_loc.first, phone_val):
                         filled_fields += 1
-                        is_split_phone = True
+                        phone_filled = True
                         break
 
-            if not is_split_phone:
-                phone_selectors = [
-                    'input[type="tel"]', 'input[name*="tel" i]', 'input[name*="phone" i]', 'input[placeholder*="電話" i]',
-                    'tr:has-text("電話") input:not([type="hidden"])', 'dl:has-text("電話") input:not([type="hidden"])',
-                    'label:has-text("電話") input:not([type="hidden"])'
-                ]
-                for sel in phone_selectors:
-                    ph_loc = scope.locator(sel)
+            # 2. Check split 3 phone inputs ONLY if explicit tel1/tel2/tel3 or row with EXACTLY 3 inputs
+            if not phone_filled:
+                tel1 = scope.locator('input[name*="tel1" i], input[name*="phone1" i]')
+                tel2 = scope.locator('input[name*="tel2" i], input[name*="phone2" i]')
+                tel3 = scope.locator('input[name*="tel3" i], input[name*="phone3" i]')
+                if tel1.count() > 0 and tel2.count() > 0 and tel3.count() > 0 and tel1.first.is_visible():
+                    safe_fill(tel1.first, p_parts[0])
+                    safe_fill(tel2.first, p_parts[1])
+                    safe_fill(tel3.first, p_parts[2])
+                    filled_fields += 1
+                    phone_filled = True
+
+            if not phone_filled:
+                # Strictly check container row (MUST NOT BE GENERIC DIV)
+                for container_sel in ['tr:has-text("電話")', 'dl:has-text("電話")']:
+                    row = scope.locator(container_sel)
+                    if row.count() > 0:
+                        inputs = row.first.locator('input[type="text"], input[type="tel"]')
+                        # Must have EXACTLY 3 inputs to prevent false positive match
+                        if inputs.count() == 3 and inputs.first.is_visible():
+                            safe_fill(inputs.nth(0), p_parts[0])
+                            safe_fill(inputs.nth(1), p_parts[1])
+                            safe_fill(inputs.nth(2), p_parts[2])
+                            filled_fields += 1
+                            phone_filled = True
+                            break
                     if ph_loc.count() > 0 and ph_loc.first.is_visible():
                         if safe_fill(ph_loc.first, phone_val):
                             filled_fields += 1
                             break
+
+            # --- E2. Postal Code / Zipcode (郵便番号 - Single or Split 2 boxes) ---
+            zip_val = self.sender.get("postal_code") or "104-0061"
+            z_parts = zip_val.split("-") if "-" in zip_val else [zip_val[:3], zip_val[3:]]
+            if len(z_parts) < 2:
+                z_parts = ["104", "0061"]
+
+            is_split_zip = False
+            zip_split_1 = scope.locator('input[name*="zip1" i], input[name*="postal1" i], input[name*="post1" i]')
+            zip_split_2 = scope.locator('input[name*="zip2" i], input[name*="postal2" i], input[name*="post2" i]')
+            if zip_split_1.count() > 0 and zip_split_2.count() > 0 and zip_split_1.first.is_visible() and zip_split_2.first.is_visible():
+                safe_fill(zip_split_1.first, z_parts[0])
+                safe_fill(zip_split_2.first, z_parts[1])
+                filled_fields += 1
+                is_split_zip = True
+
+            if not is_split_zip:
+                zip_selectors = [
+                    'input[name*="zip" i]', 'input[name*="postal" i]', 'input[name*="postcode" i]',
+                    'input[placeholder*="郵便番号" i]', 'tr:has-text("郵便番号") input:not([type="hidden"])',
+                    'dl:has-text("郵便番号") input:not([type="hidden"])', 'label:has-text("郵便番号") input:not([type="hidden"])'
+                ]
+                for z_sel in zip_selectors:
+                    z_loc = scope.locator(z_sel)
+                    if z_loc.count() > 0 and z_loc.first.is_visible():
+                        if safe_fill(z_loc.first, zip_val):
+                            filled_fields += 1
+                            break
+
+            # --- E3. Prefecture (都道府県 - Dropdown or Text) ---
+            pref_val = self.sender.get("prefecture") or "東京都"
+            pref_selects = scope.locator('select[name*="pref" i], select[name*="todofuken" i], select[id*="pref" i], tr:has-text("都道府県") select, dl:has-text("都道府県") select')
+            if pref_selects.count() > 0 and pref_selects.first.is_visible():
+                try:
+                    p_sel = pref_selects.first
+                    opts = p_sel.locator('option')
+                    for o_idx in range(opts.count()):
+                        opt_text = opts.nth(o_idx).inner_text()
+                        if pref_val in opt_text:
+                            v = opts.nth(o_idx).get_attribute('value')
+                            p_sel.select_option(value=v)
+                            p_sel.dispatch_event('change')
+                            filled_fields += 1
+                            break
+                except Exception:
+                    pass
+            else:
+                pref_inputs = scope.locator('input[name*="pref" i], input[name*="todofuken" i], tr:has-text("都道府県") input:not([type="hidden"])')
+                if pref_inputs.count() > 0 and pref_inputs.first.is_visible():
+                    if safe_fill(pref_inputs.first, pref_val):
+                        filled_fields += 1
+
+            # --- E3.5 Inquiry Category / Kind Dropdown (お問い合わせ項目・種別) ---
+            cat_selects = scope.locator('select[name*="kind" i], select[name*="category" i], select[name*="type" i], select[id*="kind" i], select[name*="subject" i], tr:has-text("お問い合わせ項目") select, dl:has-text("お問い合わせ項目") select, tr:has-text("項目") select, tr:has-text("種別") select')
+            if cat_selects.count() > 0 and cat_selects.first.is_visible():
+                try:
+                    c_sel = cat_selects.first
+                    opts = c_sel.locator('option')
+                    chosen_val = None
+                    for o_idx in range(opts.count()):
+                        opt_text = opts.nth(o_idx).inner_text()
+                        if any(w in opt_text for w in ["その他", "営業", "業務", "事業", "全般", "問い合わせ"]):
+                            chosen_val = opts.nth(o_idx).get_attribute('value')
+                            break
+                    if chosen_val is None and opts.count() > 1:
+                        chosen_val = opts.nth(1).get_attribute('value')
+                    if chosen_val is not None:
+                        c_sel.select_option(value=chosen_val)
+                        c_sel.dispatch_event('change')
+                        filled_fields += 1
+                except Exception:
+                    pass
+
+            # --- E4. Address (市区町村・番地・建物名) ---
+            addr_val = self.sender.get("address") or "東京都中央区銀座1-1-1"
+            addr_selectors = [
+                'input[name*="address" i]', 'input[name*="addr" i]', 'input[placeholder*="市区町村" i]',
+                'input[placeholder*="ご住所" i]', 'input[placeholder*="住所" i]', 'input[placeholder*="番地" i]',
+                'tr:has-text("ご住所") input:not([type="hidden"])', 'tr:has-text("住所") input:not([type="hidden"])',
+                'dl:has-text("ご住所") input:not([type="hidden"])', 'dl:has-text("住所") input:not([type="hidden"])',
+                'label:has-text("住所") input:not([type="hidden"])'
+            ]
+            for a_sel in addr_selectors:
+                a_loc = scope.locator(a_sel)
+                if a_loc.count() > 0 and a_loc.first.is_visible():
+                    if safe_fill(a_loc.first, addr_val):
+                        filled_fields += 1
+                        break
 
             # --- F. Subject / Title ---
             subject_selectors = [
@@ -318,7 +529,9 @@ class FormDispatcher:
             for sel in subject_selectors:
                 sub_loc = scope.locator(sel)
                 if sub_loc.count() > 0 and sub_loc.first.is_visible():
-                    safe_fill(sub_loc.first, self.sender.get("subject", "貴社事業に関する協業のご提案"))
+                    raw_sub = self.sender.get("subject", "貴社事業に関する協業のご提案")
+                    rendered_sub = raw_sub.replace("{{company_name}}", comp_name).replace("{company_name}", comp_name)
+                    safe_fill(sub_loc.first, rendered_sub)
                     break
 
             # --- G. Smart Dropdown (<select>) Selection ---
@@ -366,7 +579,30 @@ class FormDispatcher:
             # --- I. Message Body (Textarea) ---
             textarea = scope.locator('textarea')
             if textarea.count() > 0 and textarea.first.is_visible():
-                custom_body = f"{comp_name} 御中\n\n{self.sender['message_body']}"
+                body_template = self.sender.get("message_body", "")
+
+                # Generate dynamic 1-click Opt-out URL
+                user_scope = str(self.sender.get("user_id") or "admin")
+                camp_scope = str(self.sender.get("campaign_id") or "")
+                opt_token = generate_opt_out_token(str(corp_num), user_scope)
+                opt_out_url = f"https://kigyoulist.com/ja/opt-out?u={quote(user_scope)}&c={quote(str(corp_num))}&cmp={quote(camp_scope)}&token={opt_token}"
+
+                # Dynamic variable replacement: {{company_name}}, {company_name}, {{opt_out_url}}
+                rendered_body = body_template.replace("{{company_name}}", comp_name)
+                rendered_body = rendered_body.replace("{company_name}", comp_name)
+                rendered_body = rendered_body.replace("{{corporate_name}}", comp_name)
+                rendered_body = rendered_body.replace("{corporate_name}", comp_name)
+                rendered_body = rendered_body.replace("{{target_company}}", comp_name)
+                rendered_body = rendered_body.replace("{target_company}", comp_name)
+                rendered_body = rendered_body.replace("{{opt_out_url}}", opt_out_url)
+                rendered_body = rendered_body.replace("{opt_out_url}", opt_out_url)
+
+                # Ensure company salutation at the top if not already present
+                if comp_name not in rendered_body[:len(comp_name) + 30]:
+                    custom_body = f"{comp_name} 御中\n\n{rendered_body}"
+                else:
+                    custom_body = rendered_body
+
                 if safe_fill(textarea.first, custom_body):
                     filled_fields += 1
 
@@ -399,12 +635,45 @@ class FormDispatcher:
                 elif "404" in page_title or "Not Found" in page_title:
                     result["status"] = "DEAD_WEBSITE"
                     result["message"] = "Skipped: 404 Page Not Found"
-                elif scope.locator('input:not([type="hidden"]), textarea').count() == 0:
-                    result["status"] = "NO_FORM_ELEMENT"
-                    result["message"] = "Skipped: Contact page has no web form (Phone/Mail only)"
                 else:
-                    result["status"] = "FORM_PARSE_ERROR"
-                    result["message"] = f"Insufficient fields matched (filled {filled_fields} fields)"
+                    # Check if the only inputs on the page are site search inputs (q, s, kw, search, etc.)
+                    search_only = False
+                    candidate_text_inputs = scope.locator('input[type="text"], input:not([type])')
+                    has_real_contact_field = scope.locator('textarea, input[type="email"], input[type="tel"], input[name*="mail" i], input[name*="company" i]').count() > 0
+                    if not has_real_contact_field and candidate_text_inputs.count() <= 3:
+                        has_contact_hints = False
+                        for t_idx in range(candidate_text_inputs.count()):
+                            try:
+                                inp = candidate_text_inputs.nth(t_idx)
+                                name_attr = (inp.get_attribute('name') or '').lower()
+                                ph_attr = (inp.get_attribute('placeholder') or '').lower()
+                                id_attr = (inp.get_attribute('id') or '').lower()
+                                if any(w in name_attr or w in ph_attr or w in id_attr for w in ['name', 'namae', 'company', 'corp', 'title', 'subject', 'msg', 'message', '氏名', '名前', '会社', '件名', '内容', '問合']):
+                                    has_contact_hints = True
+                                    break
+                            except Exception:
+                                pass
+                        if not has_contact_hints:
+                            search_only = True
+
+                    if search_only or scope.locator('input[type="text"], input[type="email"], input[type="tel"], input:not([type]), textarea').count() == 0:
+                        result["status"] = "NO_FORM_ELEMENT"
+                        result["message"] = "Skipped: Contact page has no web form (Search bar / Phone / Mail only)"
+                    else:
+                        result["status"] = "FORM_PARSE_ERROR"
+                        result["message"] = f"Insufficient fields matched (filled {filled_fields} fields)"
+
+                # Save failed HTML sample for diagnostic flywheel
+                if self.save_failed_html:
+                    try:
+                        os.makedirs(FAILED_SAMPLES_DIR, exist_ok=True)
+                        sample_path = os.path.join(FAILED_SAMPLES_DIR, f"{corp_num}_{result['status']}.html")
+                        with open(sample_path, "w", encoding="utf-8") as sf:
+                            sf.write(f"<!-- URL: {url} | STATUS: {result['status']} | TIME: {datetime.now().isoformat()} -->\n")
+                            sf.write(html_content)
+                        result["failed_html_path"] = sample_path
+                    except Exception:
+                        pass
                 
                 result["billable"] = False
                 print(f"  [!] {result['message']} (Refund credit)")
@@ -424,35 +693,90 @@ class FormDispatcher:
                 return result
 
             # LIVE SUBMISSION
-            # Find submit/confirm button
+            # Scroll to trigger bottom-of-page validations or privacy agreements
+            try:
+                page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+                page.wait_for_timeout(500)
+            except Exception:
+                pass
+
+            # Find submit/confirm button (Advanced multi-element finder)
             submit_btn = None
-            btn_texts = ["確認画面へ", "確認", "送信する", "送信", "次へ", "Submit", "Send"]
+            btn_texts = [
+                "確認画面へ", "確認", "送信する", "送信", "次へ", "同意して確認", "同意して送信",
+                "内容確認", "入力内容の確認", "送信内容の確認", "お問い合わせを送信", "メッセージを送信",
+                "確認ページへ", "入力内容を確認する", "入力完了", "完了", "Submit", "Send"
+            ]
             for btn_txt in btn_texts:
                 for ctx in [scope, page]:
-                    loc = ctx.locator(f'button:has-text("{btn_txt}"), input[type="submit"][value*="{btn_txt}" i]')
-                    if loc.count() > 0:
-                        submit_btn = loc.first
+                    try:
+                        loc = ctx.locator(
+                            f'button:has-text("{btn_txt}"), input[type="submit"][value*="{btn_txt}" i], '
+                            f'input[type="button"][value*="{btn_txt}" i], input[value*="{btn_txt}" i], '
+                            f'input[type="image"][alt*="{btn_txt}" i], a:has-text("{btn_txt}"), div[role="button"]:has-text("{btn_txt}"), '
+                            f'div[class*="btn" i]:has-text("{btn_txt}"), div[class*="submit" i]:has-text("{btn_txt}"), '
+                            f'p[id*="submit" i]:has-text("{btn_txt}"), span[class*="btn" i]:has-text("{btn_txt}"), '
+                            f'a[class*="btn" i]:has-text("{btn_txt}")'
+                        )
+                        cnt = loc.count()
+                        for idx in range(cnt):
+                            candidate = loc.nth(idx)
+                            if candidate.is_visible():
+                                submit_btn = candidate
+                                break
+                    except Exception:
+                        pass
+                    if submit_btn:
                         break
                 if submit_btn:
                     break
 
             if not submit_btn:
-                # Fallback to standard input submit
+                # Fallback to standard input submit or button with type submit or Peraichi/custom submit classes
                 for ctx in [scope, page]:
-                    loc = ctx.locator('input[type="submit"], button[type="submit"]')
-                    if loc.count() > 0:
-                        submit_btn = loc.first
+                    try:
+                        loc = ctx.locator(
+                            'input[type="submit"], input[type="button"][value*="送信" i], button[type="submit"], '
+                            '[role="button"], [class*="btn-customform-submit" i], [class*="form_submit" i], [id*="obj_submit" i]'
+                        )
+                        cnt = loc.count()
+                        for idx in range(cnt):
+                            candidate = loc.nth(idx)
+                            if candidate.is_visible():
+                                submit_btn = candidate
+                                break
+                    except Exception:
+                        pass
+                    if submit_btn:
                         break
-                if loc.count() > 0:
-                    submit_btn = loc.first
+
+            # If button is disabled, attempt to unblock by checking any remaining agreement checkboxes
+            if submit_btn:
+                try:
+                    if submit_btn.is_disabled():
+                        for ctx in [scope, page]:
+                            all_cbs = ctx.locator('input[type="checkbox"]')
+                            for ci in range(all_cbs.count()):
+                                try:
+                                    all_cbs.nth(ci).check()
+                                    all_cbs.nth(ci).dispatch_event('change')
+                                except Exception:
+                                    pass
+                        page.wait_for_timeout(300)
+                except Exception:
+                    pass
 
             if submit_btn:
                 submit_btn.click()
                 page.wait_for_timeout(3000)
 
                 # Check if it was a confirmation page and needs one more click to final submit
-                final_btn = page.locator('button:has-text("送信する"), input[type="submit"][value*="送信する" i], button:has-text("送信"), input[type="submit"][value*="送信" i]')
-                if final_btn.count() > 0:
+                final_btn = page.locator(
+                    'button:has-text("送信する"), input[type="submit"][value*="送信する" i], '
+                    'button:has-text("送信"), input[type="submit"][value*="送信" i], '
+                    'button:has-text("完了"), a:has-text("送信する")'
+                )
+                if final_btn.count() > 0 and final_btn.first.is_visible():
                     final_btn.first.click()
                     page.wait_for_timeout(3000)
 
@@ -469,6 +793,18 @@ class FormDispatcher:
                 result["status"] = "NO_SUBMIT_BUTTON"
                 result["billable"] = False
                 result["message"] = "Could not find submit button"
+
+                # Save failed HTML sample for diagnostic flywheel
+                if self.save_failed_html:
+                    try:
+                        os.makedirs(FAILED_SAMPLES_DIR, exist_ok=True)
+                        sample_path = os.path.join(FAILED_SAMPLES_DIR, f"{corp_num}_NO_SUBMIT_BUTTON.html")
+                        with open(sample_path, "w", encoding="utf-8") as sf:
+                            sf.write(f"<!-- URL: {url} | STATUS: NO_SUBMIT_BUTTON | TIME: {datetime.now().isoformat()} -->\n")
+                            sf.write(html_content)
+                        result["failed_html_path"] = sample_path
+                    except Exception:
+                        pass
 
         except PlaywrightTimeoutError:
             result["status"] = "TIMEOUT"
