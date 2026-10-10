@@ -310,7 +310,7 @@ export function InternalFormMarketingSubTab({
   };
 
   const getRunnerCliCommand = (campaignId: string) => {
-    return `python scripts/form_dispatcher/internal_runner.py --campaign-id ${campaignId} --warp --concurrency 5 --rotate-every 5 --live`;
+    return `cd C:\\kigyou-list; python scripts/form_dispatcher/internal_runner.py --campaign-id ${campaignId} --warp --concurrency 5 --rotate-every 5 --live`;
   };
 
   const copyToClipboard = (text: string) => {
