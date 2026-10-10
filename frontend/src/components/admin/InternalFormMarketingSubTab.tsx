@@ -509,6 +509,7 @@ export function InternalFormMarketingSubTab({
                     className="w-full text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-slate-900 dark:text-white"
                   >
                     <option value="">{isJa ? "すべての規模" : "Tất cả quy mô"}</option>
+                    <option value="5">{isJa ? "5名以上" : "Từ 5 nhân viên trở lên"}</option>
                     <option value="10">{isJa ? "10名以上" : "Từ 10 nhân viên trở lên"}</option>
                     <option value="30">{isJa ? "30名以上" : "Từ 30 nhân viên trở lên"}</option>
                     <option value="50">{isJa ? "50名以上" : "Từ 50 nhân viên trở lên"}</option>

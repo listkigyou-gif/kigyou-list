@@ -90,7 +90,7 @@ export const INTERNAL_CAMPAIGN_PRESETS: InternalCampaignPreset[] = [
     default_filters: {
       prefecture_name: "all",
       industry_code: "all",
-      min_employees: 10,
+      min_employees: 0,
       has_website: true,
       exclude_recent_days: 60,
     },
@@ -147,7 +147,7 @@ URL：https://kigyoulist.com
     default_filters: {
       prefecture_name: "東京都",
       industry_code: "G",
-      min_employees: 10,
+      min_employees: 0,
       has_website: true,
       exclude_recent_days: 60,
     },
@@ -205,7 +205,7 @@ https://kigyoulist.com/ja/form-marketing?utm_source=form_dm&utm_medium=outreach&
     default_filters: {
       prefecture_name: "all",
       industry_code: "all",
-      min_employees: 5,
+      min_employees: 0,
       has_website: true,
       exclude_recent_days: 90,
     },
@@ -264,7 +264,7 @@ URL：https://kigyoulist.com
     default_filters: {
       prefecture_name: "all",
       industry_code: "G",
-      min_employees: 30,
+      min_employees: 0,
       has_website: true,
       exclude_recent_days: 60,
     },
@@ -322,7 +322,7 @@ URL：https://kigyoulist.com
     default_filters: {
       prefecture_name: "all",
       industry_code: "L",
-      min_employees: 10,
+      min_employees: 0,
       has_website: true,
       exclude_recent_days: 60,
     },
