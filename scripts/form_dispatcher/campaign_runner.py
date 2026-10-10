@@ -302,6 +302,8 @@ def run_campaign(
     print(f"[*] Current Status:{camp.get('status')}")
 
     sender_profile = {
+        "campaign_id": campaign_id,
+        "user_id": camp.get("user_email") or "user",
         "company_name": camp.get("sender_company") or camp.get("sender_company_name") or "株式会社アウトバウンドマーケティング",
         "contact_name": camp.get("sender_name") or "山田 太郎",
         "furigana": "ヤマダ タロウ",
