@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
     // 2. Check if already opted out
     const optRes = await client.query(
       `SELECT id, created_at FROM form_marketing_opt_outs 
-       WHERE corporate_number = $1 AND (user_id = $2 OR (user_id IS NULL AND $2 = 'admin'))
+       WHERE corporate_number = $1::varchar AND (user_id = $2::varchar OR (user_id IS NULL AND $2::varchar = 'admin'))
        LIMIT 1`,
       [corporateNumber, userId]
     );
@@ -90,10 +90,10 @@ export async function POST(req: NextRequest) {
       // 2. Insert into form_marketing_opt_outs if not already present
       await client.query(
         `INSERT INTO form_marketing_opt_outs (user_id, corporate_number, company_name, campaign_id, created_at)
-         SELECT $1, $2, $3, $4, CURRENT_TIMESTAMP
+         SELECT $1::varchar, $2::varchar, $3::varchar, $4::varchar, CURRENT_TIMESTAMP
          WHERE NOT EXISTS (
            SELECT 1 FROM form_marketing_opt_outs 
-           WHERE corporate_number = $2 AND (user_id = $1 OR (user_id IS NULL AND $1 = 'admin'))
+           WHERE corporate_number = $2::varchar AND (user_id = $1::varchar OR (user_id IS NULL AND $1::varchar = 'admin'))
          )`,
         [userId, corporateNumber, companyName, campaignId]
       );

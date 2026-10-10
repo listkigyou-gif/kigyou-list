@@ -156,27 +156,32 @@ def create_note(title: str, content_paragraphs: list, hashtags: list = None, ima
             browser.close()
             return f"https://note.com/kigyoulist/n/{note_key}"
         else:
-            # Xuất bản công khai
+            # Lưu bản nháp trước
+            save_btn = page.locator("header button:has-text('下書き保存'), button:has-text('下書き保存')").first
+            if save_btn.count() > 0 and save_btn.is_enabled():
+                save_btn.click()
+                time.sleep(2)
+
+            # Chuyển trực tiếp sang trang xuất bản công khai
             print("-> Đang tiến hành xuất bản công khai...")
-            publish_btn = page.locator("button:has-text('公開に進む')").first
-            if publish_btn.count() > 0:
-                publish_btn.click()
-                time.sleep(3)
+            publish_page_url = f"https://editor.note.com/notes/{note_key}/publish/"
+            page.goto(publish_page_url, wait_until="networkidle")
+            time.sleep(2)
 
-                if hashtags:
-                    tag_input = page.locator("input[placeholder*='ハッシュタグ'], input[placeholder*='タグ']").first
-                    if tag_input.count() > 0:
-                        for tag in hashtags:
-                            tag_input.fill(tag)
-                            page.keyboard.press("Enter")
-                            time.sleep(0.4)
+            if hashtags:
+                tag_input = page.locator("input[placeholder*='ハッシュタグ'], input[placeholder*='タグ']").first
+                if tag_input.count() > 0:
+                    for tag in hashtags:
+                        tag_input.fill(tag)
+                        page.keyboard.press("Enter")
+                        time.sleep(0.3)
 
-                final_post_btn = page.locator("button:has-text('投稿する'), button:has-text('公開する')").first
-                if final_post_btn.count() > 0:
-                    final_post_btn.click()
-                    time.sleep(4)
-                    print(f"\n[XUẤT BẢN THÀNH CÔNG] Bài viết đã chính thức lên sóng công khai!")
-                    print(f"👉 https://note.com/kigyoulist/n/{note_key}")
+            final_post_btn = page.locator("button:has-text('投稿する'), button:has-text('公開する')").first
+            if final_post_btn.count() > 0:
+                final_post_btn.click(force=True)
+                time.sleep(5)
+                print(f"\n[XUẤT BẢN THÀNH CÔNG] Bài viết đã chính thức lên sóng công khai!")
+                print(f"👉 https://note.com/kigyoulist/n/{note_key}")
 
             browser.close()
             return f"https://note.com/kigyoulist/n/{note_key}"
