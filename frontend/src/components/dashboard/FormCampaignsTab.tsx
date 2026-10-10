@@ -6,7 +6,8 @@ import {
   Trash2, Edit3, Eye, Copy, ArrowRight, Loader2, Sparkles, 
   ShieldCheck, X, Building2, User, Mail, Phone, Globe, ExternalLink,
   ChevronRight, RefreshCw, Check, Coins, Target, Filter, ListFilter,
-  CheckSquare, Layers, Compass, Lock, History
+  CheckSquare, Layers, Compass, Lock, History,
+  Download, Search, FileSpreadsheet, ShieldAlert, BarChart3
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useAuth } from "@/context/AuthContext";
@@ -31,6 +32,15 @@ interface FormCreditTransaction {
   campaign_name: string | null;
   note: string | null;
   created_at: string;
+}
+
+interface UserReportItem {
+  corporate_number: string;
+  company_name: string;
+  form_url: string;
+  status: string;
+  message: string;
+  timestamp: string;
 }
 
 interface Campaign {
@@ -107,6 +117,93 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
 
   // Flow Guide Modal
   const [showFlowGuideModal, setShowFlowGuideModal] = useState(false);
+
+  // User Audit Report Modal States
+  const [selectedReportCampaign, setSelectedReportCampaign] = useState<Campaign | null>(null);
+  const [reportRows, setReportRows] = useState<UserReportItem[]>([]);
+  const [loadingReport, setLoadingReport] = useState(false);
+  const [reportSearchQuery, setReportSearchQuery] = useState("");
+  const [reportStatusFilter, setReportStatusFilter] = useState("all");
+  const [reportError, setReportError] = useState<string | null>(null);
+
+  const handleOpenReportModal = async (cmp: Campaign) => {
+    setSelectedReportCampaign(cmp);
+    setReportRows([]);
+    setReportSearchQuery("");
+    setReportStatusFilter("all");
+    setReportError(null);
+
+    if (!cmp.report_file_url) return;
+
+    setLoadingReport(true);
+    try {
+      const res = await fetch(cmp.report_file_url);
+      if (!res.ok) {
+        throw new Error(isJa ? "レポートファイルの取得に失敗しました。" : isVi ? "Không thể tải file báo cáo đối soát." : "Failed to load report file.");
+      }
+      const text = await res.text();
+      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
+      if (lines.length <= 1) {
+        setReportRows([]);
+        return;
+      }
+
+      // Robust CSV line parser
+      const parseCSVLine = (line: string): string[] => {
+        const result: string[] = [];
+        let current = "";
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"' || char === "'") {
+            if (inQuotes && line[i + 1] === char) {
+              current += char;
+              i++;
+            } else {
+              inQuotes = !inQuotes;
+            }
+          } else if (char === ',' && !inQuotes) {
+            result.push(current.trim());
+            current = "";
+          } else {
+            current += char;
+          }
+        }
+        result.push(current.trim());
+        return result;
+      };
+
+      const header = parseCSVLine(lines[0]).map((h) => h.replace(/^\ufeff/, "").toLowerCase());
+      const corpIdx = header.findIndex((h) => h.includes("corp") || h.includes("number"));
+      const nameIdx = header.findIndex((h) => h.includes("company") || h.includes("name"));
+      const urlIdx = header.findIndex((h) => h.includes("url") || h.includes("form"));
+      const statusIdx = header.findIndex((h) => h.includes("status"));
+      const msgIdx = header.findIndex((h) => h.includes("message") || h.includes("note") || h.includes("reason"));
+      const timeIdx = header.findIndex((h) => h.includes("time") || h.includes("date") || h.includes("sent"));
+
+      const items: UserReportItem[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cols = parseCSVLine(lines[i]);
+        if (cols.length < 2) continue;
+
+        items.push({
+          corporate_number: corpIdx >= 0 ? cols[corpIdx] : cols[0] || "",
+          company_name: nameIdx >= 0 ? cols[nameIdx] : cols[1] || "対象企業",
+          form_url: urlIdx >= 0 ? cols[urlIdx] : cols[2] || "",
+          status: statusIdx >= 0 ? cols[statusIdx] : (cols[3] || "SUCCESS_SENT"),
+          message: msgIdx >= 0 ? cols[msgIdx] : (cols[4] || ""),
+          timestamp: timeIdx >= 0 ? cols[timeIdx] : (cols[cols.length - 1] || ""),
+        });
+      }
+
+      setReportRows(items);
+    } catch (err: any) {
+      console.error("Failed to parse report CSV:", err);
+      setReportError(err.message || (isJa ? "レポートの読み込みに失敗しました。" : isVi ? "Lỗi phân tích file báo cáo." : "Error parsing report."));
+    } finally {
+      setLoadingReport(false);
+    }
+  };
 
   // Template Modal States
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
@@ -956,14 +1053,25 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
                       </>
                     )}
                     {cmp.status === "completed" && cmp.report_file_url && (
-                      <a
-                        href={cmp.report_file_url}
-                        download
-                        className="px-3 py-1.5 rounded-lg text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-500 shadow-2xs transition-colors flex items-center gap-1.5"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>{isJa ? "レポートCSV" : isVi ? "Báo cáo CSV" : "Report CSV"}</span>
-                      </a>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => handleOpenReportModal(cmp)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-[#1B4F8A] bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/40 border border-blue-200/80 dark:border-blue-900 shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                          title={isJa ? "配信結果の監査ログ・対照表を直接確認" : isVi ? "Xem chi tiết đối soát từng công ty" : "View Audit Report"}
+                        >
+                          <FileSpreadsheet className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+                          <span>{isJa ? "詳細レポート" : isVi ? "Xem chi tiết" : "View Report"}</span>
+                        </button>
+                        <a
+                          href={cmp.report_file_url}
+                          download
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800 shadow-2xs transition-colors flex items-center gap-1.5"
+                          title={isJa ? "CSVファイルをダウンロード" : isVi ? "Tải file CSV" : "Download CSV"}
+                        >
+                          <Download className="w-3.5 h-3.5" />
+                          <span>{isJa ? "CSV" : isVi ? "Tải CSV" : "CSV"}</span>
+                        </a>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -2032,6 +2140,277 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
                     : `My List has ${savedCompanies.length} companies (requires 100+).`}
                 </p>
               ) : null}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* USER AUDIT REPORT DETAIL MODAL */}
+      {selectedReportCampaign && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-3xl max-w-5xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 sm:p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-4 bg-slate-50/50 dark:bg-slate-900/30">
+              <div className="min-w-0">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <div className="w-8 h-8 rounded-xl bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/60 dark:text-blue-300 flex items-center justify-center shadow-xs">
+                    <FileSpreadsheet className="w-4 h-4" />
+                  </div>
+                  <h4 className="text-base sm:text-lg font-black text-slate-900 dark:text-white truncate">
+                    {isJa ? "キャンペーン配信対照レポート" : isVi ? "Báo cáo đối soát chi tiết chiến dịch" : "Outreach Audit Report"}
+                  </h4>
+                  <span className="text-xs px-2.5 py-0.5 rounded-full font-bold bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300">
+                    {reportRows.length > 0 ? reportRows.length.toLocaleString() : selectedReportCampaign.target_count.toLocaleString()} {isJa ? "社" : "DN"}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 truncate max-w-xl">
+                  {selectedReportCampaign.name} — {selectedReportCampaign.sender_company} ({selectedReportCampaign.sender_name})
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {selectedReportCampaign.report_file_url && (
+                  <a
+                    href={selectedReportCampaign.report_file_url}
+                    download
+                    className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">{isJa ? "CSVダウンロード" : isVi ? "Tải file CSV" : "Download CSV"}</span>
+                  </a>
+                )}
+                <button
+                  onClick={() => setSelectedReportCampaign(null)}
+                  className="p-2 rounded-xl text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Metrics Overview Bar */}
+            <div className="p-4 sm:p-5 grid grid-cols-2 sm:grid-cols-4 gap-3 bg-white dark:bg-[#1C2128] border-b border-slate-200 dark:border-slate-800">
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block mb-1">
+                  {isJa ? "総アプローチ件数" : isVi ? "Tổng số DN xử lý" : "Total Processed"}
+                </span>
+                <span className="text-xl font-black text-slate-900 dark:text-white">
+                  {reportRows.length > 0 ? reportRows.length.toLocaleString() : selectedReportCampaign.target_count.toLocaleString()} <span className="text-xs font-normal text-slate-500">{isJa ? "件" : "DN"}</span>
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60">
+                <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider block mb-1">
+                  {isJa ? "送信成功 (到達)" : isVi ? "Gửi thành công" : "Delivered"}
+                </span>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-xl font-black text-emerald-700 dark:text-emerald-300">
+                    {reportRows.length > 0 ? reportRows.filter(r => r.status === "SUCCESS_SENT").length.toLocaleString() : selectedReportCampaign.success_count.toLocaleString()}
+                  </span>
+                  <span className="text-xs font-bold text-emerald-600">
+                    {reportRows.length > 0 ? Math.round((reportRows.filter(r => r.status === "SUCCESS_SENT").length / reportRows.length) * 100) : Math.round((selectedReportCampaign.success_count / (selectedReportCampaign.target_count || 1)) * 100)}%
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-800/60">
+                <span className="text-[11px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider block mb-1">
+                  {isJa ? "AI自動除外 (全額返金)" : isVi ? "Né tránh an toàn (Hoàn 100%)" : "Auto-Skipped"}
+                </span>
+                <span className="text-xl font-black text-amber-700 dark:text-amber-300">
+                  {reportRows.length > 0 ? reportRows.filter(r => r.status.startsWith("SKIPPED") || r.status.startsWith("BLOCKED") || r.status === "NO_FORM_ELEMENT").length.toLocaleString() : selectedReportCampaign.skipped_count.toLocaleString()}
+                </span>
+              </div>
+
+              <div className="p-3.5 rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-800/60">
+                <span className="text-[11px] font-bold text-rose-700 dark:text-rose-400 uppercase tracking-wider block mb-1">
+                  {isJa ? "タイムアウト・送信不能" : isVi ? "Lỗi mạng / Không gửi được" : "Failed / Timeout"}
+                </span>
+                <span className="text-xl font-black text-rose-700 dark:text-rose-300">
+                  {reportRows.length > 0 ? reportRows.filter(r => r.status.startsWith("FAILED") || r.status.includes("TIMEOUT") || r.status === "NO_SUBMIT_BUTTON" || r.status === "FORM_PARSE_ERROR").length.toLocaleString() : 0}
+                </span>
+              </div>
+            </div>
+
+            {/* Filter & Search Bar */}
+            <div className="px-5 py-3 bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              {/* Status Filter Buttons */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+                {[
+                  { id: "all", labelJa: "すべて", labelVi: "Tất cả", count: reportRows.length },
+                  { id: "SUCCESS_SENT", labelJa: "送信成功", labelVi: "Thành công", count: reportRows.filter(r => r.status === "SUCCESS_SENT").length },
+                  { id: "SKIPPED", labelJa: "営業禁止除外", labelVi: "Né chào hàng", count: reportRows.filter(r => r.status.includes("DISCLAIMER") || r.status.includes("SKIP")).length },
+                  { id: "BLOCKED", labelJa: "CAPTCHA保護", labelVi: "Có Captcha", count: reportRows.filter(r => r.status.includes("CAPTCHA") || r.status.includes("WAF")).length },
+                  { id: "FAILED", labelJa: "失敗・エラー", labelVi: "Lỗi / Timeout", count: reportRows.filter(r => r.status.startsWith("FAILED") || r.status.includes("TIMEOUT") || r.status === "NO_SUBMIT_BUTTON" || r.status === "FORM_PARSE_ERROR").length },
+                ].map((st) => (
+                  <button
+                    key={st.id}
+                    onClick={() => setReportStatusFilter(st.id)}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                      reportStatusFilter === st.id
+                        ? "bg-[#1B4F8A] text-white shadow-xs"
+                        : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
+                    }`}
+                  >
+                    <span>{isJa ? st.labelJa : isVi ? st.labelVi : st.labelJa}</span>
+                    <span className="ml-1.5 text-[10px] opacity-80">({st.count})</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Search Box */}
+              <div className="relative w-full sm:w-64">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={reportSearchQuery}
+                  onChange={(e) => setReportSearchQuery(e.target.value)}
+                  placeholder={isJa ? "企業名・法人番号で検索..." : isVi ? "Tìm theo tên công ty / mã số..." : "Search company or ID..."}
+                  className="w-full pl-9 pr-3 py-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#1B4F8A]"
+                />
+              </div>
+            </div>
+
+            {/* Table Area */}
+            <div className="flex-1 overflow-y-auto p-0 min-h-[300px]">
+              {loadingReport ? (
+                <div className="py-24 flex flex-col items-center justify-center text-slate-400 gap-3">
+                  <Loader2 className="w-8 h-8 animate-spin text-[#1B4F8A]" />
+                  <p className="text-xs font-semibold">{isJa ? "配信対照データを読み込んでいます..." : isVi ? "Đang tải dữ liệu đối soát..." : "Loading report data..."}</p>
+                </div>
+              ) : reportError ? (
+                <div className="p-8 text-center text-xs text-rose-600 font-medium">
+                  <AlertCircle className="w-6 h-6 mx-auto mb-2 text-rose-500" />
+                  {reportError}
+                </div>
+              ) : (
+                (() => {
+                  const filtered = reportRows.filter((r) => {
+                    // Status filter
+                    if (reportStatusFilter === "SUCCESS_SENT" && r.status !== "SUCCESS_SENT") return false;
+                    if (reportStatusFilter === "SKIPPED" && !r.status.includes("DISCLAIMER") && !r.status.includes("SKIP")) return false;
+                    if (reportStatusFilter === "BLOCKED" && !r.status.includes("CAPTCHA") && !r.status.includes("WAF")) return false;
+                    if (reportStatusFilter === "FAILED" && !r.status.startsWith("FAILED") && !r.status.includes("TIMEOUT") && r.status !== "NO_SUBMIT_BUTTON" && r.status !== "FORM_PARSE_ERROR") return false;
+
+                    // Search query
+                    if (reportSearchQuery.trim()) {
+                      const q = reportSearchQuery.trim().toLowerCase();
+                      const matchName = r.company_name.toLowerCase().includes(q);
+                      const matchCorp = r.corporate_number.toLowerCase().includes(q);
+                      const matchMsg = r.message.toLowerCase().includes(q);
+                      if (!matchName && !matchCorp && !matchMsg) return false;
+                    }
+
+                    return true;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="py-24 text-center text-xs text-slate-400">
+                        {isJa ? "該当する配信対照データがありません。" : isVi ? "Không có dữ liệu phù hợp với bộ lọc." : "No records match your filter."}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs border-collapse">
+                        <thead className="sticky top-0 bg-slate-100 dark:bg-slate-900/90 text-slate-500 uppercase tracking-wider text-[10px] font-black border-b border-slate-200 dark:border-slate-800 z-10">
+                          <tr>
+                            <th className="py-3 px-4 font-bold">{isJa ? "対象企業 / 法人番号" : isVi ? "Doanh nghiệp / Mã số" : "Company"}</th>
+                            <th className="py-3 px-4 font-bold">{isJa ? "フォームURL" : isVi ? "Form URL" : "Form URL"}</th>
+                            <th className="py-3 px-4 font-bold">{isJa ? "ステータス" : isVi ? "Trạng thái" : "Status"}</th>
+                            <th className="py-3 px-4 font-bold">{isJa ? "判定詳細 / 監査メッセージ" : isVi ? "Chi tiết / Lý do đối soát" : "Audit Message"}</th>
+                            <th className="py-3 px-4 font-bold">{isJa ? "配信日時" : isVi ? "Thời gian" : "Timestamp"}</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-sans">
+                          {filtered.map((item, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                              <td className="py-3.5 px-4">
+                                <div className="font-bold text-slate-900 dark:text-white line-clamp-1">
+                                  {item.company_name}
+                                </div>
+                                <div className="text-[11px] font-mono text-slate-400 mt-0.5">
+                                  {item.corporate_number || "—"}
+                                </div>
+                              </td>
+
+                              <td className="py-3.5 px-4 max-w-[200px]">
+                                {item.form_url ? (
+                                  <a
+                                    href={item.form_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[#1B4F8A] dark:text-blue-400 hover:underline inline-flex items-center gap-1 font-mono text-[11px] truncate max-w-[190px]"
+                                    title={item.form_url}
+                                  >
+                                    <span className="truncate">{item.form_url}</span>
+                                    <ExternalLink className="w-3 h-3 shrink-0" />
+                                  </a>
+                                ) : (
+                                  <span className="text-slate-400">—</span>
+                                )}
+                              </td>
+
+                              <td className="py-3.5 px-4 whitespace-nowrap">
+                                {item.status === "SUCCESS_SENT" ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                    <span>{isJa ? "送信成功" : isVi ? "Thành công" : "Sent"}</span>
+                                  </span>
+                                ) : item.status.includes("DISCLAIMER") || item.status.includes("SKIP") ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                                    <ShieldCheck className="w-3 h-3 text-amber-600" />
+                                    <span>{isJa ? "営業禁止除外" : isVi ? "Né chào hàng" : "Skipped"}</span>
+                                  </span>
+                                ) : item.status.includes("CAPTCHA") || item.status.includes("WAF") ? (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 dark:bg-purple-950/60 dark:text-purple-300">
+                                    <ShieldAlert className="w-3 h-3 text-purple-600" />
+                                    <span>{isJa ? "CAPTCHA保護" : isVi ? "Có Captcha" : "Captcha"}</span>
+                                  </span>
+                                ) : (
+                                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300">
+                                    <AlertCircle className="w-3 h-3 text-rose-600" />
+                                    <span>{isJa ? "送信エラー" : isVi ? "Không gửi được" : "Failed"}</span>
+                                  </span>
+                                )}
+                              </td>
+
+                              <td className="py-3.5 px-4 text-slate-600 dark:text-slate-300 text-[11px] max-w-[280px]">
+                                <span className="line-clamp-2" title={item.message}>
+                                  {item.message || (item.status === "SUCCESS_SENT" ? "Form successfully dispatched and confirmed." : "—")}
+                                </span>
+                              </td>
+
+                              <td className="py-3.5 px-4 whitespace-nowrap text-slate-400 font-mono text-[11px]">
+                                {item.timestamp ? item.timestamp.replace("T", " ").substring(0, 19) : "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/30 flex items-center justify-between text-xs">
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                {isJa
+                  ? "※ AIにより営業禁止・CAPTCHA検知で自動スキップされた分は、100%クレジット返還済みです。"
+                  : isVi
+                  ? "※ Các doanh nghiệp được AI né tránh an toàn (do cấm chào hàng/captcha) đã được hoàn lại 100% credit vào ví."
+                  : "Unsent and protected targets have been 100% refunded to your balance."}
+              </span>
+              <button
+                onClick={() => setSelectedReportCampaign(null)}
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs transition-colors cursor-pointer"
+              >
+                {isJa ? "閉じる" : isVi ? "Đóng" : "Close"}
+              </button>
             </div>
           </div>
         </div>
