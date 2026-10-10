@@ -316,6 +316,19 @@ def worker_routine(
             pass
 
 def main():
+    # Normalize common CLI typos like --limit5 -> --limit 5
+    normalized_argv = []
+    for arg in sys.argv:
+        if arg.startswith("--limit") and len(arg) > 7 and arg[7:].isdigit():
+            normalized_argv.extend(["--limit", arg[7:]])
+        elif arg.startswith("--concurrency") and len(arg) > 13 and arg[13:].isdigit():
+            normalized_argv.extend(["--concurrency", arg[13:]])
+        elif arg.startswith("--rotate-every") and len(arg) > 14 and arg[14:].isdigit():
+            normalized_argv.extend(["--rotate-every", arg[14:]])
+        else:
+            normalized_argv.append(arg)
+    sys.argv = normalized_argv
+
     parser = argparse.ArgumentParser(description="Kigyou-List Internal Form DM Multi-Worker + Rotating Proxy Runner")
     parser.add_argument("--campaign-id", type=str, required=True, help="UUID of internal form campaign")
     parser.add_argument("--limit", type=int, default=10, help="Number of companies to dispatch")
