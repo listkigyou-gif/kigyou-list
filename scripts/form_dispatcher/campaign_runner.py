@@ -17,6 +17,8 @@ import sqlite3
 import argparse
 import csv
 import threading
+import queue
+import socket
 import urllib.request
 import urllib.error
 from urllib.parse import urlparse
@@ -31,6 +33,18 @@ try:
         load_dotenv(env_local)
 except ImportError:
     pass
+
+def scan_docker_warp_ports() -> List[int]:
+    """Auto-detect active Docker WARP SOCKS5 proxy containers (40001-40100, 41000-41100)."""
+    active_ports = []
+    candidates = list(range(40001, 40101)) + list(range(41000, 41101))
+    for p in candidates:
+        try:
+            with socket.create_connection(("127.0.0.1", p), timeout=0.03):
+                active_ports.append(p)
+        except Exception:
+            pass
+    return active_ports
 
 def parse_proxy_url(proxy_str: str):
     if not proxy_str:
@@ -262,15 +276,20 @@ def run_campaign(
     mock_run: bool = False,
     dry_run: bool = False,
     limit: Optional[int] = None,
-    proxy_url: Optional[str] = None
+    proxy_url: Optional[str] = None,
+    use_warp: bool = False,
+    concurrency: int = 1,
+    rotate_every: int = 5
 ) -> Dict[str, Any]:
+    warp_ports = scan_docker_warp_ports() if use_warp else []
     active_proxy_str = proxy_url if proxy_url is not None else os.environ.get("OUTREACH_PROXY_URL")
     proxy_config = parse_proxy_url(active_proxy_str) if active_proxy_str else None
 
     print("=" * 65)
     print(f"  LAUNCHING FORM CAMPAIGN RUNNER: {campaign_id}")
-    print(f"  Mode:  {'[MOCK RUN - 3 Test Types]' if mock_run else '[DRY RUN]' if dry_run else '[LIVE SUBMISSION]'}")
-    print(f"  Proxy: {'[' + proxy_config['server'] + ']' if proxy_config else '[DIRECT CONNECTION]'}")
+    print(f"  Mode:        {'[MOCK RUN - 3 Test Types]' if mock_run else '[DRY RUN]' if dry_run else '[LIVE SUBMISSION]'}")
+    print(f"  Workers:     {concurrency} concurrent threads")
+    print(f"  Network:     {f'[DOCKER WARP POOL: {len(warp_ports)} active ports]' if warp_ports else '[' + proxy_config['server'] + ']' if proxy_config else '[DIRECT CONNECTION]'}")
     print("=" * 65)
 
     camp = get_campaign(campaign_id)
@@ -414,6 +433,9 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Simulate form filling without final submit")
     parser.add_argument("--limit", type=int, help="Limit number of companies to dispatch")
     parser.add_argument("--proxy", type=str, default=os.environ.get("OUTREACH_PROXY_URL"), help="Proxy URL (e.g. http://user:pass@host:port)")
+    parser.add_argument("--warp", action="store_true", help="Use Cloudflare WARP proxy pool with auto-rotation")
+    parser.add_argument("--concurrency", "-c", type=int, default=3, help="Concurrent worker threads (default: 3)")
+    parser.add_argument("--rotate-every", "-r", type=int, default=5, help="Rotate proxy every N forms")
     args = parser.parse_args()
 
     run_campaign(
@@ -421,7 +443,10 @@ def main():
         mock_run=args.mock_run,
         dry_run=args.dry_run,
         limit=args.limit,
-        proxy_url=args.proxy
+        proxy_url=args.proxy,
+        use_warp=args.warp,
+        concurrency=args.concurrency,
+        rotate_every=args.rotate_every
     )
 
 
