@@ -109,7 +109,7 @@ def fetch_target_companies_pg(filters: Dict[str, Any], limit: int = 50) -> List[
             c.employee_count
         FROM companies c
         WHERE {where_clause}
-        ORDER BY c.employee_count DESC NULLS LAST, c.corporate_number ASC
+        ORDER BY RANDOM()
         LIMIT %s
     """
     params.append(limit)
@@ -289,6 +289,14 @@ def worker_routine(
                 record_log_pg(campaign_id, comp, status, msg)
             except Exception as e:
                 print(f"  [Worker #{worker_id}] DB log error: {e}")
+
+            # If dead site, timeout, or socket error occurred, refresh page session
+            if status in ["DEAD_WEBSITE", "ERROR", "TIMEOUT"]:
+                try:
+                    page.close()
+                    page = context.new_page()
+                except Exception:
+                    pass
 
             # 2. Check for Failover Instant Rotation if Blocked / Captcha
             is_blocked = "BLOCKED" in status or "CAPTCHA" in status or "403" in msg or "429" in msg

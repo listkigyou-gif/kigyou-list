@@ -121,99 +121,293 @@ class FormDispatcher:
                 print(f"  [!] {result['message']} (Refund credit)")
                 return result
 
-            # 4. Locate and fill form fields via smart CSS / XPath selectors
+            # 3.1 Step-in Navigation: If 0 inputs/textarea, check if this is an Index/Hub page with a link to the real form
+            visible_inputs = page.locator('input:not([type="hidden"]):not([type="submit"]):not([type="button"]), textarea').count()
+            if visible_inputs == 0:
+                hub_links = [
+                    'お問い合わせフォーム', 'お問合せフォーム', '入力フォーム', 'フォームはこちら',
+                    '入力画面へ', 'Webフォーム', 'メールフォーム', 'お問い合わせはこちら',
+                    'お問合せはこちら', 'Inquiry Form', 'Contact Form'
+                ]
+                for kw in hub_links:
+                    cand = page.locator(f'a:has-text("{kw}"), button:has-text("{kw}")')
+                    if cand.count() > 0:
+                        try:
+                            print(f"  [↳] Hub page detected. Entering actual form via '{kw}'...")
+                            cand.first.click(timeout=5000)
+                            page.wait_for_timeout(2000)
+                            html_content = page.content()
+                            break
+                        except Exception:
+                            pass
+
+            # 3.2 Determine working scope (main page or active iframe)
+            scope = page
+            if page.locator('textarea, input[type="email"], input[name*="mail" i]').count() == 0:
+                for frame in page.frames:
+                    if frame != page.main_frame and frame.locator('textarea, input[type="email"], input[name*="mail" i]').count() > 0:
+                        scope = frame
+                        print(f"  [↳] Embedded form detected inside iframe: {frame.url[:80]}...")
+                        break
+
+            # 4. Locate and fill form fields via smart CSS / XPath / Label selectors (Advanced Japanese Form Engine)
             filled_fields = 0
 
-            # Company name input
+            def safe_fill(loc, value: str) -> bool:
+                """Fills input and dispatches input/change events to trigger modern JS validations."""
+                try:
+                    loc.fill(value)
+                    loc.dispatch_event('input')
+                    loc.dispatch_event('change')
+                    return True
+                except Exception:
+                    return False
+
+            # --- A. Company Name ---
             company_selectors = [
                 'input[name*="company" i]', 'input[name*="kaisha" i]', 'input[id*="company" i]',
-                'input[placeholder*="会社" i]', 'input[placeholder*="法人" i]'
+                'input[placeholder*="会社" i]', 'input[placeholder*="法人" i]',
+                'tr:has-text("会社名") input:not([type="hidden"])', 'tr:has-text("貴社名") input:not([type="hidden"])',
+                'tr:has-text("法人名") input:not([type="hidden"])', 'dl:has-text("会社名") input:not([type="hidden"])',
+                'dl:has-text("貴社名") input:not([type="hidden"])', 'label:has-text("会社名") input:not([type="hidden"])'
             ]
             for sel in company_selectors:
-                if page.locator(sel).count() > 0:
-                    page.locator(sel).first.fill(self.sender["company_name"])
-                    filled_fields += 1
-                    break
+                c_loc = scope.locator(sel)
+                if c_loc.count() > 0 and c_loc.first.is_visible():
+                    if safe_fill(c_loc.first, self.sender["company_name"]):
+                        filled_fields += 1
+                        break
 
-            # Contact person name
-            name_selectors = [
-                'input[name*="name" i]:not([name*="company" i])', 'input[id*="name" i]',
-                'input[placeholder*="氏名" i]', 'input[placeholder*="名前" i]', 'input[placeholder*="担当" i]'
-            ]
-            for sel in name_selectors:
-                if page.locator(sel).count() > 0:
-                    page.locator(sel).first.fill(self.sender["contact_name"])
-                    filled_fields += 1
-                    break
+            # --- B. Contact Person Name (Single or Split [姓][名]) ---
+            name_parts = self.sender["contact_name"].strip().split()
+            sei = name_parts[0] if len(name_parts) > 0 else self.sender["contact_name"]
+            mei = name_parts[1] if len(name_parts) > 1 else sei
 
-            # Furigana (if present)
-            kana_selectors = [
-                'input[name*="kana" i]', 'input[name*="furigana" i]', 'input[placeholder*="フリガナ" i]', 'input[placeholder*="ふりがな" i]'
-            ]
-            for sel in kana_selectors:
-                if page.locator(sel).count() > 0:
-                    page.locator(sel).first.fill(self.sender.get("furigana", "ヤマダ タロウ"))
-                    break
+            # Check for split Sei/Mei inputs first
+            sei_selectors = ['input[name*="sei" i]:not([name*="furigana" i]):not([name*="kana" i])', 'input[placeholder*="姓" i]', 'input[id*="sei" i]']
+            mei_selectors = ['input[name*="mei" i]:not([name*="furigana" i]):not([name*="kana" i])', 'input[placeholder*="名" i]', 'input[id*="mei" i]']
+            
+            is_split_name = False
+            for s_sel in sei_selectors:
+                s_loc = scope.locator(s_sel)
+                if s_loc.count() > 0 and s_loc.first.is_visible():
+                    for m_sel in mei_selectors:
+                        m_loc = scope.locator(m_sel)
+                        if m_loc.count() > 0 and m_loc.first.is_visible() and m_loc.first != s_loc.first:
+                            safe_fill(s_loc.first, sei)
+                            safe_fill(m_loc.first, mei)
+                            filled_fields += 1
+                            is_split_name = True
+                            break
+                    if is_split_name:
+                        break
 
-            # Email address
+            if not is_split_name:
+                name_selectors = [
+                    'input[name*="name" i]:not([name*="company" i]):not([name*="kana" i])', 'input[id*="name" i]',
+                    'input[placeholder*="氏名" i]', 'input[placeholder*="名前" i]', 'input[placeholder*="担当" i]',
+                    'tr:has-text("お名前") input:not([type="hidden"])', 'tr:has-text("氏名") input:not([type="hidden"])',
+                    'tr:has-text("ご担当") input:not([type="hidden"])', 'dl:has-text("お名前") input:not([type="hidden"])',
+                    'dl:has-text("氏名") input:not([type="hidden"])', 'label:has-text("お名前") input:not([type="hidden"])'
+                ]
+                for sel in name_selectors:
+                    n_loc = scope.locator(sel)
+                    if n_loc.count() > 0 and n_loc.first.is_visible():
+                        if safe_fill(n_loc.first, self.sender["contact_name"]):
+                            filled_fields += 1
+                            break
+
+            # --- C. Furigana (Single or Split [セイ][メイ]) ---
+            kana_str = self.sender.get("furigana", "ヤマダ タロウ")
+            kana_parts = kana_str.strip().split()
+            sei_kana = kana_parts[0] if len(kana_parts) > 0 else kana_str
+            mei_kana = kana_parts[1] if len(kana_parts) > 1 else sei_kana
+
+            sei_k_selectors = ['input[name*="sei_kana" i]', 'input[name*="kana_sei" i]', 'input[placeholder*="セイ" i]', 'input[placeholder*="せい" i]']
+            mei_k_selectors = ['input[name*="mei_kana" i]', 'input[name*="kana_mei" i]', 'input[placeholder*="メイ" i]', 'input[placeholder*="めい" i]']
+            is_split_kana = False
+            for sk_sel in sei_k_selectors:
+                sk_loc = scope.locator(sk_sel)
+                if sk_loc.count() > 0 and sk_loc.first.is_visible():
+                    for mk_sel in mei_k_selectors:
+                        mk_loc = scope.locator(mk_sel)
+                        if mk_loc.count() > 0 and mk_loc.first.is_visible():
+                            safe_fill(sk_loc.first, sei_kana)
+                            safe_fill(mk_loc.first, mei_kana)
+                            is_split_kana = True
+                            break
+                    if is_split_kana:
+                        break
+
+            if not is_split_kana:
+                kana_selectors = [
+                    'input[name*="kana" i]', 'input[name*="furigana" i]', 'input[placeholder*="フリガナ" i]', 'input[placeholder*="ふりがな" i]',
+                    'tr:has-text("フリガナ") input:not([type="hidden"])', 'tr:has-text("ふりがな") input:not([type="hidden"])',
+                    'dl:has-text("フリガナ") input:not([type="hidden"])', 'label:has-text("フリガナ") input:not([type="hidden"])'
+                ]
+                for sel in kana_selectors:
+                    k_loc = scope.locator(sel)
+                    if k_loc.count() > 0 and k_loc.first.is_visible():
+                        safe_fill(k_loc.first, kana_str)
+                        break
+
+            # --- D. Email Address & Confirmation ---
             email_selectors = [
-                'input[type="email"]', 'input[name*="mail" i]', 'input[id*="mail" i]', 'input[placeholder*="mail" i]'
+                'input[type="email"]', 'input[name*="mail" i]', 'input[id*="mail" i]', 'input[placeholder*="mail" i]',
+                'tr:has-text("メール") input:not([type="hidden"])', 'dl:has-text("メール") input:not([type="hidden"])',
+                'label:has-text("メール") input:not([type="hidden"])'
             ]
             for sel in email_selectors:
-                if page.locator(sel).count() > 0:
-                    page.locator(sel).first.fill(self.sender["email"])
-                    filled_fields += 1
-                    # Also look for email confirmation input (exclude submit/button)
-                    conf_selectors = [
-                        'input[name*="confirm" i]:not([type="submit"]):not([type="button"])',
-                        'input[name*="check" i]:not([type="submit"]):not([type="button"])',
-                        'input[id*="confirm" i]:not([type="submit"]):not([type="button"])'
-                    ]
-                    for c_sel in conf_selectors:
-                        if page.locator(c_sel).count() > 0:
-                            page.locator(c_sel).first.fill(self.sender["email"])
-                    break
+                em_loc = scope.locator(sel)
+                if em_loc.count() > 0 and em_loc.first.is_visible():
+                    if safe_fill(em_loc.first, self.sender["email"]):
+                        filled_fields += 1
+                        # Email confirmation field
+                        conf_selectors = [
+                            'input[name*="confirm" i]:not([type="submit"]):not([type="button"])',
+                            'input[name*="check" i]:not([type="submit"]):not([type="button"])',
+                            'input[id*="confirm" i]:not([type="submit"]):not([type="button"])',
+                            'tr:has-text("確認") input[type="email"]', 'tr:has-text("再入力") input:not([type="hidden"])'
+                        ]
+                        for c_sel in conf_selectors:
+                            c_loc = scope.locator(c_sel)
+                            if c_loc.count() > 0 and c_loc.first.is_visible():
+                                safe_fill(c_loc.first, self.sender["email"])
+                        break
 
-            # Phone number
-            phone_selectors = [
-                'input[type="tel"]', 'input[name*="tel" i]', 'input[name*="phone" i]', 'input[placeholder*="電話" i]'
-            ]
-            for sel in phone_selectors:
-                if page.locator(sel).count() > 0:
-                    page.locator(sel).first.fill(self.sender.get("phone", "03-1234-5678"))
-                    filled_fields += 1
-                    break
+            # --- E. Phone Number (Single or Split 3 boxes) ---
+            phone_val = self.sender.get("phone", "03-1234-5678")
+            p_parts = phone_val.split("-") if "-" in phone_val else [phone_val[:3], phone_val[3:7], phone_val[7:]]
+            if len(p_parts) < 3:
+                p_parts = ["03", "1234", "5678"]
 
-            # Subject (if available)
+            # Check split phone inputs (e.g. tel1, tel2, tel3 or 3 inputs inside tel row)
+            is_split_phone = False
+            for container_sel in ['tr:has-text("電話")', 'dl:has-text("電話")', 'div:has-text("電話番号")']:
+                row = scope.locator(container_sel)
+                if row.count() > 0:
+                    inputs = row.first.locator('input[type="text"], input[type="tel"]')
+                    if inputs.count() >= 3:
+                        safe_fill(inputs.nth(0), p_parts[0])
+                        safe_fill(inputs.nth(1), p_parts[1])
+                        safe_fill(inputs.nth(2), p_parts[2])
+                        filled_fields += 1
+                        is_split_phone = True
+                        break
+
+            if not is_split_phone:
+                phone_selectors = [
+                    'input[type="tel"]', 'input[name*="tel" i]', 'input[name*="phone" i]', 'input[placeholder*="電話" i]',
+                    'tr:has-text("電話") input:not([type="hidden"])', 'dl:has-text("電話") input:not([type="hidden"])',
+                    'label:has-text("電話") input:not([type="hidden"])'
+                ]
+                for sel in phone_selectors:
+                    ph_loc = scope.locator(sel)
+                    if ph_loc.count() > 0 and ph_loc.first.is_visible():
+                        if safe_fill(ph_loc.first, phone_val):
+                            filled_fields += 1
+                            break
+
+            # --- F. Subject / Title ---
             subject_selectors = [
                 'input[type="text"][name*="subject" i]', 'input[type="text"][name*="title" i]',
                 'input:not([type="checkbox"]):not([type="radio"])[name*="subject" i]',
-                'input[placeholder*="件名" i]', 'input[placeholder*="題名" i]'
+                'input[placeholder*="件名" i]', 'input[placeholder*="題名" i]',
+                'tr:has-text("件名") input:not([type="hidden"])', 'dl:has-text("件名") input:not([type="hidden"])'
             ]
             for sel in subject_selectors:
-                if page.locator(sel).count() > 0:
-                    page.locator(sel).first.fill(self.sender.get("subject", "貴社事業に関する協業のご提案"))
+                sub_loc = scope.locator(sel)
+                if sub_loc.count() > 0 and sub_loc.first.is_visible():
+                    safe_fill(sub_loc.first, self.sender.get("subject", "貴社事業に関する協業のご提案"))
                     break
 
-            # Message Body (Textarea)
-            textarea = page.locator('textarea')
-            if textarea.count() > 0:
-                # Personalize greeting with company name
-                custom_body = f"{comp_name} 御中\n\n{self.sender['message_body']}"
-                textarea.first.fill(custom_body)
-                filled_fields += 1
+            # --- G. Smart Dropdown (<select>) Selection ---
+            try:
+                selects = scope.locator('select')
+                for i in range(min(selects.count(), 3)):
+                    s = selects.nth(i)
+                    if s.is_visible():
+                        # Pick matching option or option 1
+                        opt_count = s.locator('option').count()
+                        chosen_val = None
+                        for opt_idx in range(opt_count):
+                            opt_txt = s.locator('option').nth(opt_idx).inner_text()
+                            if any(kw in opt_txt for kw in ["協業", "その他", "ご相談", "サービス", "お問い合わせ", "営業", "業務", "提携"]):
+                                chosen_val = s.locator('option').nth(opt_idx).get_attribute('value')
+                                break
+                        if not chosen_val and opt_count > 1:
+                            chosen_val = s.locator('option').nth(1).get_attribute('value')
+                        if chosen_val is not None:
+                            s.select_option(value=chosen_val)
+                            s.dispatch_event('change')
+            except Exception:
+                pass
 
-            # Privacy policy agreement checkbox
-            privacy_checkbox = page.locator('input[type="checkbox"]')
-            if privacy_checkbox.count() > 0:
-                try:
-                    privacy_checkbox.first.check()
-                except Exception:
-                    pass
+            # --- H. Smart Radio Buttons ---
+            try:
+                radios = scope.locator('input[type="radio"]')
+                if radios.count() > 0:
+                    checked = False
+                    for r_idx in range(min(radios.count(), 5)):
+                        r_btn = radios.nth(r_idx)
+                        if r_btn.is_visible():
+                            lbl_text = r_btn.locator('xpath=..').inner_text()
+                            if any(kw in lbl_text for kw in ["その他", "ご相談", "協業", "お問い合わせ", "一般"]):
+                                r_btn.check()
+                                r_btn.dispatch_event('change')
+                                checked = True
+                                break
+                    if not checked and radios.first.is_visible():
+                        radios.first.check()
+                        radios.first.dispatch_event('change')
+            except Exception:
+                pass
+
+            # --- I. Message Body (Textarea) ---
+            textarea = scope.locator('textarea')
+            if textarea.count() > 0 and textarea.first.is_visible():
+                custom_body = f"{comp_name} 御中\n\n{self.sender['message_body']}"
+                if safe_fill(textarea.first, custom_body):
+                    filled_fields += 1
+
+            # --- J. Privacy Policy Agreement Checkbox ---
+            for ctx in [scope, page]:
+                cb = ctx.locator('input[type="checkbox"]')
+                if cb.count() > 0:
+                    try:
+                        for c_idx in range(min(cb.count(), 3)):
+                            item = cb.nth(c_idx)
+                            if item.is_visible():
+                                item.check()
+                                item.dispatch_event('change')
+                        break
+                    except Exception:
+                        pass
 
             if filled_fields < 2:
-                result["status"] = "FORM_PARSE_ERROR"
-                result["message"] = f"Insufficient fields matched (filled {filled_fields} fields)"
+                # Distinguish between 403/404, No Web Form at all, vs Form with unparsed fields
+                page_title = ""
+                try:
+                    page_title = page.title()
+                except Exception:
+                    pass
+                body_sample = html_content[:600] if html_content else ""
+
+                if "403" in page_title or "Forbidden" in page_title or "403 Forbidden" in body_sample:
+                    result["status"] = "DEAD_WEBSITE"
+                    result["message"] = "Skipped: Server returned 403 Forbidden"
+                elif "404" in page_title or "Not Found" in page_title:
+                    result["status"] = "DEAD_WEBSITE"
+                    result["message"] = "Skipped: 404 Page Not Found"
+                elif scope.locator('input:not([type="hidden"]), textarea').count() == 0:
+                    result["status"] = "NO_FORM_ELEMENT"
+                    result["message"] = "Skipped: Contact page has no web form (Phone/Mail only)"
+                else:
+                    result["status"] = "FORM_PARSE_ERROR"
+                    result["message"] = f"Insufficient fields matched (filled {filled_fields} fields)"
+                
+                result["billable"] = False
+                print(f"  [!] {result['message']} (Refund credit)")
                 return result
 
             # 4. Handle Confirmation or Direct Submit
@@ -234,14 +428,21 @@ class FormDispatcher:
             submit_btn = None
             btn_texts = ["確認画面へ", "確認", "送信する", "送信", "次へ", "Submit", "Send"]
             for btn_txt in btn_texts:
-                loc = page.locator(f'button:has-text("{btn_txt}"), input[type="submit"][value*="{btn_txt}" i]')
-                if loc.count() > 0:
-                    submit_btn = loc.first
+                for ctx in [scope, page]:
+                    loc = ctx.locator(f'button:has-text("{btn_txt}"), input[type="submit"][value*="{btn_txt}" i]')
+                    if loc.count() > 0:
+                        submit_btn = loc.first
+                        break
+                if submit_btn:
                     break
 
             if not submit_btn:
                 # Fallback to standard input submit
-                loc = page.locator('input[type="submit"], button[type="submit"]')
+                for ctx in [scope, page]:
+                    loc = ctx.locator('input[type="submit"], button[type="submit"]')
+                    if loc.count() > 0:
+                        submit_btn = loc.first
+                        break
                 if loc.count() > 0:
                     submit_btn = loc.first
 
@@ -275,10 +476,17 @@ class FormDispatcher:
             result["message"] = "Page navigation or submission timed out"
             print(f"  [-] Timeout loading {url}")
         except Exception as e:
-            result["status"] = "ERROR"
-            result["billable"] = False
-            result["message"] = str(e)
-            print(f"  [-] Error: {e}")
+            err_str = str(e)
+            if any(k in err_str for k in ["ERR_SOCKS_CONNECTION_FAILED", "ERR_NAME_NOT_RESOLVED", "ERR_CONNECTION_REFUSED", "ERR_CONNECTION_TIMED_OUT"]):
+                result["status"] = "DEAD_WEBSITE"
+                result["billable"] = False
+                result["message"] = "Skipped: Website offline or domain unreachable"
+                print(f"  [!] Skipped: Domain/Host unreachable ({url}) (Refund credit)")
+            else:
+                result["status"] = "ERROR"
+                result["billable"] = False
+                result["message"] = err_str[:120]
+                print(f"  [-] Error: {err_str[:120]}")
 
         return result
 
