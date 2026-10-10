@@ -370,7 +370,7 @@ def main():
     sender_profile = {
         "company_name": campaign["sender_company"],
         "contact_name": campaign["sender_name"],
-        "furigana": campaign.get("sender_furigana") or "ヤマダ タロウ",
+        "furigana": campaign.get("sender_furigana") or "クリモト ヨシユキ",
         "email": campaign["sender_email"],
         "phone": campaign.get("sender_phone") or "03-5555-0123",
         "website": campaign.get("sender_website") or "https://kigyoulist.com",

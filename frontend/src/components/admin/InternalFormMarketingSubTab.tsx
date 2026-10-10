@@ -76,8 +76,8 @@ export function InternalFormMarketingSubTab({
   // Sender Info & Content (Default: TQC株式会社 / Kigyou-list)
   const [campaignName, setCampaignName] = useState("");
   const [senderCompany, setSenderCompany] = useState("TQC株式会社（Kigyou-list 運営事務局）");
-  const [senderName, setSenderName] = useState("キム　バン　チュン");
-  const [senderFurigana, setSenderFurigana] = useState("キム バン チュン");
+  const [senderName, setSenderName] = useState("栗本 賢之");
+  const [senderFurigana, setSenderFurigana] = useState("クリモト ヨシユキ");
   const [senderEmail, setSenderEmail] = useState("info@kigyoulist.com");
   const [senderPhone, setSenderPhone] = useState("03-6907-1219");
   const [senderWebsite, setSenderWebsite] = useState("https://kigyoulist.com");

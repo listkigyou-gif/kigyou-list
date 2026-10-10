@@ -137,9 +137,10 @@ export const BUILTIN_TEMPLATES = [
 
   <div style="font-size: 12px; color: #718096; line-height: 1.6;">
     <p style="margin-bottom: 6px; font-weight: bold; color: #4a5568;">【配信者情報・お問い合わせ】</p>
-    <p style="margin: 0;">Kigyou-List 運営事務局</p>
+    <p style="margin: 0;">Kigyou-List 運営事務局（TQC株式会社）</p>
+    <p style="margin: 0;">担当責任者：栗本 賢之（クリモト ヨシユキ）</p>
     <p style="margin: 0;">公式サイト: <a href="https://kigyoulist.com" style="color: #3182ce;">https://kigyoulist.com</a></p>
-    <p style="margin: 0;">お問い合わせ: <a href="mailto:contact@kigyoulist.com" style="color: #3182ce;">contact@kigyoulist.com</a></p>
+    <p style="margin: 0;">お問い合わせ: <a href="mailto:info@kigyoulist.com" style="color: #3182ce;">info@kigyoulist.com</a></p>
     
     <p style="margin-top: 14px; margin-bottom: 4px; font-size: 11px; color: #a0aec0;">
       ※本メールは、公開されている企業情報および求人情報に基づき、企業活動・B2B支援のご案内として配信しております。<br>
@@ -187,9 +188,10 @@ export const BUILTIN_TEMPLATES = [
 
   <div style="font-size: 12px; color: #718096; line-height: 1.6;">
     <p style="margin-bottom: 6px; font-weight: bold; color: #4a5568;">【送信元情報】</p>
-    <p style="margin: 0;">Kigyou-List 運営事務局</p>
+    <p style="margin: 0;">Kigyou-List 運営事務局（TQC株式会社）</p>
+    <p style="margin: 0;">担当責任者：栗本 賢之（クリモト ヨシユキ）</p>
     <p style="margin: 0;">公式サイト: <a href="https://kigyoulist.com" style="color: #3182ce;">https://kigyoulist.com</a></p>
-    <p style="margin: 0;">お問い合わせ: <a href="mailto:contact@kigyoulist.com" style="color: #3182ce;">contact@kigyoulist.com</a></p>
+    <p style="margin: 0;">お問い合わせ: <a href="mailto:info@kigyoulist.com" style="color: #3182ce;">info@kigyoulist.com</a></p>
     
     <p style="margin-top: 14px; margin-bottom: 4px; font-size: 11px; color: #a0aec0;">
       ※本メールは特定電子メール法および関係法令に基づき、企業公開連絡先へお送りしております。<br>
@@ -274,9 +276,10 @@ export const BUILTIN_TEMPLATES = [
 
   <div style="font-size: 12px; color: #718096; line-height: 1.6;">
     <p style="margin-bottom: 6px; font-weight: bold; color: #4a5568;">【送信元・運営事務局】</p>
-    <p style="margin: 0;">Kigyou-List（企業リスト）運営事務局</p>
+    <p style="margin: 0;">Kigyou-List（企業リスト）運営事務局（TQC株式会社）</p>
+    <p style="margin: 0;">担当責任者：栗本 賢之（クリモト ヨシユキ）</p>
     <p style="margin: 0;">公式サイト: <a href="https://kigyoulist.com" style="color: #3182ce;">https://kigyoulist.com</a></p>
-    <p style="margin: 0;">お問い合わせ窓口: <a href="mailto:contact@kigyoulist.com" style="color: #3182ce;">contact@kigyoulist.com</a></p>
+    <p style="margin: 0;">お問い合わせ窓口: <a href="mailto:info@kigyoulist.com" style="color: #3182ce;">info@kigyoulist.com</a></p>
     
     <p style="margin-top: 14px; margin-bottom: 4px; font-size: 11px; color: #a0aec0;">
       ※本メールは公知の企業情報（国税庁法人番号公表サイト・公式HP等）に基づき、企業活動・広報支援の一環として配信しております。<br>

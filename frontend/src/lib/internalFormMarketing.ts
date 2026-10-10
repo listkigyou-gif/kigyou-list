@@ -95,8 +95,8 @@ export const INTERNAL_CAMPAIGN_PRESETS: InternalCampaignPreset[] = [
       exclude_recent_days: 60,
     },
     sender_company: "TQC株式会社（Kigyou-list 運営事務局）",
-    sender_name: "キム　バン　チュン",
-    sender_furigana: "キム バン チュン",
+    sender_name: "栗本 賢之",
+    sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
     sender_phone: "03-6907-1219",
     sender_website: "https://kigyoulist.com",
@@ -105,7 +105,7 @@ export const INTERNAL_CAMPAIGN_PRESETS: InternalCampaignPreset[] = [
 営業責任者様 / 新規事業開発ご担当者様
 
 貴社Webサイトの問い合わせ窓口より大変恐れ入ります。
-TQC株式会社・Kigyou-list運営事務局のキムと申します。
+TQC株式会社・Kigyou-list運営事務局の栗本と申します。
 
 突然のご連絡にて大変恐縮ではございますが、貴社の【新規顧客開拓・営業リスト収集のコスト削減】をご支援できる法人データベースサービスのご案内でお問い合わせをさせていただきました。
 
@@ -130,7 +130,7 @@ https://kigyoulist.com/ja?utm_source=form_dm&utm_medium=outreach&utm_campaign=b2
 販売業者：TQC株式会社（登録番号: T4013301048678）
 サービス名：Kigyou-list（500万社企業データベース）
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
-運営責任者：キム　バン　チュン
+担当責任者：栗本 賢之
 電話番号：03-6907-1219
 メール：info@kigyoulist.com
 URL：https://kigyoulist.com
@@ -152,8 +152,8 @@ URL：https://kigyoulist.com
       exclude_recent_days: 60,
     },
     sender_company: "TQC株式会社（Kigyou-list 営業推進部）",
-    sender_name: "キム　バン　チュン",
-    sender_furigana: "キム バン チュン",
+    sender_name: "栗本 賢之",
+    sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
     sender_phone: "03-6907-1219",
     sender_website: "https://kigyoulist.com/ja/form-marketing",
@@ -162,7 +162,7 @@ URL：https://kigyoulist.com
 営業推進責任者様 / マーケティングご担当者様
 
 貴社のWeb問い合わせ窓口より突然のご連絡にて大変恐縮でございます。
-TQC株式会社のキムと申します。
+TQC株式会社の栗本と申します。
 
 貴社サービスの認知拡大および新規アポイント獲得をご支援したく、ご連絡を差し上げました。
 
@@ -189,7 +189,7 @@ https://kigyoulist.com/ja/form-marketing?utm_source=form_dm&utm_medium=outreach&
 【特定商取引法第11条に基づく送信者情報】
 販売業者：TQC株式会社（登録番号: T4013301048678）
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
-担当：キム　バン　チュン
+担当責任者：栗本 賢之
 電話番号：03-6907-1219
 メール：info@kigyoulist.com
 サービスURL：https://kigyoulist.com/ja/form-marketing
@@ -210,8 +210,8 @@ https://kigyoulist.com/ja/form-marketing?utm_source=form_dm&utm_medium=outreach&
       exclude_recent_days: 90,
     },
     sender_company: "TQC株式会社（Kigyou-list 企業情報管理チーム）",
-    sender_name: "キム　バン　チュン",
-    sender_furigana: "キム バン チュン",
+    sender_name: "栗本 賢之",
+    sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
     sender_phone: "03-6907-1219",
     sender_website: "https://kigyoulist.com",
@@ -220,7 +220,7 @@ https://kigyoulist.com/ja/form-marketing?utm_source=form_dm&utm_medium=outreach&
 広報ご担当者様 / 経営企画室様 / 代表者様
 
 突然のご連絡にて大変恐縮でございます。
-国内最大級の企業情報ポータル「Kigyou-list」運営事務局（TQC株式会社）のキムと申します。
+国内最大級の企業情報ポータル「Kigyou-list」運営事務局（TQC株式会社）の栗本と申します。
 
 この度、公的オープンデータ（国税庁法人番号および経済産業省gBizINFO等）に基づき、
 弊社プラットフォーム上に【{{company_name}} 様の企業詳細ページ】が開設・更新されましたことをご案内申し上げます。
@@ -248,7 +248,7 @@ https://kigyoulist.com/ja
 【発信元・特定商取引法表示】
 TQC株式会社・Kigyou-list 企業情報管理チーム
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
-担当責任者：キム　バン　チュン
+担当責任者：栗本 賢之
 電話番号：03-6907-1219
 メールアドレス：info@kigyoulist.com
 URL：https://kigyoulist.com
@@ -269,8 +269,8 @@ URL：https://kigyoulist.com
       exclude_recent_days: 60,
     },
     sender_company: "TQC株式会社（Kigyou-list APIソリューション事業部）",
-    sender_name: "キム　バン　チュン",
-    sender_furigana: "キム バン チュン",
+    sender_name: "栗本 賢之",
+    sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
     sender_phone: "03-6907-1219",
     sender_website: "https://kigyoulist.com",
@@ -279,7 +279,7 @@ URL：https://kigyoulist.com
 開発責任者様 / プロダクトマネージャー様 / CTO様
 
 貴社Web問い合わせ窓口より突然のご連絡失礼いたします。
-TQC株式会社・Kigyou-list API事業部のキムと申します。
+TQC株式会社・Kigyou-list API事業部の栗本と申します。
 
 貴社が開発・運営されているWebシステムやクラウドサービスにおいて、
 「ユーザー登録時の法人情報自動補完」や「企業マスターデータのクレンジング」の効率化をご支援できればと思い、ご連絡いたしました。
@@ -307,7 +307,7 @@ https://kigyoulist.com/ja/pricing?utm_source=form_dm&utm_medium=outreach&utm_cam
 【特定商取引法に基づく表記】
 販売業者：TQC株式会社（登録番号: T4013301048678）
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
-担当：キム　バン　チュン
+担当責任者：栗本 賢之
 電話番号：03-6907-1219
 メール：info@kigyoulist.com
 URL：https://kigyoulist.com
@@ -327,8 +327,8 @@ URL：https://kigyoulist.com
       exclude_recent_days: 60,
     },
     sender_company: "TQC株式会社（Kigyou-list 採用ソリューション部）",
-    sender_name: "キム　バン　チュン",
-    sender_furigana: "キム バン チュン",
+    sender_name: "栗本 賢之",
+    sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
     sender_phone: "03-6907-1219",
     sender_website: "https://kigyoulist.com",
@@ -337,7 +337,7 @@ URL：https://kigyoulist.com
 人材紹介ご責任者様 / 営業推進担当者様
 
 Webサイトより突然のご連絡にて大変恐縮でございます。
-TQC株式会社のキムと申します。
+TQC株式会社の栗本と申します。
 
 人材紹介・派遣ビジネスにおける新規求人案件の開拓をご支援したく、ご連絡を差し上げました。
 
@@ -363,7 +363,7 @@ https://kigyoulist.com/ja/search?utm_source=form_dm&utm_medium=outreach&utm_camp
 【特定商取引法第11条に基づく送信者情報】
 販売業者：TQC株式会社（登録番号: T4013301048678）
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
-担当：キム　バン　チュン
+担当責任者：栗本 賢之
 電話番号：03-6907-1219
 メール：info@kigyoulist.com
 URL：https://kigyoulist.com
