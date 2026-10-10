@@ -35,13 +35,16 @@ except ImportError:
     pass
 
 def scan_docker_warp_ports() -> List[int]:
-    """Auto-detect active Docker WARP SOCKS5 proxy containers (40001-40100, 41000-41100)."""
+    """Auto-detect active Cloudflare WARP SOCKS5 proxy ports (fast multi-candidate scan)."""
     active_ports = []
-    candidates = list(range(40001, 40101)) + list(range(41000, 41101))
+    candidates = [40001, 40008, 40000, 1080] + list(range(40002, 40030))
     for p in candidates:
         try:
-            with socket.create_connection(("127.0.0.1", p), timeout=0.03):
-                active_ports.append(p)
+            with socket.create_connection(("127.0.0.1", p), timeout=0.01):
+                if p not in active_ports:
+                    active_ports.append(p)
+                    if len(active_ports) >= 6:
+                        break
         except Exception:
             pass
     return active_ports
@@ -245,7 +248,35 @@ def complete_and_settle_campaign(
     except Exception as e:
         print(f"[-] Admin API completion call failed: {e}")
 
-    # 2. SQLite direct fallback
+    # 2. PostgreSQL direct fallback
+    pg_url = os.environ.get("DATABASE_URL", "postgresql://postgres:Hrptlcct6789%40@160.251.203.84:5432/kigyou_list")
+    try:
+        import psycopg2
+        conn = psycopg2.connect(pg_url)
+        c = conn.cursor()
+        c.execute(
+            """
+            UPDATE user_form_campaigns 
+            SET status = 'completed', success_count = %s, skipped_count = %s, 
+                report_file_url = %s, updated_at = NOW()
+            WHERE id = %s
+            """,
+            (success_count, skipped_count, report_file_url, campaign_id)
+        )
+        c.execute("SELECT user_email, target_count FROM user_form_campaigns WHERE id = %s", (campaign_id,))
+        crow = c.fetchone()
+        if crow:
+            u_email, t_count = crow[0], int(crow[1] or 0)
+            unused = max(0, t_count - success_count)
+            if unused > 0:
+                c.execute("UPDATE user_form_credits SET balance = balance + %s WHERE user_email = %s", (unused, u_email))
+        conn.commit()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"[-] PostgreSQL settlement fallback error: {e}")
+
+    # 3. SQLite direct fallback
     if os.path.exists(DB_PATH):
         try:
             conn = sqlite3.connect(DB_PATH)
@@ -282,14 +313,20 @@ def run_campaign(
     rotate_every: int = 5
 ) -> Dict[str, Any]:
     warp_ports = scan_docker_warp_ports() if use_warp else []
-    active_proxy_str = proxy_url if proxy_url is not None else os.environ.get("OUTREACH_PROXY_URL")
-    proxy_config = parse_proxy_url(active_proxy_str) if active_proxy_str else None
+    if use_warp:
+        if warp_ports:
+            proxy_config = {"server": f"socks5://127.0.0.1:{warp_ports[0]}"}
+        else:
+            proxy_config = {"server": "socks5://127.0.0.1:40001"}
+    else:
+        active_proxy_str = proxy_url if proxy_url is not None else os.environ.get("OUTREACH_PROXY_URL")
+        proxy_config = parse_proxy_url(active_proxy_str) if active_proxy_str else None
 
     print("=" * 65)
     print(f"  LAUNCHING FORM CAMPAIGN RUNNER: {campaign_id}")
     print(f"  Mode:        {'[MOCK RUN - 3 Test Types]' if mock_run else '[DRY RUN]' if dry_run else '[LIVE SUBMISSION]'}")
-    print(f"  Workers:     {concurrency} concurrent threads")
-    print(f"  Network:     {f'[DOCKER WARP POOL: {len(warp_ports)} active ports]' if warp_ports else '[' + proxy_config['server'] + ']' if proxy_config else '[DIRECT CONNECTION]'}")
+    net_desc = f"[WARP POOL: {proxy_config.get('server')} (Active: {warp_ports})]" if use_warp else ('[' + proxy_config['server'] + ']' if proxy_config else '[DIRECT CONNECTION]')
+    print(f"  Network:     {net_desc}")
     print("=" * 65)
 
     camp = get_campaign(campaign_id)
@@ -337,22 +374,86 @@ def run_campaign(
             }
         ]
     else:
-        # Load from database companies
-        conn = sqlite3.connect(DB_PATH)
-        conn.row_factory = sqlite3.Row
-        c = conn.cursor()
-        effective_limit = limit or min(int(camp.get("target_count") or 10), 10)
-        rows = c.execute(
-            """
-            SELECT corporate_number, company_name, prefecture_name, website_url, contact_form_url 
-            FROM companies 
-            WHERE contact_form_url IS NOT NULL AND contact_form_url != '' 
-            LIMIT ?
-            """,
-            (effective_limit,)
-        ).fetchall()
-        conn.close()
-        targets = [dict(r) for r in rows]
+        # Load targets based on campaign settings and target_filters
+        effective_limit = limit if limit is not None else int(camp.get("target_count") or 100)
+        target_filters_raw = camp.get("target_filters")
+        tf = {}
+        if target_filters_raw:
+            try:
+                tf = json.loads(target_filters_raw) if isinstance(target_filters_raw, str) else target_filters_raw
+            except Exception:
+                tf = {}
+
+        targets = []
+        pg_url = os.environ.get("DATABASE_URL", "postgresql://postgres:Hrptlcct6789%40@160.251.203.84:5432/kigyou_list")
+        try:
+            import psycopg2
+            import psycopg2.extras
+            conn = psycopg2.connect(pg_url)
+            c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+
+            # 1. Custom companies filter
+            if tf.get("type") == "custom_companies" and tf.get("companies"):
+                c_ids = [c_obj.get("id") or c_obj.get("corporate_number") for c_obj in tf.get("companies") if c_obj.get("id") or c_obj.get("corporate_number")]
+                if c_ids:
+                    c.execute(
+                        """
+                        SELECT corporate_number, company_name, prefecture_name, website_url, contact_form_url 
+                        FROM companies 
+                        WHERE corporate_number = ANY(%s) AND contact_form_url IS NOT NULL AND contact_form_url != ''
+                        LIMIT %s
+                        """,
+                        (c_ids, effective_limit)
+                    )
+                    targets = [dict(r) for r in c.fetchall()]
+
+            # 2. Industry / Prefecture filter
+            if not targets:
+                clauses = ["contact_form_url IS NOT NULL", "contact_form_url != ''"]
+                params = []
+                if tf.get("prefCode"):
+                    clauses.append("prefecture_code = %s")
+                    params.append(str(tf.get("prefCode")).zfill(2))
+                if tf.get("city"):
+                    clauses.append("city_name LIKE %s")
+                    params.append(f"%{tf.get('city')}%")
+                if tf.get("indCode"):
+                    clauses.append("(industry_code = %s OR main_industry_code = %s)")
+                    params.extend([str(tf.get("indCode")).zfill(2), str(tf.get("indCode")).zfill(2)])
+
+                query = f"SELECT corporate_number, company_name, prefecture_name, website_url, contact_form_url FROM companies WHERE {' AND '.join(clauses)} LIMIT %s"
+                params.append(effective_limit)
+                try:
+                    c.execute(query, tuple(params))
+                    targets = [dict(r) for r in c.fetchall()]
+                except Exception:
+                    conn.rollback()
+                    c.execute(
+                        "SELECT corporate_number, company_name, prefecture_name, website_url, contact_form_url FROM companies WHERE contact_form_url IS NOT NULL AND contact_form_url != '' LIMIT %s",
+                        (effective_limit,)
+                    )
+                    targets = [dict(r) for r in c.fetchall()]
+
+            conn.close()
+        except Exception as e:
+            print(f"[-] PostgreSQL target query error: {e}")
+
+        # 3. Fallback to SQLite
+        if not targets and os.path.exists(DB_PATH):
+            conn = sqlite3.connect(DB_PATH)
+            conn.row_factory = sqlite3.Row
+            c = conn.cursor()
+            rows = c.execute(
+                """
+                SELECT corporate_number, company_name, prefecture_name, website_url, contact_form_url 
+                FROM companies 
+                WHERE contact_form_url IS NOT NULL AND contact_form_url != '' 
+                LIMIT ?
+                """,
+                (effective_limit,)
+            ).fetchall()
+            conn.close()
+            targets = [dict(r) for r in rows]
 
     print(f"[*] Loaded {len(targets)} targets for execution.")
 

@@ -21,7 +21,12 @@ import {
   Mail,
   Phone,
   Globe,
-  Tag
+  Tag,
+  Laptop,
+  Server,
+  Copy,
+  Terminal,
+  CheckCheck
 } from "lucide-react";
 import { parseUTCDate } from "@/lib/dateUtils";
 
@@ -31,6 +36,7 @@ interface FormCampaignAdmin {
   name?: string;
   title?: string;
   status: "draft" | "pending_approval" | "approved" | "processing" | "completed" | "rejected" | "cancelled";
+  runner_mode?: "server" | "local";
   target_count: number;
   template_id: string | null;
   subject?: string;
@@ -90,9 +96,26 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
     fetchCampaigns();
   }, [fetchCampaigns]);
 
-  const handleReviewAction = async (campaignId: string, action: "approve" | "reject" | "complete", reason?: string) => {
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopyCli = (campaignId: string) => {
+    const cmd = `python scripts/form_dispatcher/campaign_runner.py --campaign-id ${campaignId} --warp`;
+    navigator.clipboard.writeText(cmd);
+    setCopiedId(campaignId);
+    setTimeout(() => setCopiedId(null), 2500);
+  };
+
+  const handleReviewAction = async (
+    campaignId: string, 
+    action: "approve" | "reject" | "complete", 
+    reason?: string,
+    runnerMode: "server" | "local" = "server"
+  ) => {
     if (action === "approve") {
-      if (!window.confirm("このキャンペーンを承認しますか？\n（承認後、配信システムが順次フォームへの自動送信を開始します）")) {
+      const confirmMsg = runnerMode === "local"
+        ? "【ローカル実行モード (WARP Proxy)】で承認しますか？\n\n・通信費0円 / サーバー負荷なし\n・PC上のLocal Worker（run_local_worker.bat）が自動検知して順次配信を実行します。\n・未達・スキップ分は配信完了時に顧客ウォレットへ自動返還されます。"
+        : "【サーバー実行モード (4G Proxy)】で承認しますか？\n\n・VPSサーバー上の4Gプロキシを利用して自動配信を開始します。\n（プロキシ通信コストおよびサーバー負荷が発生します）";
+      if (!window.confirm(confirmMsg)) {
         return;
       }
     }
@@ -106,18 +129,27 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
         body: JSON.stringify({
           campaignId,
           action,
+          runnerMode,
           rejectionReason: reason || null,
         }),
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        alert(
-          action === "approve"
-            ? "キャンペーンを承認しました。配信キューに追加されました。"
-            : action === "reject"
-            ? "キャンペーンを却下しました（予約されたクレジットはユーザーのウォレットへ即時自動返還されました）。"
-            : "キャンペーンを完了に設定しました。"
-        );
+        if (action === "approve") {
+          if (runnerMode === "local") {
+            alert(
+              "✅ キャンペーンを【ローカル実行 (WARP)】として承認しました！\n\n" +
+              "PCで `run_local_worker.bat` が起動していれば自動検知されて配信が始まります。\n" +
+              "手動で実行したい場合は一覧の「CLIコピー」をご利用ください。"
+            );
+          } else {
+            alert("🚀 キャンペーンを【サーバー実行 (4G)】として承認しました。サーバーキューへ追加されました。");
+          }
+        } else if (action === "reject") {
+          alert("キャンペーンを却下しました（予約されたクレジットはユーザーのウォレットへ即時自動返還されました）。");
+        } else {
+          alert("キャンペーンを完了に設定しました。");
+        }
         setRejectingCampaign(null);
         setInspectCampaign(null);
         fetchCampaigns();
@@ -129,6 +161,24 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
     } finally {
       setSubmittingAction(false);
     }
+  };
+
+  const getRunnerBadge = (camp: FormCampaignAdmin) => {
+    if (camp.status === "draft" || camp.status === "rejected") return null;
+    if (camp.runner_mode === "local") {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-50 text-purple-700 dark:bg-purple-950/60 dark:text-purple-300 border border-purple-200 dark:border-purple-800" title="管理者PCのWARPプロキシで実行（通信費0円）">
+          <Laptop className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+          ローカル (WARP)
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800" title="クラウドサーバーの4Gプロキシで実行">
+        <Server className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+        サーバー (4G)
+      </span>
+    );
   };
 
   const getStatusBadge = (status: FormCampaignAdmin["status"]) => {
@@ -184,7 +234,13 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
   };
 
   const filteredCampaigns = campaigns.filter((c) => {
-    if (statusFilter !== "all" && c.status !== statusFilter) return false;
+    if (statusFilter === "local") {
+      if (c.runner_mode !== "local") return false;
+    } else if (statusFilter === "server") {
+      if (c.runner_mode !== "server" && c.runner_mode) return false;
+    } else if (statusFilter !== "all" && c.status !== statusFilter) {
+      return false;
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       const matchTitle = (c.name || c.title || "").toLowerCase().includes(q);
@@ -199,6 +255,8 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
   const pendingCount = campaigns.filter((c) => c.status === "pending_approval").length;
   const approvedCount = campaigns.filter((c) => c.status === "approved" || c.status === "processing").length;
   const completedCount = campaigns.filter((c) => c.status === "completed").length;
+  const localCount = campaigns.filter((c) => c.runner_mode === "local" && c.status !== "draft").length;
+  const serverCount = campaigns.filter((c) => (c.runner_mode === "server" || !c.runner_mode) && c.status !== "draft").length;
 
   return (
     <div className="space-y-6">
@@ -254,6 +312,8 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
             { id: "pending_approval", label: "審査待ち", count: pendingCount, highlight: true },
             { id: "approved", label: "承認済み", count: campaigns.filter((c) => c.status === "approved").length },
             { id: "processing", label: "配信中", count: campaigns.filter((c) => c.status === "processing").length },
+            { id: "local", label: "💻 ローカル (WARP)", count: localCount },
+            { id: "server", label: "🌐 サーバー (4G)", count: serverCount },
             { id: "completed", label: "配信完了", count: completedCount },
             { id: "rejected", label: "要修正・却下", count: campaigns.filter((c) => c.status === "rejected").length },
             { id: "draft", label: "下書き", count: campaigns.filter((c) => c.status === "draft").length },
@@ -341,7 +401,10 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
                     }`}
                   >
                     <td className="py-3.5 px-4 whitespace-nowrap">
-                      {getStatusBadge(camp.status)}
+                      <div className="flex flex-col gap-1 items-start">
+                        {getStatusBadge(camp.status)}
+                        {getRunnerBadge(camp)}
+                      </div>
                     </td>
 
                     <td className="py-3.5 px-4">
@@ -375,6 +438,27 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
 
                     <td className="py-3.5 px-4 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-1.5">
+                        {/* Copy CLI button for Local runner */}
+                        {camp.runner_mode === "local" && (camp.status === "approved" || camp.status === "processing") && (
+                          <button
+                            onClick={() => handleCopyCli(camp.id)}
+                            className="px-2 py-1 rounded-lg border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 font-bold hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors flex items-center gap-1 cursor-pointer text-[11px]"
+                            title="ローカル実行CLIコマンドをコピー"
+                          >
+                            {copiedId === camp.id ? (
+                              <>
+                                <CheckCheck className="w-3.5 h-3.5 text-emerald-500" />
+                                <span className="text-emerald-600 dark:text-emerald-400">コピー済</span>
+                              </>
+                            ) : (
+                              <>
+                                <Terminal className="w-3.5 h-3.5" />
+                                <span>CLIコピー</span>
+                              </>
+                            )}
+                          </button>
+                        )}
+
                         <button
                           onClick={() => setInspectCampaign(camp)}
                           className="px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center gap-1 cursor-pointer"
@@ -386,18 +470,29 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
                         {camp.status === "pending_approval" && (
                           <>
                             <button
-                              onClick={() => handleReviewAction(camp.id, "approve")}
+                              onClick={() => handleReviewAction(camp.id, "approve", undefined, "local")}
                               disabled={submittingAction}
-                              className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 shadow-xs"
+                              className="px-2.5 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-bold transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 shadow-xs text-[11px]"
+                              title="管理者PC（ローカルWARP）で自動実行（通信費0円）"
                             >
-                              <Check className="w-3.5 h-3.5" />
-                              <span>承認</span>
+                              <Laptop className="w-3.5 h-3.5" />
+                              <span>💻 ローカル</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleReviewAction(camp.id, "approve", undefined, "server")}
+                              disabled={submittingAction}
+                              className="px-2.5 py-1 rounded-lg bg-[#1B4F8A] hover:bg-blue-600 text-white font-bold transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 shadow-xs text-[11px]"
+                              title="サーバー（4G Proxy）で自動実行"
+                            >
+                              <Server className="w-3.5 h-3.5" />
+                              <span>🚀 サーバー</span>
                             </button>
 
                             <button
                               onClick={() => setRejectingCampaign(camp)}
                               disabled={submittingAction}
-                              className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 shadow-xs"
+                              className="px-2.5 py-1 rounded-lg bg-red-600 hover:bg-red-500 text-white font-bold transition-colors flex items-center gap-1 cursor-pointer disabled:opacity-50 shadow-xs text-[11px]"
                             >
                               <X className="w-3.5 h-3.5" />
                               <span>却下</span>
@@ -405,7 +500,7 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
                           </>
                         )}
 
-                        {camp.status === "approved" && (
+                        {(camp.status === "approved" || camp.status === "processing") && (
                           <button
                             onClick={() => handleReviewAction(camp.id, "complete")}
                             disabled={submittingAction}
@@ -539,8 +634,58 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
               )}
             </div>
 
+            {/* Local Runner Status Notification inside Modal */}
+            {inspectCampaign.runner_mode === "local" && (inspectCampaign.status === "approved" || inspectCampaign.status === "processing") && (
+              <div className="p-3.5 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800 text-xs text-purple-900 dark:text-purple-200 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Laptop className="w-5 h-5 text-purple-600 shrink-0" />
+                  <div>
+                    <span className="font-bold block">ローカル実行モード (WARP Proxy) で待機・実行中</span>
+                    <span className="text-[11px] text-purple-700 dark:text-purple-300">PCの <code>run_local_worker.bat</code> を常駐させておくと全自動で順次処理されます。</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleCopyCli(inspectCampaign.id)}
+                  className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold transition-colors flex items-center gap-1.5 shrink-0 text-xs shadow-xs cursor-pointer"
+                >
+                  {copiedId === inspectCampaign.id ? <CheckCheck className="w-3.5 h-3.5" /> : <Terminal className="w-3.5 h-3.5" />}
+                  <span>{copiedId === inspectCampaign.id ? "コピー完了" : "CLIコマンドをコピー"}</span>
+                </button>
+              </div>
+            )}
+
+            {/* Approval Execution Guide for Pending Campaigns */}
+            {inspectCampaign.status === "pending_approval" && (
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 mb-6 space-y-2">
+                <span className="text-[11px] font-black uppercase tracking-wider text-slate-500 block">
+                  ⚡ 配信インフラ実行オプションを選択して承認
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                  <div className="p-3 rounded-xl bg-purple-50/60 dark:bg-purple-950/20 border border-purple-200/80 dark:border-purple-900/40">
+                    <div className="font-bold text-purple-900 dark:text-purple-300 flex items-center gap-1.5 mb-1">
+                      <Laptop className="w-4 h-4 text-purple-600" />
+                      <span>ローカル (WARP Proxy) - 推奨</span>
+                    </div>
+                    <p className="text-[11px] text-purple-800/80 dark:text-purple-300/80 leading-relaxed">
+                      通信費<strong>0円</strong>・サーバー負荷ゼロ。PC上のLocal Worker（<code>run_local_worker.bat</code>）が完全自動で配信。
+                    </p>
+                  </div>
+
+                  <div className="p-3 rounded-xl bg-blue-50/60 dark:bg-blue-950/20 border border-blue-200/80 dark:border-blue-900/40">
+                    <div className="font-bold text-blue-900 dark:text-blue-300 flex items-center gap-1.5 mb-1">
+                      <Server className="w-4 h-4 text-blue-600" />
+                      <span>サーバー (4G Proxy)</span>
+                    </div>
+                    <p className="text-[11px] text-blue-800/80 dark:text-blue-300/80 leading-relaxed">
+                      VPSクラウドで即時キューイング。外出時・PCオフ時に自動稼働（4Gプロキシ通信費・VPS負荷が発生）。
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Modal Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-slate-200 dark:border-slate-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setInspectCampaign(null)}
@@ -549,7 +694,7 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
                 閉じる
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 {inspectCampaign.status === "pending_approval" && (
                   <>
                     <button
@@ -559,13 +704,23 @@ export function FormCampaignsAdminTab({ adminEmail, getAdminHeaders }: FormCampa
                     >
                       却下する
                     </button>
+
                     <button
-                      onClick={() => handleReviewAction(inspectCampaign.id, "approve")}
+                      onClick={() => handleReviewAction(inspectCampaign.id, "approve", undefined, "local")}
                       disabled={submittingAction}
-                      className="px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors flex items-center gap-1.5 cursor-pointer shadow-md shadow-emerald-600/20"
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-purple-600 hover:bg-purple-500 text-white transition-colors flex items-center gap-1.5 cursor-pointer shadow-md shadow-purple-600/20"
                     >
-                      <Check className="w-4 h-4" />
-                      <span>承認・配信キューへ</span>
+                      <Laptop className="w-4 h-4" />
+                      <span>💻 承認してローカルで実行 (WARP・0円)</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleReviewAction(inspectCampaign.id, "approve", undefined, "server")}
+                      disabled={submittingAction}
+                      className="px-4 py-2 rounded-xl text-xs font-bold bg-[#1B4F8A] hover:bg-blue-600 text-white transition-colors flex items-center gap-1.5 cursor-pointer shadow-md shadow-blue-600/20"
+                    >
+                      <Server className="w-4 h-4" />
+                      <span>🚀 承認してサーバーで実行 (4G)</span>
                     </button>
                   </>
                 )}

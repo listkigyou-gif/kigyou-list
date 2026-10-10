@@ -191,6 +191,7 @@ export async function initFormCampaignTables(): Promise<void> {
       target_count INTEGER DEFAULT 0,
       cost_jpy INTEGER DEFAULT 0,
       status TEXT DEFAULT 'draft',
+      runner_mode TEXT DEFAULT 'server',
       rejection_reason TEXT,
       sent_count INTEGER DEFAULT 0,
       success_count INTEGER DEFAULT 0,
@@ -233,6 +234,9 @@ export async function initFormCampaignTables(): Promise<void> {
       try {
         await client.query(createTemplatesSql);
         await client.query(createCampaignsSql);
+        try {
+          await client.query(`ALTER TABLE user_form_campaigns ADD COLUMN IF NOT EXISTS runner_mode TEXT DEFAULT 'server'`);
+        } catch {}
         await client.query(createCreditsSql);
         await client.query(createTransactionsSql);
         pgAvailable = true;
@@ -253,6 +257,9 @@ export async function initFormCampaignTables(): Promise<void> {
     const db = getSQLiteDB();
     db.exec(createTemplatesSql);
     db.exec(createCampaignsSql);
+    try {
+      db.exec(`ALTER TABLE user_form_campaigns ADD COLUMN runner_mode TEXT DEFAULT 'server'`);
+    } catch {}
     db.exec(createCreditsSql);
     db.exec(createTransactionsSql);
   } catch (e) {
@@ -649,14 +656,20 @@ export async function getAdminFormCampaigns(statusFilter?: string): Promise<any[
   let sql = `SELECT * FROM user_form_campaigns`;
   const params: any[] = [];
   if (statusFilter && statusFilter !== 'all') {
-    sql += ` WHERE status = ?`;
-    params.push(statusFilter);
+    if (statusFilter === 'server' || statusFilter === 'local') {
+      sql += ` WHERE runner_mode = ?`;
+      params.push(statusFilter);
+    } else {
+      sql += ` WHERE status = ?`;
+      params.push(statusFilter);
+    }
   }
   sql += ` ORDER BY created_at DESC LIMIT 100`;
 
   const rows = await queryAll(sql, params);
   return rows.map(r => ({
     ...r,
+    runner_mode: r.runner_mode || 'server',
     title: r.name,
     pitch_subject: r.subject,
     pitch_body: r.body,
@@ -668,9 +681,14 @@ export async function getAdminFormCampaigns(statusFilter?: string): Promise<any[
 
 export async function adminUpdateCampaignStatus(
   campaignId: string,
-  newStatus: 'approved' | 'rejected' | 'completed',
+  newStatus: 'approved' | 'rejected' | 'completed' | 'processing',
   reason?: string,
-  metrics?: { success_count?: number; skipped_count?: number; report_file_url?: string }
+  metrics?: { 
+    success_count?: number; 
+    skipped_count?: number; 
+    report_file_url?: string;
+    runner_mode?: 'server' | 'local';
+  }
 ): Promise<boolean> {
   const checkSql = `SELECT user_email, name, target_count, status, success_count FROM user_form_campaigns WHERE id = ?`;
   const cmp = await queryOne(checkSql, [campaignId]);
@@ -734,6 +752,7 @@ export async function adminUpdateCampaignStatus(
   const sql = `
     UPDATE user_form_campaigns
     SET status = ?, 
+        runner_mode = COALESCE(?, runner_mode, 'server'),
         rejection_reason = ?, 
         success_count = COALESCE(?, success_count),
         skipped_count = COALESCE(?, skipped_count),
@@ -743,6 +762,7 @@ export async function adminUpdateCampaignStatus(
   `;
   const count = await execute(sql, [
     newStatus, 
+    metrics?.runner_mode || null,
     reason || null, 
     metrics?.success_count !== undefined ? metrics.success_count : null,
     metrics?.skipped_count !== undefined ? metrics.skipped_count : null,
