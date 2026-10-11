@@ -172,7 +172,14 @@ class FormDispatcher:
                 except Exception:
                     pass
 
-            html_content = page.content()
+            try:
+                html_content = page.content()
+            except Exception:
+                page.wait_for_timeout(2000)
+                try:
+                    html_content = page.content()
+                except Exception:
+                    html_content = ""
 
             # 2. Check for Anti-Spam / Sales Prohibited Disclaimer (AI Safety Check)
             disclaimer_check = check_anti_spam_disclaimer(html_content)
