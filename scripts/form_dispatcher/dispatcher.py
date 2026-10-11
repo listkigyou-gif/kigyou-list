@@ -133,6 +133,20 @@ class FormDispatcher:
             result["message"] = "No contact form URL available"
             return result
 
+        # 0. Early Filter: Reject URLs that are static files / downloads (PDF, images, archives, docs)
+        clean_url_path = url.lower().split("?")[0].split("#")[0]
+        static_exts = (
+            ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp", ".svg",
+            ".zip", ".tar", ".gz", ".rar", ".7z",
+            ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".csv", ".txt", ".mp4", ".mp3"
+        )
+        if any(clean_url_path.endswith(ext) for ext in static_exts) or ".pdf?" in url.lower():
+            result["status"] = "NO_FORM_ELEMENT"
+            result["billable"] = False
+            result["message"] = "Skipped: URL points to a static file/document, not a web form"
+            print(f"  [!] {result['message']} ({url})")
+            return result
+
         try:
             # Auto-accept JavaScript confirmation dialogs (window.confirm, alert)
             try:
@@ -246,9 +260,11 @@ class FormDispatcher:
             # --- A. Company Name ---
             company_selectors = [
                 'input[name*="company" i]', 'input[name*="kaisha" i]', 'input[id*="company" i]',
+                'input[name*="organization" i]', 'input[id*="organization" i]',
                 'input[name*="御社" i]', 'input[id*="御社" i]', 'input[name*="貴社" i]', 'input[id*="貴社" i]',
                 'input[name*="会社" i]', 'input[id*="会社" i]', 'input[name*="法人" i]', 'input[id*="法人" i]',
                 'input[placeholder*="会社" i]', 'input[placeholder*="法人" i]', 'input[placeholder*="貴社" i]', 'input[placeholder*="御社" i]',
+                'input[placeholder*="株式会社" i]', 'input[placeholder*="例）株" i]', 'input[placeholder*="例：株" i]',
                 'tr:has-text("会社名") input:not([type="hidden"])', 'tr:has-text("貴社名") input:not([type="hidden"])',
                 'tr:has-text("御社名") input:not([type="hidden"])', 'tr:has-text("法人名") input:not([type="hidden"])',
                 'dl:has-text("会社名") input:not([type="hidden"])', 'dl:has-text("貴社名") input:not([type="hidden"])',
@@ -268,8 +284,8 @@ class FormDispatcher:
             mei = name_parts[1] if len(name_parts) > 1 else sei
 
             # Check for split Sei/Mei inputs first
-            sei_selectors = ['input[name*="sei" i]:not([name*="furigana" i]):not([name*="kana" i])', 'input[placeholder*="姓" i]', 'input[id*="sei" i]']
-            mei_selectors = ['input[name*="mei" i]:not([name*="furigana" i]):not([name*="kana" i])', 'input[placeholder*="名" i]', 'input[id*="mei" i]']
+            sei_selectors = ['input[name*="sei" i]:not([name*="furigana" i]):not([name*="kana" i])', 'input[placeholder*="姓" i]', 'input[id*="sei" i]', 'input[placeholder*="山田" i]']
+            mei_selectors = ['input[name*="mei" i]:not([name*="furigana" i]):not([name*="kana" i])', 'input[placeholder*="名" i]', 'input[id*="mei" i]', 'input[placeholder*="太郎" i]']
             
             is_split_name = False
             for s_sel in sei_selectors:
@@ -289,10 +305,12 @@ class FormDispatcher:
             if not is_split_name:
                 name_selectors = [
                     'input[name*="name" i]:not([name*="company" i]):not([name*="kana" i])', 'input[id*="name" i]:not([id*="company" i]):not([id*="kana" i])',
+                    'input[name*="your-name" i]', 'input[name*="full_name" i]', 'input[name*="contact_name" i]',
                     'input[name*="お名前" i]', 'input[id*="お名前" i]', 'input[name*="氏名" i]', 'input[id*="氏名" i]',
                     'input[name*="名前" i]:not([name*="会社" i])', 'input[id*="名前" i]:not([id*="会社" i])',
                     'input[name*="担当" i]', 'input[id*="担当" i]',
                     'input[placeholder*="氏名" i]', 'input[placeholder*="名前" i]', 'input[placeholder*="担当" i]',
+                    'input[placeholder*="山田" i]', 'input[placeholder*="例：山田" i]', 'input[placeholder*="例）山田" i]',
                     'tr:has-text("お名前") input:not([type="hidden"])', 'tr:has-text("氏名") input:not([type="hidden"])',
                     'tr:has-text("ご担当") input:not([type="hidden"])', 'dl:has-text("お名前") input:not([type="hidden"])',
                     'dl:has-text("氏名") input:not([type="hidden"])', 'label:has-text("お名前") input:not([type="hidden"])',
@@ -705,7 +723,10 @@ class FormDispatcher:
             btn_texts = [
                 "確認画面へ", "確認", "送信する", "送信", "次へ", "同意して確認", "同意して送信",
                 "内容確認", "入力内容の確認", "送信内容の確認", "お問い合わせを送信", "メッセージを送信",
-                "確認ページへ", "入力内容を確認する", "入力完了", "完了", "Submit", "Send"
+                "確認ページへ", "入力内容を確認する", "入力完了", "完了", "Submit", "Send",
+                "入力内容確認", "入力内容の確認へ", "送信確認", "確認する", "確認画面に進む", "確認画面へ進む",
+                "入力内容を送信", "上記の内容で送信", "この内容で送信", "お問合せを送信", "お問い合わせを送信する",
+                "Send Message", "Confirm", "同意して送信する", "Next"
             ]
             for btn_txt in btn_texts:
                 for ctx in [scope, page]:
@@ -813,11 +834,16 @@ class FormDispatcher:
             print(f"  [-] Timeout loading {url}")
         except Exception as e:
             err_str = str(e)
-            if any(k in err_str for k in ["ERR_SOCKS_CONNECTION_FAILED", "ERR_NAME_NOT_RESOLVED", "ERR_CONNECTION_REFUSED", "ERR_CONNECTION_TIMED_OUT"]):
+            if "Download is starting" in err_str:
+                result["status"] = "NO_FORM_ELEMENT"
+                result["billable"] = False
+                result["message"] = "Skipped: Target URL triggered file download (no web form)"
+                print(f"  [!] Skipped: Download triggered ({url}) (Refund credit)")
+            elif any(k in err_str for k in ["ERR_SOCKS_CONNECTION_FAILED", "ERR_NAME_NOT_RESOLVED", "ERR_CONNECTION_REFUSED", "ERR_CONNECTION_TIMED_OUT", "ERR_ABORTED"]):
                 result["status"] = "DEAD_WEBSITE"
                 result["billable"] = False
-                result["message"] = "Skipped: Website offline or domain unreachable"
-                print(f"  [!] Skipped: Domain/Host unreachable ({url}) (Refund credit)")
+                result["message"] = "Skipped: Website offline or connection aborted"
+                print(f"  [!] Skipped: Domain unreachable or connection aborted ({url}) (Refund credit)")
             else:
                 result["status"] = "ERROR"
                 result["billable"] = False
