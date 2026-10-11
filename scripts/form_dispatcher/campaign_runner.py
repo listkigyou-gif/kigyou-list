@@ -527,11 +527,15 @@ def run_campaign(
                         p_conn = psycopg2.connect(pg_url)
                         p_cur = p_conn.cursor()
                         r_type = "DISCLAIMER" if st == "SKIPPED_DISCLAIMER" else ("CAPTCHA" if "CAPTCHA" in st else "NO_FORM")
+                        sev_lvl = "PERMANENT" if r_type in ("DISCLAIMER", "CAPTCHA") else "TEMPORARY"
                         p_cur.execute("""
-                            INSERT INTO form_marketing_global_suppressions (corporate_number, company_name, form_url, reason_type, detail_message, updated_at)
-                            VALUES (%s, %s, %s, %s, %s, NOW())
-                            ON CONFLICT (corporate_number) DO UPDATE SET updated_at = NOW(), detail_message = EXCLUDED.detail_message;
-                        """, (corp_num, comp_name, form_url, r_type, (res.get("message") or "")[:255]))
+                            INSERT INTO form_marketing_global_suppressions (corporate_number, company_name, form_url, reason_type, detail_message, severity_level, updated_at)
+                            VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                            ON CONFLICT (corporate_number) DO UPDATE SET 
+                                updated_at = NOW(), 
+                                detail_message = EXCLUDED.detail_message,
+                                severity_level = EXCLUDED.severity_level;
+                        """, (corp_num, comp_name, form_url, r_type, (res.get("message") or "")[:255], sev_lvl))
                         p_conn.commit()
                         p_conn.close()
                 except Exception:

@@ -177,30 +177,34 @@ def record_log_pg(campaign_id: str, company: Dict[str, Any], status: str, messag
         record_suppression_pg(corp_num, company.get("company_name"), company.get("contact_form_url"), status, message)
 
 def load_global_suppressions() -> Dict[str, Dict[str, Any]]:
-    """Loads all known suppressed companies (Disclaimers, Captchas, No-Forms) into memory for instant skip."""
+    """Loads all known suppressed companies (Disclaimers, Captchas, No-Forms) into memory with severity levels."""
     try:
         conn = get_pg_connection()
         c = conn.cursor()
-        c.execute("SELECT corporate_number, reason_type, detail_message FROM form_marketing_global_suppressions")
+        c.execute("SELECT corporate_number, reason_type, detail_message, severity_level FROM form_marketing_global_suppressions")
         rows = c.fetchall()
         conn.close()
-        return {r[0]: {"reason_type": r[1], "detail_message": r[2]} for r in rows}
+        return {r[0]: {"reason_type": r[1], "detail_message": r[2], "severity_level": r[3] or "PERMANENT"} for r in rows}
     except Exception as e:
         print(f"[*] Warning: Could not load global suppressions: {e}")
         return {}
 
 def record_suppression_pg(corp_num: str, comp_name: str, form_url: str, status: str, message: str):
-    """Automatically persists newly detected compliance/captcha protections into global suppression list."""
+    """Automatically persists newly detected compliance/captcha protections into global suppression list with 2-level classification."""
     if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT") and corp_num:
         reason_type = "DISCLAIMER" if status == "SKIPPED_DISCLAIMER" else ("CAPTCHA" if "CAPTCHA" in status else "NO_FORM")
+        severity_level = "PERMANENT" if reason_type in ("DISCLAIMER", "CAPTCHA") else "TEMPORARY"
         try:
             conn = get_pg_connection()
             c = conn.cursor()
             c.execute("""
-                INSERT INTO form_marketing_global_suppressions (corporate_number, company_name, form_url, reason_type, detail_message, updated_at)
-                VALUES (%s, %s, %s, %s, %s, NOW())
-                ON CONFLICT (corporate_number) DO UPDATE SET updated_at = NOW(), detail_message = EXCLUDED.detail_message;
-            """, (corp_num, comp_name, form_url, reason_type, (message or "")[:255]))
+                INSERT INTO form_marketing_global_suppressions (corporate_number, company_name, form_url, reason_type, detail_message, severity_level, updated_at)
+                VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                ON CONFLICT (corporate_number) DO UPDATE SET 
+                    updated_at = NOW(), 
+                    detail_message = EXCLUDED.detail_message,
+                    severity_level = EXCLUDED.severity_level;
+            """, (corp_num, comp_name, form_url, reason_type, (message or "")[:255], severity_level))
             conn.commit()
             conn.close()
         except Exception:
