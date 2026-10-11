@@ -654,32 +654,42 @@ class FormDispatcher:
                     result["status"] = "DEAD_WEBSITE"
                     result["message"] = "Skipped: 404 Page Not Found"
                 else:
-                    # Check if the only inputs on the page are site search inputs (q, s, kw, search, etc.)
-                    search_only = False
-                    candidate_text_inputs = scope.locator('input[type="text"], input:not([type])')
-                    has_real_contact_field = scope.locator('textarea, input[type="email"], input[type="tel"], input[name*="mail" i], input[name*="company" i]').count() > 0
-                    if not has_real_contact_field and candidate_text_inputs.count() <= 3:
-                        has_contact_hints = False
-                        for t_idx in range(candidate_text_inputs.count()):
-                            try:
-                                inp = candidate_text_inputs.nth(t_idx)
-                                name_attr = (inp.get_attribute('name') or '').lower()
-                                ph_attr = (inp.get_attribute('placeholder') or '').lower()
-                                id_attr = (inp.get_attribute('id') or '').lower()
-                                if any(w in name_attr or w in ph_attr or w in id_attr for w in ['name', 'namae', 'company', 'corp', 'title', 'subject', 'msg', 'message', '氏名', '名前', '会社', '件名', '内容', '問合']):
-                                    has_contact_hints = True
-                                    break
-                            except Exception:
-                                pass
-                        if not has_contact_hints:
-                            search_only = True
+                    # Check for Member Login Form (contains password field or member login text)
+                    has_password_input = scope.locator('input[type="password"]').count() > 0
+                    has_real_contact_field = scope.locator('input[type="email"], input[type="tel"], input[name*="mail" i], input[name*="company" i]').count() > 0
 
-                    if search_only or scope.locator('input[type="text"], input[type="email"], input[type="tel"], input:not([type]), textarea').count() == 0:
+                    if has_password_input and not has_real_contact_field:
                         result["status"] = "NO_FORM_ELEMENT"
-                        result["message"] = "Skipped: Contact page has no web form (Search bar / Phone / Mail only)"
+                        result["message"] = "Skipped: Page is a member login form, no public contact form"
+                    elif scope.locator('input:not([type="hidden"]):not([type="submit"]):not([type="button"])').count() == 0 and scope.locator('textarea').count() <= 1:
+                        result["status"] = "NO_FORM_ELEMENT"
+                        result["message"] = "Skipped: Anonymous comment/textarea only, no sender contact fields"
                     else:
-                        result["status"] = "FORM_PARSE_ERROR"
-                        result["message"] = f"Insufficient fields matched (filled {filled_fields} fields)"
+                        # Check if the only inputs on the page are site search inputs (q, s, kw, search, etc.)
+                        search_only = False
+                        candidate_text_inputs = scope.locator('input[type="text"], input:not([type])')
+                        if not has_real_contact_field and candidate_text_inputs.count() <= 3:
+                            has_contact_hints = False
+                            for t_idx in range(candidate_text_inputs.count()):
+                                try:
+                                    inp = candidate_text_inputs.nth(t_idx)
+                                    name_attr = (inp.get_attribute('name') or '').lower()
+                                    ph_attr = (inp.get_attribute('placeholder') or '').lower()
+                                    id_attr = (inp.get_attribute('id') or '').lower()
+                                    if any(w in name_attr or w in ph_attr or w in id_attr for w in ['name', 'namae', 'company', 'corp', 'title', 'subject', 'msg', 'message', '氏名', '名前', '会社', '件名', '内容', '問合']):
+                                        has_contact_hints = True
+                                        break
+                                except Exception:
+                                    pass
+                            if not has_contact_hints:
+                                search_only = True
+
+                        if search_only or scope.locator('input[type="text"], input[type="email"], input[type="tel"], input:not([type]), textarea').count() == 0:
+                            result["status"] = "NO_FORM_ELEMENT"
+                            result["message"] = "Skipped: Contact page has no web form (Search bar / Phone / Mail only)"
+                        else:
+                            result["status"] = "FORM_PARSE_ERROR"
+                            result["message"] = f"Insufficient fields matched (filled {filled_fields} fields)"
 
                 # Save failed HTML sample for diagnostic flywheel
                 if self.save_failed_html:
@@ -843,7 +853,7 @@ class FormDispatcher:
                 result["billable"] = False
                 result["message"] = "Skipped: Target URL triggered file download (no web form)"
                 print(f"  [!] Skipped: Download triggered ({url}) (Refund credit)")
-            elif any(k in err_str for k in ["ERR_SOCKS_CONNECTION_FAILED", "ERR_NAME_NOT_RESOLVED", "ERR_CONNECTION_REFUSED", "ERR_CONNECTION_TIMED_OUT", "ERR_ABORTED"]):
+            elif any(k in err_str for k in ["ERR_SOCKS_CONNECTION_FAILED", "ERR_NAME_NOT_RESOLVED", "ERR_CONNECTION_REFUSED", "ERR_CONNECTION_TIMED_OUT", "ERR_ABORTED", "ERR_HTTP2_PROTOCOL_ERROR"]):
                 result["status"] = "DEAD_WEBSITE"
                 result["billable"] = False
                 result["message"] = "Skipped: Website offline or connection aborted"
