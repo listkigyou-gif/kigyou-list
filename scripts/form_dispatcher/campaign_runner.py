@@ -463,6 +463,21 @@ def run_campaign(
         save_screenshot=False
     )
 
+    # Load AI Compliance Guard global suppressions
+    suppressed_map = {}
+    try:
+        import psycopg2
+        pg_url = os.environ.get("DATABASE_URL")
+        if pg_url:
+            c_conn = psycopg2.connect(pg_url)
+            c_cur = c_conn.cursor()
+            c_cur.execute("SELECT corporate_number, reason_type, detail_message FROM form_marketing_global_suppressions")
+            suppressed_map = {r[0]: {"reason_type": r[1], "detail_message": r[2]} for r in c_cur.fetchall()}
+            c_conn.close()
+            print(f"[*] Loaded {len(suppressed_map):,} globally suppressed companies into AI Compliance Guard.")
+    except Exception as e:
+        print(f"[*] Warning: Could not load global suppressions in campaign_runner: {e}")
+
     results = []
 
     with sync_playwright() as p:
@@ -474,9 +489,54 @@ def run_campaign(
         page = context.new_page()
 
         for idx, company in enumerate(targets, 1):
-            print(f"[{idx}/{len(targets)}] Dispatching: {company['company_name']} ({company['corporate_number']})")
+            corp_num = company.get("corporate_number")
+            comp_name = company.get("company_name", "Target")
+            form_url = company.get("contact_form_url", "")
+
+            # 0. AI Compliance Guard instant check
+            if corp_num and corp_num in suppressed_map:
+                sup_info = suppressed_map[corp_num]
+                r_type = sup_info.get("reason_type", "DISCLAIMER")
+                det = sup_info.get("detail_message") or "AI Compliance Protection"
+                st = "SKIPPED_DISCLAIMER" if r_type == "DISCLAIMER" else ("BLOCKED_CAPTCHA" if r_type == "CAPTCHA" else "NO_FORM_ELEMENT")
+                msg = f"Auto-Skipped: Protected by AI Compliance Guard ({det})"
+                res = {
+                    "corporate_number": corp_num,
+                    "company_name": comp_name,
+                    "form_url": form_url,
+                    "status": st,
+                    "billable": False,
+                    "message": msg,
+                    "timestamp": datetime.now().isoformat()
+                }
+                print(f"[{idx}/{len(targets)}] 🛡️ [AI Compliance Guard] Auto-Skipped: {comp_name} ({st})")
+                results.append(res)
+                continue
+
+            print(f"[{idx}/{len(targets)}] Dispatching: {comp_name} ({corp_num})")
             res = dispatcher.dispatch_single_company(page, company)
             results.append(res)
+
+            # Auto-persist newly detected suppressions
+            st = res.get("status", "")
+            if st in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT") and corp_num:
+                try:
+                    import psycopg2
+                    pg_url = os.environ.get("DATABASE_URL")
+                    if pg_url:
+                        p_conn = psycopg2.connect(pg_url)
+                        p_cur = p_conn.cursor()
+                        r_type = "DISCLAIMER" if st == "SKIPPED_DISCLAIMER" else ("CAPTCHA" if "CAPTCHA" in st else "NO_FORM")
+                        p_cur.execute("""
+                            INSERT INTO form_marketing_global_suppressions (corporate_number, company_name, form_url, reason_type, detail_message, updated_at)
+                            VALUES (%s, %s, %s, %s, %s, NOW())
+                            ON CONFLICT (corporate_number) DO UPDATE SET updated_at = NOW(), detail_message = EXCLUDED.detail_message;
+                        """, (corp_num, comp_name, form_url, r_type, (res.get("message") or "")[:255]))
+                        p_conn.commit()
+                        p_conn.close()
+                except Exception:
+                    pass
+
             time.sleep(0.5)
 
         browser.close()

@@ -29,11 +29,19 @@ qc
 crawlers/website/pass2_progress.json
 frontend/test*
 frontend/scratch*
+
+# Browser profiles for social publishers (keeps sessions safe locally, ignores from git)
+.*_user_profile/
+*_user_profile/
 .note_user_profile/
+.x_user_profile/
+.linkedin_user_profile/
+.valuepress_user_profile/
 scripts/.note_profile/
 scripts/note_state.json
 scripts/check_current_user.py
 scripts/*.png
+tweet*.png
 scripts/form_dispatcher/reports/
 scripts/inspect_*.py
 scripts/probe_*.py

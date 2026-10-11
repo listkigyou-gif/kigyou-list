@@ -172,6 +172,40 @@ def record_log_pg(campaign_id: str, company: Dict[str, Any], status: str, messag
     conn.commit()
     conn.close()
 
+    # Automatically persist compliance and captcha protections into global suppression list
+    if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT") and corp_num:
+        record_suppression_pg(corp_num, company.get("company_name"), company.get("contact_form_url"), status, message)
+
+def load_global_suppressions() -> Dict[str, Dict[str, Any]]:
+    """Loads all known suppressed companies (Disclaimers, Captchas, No-Forms) into memory for instant skip."""
+    try:
+        conn = get_pg_connection()
+        c = conn.cursor()
+        c.execute("SELECT corporate_number, reason_type, detail_message FROM form_marketing_global_suppressions")
+        rows = c.fetchall()
+        conn.close()
+        return {r[0]: {"reason_type": r[1], "detail_message": r[2]} for r in rows}
+    except Exception as e:
+        print(f"[*] Warning: Could not load global suppressions: {e}")
+        return {}
+
+def record_suppression_pg(corp_num: str, comp_name: str, form_url: str, status: str, message: str):
+    """Automatically persists newly detected compliance/captcha protections into global suppression list."""
+    if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT") and corp_num:
+        reason_type = "DISCLAIMER" if status == "SKIPPED_DISCLAIMER" else ("CAPTCHA" if "CAPTCHA" in status else "NO_FORM")
+        try:
+            conn = get_pg_connection()
+            c = conn.cursor()
+            c.execute("""
+                INSERT INTO form_marketing_global_suppressions (corporate_number, company_name, form_url, reason_type, detail_message, updated_at)
+                VALUES (%s, %s, %s, %s, %s, NOW())
+                ON CONFLICT (corporate_number) DO UPDATE SET updated_at = NOW(), detail_message = EXCLUDED.detail_message;
+            """, (corp_num, comp_name, form_url, reason_type, (message or "")[:255]))
+            conn.commit()
+            conn.close()
+        except Exception:
+            pass
+
 def complete_campaign_pg(campaign_id: str, duration_sec: int, report_url: str):
     conn = get_pg_connection()
     c = conn.cursor()
@@ -231,7 +265,8 @@ def worker_routine(
     save_screenshot: bool,
     results_list: List[Dict[str, Any]],
     lock: threading.Lock,
-    progress_counter: Dict[str, int]
+    progress_counter: Dict[str, int],
+    suppressed_map: Dict[str, Dict[str, Any]]
 ):
     dispatcher = FormDispatcher(
         sender_profile=sender_profile,
@@ -268,6 +303,39 @@ def worker_routine(
             except queue.Empty:
                 break
 
+            corp_num = comp.get("corporate_number")
+            comp_name = comp.get("company_name", "Target")
+            form_url = comp.get("contact_form_url", "")
+
+            with lock:
+                progress_counter["done"] += 1
+                curr_idx = progress_counter["done"]
+
+            # 0. AI Compliance Guard: Instant suppression check (zero browser overhead)
+            if corp_num and corp_num in suppressed_map:
+                sup_info = suppressed_map[corp_num]
+                r_type = sup_info.get("reason_type", "DISCLAIMER")
+                det = sup_info.get("detail_message") or "AI Compliance Protection"
+                status = "SKIPPED_DISCLAIMER" if r_type == "DISCLAIMER" else ("BLOCKED_CAPTCHA" if r_type == "CAPTCHA" else "NO_FORM_ELEMENT")
+                msg = f"Auto-Skipped: Protected by AI Compliance Guard ({det})"
+                res = {
+                    "corporate_number": corp_num,
+                    "company_name": comp_name,
+                    "form_url": form_url,
+                    "status": status,
+                    "billable": False,
+                    "message": msg,
+                    "timestamp": datetime.now().isoformat()
+                }
+                print(f"\n[Worker #{worker_id} | {curr_idx}/{total_tasks}] 🛡️ [AI Compliance Guard] Auto-Skipped: {comp_name} ({status})")
+                with lock:
+                    results_list.append(res)
+                try:
+                    record_log_pg(campaign_id, comp, status, msg)
+                except Exception as e:
+                    print(f"  [Worker #{worker_id}] DB log error: {e}")
+                continue
+
             # 1. Check if scheduled rotation is due
             if warp_ports and len(warp_ports) > 1 and submissions_on_curr_proxy >= rotate_every:
                 print(f"  [🔄 Worker #{worker_id}] Reached {submissions_on_curr_proxy} dispatches. Rotating to next WARP proxy...")
@@ -291,12 +359,6 @@ def worker_routine(
                         pass
                 submissions_on_curr_proxy = 0
 
-            with lock:
-                progress_counter["done"] += 1
-                curr_idx = progress_counter["done"]
-
-            comp_name = comp.get("company_name", "Target")
-            form_url = comp.get("contact_form_url", "")
             print(f"\n[Worker #{worker_id} | {curr_idx}/{total_tasks}] Processing: {comp_name} ({curr_proxy_label})")
             print(f"  [>] Form URL: {form_url}")
 
@@ -315,6 +377,13 @@ def worker_routine(
             status = res.get("status", "FAILED")
             msg = res.get("message", "")
             submissions_on_curr_proxy += 1
+
+            # Update memory map if new suppression discovered
+            if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT") and corp_num:
+                suppressed_map[corp_num] = {
+                    "reason_type": "DISCLAIMER" if status == "SKIPPED_DISCLAIMER" else ("CAPTCHA" if "CAPTCHA" in status else "NO_FORM"),
+                    "detail_message": msg
+                }
 
             with lock:
                 results_list.append(res)
@@ -459,6 +528,10 @@ def main():
         complete_campaign_pg(args.campaign_id, 0, "")
         sys.exit(0)
 
+    # 4.1 Load Global Compliance Suppressions
+    suppressed_map = load_global_suppressions()
+    print(f"[*] Loaded {len(suppressed_map):,} globally suppressed companies into AI Compliance Guard.")
+
     # 5. Populate Task Queue
     task_queue = queue.Queue()
     for t in targets:
@@ -492,7 +565,8 @@ def main():
                 args.screenshot,
                 results,
                 lock,
-                progress_counter
+                progress_counter,
+                suppressed_map
             ),
             daemon=True
         )
