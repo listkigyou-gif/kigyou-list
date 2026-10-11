@@ -758,7 +758,11 @@ class FormDispatcher:
                     try:
                         loc = ctx.locator(
                             'input[type="submit"], input[type="button"][value*="送信" i], button[type="submit"], '
-                            '[role="button"], [class*="btn-customform-submit" i], [class*="form_submit" i], [id*="obj_submit" i]'
+                            '[role="button"], [class*="btn-customform-submit" i], [class*="form_submit" i], [id*="obj_submit" i], '
+                            'input[id*="submit" i], input[id*="send" i], input[name*="submit" i], input[name*="send" i], '
+                            'button[id*="submit" i], button[id*="send" i], '
+                            '[id*="form_submit" i], [id*="btn_submit" i], [id*="btnSubmit" i], [id*="submit_btn" i], '
+                            '[class*="submit_btn" i], [class*="btn_submit" i], [class*="submit-btn" i], [class*="btn-submit" i], [class*="submitBtn" i]'
                         )
                         cnt = loc.count()
                         for idx in range(cnt):
