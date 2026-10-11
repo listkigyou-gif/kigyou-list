@@ -244,12 +244,18 @@ class FormDispatcher:
 
             # 3.2 Determine working scope (main page or active iframe)
             scope = page
-            if page.locator('textarea, input[type="email"], input[name*="mail" i]').count() == 0:
-                for frame in page.frames:
-                    if frame != page.main_frame and frame.locator('textarea, input[type="email"], input[name*="mail" i]').count() > 0:
-                        scope = frame
-                        print(f"  [↳] Embedded form detected inside iframe: {frame.url[:80]}...")
-                        break
+            try:
+                if page.locator('textarea, input[type="email"], input[name*="mail" i]').count() == 0:
+                    for frame in page.frames:
+                        try:
+                            if frame != page.main_frame and frame.locator('textarea, input[type="email"], input[name*="mail" i]').count() > 0:
+                                scope = frame
+                                print(f"  [↳] Embedded form detected inside iframe: {frame.url[:80]}...")
+                                break
+                        except Exception:
+                            pass
+            except Exception:
+                pass
 
             # 4. Locate and fill form fields via smart CSS / XPath / Label selectors (Advanced Japanese Form Engine)
             filled_fields = 0
