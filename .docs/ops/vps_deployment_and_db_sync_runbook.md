@@ -9,11 +9,11 @@ Tài liệu này cung cấp quy trình chuẩn để cập nhật mã nguồn v�
 * **Môi trường Phát triển (Local)**:
   * Cơ sở dữ liệu SQLite cục bộ: `kigyou-list.db` (lưu trữ thông tin cào và các bài viết Blog sinh ra cục bộ).
 * **Môi trường Production (VPS)**:
-  * IP VPS: `163.44.116.98` (Đăng nhập: `root` / Mật khẩu: `Hrptlcct6789@`).
+  * IP VPS: `160.251.203.84` (Đăng nhập: `root` / Mật khẩu: `Hrptlcct6789@`).
   * Đường dẫn dự án trên VPS: `/var/www/kigyou-list`.
-  * Cơ sở dữ liệu Production: PostgreSQL chạy trong Docker container trên cổng `5432` của VPS.
-  * Chuỗi kết nối Postgres trực tiếp (truy cập từ local hoặc nội bộ):
-    `postgresql://postgres:Hrptlcct6789@163.44.116.98:5432/kigyou_list`
+  * Cơ sở dữ liệu Production: PostgreSQL cổng `5432` trên VPS.
+  * Chuỗi kết nối Postgres trực tiếp:
+    `postgresql://postgres:Hrptlcct6789@160.251.203.84:5432/kigyou_list`
 
 ---
 
@@ -22,17 +22,17 @@ Tài liệu này cung cấp quy trình chuẩn để cập nhật mã nguồn v�
 Mục tiêu là cập nhật tất cả các file code đã chỉnh sửa ở máy local lên GitHub trước khi kéo về VPS.
 
 ### Các lệnh cần chạy ở máy Local:
-AI hãy mở terminal tại thư mục gốc của dự án (`c:\TUHOCLAPTRINH\kigyou-list`) và chạy chuỗi lệnh sau:
+AI hãy mở terminal tại thư mục gốc của dự án (`c:\kigyou-list`) và chạy chuỗi lệnh sau:
 
 ```powershell
 # 1. Kiểm tra trạng thái git
 git status
 
-# 2. Add tất cả các thay đổi (Loại trừ thư mục rác qua cấu hình .gitignore đã cập nhật)
+# 2. Add tất cả các thay đổi
 git add .
 
 # 3. Commit thay đổi với thông điệp mô tả cụ thể
-git commit -m "feat: deploy updates and db sync configurations"
+git commit -m "feat: deploy updates and configurations"
 
 # 4. Push lên nhánh chính
 git push origin main
@@ -40,16 +40,16 @@ git push origin main
 
 ---
 
-## Quy Trình 2: Triển Khai Tự Động Lên VPS (163.44.116.98)
+## Quy Trình 2: Triển Khai Tự Động Lên VPS (160.251.203.84)
 
 Mục tiêu là SSH vào VPS trực tuyến để kéo code mới từ GitHub, build lại giao diện Next.js và khởi động lại dịch vụ web.
 
 ### Phương pháp tự động qua Python (Chạy từ Local):
-Dự án đã trang bị script tự động kết nối SSH và chạy lệnh qua thư viện `paramiko` tại: `scratch/deploy_to_vps.py`. 
+Dự án đã trang bị script tự động kết nối SSH và chạy lệnh qua thư viện `paramiko` tại: `scripts/deploy_to_vps.py`. 
 AI chỉ cần chạy lệnh sau từ máy Local:
 
 ```powershell
-python scratch/deploy_to_vps.py
+python scripts/deploy_to_vps.py
 ```
 
 ### Phương pháp thủ công hoặc Lệnh SSH chạy trực tiếp:
