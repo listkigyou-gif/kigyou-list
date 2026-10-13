@@ -471,8 +471,8 @@ def run_campaign(
         if pg_url:
             c_conn = psycopg2.connect(pg_url)
             c_cur = c_conn.cursor()
-            c_cur.execute("SELECT corporate_number, reason_type, detail_message FROM form_marketing_global_suppressions")
-            suppressed_map = {r[0]: {"reason_type": r[1], "detail_message": r[2]} for r in c_cur.fetchall()}
+            c_cur.execute("SELECT corporate_number, reason_type, detail_message, severity_level FROM form_marketing_global_suppressions")
+            suppressed_map = {r[0]: {"reason_type": r[1], "detail_message": r[2], "severity_level": r[3] or "PERMANENT"} for r in c_cur.fetchall()}
             c_conn.close()
             print(f"[*] Loaded {len(suppressed_map):,} globally suppressed companies into AI Compliance Guard.")
     except Exception as e:
@@ -481,11 +481,38 @@ def run_campaign(
     results = []
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True, proxy=proxy_config)
+        browser = p.chromium.launch(
+            headless=True, 
+            proxy=proxy_config,
+            args=[
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--no-sandbox",
+                "--disable-extensions",
+                "--disable-background-networking"
+            ]
+        )
         context = browser.new_context(
             user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            viewport={"width": 1280, "height": 800}
+            viewport={"width": 1280, "height": 800},
+            ignore_https_errors=True
         )
+        def block_heavy_resources(route):
+            try:
+                req = route.request
+                if req.resource_type in ("image", "media", "font"):
+                    return route.abort()
+                url = req.url.lower()
+                if any(tk in url for tk in ("google-analytics.com", "googletagmanager.com", "facebook.net", "clarity.ms", "youtube.com", "doubleclick.net")):
+                    return route.abort()
+                return route.continue_()
+            except Exception:
+                try:
+                    route.continue_()
+                except Exception:
+                    pass
+
+        context.route("**/*", block_heavy_resources)
         page = context.new_page()
 
         for idx, company in enumerate(targets, 1):

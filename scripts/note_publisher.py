@@ -119,10 +119,13 @@ def create_note(title: str, content_paragraphs: list, hashtags: list = None, ima
         time.sleep(2)
 
         # Đóng popup nếu có
-        close_btn = page.locator("button:has-text('閉じる')")
-        if close_btn.count() > 0:
-            close_btn.first.click()
-            time.sleep(1)
+        try:
+            close_btn = page.locator("button:has-text('閉じる')")
+            if close_btn.count() > 0:
+                close_btn.first.click(force=True, timeout=3000)
+                time.sleep(1)
+        except Exception:
+            pass
 
         # Tải ảnh bìa nếu có
         if image_path and os.path.exists(image_path):

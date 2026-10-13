@@ -147,6 +147,20 @@ class FormDispatcher:
             print(f"  [!] {result['message']} ({url})")
             return result
 
+        # 0.1 Early Filter: Reject Social Media / External Media profiles (YouTube, Facebook, Twitter, Instagram, etc.)
+        parsed_domain = urlparse(url).netloc.lower()
+        social_domains = (
+            "youtube.com", "youtu.be", "facebook.com", "fb.com", "fb.me",
+            "twitter.com", "x.com", "instagram.com", "tiktok.com", "line.me",
+            "linkedin.com", "threads.net", "pinterest.com"
+        )
+        if any(sd in parsed_domain for sd in social_domains):
+            result["status"] = "NO_FORM_ELEMENT"
+            result["billable"] = False
+            result["message"] = "Skipped: Social media / external media profile link, not a company web form"
+            print(f"  [!] {result['message']} ({url})")
+            return result
+
         try:
             # Auto-accept JavaScript confirmation dialogs (window.confirm, alert)
             try:
@@ -259,6 +273,7 @@ class FormDispatcher:
 
             # 4. Locate and fill form fields via smart CSS / XPath / Label selectors (Advanced Japanese Form Engine)
             filled_fields = 0
+            message_body_filled = False
 
             def safe_fill(loc, value: str) -> bool:
                 """Fills input and dispatches input/change events to trigger modern JS validations."""
@@ -607,35 +622,169 @@ class FormDispatcher:
             except Exception:
                 pass
 
-            # --- I. Message Body (Textarea) ---
-            textarea = scope.locator('textarea')
-            if textarea.count() > 0 and textarea.first.is_visible():
-                body_template = self.sender.get("message_body", "")
+            # --- I. Message Body (Multi-tier Textarea, Rich Editors & Verification) ---
+            body_template = self.sender.get("message_body", "")
 
-                # Generate dynamic 1-click Opt-out URL
-                user_scope = str(self.sender.get("user_id") or "admin")
-                camp_scope = str(self.sender.get("campaign_id") or "")
-                opt_token = generate_opt_out_token(str(corp_num), user_scope)
-                opt_out_url = f"https://kigyoulist.com/ja/opt-out?u={quote(user_scope)}&c={quote(str(corp_num))}&cmp={quote(camp_scope)}&token={opt_token}"
+            # Generate dynamic 1-click Opt-out URL
+            user_scope = str(self.sender.get("user_id") or "admin")
+            camp_scope = str(self.sender.get("campaign_id") or "")
+            opt_token = generate_opt_out_token(str(corp_num), user_scope)
+            opt_out_url = f"https://kigyoulist.com/ja/opt-out?u={quote(user_scope)}&c={quote(str(corp_num))}&cmp={quote(camp_scope)}&token={opt_token}"
 
-                # Dynamic variable replacement: {{company_name}}, {company_name}, {{opt_out_url}}
-                rendered_body = body_template.replace("{{company_name}}", comp_name)
-                rendered_body = rendered_body.replace("{company_name}", comp_name)
-                rendered_body = rendered_body.replace("{{corporate_name}}", comp_name)
-                rendered_body = rendered_body.replace("{corporate_name}", comp_name)
-                rendered_body = rendered_body.replace("{{target_company}}", comp_name)
-                rendered_body = rendered_body.replace("{target_company}", comp_name)
-                rendered_body = rendered_body.replace("{{opt_out_url}}", opt_out_url)
-                rendered_body = rendered_body.replace("{opt_out_url}", opt_out_url)
+            # Dynamic variable replacement: {{company_name}}, {company_name}, {{opt_out_url}}
+            rendered_body = body_template.replace("{{company_name}}", comp_name)
+            rendered_body = rendered_body.replace("{company_name}", comp_name)
+            rendered_body = rendered_body.replace("{{corporate_name}}", comp_name)
+            rendered_body = rendered_body.replace("{corporate_name}", comp_name)
+            rendered_body = rendered_body.replace("{{target_company}}", comp_name)
+            rendered_body = rendered_body.replace("{target_company}", comp_name)
+            rendered_body = rendered_body.replace("{{opt_out_url}}", opt_out_url)
+            rendered_body = rendered_body.replace("{opt_out_url}", opt_out_url)
 
-                # Ensure company salutation at the top if not already present
-                if comp_name not in rendered_body[:len(comp_name) + 30]:
-                    custom_body = f"{comp_name} 御中\n\n{rendered_body}"
-                else:
-                    custom_body = rendered_body
+            # Ensure company salutation at the top if not already present
+            if comp_name not in rendered_body[:len(comp_name) + 30]:
+                custom_body = f"{comp_name} 御中\n\n{rendered_body}"
+            else:
+                custom_body = rendered_body
 
-                if safe_fill(textarea.first, custom_body):
-                    filled_fields += 1
+            def verify_element_has_body(target_loc) -> bool:
+                """Strictly verifies that the marketing message was committed into the DOM."""
+                try:
+                    v = target_loc.input_value()
+                    if v and len(v.strip()) >= 20:
+                        return True
+                except Exception:
+                    pass
+                try:
+                    js_v = target_loc.evaluate("el => el.value || el.innerText || el.textContent || ''")
+                    if js_v and len(str(js_v).strip()) >= 20:
+                        return True
+                except Exception:
+                    pass
+                return False
+
+            def fill_and_verify_message(target_loc) -> bool:
+                """Fills message body using native typing + JS evaluate and verifies DOM state."""
+                try:
+                    if not target_loc.is_visible():
+                        return False
+                    target_loc.scroll_into_view_if_needed(timeout=1500)
+                    target_loc.click(timeout=1500)
+                except Exception:
+                    pass
+
+                # Strategy 1: Playwright fill
+                try:
+                    target_loc.fill(custom_body, timeout=3000)
+                    target_loc.dispatch_event('input')
+                    target_loc.dispatch_event('change')
+                    if verify_element_has_body(target_loc):
+                        return True
+                except Exception:
+                    pass
+
+                # Strategy 2: Direct JS value assignment + event bubbling
+                try:
+                    target_loc.evaluate("""(el, text) => {
+                        el.focus();
+                        el.value = text;
+                        if (el.isContentEditable) {
+                            el.innerText = text;
+                        }
+                        el.dispatchEvent(new Event('input', { bubbles: true }));
+                        el.dispatchEvent(new Event('change', { bubbles: true }));
+                    }""", custom_body)
+                    if verify_element_has_body(target_loc):
+                        return True
+                except Exception:
+                    pass
+                return False
+
+            # Tier 1: Targeted Japanese Inquiry Textareas
+            inquiry_selectors = [
+                'textarea[name*="inquiry" i]', 'textarea[name*="toiawase" i]', 'textarea[name*="otoiawase" i]',
+                'textarea[name*="message" i]', 'textarea[name*="content" i]', 'textarea[name*="body" i]',
+                'textarea[name*="detail" i]', 'textarea[name*="comment" i]', 'textarea[name*="naiyou" i]',
+                'textarea[name*="text" i]', 'textarea[name*="contact" i]',
+                'textarea[id*="inquiry" i]', 'textarea[id*="toiawase" i]', 'textarea[id*="otoiawase" i]',
+                'textarea[id*="message" i]', 'textarea[id*="content" i]', 'textarea[id*="body" i]',
+                'textarea[id*="detail" i]', 'textarea[id*="comment" i]', 'textarea[id*="naiyou" i]',
+                'textarea[placeholder*="内容" i]', 'textarea[placeholder*="お問い合わせ" i]',
+                'textarea[placeholder*="メッセージ" i]', 'textarea[placeholder*="ご用件" i]',
+                'textarea[placeholder*="ご相談" i]',
+                'tr:has-text("お問い合わせ内容") textarea', 'tr:has-text("問合せ内容") textarea',
+                'tr:has-text("内容") textarea', 'tr:has-text("メッセージ") textarea', 'tr:has-text("ご用件") textarea',
+                'dl:has-text("お問い合わせ内容") textarea', 'dl:has-text("問合せ内容") textarea',
+                'dl:has-text("内容") textarea', 'dl:has-text("メッセージ") textarea', 'dl:has-text("ご用件") textarea',
+                'label:has-text("お問い合わせ内容") textarea', 'label:has-text("問合せ内容") textarea',
+                'label:has-text("内容") textarea', 'label:has-text("メッセージ") textarea',
+                'div:has-text("お問い合わせ内容") textarea', 'div:has-text("ご用件") textarea'
+            ]
+
+            for ctx in [scope, page]:
+                if message_body_filled:
+                    break
+                for sel in inquiry_selectors:
+                    loc = ctx.locator(sel)
+                    cnt = loc.count()
+                    for idx in range(cnt):
+                        el = loc.nth(idx)
+                        if fill_and_verify_message(el):
+                            message_body_filled = True
+                            filled_fields += 1
+                            break
+                    if message_body_filled:
+                        break
+
+            # Tier 2: Check ALL textareas on page (Skip hidden honeypots)
+            if not message_body_filled:
+                for ctx in [scope, page]:
+                    if message_body_filled:
+                        break
+                    all_textareas = ctx.locator('textarea')
+                    cnt = all_textareas.count()
+                    for idx in range(cnt):
+                        el = all_textareas.nth(idx)
+                        try:
+                            if not el.is_visible():
+                                continue
+                            box = el.bounding_box()
+                            if box and (box['width'] < 30 or box['height'] < 20):
+                                continue
+                            if fill_and_verify_message(el):
+                                message_body_filled = True
+                                filled_fields += 1
+                                break
+                        except Exception:
+                            continue
+
+            # Tier 3: Rich text editors / contenteditable
+            if not message_body_filled:
+                for ctx in [scope, page]:
+                    if message_body_filled:
+                        break
+                    editors = ctx.locator('div[contenteditable="true"], div.ql-editor, div.note-editable, div[role="textbox"]')
+                    cnt = editors.count()
+                    for idx in range(cnt):
+                        el = editors.nth(idx)
+                        if fill_and_verify_message(el):
+                            message_body_filled = True
+                            filled_fields += 1
+                            break
+
+            # Tier 4: Fallback single-line input if form has no textarea
+            if not message_body_filled:
+                for ctx in [scope, page]:
+                    if message_body_filled:
+                        break
+                    text_inputs = ctx.locator('input[type="text"][name*="inquiry" i], input[type="text"][name*="message" i], input[type="text"][name*="toiawase" i], input[type="text"][name*="naiyou" i]')
+                    cnt = text_inputs.count()
+                    for idx in range(cnt):
+                        el = text_inputs.nth(idx)
+                        if fill_and_verify_message(el):
+                            message_body_filled = True
+                            filled_fields += 1
+                            break
 
             # --- J. Privacy Policy Agreement Checkbox ---
             for ctx in [scope, page]:
@@ -704,18 +853,30 @@ class FormDispatcher:
                             result["status"] = "FORM_PARSE_ERROR"
                             result["message"] = f"Insufficient fields matched (filled {filled_fields} fields)"
 
-                # Save failed HTML sample for diagnostic flywheel
+                # Save failed HTML sample for diagnostic flywheel (capped at 50 to prevent disk bloat)
                 if self.save_failed_html:
                     try:
                         os.makedirs(FAILED_SAMPLES_DIR, exist_ok=True)
-                        sample_path = os.path.join(FAILED_SAMPLES_DIR, f"{corp_num}_{result['status']}.html")
-                        with open(sample_path, "w", encoding="utf-8") as sf:
-                            sf.write(f"<!-- URL: {url} | STATUS: {result['status']} | TIME: {datetime.now().isoformat()} -->\n")
-                            sf.write(html_content)
-                        result["failed_html_path"] = sample_path
+                        if len(os.listdir(FAILED_SAMPLES_DIR)) < 50:
+                            sample_path = os.path.join(FAILED_SAMPLES_DIR, f"{corp_num}_{result['status']}.html")
+                            with open(sample_path, "w", encoding="utf-8") as sf:
+                                sf.write(f"<!-- URL: {url} | STATUS: {result['status']} | TIME: {datetime.now().isoformat()} -->\n")
+                                sf.write(html_content)
+                            result["failed_html_path"] = sample_path
                     except Exception:
                         pass
                 
+                result["billable"] = False
+                print(f"  [!] {result['message']} (Refund credit)")
+                return result
+
+            # --- MANDATORY MARKETING CONTENT GATE ---
+            # Under no circumstances should a form be submitted without the marketing message body.
+            # Submitting an inquiry with sender details but empty inquiry content creates severe confusion
+            # and damages company reputation.
+            if not message_body_filled:
+                result["status"] = "FORM_PARSE_ERROR"
+                result["message"] = "Skipped: Marketing message body could not be filled/verified. Aborting submission to prevent blank outreach."
                 result["billable"] = False
                 print(f"  [!] {result['message']} (Refund credit)")
                 return result
@@ -749,6 +910,7 @@ class FormDispatcher:
                 "確認ページへ", "入力内容を確認する", "入力完了", "完了", "Submit", "Send",
                 "入力内容確認", "入力内容の確認へ", "送信確認", "確認する", "確認画面に進む", "確認画面へ進む",
                 "入力内容を送信", "上記の内容で送信", "この内容で送信", "お問合せを送信", "お問い合わせを送信する",
+                "問い合わせを送信", "送信内容を確認", "確認画面", "お問い合わせ内容を送信", "ご送信", "入力確認", "送信する（確認画面へ）",
                 "Send Message", "Confirm", "同意して送信する", "Next"
             ]
             for btn_txt in btn_texts:
@@ -783,7 +945,8 @@ class FormDispatcher:
                             'input[type="submit"], input[type="button"][value*="送信" i], button[type="submit"], '
                             '[role="button"], [class*="btn-customform-submit" i], [class*="form_submit" i], [id*="obj_submit" i], '
                             'input[id*="submit" i], input[id*="send" i], input[name*="submit" i], input[name*="send" i], '
-                            'button[id*="submit" i], button[id*="send" i], '
+                            'button[id*="submit" i], button[id*="send" i], button[name*="submit" i], button[name*="send" i], '
+                            '[class*="wpcf7-submit" i], [class*="mw_wp_form" i], [id*="gform_submit_button" i], input[type="image"], '
                             '[id*="form_submit" i], [id*="btn_submit" i], [id*="btnSubmit" i], [id*="submit_btn" i], '
                             '[class*="submit_btn" i], [class*="btn_submit" i], [class*="submit-btn" i], [class*="btn-submit" i], [class*="submitBtn" i]'
                         )
@@ -842,15 +1005,16 @@ class FormDispatcher:
                 result["billable"] = False
                 result["message"] = "Could not find submit button"
 
-                # Save failed HTML sample for diagnostic flywheel
+                # Save failed HTML sample for diagnostic flywheel (capped at 50 to prevent disk bloat)
                 if self.save_failed_html:
                     try:
                         os.makedirs(FAILED_SAMPLES_DIR, exist_ok=True)
-                        sample_path = os.path.join(FAILED_SAMPLES_DIR, f"{corp_num}_NO_SUBMIT_BUTTON.html")
-                        with open(sample_path, "w", encoding="utf-8") as sf:
-                            sf.write(f"<!-- URL: {url} | STATUS: NO_SUBMIT_BUTTON | TIME: {datetime.now().isoformat()} -->\n")
-                            sf.write(html_content)
-                        result["failed_html_path"] = sample_path
+                        if len(os.listdir(FAILED_SAMPLES_DIR)) < 50:
+                            sample_path = os.path.join(FAILED_SAMPLES_DIR, f"{corp_num}_NO_SUBMIT_BUTTON.html")
+                            with open(sample_path, "w", encoding="utf-8") as sf:
+                                sf.write(f"<!-- URL: {url} | STATUS: NO_SUBMIT_BUTTON | TIME: {datetime.now().isoformat()} -->\n")
+                                sf.write(html_content)
+                            result["failed_html_path"] = sample_path
                     except Exception:
                         pass
 

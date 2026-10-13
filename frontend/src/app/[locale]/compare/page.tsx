@@ -98,6 +98,14 @@ export default async function ComparePage({ params }: PageProps) {
     {
       q: "Điểm khác biệt của tính năng Tự động gửi Form (Form Marketing) trên Kigyou-list là gì?",
       a: "Kigyou-list là nền tảng duy nhất tích hợp 2 trong 1: bạn lọc tệp khách hàng trực tiếp từ 5 triệu doanh nghiệp và kích hoạt bot gửi form tự động ngay tại chỗ, chỉ 16.1 JPY/lượt gửi thành công với thuật toán AI tự động né tránh website từ chối quảng cáo."
+    },
+    {
+      q: "Sự khác biệt giữa việc tự cào danh sách miễn phí (Quốc thuế, Townpage) và dùng Kigyou-list là gì?",
+      a: "Tự thu thập thủ công từ Cổng thông tin Quốc thuế hoặc Townpage tốn 0 đồng nhưng mất hàng chục giờ công, dữ liệu thiếu số điện thoại hoặc website. Kigyou-list giúp bạn lọc ngay lập tức từ 5 triệu doanh nghiệp theo ngành nghề, khu vực, có sẵn SĐT và URL website, xuất file CSV chỉ trong vài giây. Với chi phí chỉ 4,980 Yên/tháng và không ràng buộc hợp đồng năm, doanh nghiệp tiết kiệm 90% thời gian để tập trung bán hàng."
+    },
+    {
+      q: "So với việc mua danh sách từ các công ty bán danh bạ truyền thống, Kigyou-list có ưu điểm gì?",
+      a: "Các đơn vị bán danh bạ thường tính phí 10-50 Yên/công ty và dữ liệu tĩnh cũ dễ gặp số chết hoặc doanh nghiệp đã giải thể. Kigyou-list liên tục cập nhật dữ liệu mới nhất từ cổng thông tin quốc gia, hoạt động theo mô hình thuê bao linh hoạt (chỉ từ 4,980 Yên/tháng, không ràng buộc năm), giúp bạn lấy đúng dữ liệu đang hoạt động với chi phí rẻ hơn nhiều lần."
     }
   ] : isEn ? [
     {
@@ -115,6 +123,14 @@ export default async function ComparePage({ params }: PageProps) {
     {
       q: "What makes the automated Contact Form Marketing service unique?",
       a: "Kigyou-list uniquely combines data discovery and outbound execution. You can filter targets from 5M companies and launch automated contact form outreach in one unified interface starting at 16.1 JPY per submission, with AI-powered anti-solicitation filtering."
+    },
+    {
+      q: "What is the difference between building lists for free (tax portal/directories) and using Kigyou-list?",
+      a: "While manual scraping from public portals costs zero, it takes dozens of hours and lacks verified phone numbers and websites. Kigyou-list allows instant multi-criteria filtering across 5M companies with complete phones, websites, and emails ready for CSV export. At only 4,980 JPY/mo with no annual lock-in, it saves tremendous staff hours."
+    },
+    {
+      q: "What are the advantages of Kigyou-list compared to buying static lists from list brokers?",
+      a: "Traditional list vendors charge high per-record fees (10-50 JPY/lead) for static lists that often contain outdated numbers and dissolved companies. Kigyou-list provides continuously refreshed cloud data on a flexible monthly subscription without annual commitments, maximizing telemarketing connect rates at a fraction of the cost."
     }
   ] : [
     {
@@ -132,6 +148,14 @@ export default async function ComparePage({ params }: PageProps) {
     {
       q: "問い合わせフォーム自動送信（フォーム営業代行）連携のメリットは何ですか？",
       a: "「リスト作成ツール」と「送信代行ツール」を別々に契約する必要がありません。500万社データベースから条件を絞り込み、そのままワンストップで1通あたり16.1円〜の業界最安値水準でアプローチ可能です。AIによる営業お断り文言検知機能も標準装備しており、コンプライアンス面でも安心です。"
+    },
+    {
+      q: "営業リストを無料で集める方法（国税庁やタウンページ）と、Kigyou-listの違いは何ですか？",
+      a: "国税庁の法人番号サイトやiタウンページを手作業で集める場合、費用は0円ですが、電話番号やHP URLが欠落していたり、100件集めるだけで数時間以上の人件費が浪費されます。Kigyou-listは、全国500万社の法人データから業種・地域・連絡先有無で瞬時に絞り込み、電話番号・WebサイトURL付きで一括CSVダウンロードが可能です。月額4,980円（年間縛りなし）で利用できるため、人件費と作業時間を大幅に削減して本来の営業活動に集中できます。"
+    },
+    {
+      q: "テレアポやDM用のリストを購入する場合、名簿業者からの買い切りと比べてどのようなメリットがありますか？",
+      a: "従来のリスト販売業者は、1件あたり10〜50円と高額な上に、数年前の古いデータが混ざっており不通電話や廃業によるロスが発生しやすいリスクがあります。Kigyou-listは公的オープンデータや最新Web情報を常時クローリングして鮮度を担保しており、月額定額（4,980円〜）で必要な分だけ最新データをCSV抽出できます。年間契約の縛りもないため、テストマーケティングや短期の架電キャンペーンにも最小限のコストで導入可能です。"
     }
   ];
 

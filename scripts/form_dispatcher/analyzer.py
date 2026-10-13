@@ -31,21 +31,33 @@ def get_pg_connection():
         raise ValueError("DATABASE_URL is not set.")
     return psycopg2.connect(db_url, cursor_factory=RealDictCursor)
 
-def analyze_batch(campaign_id: str, since_minutes: int = 45) -> Dict[str, Any]:
+def analyze_batch(campaign_id: str, since_minutes: int = 60, limit_count: int = 5000) -> Dict[str, Any]:
     conn = get_pg_connection()
     c = conn.cursor()
     
-    # 1. Fetch recent logs
-    c.execute(
-        """
-        SELECT corporate_number, company_name, form_url, status, message, sent_at
-        FROM internal_form_send_logs
-        WHERE campaign_id = %s
-          AND sent_at >= NOW() - (%s * INTERVAL '1 minute')
-        ORDER BY sent_at DESC
-        """,
-        (campaign_id, since_minutes)
-    )
+    # 1. Fetch recent logs by limit_count or time window
+    if limit_count and limit_count > 0:
+        c.execute(
+            """
+            SELECT corporate_number, company_name, form_url, status, message, sent_at
+            FROM internal_form_send_logs
+            WHERE campaign_id = %s
+            ORDER BY sent_at DESC
+            LIMIT %s
+            """,
+            (campaign_id, limit_count)
+        )
+    else:
+        c.execute(
+            """
+            SELECT corporate_number, company_name, form_url, status, message, sent_at
+            FROM internal_form_send_logs
+            WHERE campaign_id = %s
+              AND sent_at >= NOW() - (%s * INTERVAL '1 minute')
+            ORDER BY sent_at DESC
+            """,
+            (campaign_id, since_minutes)
+        )
     logs = c.fetchall()
     conn.close()
 
@@ -160,6 +172,9 @@ def print_report(diag: Dict[str, Any]):
 
 if __name__ == "__main__":
     cid = sys.argv[1] if len(sys.argv) > 1 else "3ae19e5b-e93d-446e-bcc7-40af0e09a6ee"
-    minutes = int(sys.argv[2]) if len(sys.argv) > 2 else 60
-    report = analyze_batch(cid, since_minutes=minutes)
+    limit_or_mins = int(sys.argv[2]) if len(sys.argv) > 2 else 5000
+    if limit_or_mins > 300:  # Interpreted as limit count (e.g. 1000, 5000)
+        report = analyze_batch(cid, limit_count=limit_or_mins)
+    else:  # Interpreted as minutes (e.g. 60)
+        report = analyze_batch(cid, since_minutes=limit_or_mins, limit_count=0)
     print_report(report)

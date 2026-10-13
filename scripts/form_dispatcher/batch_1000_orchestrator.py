@@ -24,14 +24,15 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 INTERNAL_RUNNER = os.path.join(BASE_DIR, "internal_runner.py")
 ANALYZER_SCRIPT = os.path.join(BASE_DIR, "analyzer.py")
 
-def run_batch(campaign_id: str, batch_size: int = 1000, concurrency: int = 8, rotate_every: int = 2) -> int:
+def run_batch(campaign_id: str, batch_size: int = 5000, concurrency: int = 40, rotate_every: int = 2) -> int:
     print("\n" + "=" * 78)
-    print(f"  🚀 LAUNCHING 1,000-COMPANY BATCH FOR CAMPAIGN: {campaign_id}")
-    print(f"  Target Limit: {batch_size} | Concurrency: {concurrency} workers | WARP Rotating Pool: Active")
+    print(f"  🚀 LAUNCHING {batch_size:,}-COMPANY BATCH FOR CAMPAIGN: {campaign_id}")
+    print(f"  Target Limit: {batch_size:,} | Concurrency: {concurrency} workers | WARP Rotating Pool: Active")
     print("=" * 78 + "\n")
 
     cmd = [
         sys.executable,
+        "-u",
         INTERNAL_RUNNER,
         "--campaign-id", campaign_id,
         "--limit", str(batch_size),
@@ -44,18 +45,18 @@ def run_batch(campaign_id: str, batch_size: int = 1000, concurrency: int = 8, ro
     ret = subprocess.call(cmd)
     return ret
 
-def run_diagnostics(campaign_id: str, minutes: int = 45):
+def run_diagnostics(campaign_id: str, batch_size: int = 5000):
     print("\n" + "=" * 78)
-    print("  🔍 RUNNING POST-BATCH ERROR ANALYZER (AI CONTINUOUS FLYWHEEL)")
+    print(f"  🔍 RUNNING POST-BATCH ERROR ANALYZER (AI CONTINUOUS FLYWHEEL - {batch_size:,} TARGETS)")
     print("=" * 78 + "\n")
-    cmd = [sys.executable, ANALYZER_SCRIPT, campaign_id, str(minutes)]
+    cmd = [sys.executable, ANALYZER_SCRIPT, campaign_id, str(batch_size)]
     subprocess.call(cmd)
 
 def main():
-    parser = argparse.ArgumentParser(description="Run 1,000-company batches with automated analysis")
+    parser = argparse.ArgumentParser(description="Run 5,000-company batches with automated analysis")
     parser.add_argument("--campaign-id", required=True, help="Campaign UUID")
-    parser.add_argument("--batch-size", type=int, default=1000, help="Batch size (default: 1000)")
-    parser.add_argument("--concurrency", type=int, default=8, help="Concurrent workers (default: 8)")
+    parser.add_argument("--batch-size", type=int, default=5000, help="Batch size (default: 5000)")
+    parser.add_argument("--concurrency", type=int, default=40, help="Concurrent workers (default: 40)")
     parser.add_argument("--rotate-every", type=int, default=2, help="Proxy rotation interval (default: 2)")
     parser.add_argument("--auto-next", action="store_true", help="Automatically trigger next batch without pausing")
     parser.add_argument("--cooldown", type=int, default=10, help="Cooldown seconds between batches (default: 10)")
@@ -73,7 +74,7 @@ def main():
         )
 
         # Run diagnostics after every batch
-        run_diagnostics(args.campaign_id, minutes=50)
+        run_diagnostics(args.campaign_id, batch_size=args.batch_size)
 
         if not args.auto_next:
             print(f"\n[✓] Batch #{batch_index} completed. Orchestrator pausing for review.")

@@ -63,6 +63,17 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
         changeFrequency: 'weekly',
         priority: 0.85,
       });
+
+      // 47 Prefectures Local SEO Hubs (pSEO)
+      for (let p = 1; p <= 47; p++) {
+        const prefCode = p.toString().padStart(2, '0');
+        corePages.push({
+          url: `${baseUrl}/${loc}/area/${prefCode}`,
+          lastModified: new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.85,
+        });
+      }
       corePages.push({
         url: `${baseUrl}/${loc}/contact`,
         lastModified: new Date(),

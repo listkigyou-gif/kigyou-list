@@ -303,3 +303,90 @@ async function fetchCompanies() {
 
 fetchCompanies();
 ```
+
+---
+
+## 5. AI Sales Agent 向け高度機能 (v1.1)
+
+### 5.1 企業名・ドメイン逆引き特定 & コンプライアンス検証 API (Resolve API)
+
+部分的な情報（ドメイン、社名、メール、電話番号）から13桁の法人番号を特定し、特定電子メール法・オプトアウトの適合スコアとフォーム送信仕様を取得します。
+
+- **メソッド:** `GET`
+- **エンドポイント:** `/api/v1/enrich/resolve`
+- **クエリパラメータ:** `domain`, `name`, `phone`, `email`, `corporate_number` のうちいずれか1つ以上
+
+#### レスポンス例 (200 OK)
+```json
+{
+  "success": true,
+  "found": true,
+  "resolution": {
+    "match_type": "domain_match",
+    "confidence_score": 0.95,
+    "canonical_corporate_number": "1010001002003"
+  },
+  "compliance": {
+    "safety_score": 95,
+    "status": "SAFE",
+    "can_submit_form": true,
+    "can_send_email": true,
+    "reason": "特定商取引法・特定電子メール法に基づく拒否表明なし。営業提案受付可能"
+  },
+  "form_fingerprint": {
+    "contact_url": "https://example.jp/contact",
+    "requires_fullwidth_kana": true,
+    "captcha_prediction": {
+      "type": "turnstile_or_recaptcha_v3",
+      "risk_level": "low_to_medium"
+    }
+  },
+  "company": {
+    "corporate_number": "1010001002003",
+    "company_name": "大和システム開発株式会社",
+    "industry_name": "情報通信業"
+  }
+}
+```
+
+### 5.2 Model Context Protocol (MCP) Server
+Claude Desktop, Cursor, LangChain 等から直接接続可能な stdio MCP サーバーが標準提供されています。
+
+```bash
+# サーバー起動 (stdio)
+python scripts/mcp/kigyoulist_mcp_server.py
+```
+- 提供ツール: `kigyoulist_search_companies`, `kigyoulist_get_signals`, `kigyoulist_get_ai_icebreaker`, `kigyoulist_check_opt_out`, `kigyoulist_resolve_identity`
+
+### 5.3 Dify / No-Code 連携
+`packages/dify/kigyoulist_openapi.yaml` を Dify の「カスタムツール」にインポートすることで、ノーコードで AI 営業ワークフローに組み込むことが可能です。
+
+### 5.4 リアルタイム・シグナル通知 Webhooks (Push モデル)
+企業の新規求人、補助金採択、公共調達などの最新シグナルを検知した瞬間、登録されたエンドポイントに即時プッシュ通知（HMAC SHA-256署名付き）します。
+
+- **購読エンドポイント:** `POST /api/v1/webhooks`
+- **リクエスト例:**
+```json
+{
+  "webhook_url": "https://your-agent-server.com/api/signals",
+  "filter_events": ["hiring", "subsidy"],
+  "filter_prefecture": "13"
+}
+```
+- **署名検証ヘッダー:** `X-KigyouList-Signature: sha256=...`
+
+### 5.5 自然言語 AI セマンティック検索 API (Semantic Search)
+AI エージェントが自然言語でターゲット像やビジネス課題を入力すると、意図を自動解析して関連企業とアプローチ理由を返却します。
+
+- **メソッド:** `POST`
+- **エンドポイント:** `/api/v1/companies/semantic-search`
+- **リクエスト例:**
+```json
+{
+  "query": "東京都内で自社ECの売上拡大や物流DXを検討しており、採用も強化している企業",
+  "limit": 5
+}
+```
+- **レスポンス例:** 各企業データに `semantic_relevance.score` (0.0〜1.0) と `ai_sales_hook` が自動付与されます。
+
+

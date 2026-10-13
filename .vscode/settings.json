@@ -22,7 +22,13 @@
     "crawlers/**/data/**": true,
     "crawlers/**/logs/**": true,
     "crawlers/hellowork/**": true,
+    ".facebook_user_profile/**": true,
+    ".linkedin_user_profile/**": true,
     ".note_user_profile/**": true,
+    ".valuepress_user_profile/**": true,
+    ".x_user_profile/**": true,
+    ".zenn_user_profile/**": true,
+    ".*_user_profile/**": true,
     "scripts/.note_profile/**": true,
     "scripts/form_dispatcher/reports/**": true
   },
@@ -46,9 +52,16 @@
     "crawlers/**/data/**": true,
     "crawlers/**/logs/**": true,
     "crawlers/hellowork/**": true,
+    ".facebook_user_profile/**": true,
+    ".linkedin_user_profile/**": true,
     ".note_user_profile/**": true,
+    ".valuepress_user_profile/**": true,
+    ".x_user_profile/**": true,
+    ".zenn_user_profile/**": true,
+    ".*_user_profile/**": true,
     "scripts/.note_profile/**": true,
-    "scripts/form_dispatcher/reports/**": true
+    "scripts/form_dispatcher/reports/**": true,
+    "scripts/**/*.png": true
   },
   "files.watcherExclude": {
     "**/.git/objects/**": true,
@@ -70,7 +83,13 @@
     "crawlers/**/data/**": true,
     "crawlers/**/logs/**": true,
     "crawlers/hellowork/**": true,
+    ".facebook_user_profile/**": true,
+    ".linkedin_user_profile/**": true,
     ".note_user_profile/**": true,
+    ".valuepress_user_profile/**": true,
+    ".x_user_profile/**": true,
+    ".zenn_user_profile/**": true,
+    ".*_user_profile/**": true,
     "scripts/.note_profile/**": true,
     "scripts/form_dispatcher/reports/**": true
   }

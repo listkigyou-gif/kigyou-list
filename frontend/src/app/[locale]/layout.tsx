@@ -107,11 +107,46 @@ export default async function LocalizedLayout({
   const translations = getTranslations(locale);
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "Kigyou-list",
+    alternateName: ["企業リスト.com", "Kigyou List", "株式会社Kigyou-list"],
+    url: "https://kigyoulist.com",
+    logo: "https://kigyoulist.com/og-image.png",
+    description:
+      locale === "en"
+        ? "Japan's largest B2B database covering over 5 million company profiles."
+        : locale === "vi"
+        ? "Cơ sở dữ liệu B2B lớn nhất Nhật Bản với hơn 5 triệu hồ sơ doanh nghiệp."
+        : "日本全国500万社以上の企業情報を網羅した国内最大級のB2Bデータベース・営業リスト。",
+    sameAs: [
+      "https://x.com/kigyoulist",
+      "https://note.com/kigyoulist",
+      "https://www.linkedin.com/in/userkigyoulist",
+      "https://www.facebook.com/kigyoulist",
+      "https://qiita.com/listkigyou",
+      "https://zenn.dev/kigyoulist",
+    ],
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "customer support",
+      email: "contact@kigyoulist.com",
+      availableLanguage: ["Japanese", "English", "Vietnamese"],
+    },
+  };
+
   return (
     <html
       lang={locale}
       className={`h-full antialiased ${notoSansJP.variable}`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+        />
+      </head>
       {gaId && (
         <>
           <Script

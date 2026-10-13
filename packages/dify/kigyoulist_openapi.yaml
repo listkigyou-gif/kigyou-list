@@ -1,0 +1,101 @@
+openapi: 3.0.0
+info:
+  title: Kigyou-list Japan Business & AI Sales Infrastructure API
+  description: Official Data Infrastructure for Japanese B2B AI Sales Agents. Provides access to 5M+ corporate entities, real-time buying signals, identity resolution, and legal compliance scores.
+  version: 1.1.0
+servers:
+  - url: https://kigyoulist.com
+    description: Production API Server
+paths:
+  /api/v1/enrich/resolve:
+    get:
+      summary: Resolve Japanese Business Identity & Compliance
+      operationId: resolveIdentity
+      description: Resolves partial company identifiers (domain, name, phone, email) into a canonical 13-digit Corporate Number, checks opt-out legal safety, and provides form submission fingerprints.
+      parameters:
+        - name: domain
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Company domain or URL (e.g., example.co.jp)
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Company name in Japanese (Kanji or Kana)
+        - name: phone
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Telephone number
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Official company email
+      responses:
+        '200':
+          description: Successful resolution
+        '404':
+          description: Company not found
+
+  /api/v1/companies:
+    get:
+      summary: Search Companies with Intent Signals & AI Icebreaker
+      operationId: searchCompanies
+      description: Search 5M+ Japanese companies with hiring, subsidy, and public procurement signals, returning prompt-ready AI icebreakers and pitch angles.
+      parameters:
+        - name: keyword
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Search keyword
+        - name: prefecture_code
+          in: query
+          required: false
+          schema:
+            type: string
+          description: JIS Prefecture code (e.g., 13 for Tokyo, 27 for Osaka)
+        - name: industry_code
+          in: query
+          required: false
+          schema:
+            type: string
+          description: JSIC Industry classification code
+        - name: has_hiring
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
+          description: Filter companies with active hiring signals
+        - name: has_subsidy
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["true", "false"]
+          description: Filter companies with recent government DX subsidies
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: List of enriched companies with AI contexts
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: APIKey
+security:
+  - ApiKeyAuth: []

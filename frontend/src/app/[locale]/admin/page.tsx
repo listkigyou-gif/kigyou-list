@@ -9,7 +9,8 @@ import Link from "next/link";
 import { 
   ShieldAlert, ShieldCheck, RefreshCcw, Users, MessageSquareWarning, 
   CreditCard, History, Building2, Terminal, Database, Mail, 
-  Send, Ticket, Download, LayoutDashboard, KeyRound, Loader2, Sparkles, ExternalLink
+  Send, Ticket, Download, LayoutDashboard, KeyRound, Loader2, Sparkles, ExternalLink,
+  Radio
 } from "lucide-react";
 
 // Toast Provider
@@ -27,6 +28,8 @@ import { ExportsTab } from "@/components/admin/tabs/ExportsTab";
 import { ApiKeysTab } from "@/components/admin/tabs/ApiKeysTab";
 import { BackupsTab } from "@/components/admin/tabs/BackupsTab";
 import { PartnersTab } from "@/components/admin/tabs/PartnersTab";
+import { WebhooksAdminTab } from "@/components/admin/tabs/WebhooksAdminTab";
+import { OptOutAdminTab } from "@/components/admin/tabs/OptOutAdminTab";
 
 // Existing Admin Tabs
 import { MarketingTab } from "@/components/admin/MarketingTab";
@@ -45,6 +48,8 @@ export type AdminTab =
   | "exports"
   | "logs"
   | "apiKeys"
+  | "webhooks"
+  | "optOuts"
   | "backups"
   | "partners";
 
@@ -464,6 +469,35 @@ function AdminContent() {
                   </div>
                 </button>
               </div>
+
+              {/* Group 4: AI Sales & Compliance */}
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                  AI基盤・法規制 (AI & Compliance)
+                </span>
+
+                {/* Webhooks */}
+                <button
+                  onClick={() => switchTab("webhooks")}
+                  className={getTabClass("webhooks")}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Radio className={`w-4 h-4 shrink-0 ${activeTab === "webhooks" ? "text-white" : "text-slate-500"}`} />
+                    <span>Webhook配信監視</span>
+                  </div>
+                </button>
+
+                {/* Opt Outs */}
+                <button
+                  onClick={() => switchTab("optOuts")}
+                  className={getTabClass("optOuts")}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ShieldAlert className={`w-4 h-4 shrink-0 ${activeTab === "optOuts" ? "text-white" : "text-slate-500"}`} />
+                    <span>特定電子メール法 除外先</span>
+                  </div>
+                </button>
+              </div>
             </nav>
           </div>
 
@@ -632,6 +666,20 @@ function AdminContent() {
 
           {activeTab === "partners" && (
             <PartnersTab
+              adminEmail={user?.email || ""}
+              getAdminHeaders={getAdminHeaders}
+            />
+          )}
+
+          {activeTab === "webhooks" && (
+            <WebhooksAdminTab
+              adminEmail={user?.email || ""}
+              getAdminHeaders={getAdminHeaders}
+            />
+          )}
+
+          {activeTab === "optOuts" && (
+            <OptOutAdminTab
               adminEmail={user?.email || ""}
               getAdminHeaders={getAdminHeaders}
             />

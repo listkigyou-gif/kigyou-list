@@ -26,7 +26,8 @@ import {
   FileText,
   BadgeCheck,
   Zap,
-  Target
+  Target,
+  Terminal
 } from "lucide-react";
 import { getDatabaseStats, getFeaturedPartners, getMockPartners } from "@/lib/db";
 import { Header } from "@/components/Header";
@@ -129,6 +130,30 @@ export default async function Home({ params }: PageParams) {
             : isVi
             ? "Đăng ký miễn phí có thể tìm kiếm dữ liệu cơ bản của 5 triệu cty và xuất 50 dòng CSV/tháng. Để dùng bộ lọc kênh liên lạc và gửi Form tự động, bạn có thể nâng cấp Pro bất kỳ lúc nào."
             : "Free accounts can search all 5M companies and export up to 50 rows per month. Upgrade to PRO to unlock contact filters and form outreach."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": isJa ? "営業リストを無料で集める方法（国税庁やタウンページ）と、Kigyou-listの違いは何ですか？" : isVi ? "Sự khác biệt giữa việc tự cào danh sách miễn phí (Quốc thuế, Townpage) và dùng Kigyou-list là gì?" : "What is the difference between building lists for free and using Kigyou-list?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": isJa
+            ? "国税庁の法人番号サイトやiタウンページを手作業で集める場合、費用は0円ですが、電話番号やHP URLが欠落していたり、100件集めるだけで数時間以上の人件費が浪費されます。Kigyou-listは、全国500万社の法人データから業種・地域・連絡先有無で瞬時に絞り込み、電話番号・WebサイトURL付きで一括CSVダウンロードが可能です。月額4,980円（年間縛りなし）で利用できるため、人件費と作業時間を大幅に削減して本来の営業活動に集中できます。"
+            : isVi
+            ? "Tự thu thập thủ công từ Cổng thông tin Quốc thuế hoặc Townpage tốn 0 đồng nhưng mất hàng chục giờ công, dữ liệu thiếu số điện thoại hoặc website. Kigyou-list giúp bạn lọc ngay lập tức từ 5 triệu doanh nghiệp theo ngành nghề, khu vực, có sẵn SĐT và URL website, xuất file CSV chỉ trong vài giây. Với chi phí chỉ 4,980 Yên/tháng và không ràng buộc hợp đồng năm, doanh nghiệp tiết kiệm 90% thời gian để tập trung bán hàng."
+            : "While manual scraping from public portals costs zero, it takes dozens of hours and lacks verified phone numbers and websites. Kigyou-list allows instant multi-criteria filtering across 5M companies with complete phones, websites, and emails ready for CSV export. At only 4,980 JPY/mo with no annual lock-in, it saves tremendous staff hours."
+        }
+      },
+      {
+        "@type": "Question",
+        "name": isJa ? "テレアポやDM用のリストを購入する場合、名簿業者からの買い切りと比べてどのようなメリットがありますか？" : isVi ? "So với việc mua danh sách từ các công ty bán danh bạ truyền thống, Kigyou-list có ưu điểm gì?" : "What are the advantages of Kigyou-list compared to buying static lists from list brokers?",
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": isJa
+            ? "従来のリスト販売業者は、1件あたり10〜50円と高額な上に、数年前の古いデータが混ざっており不通電話や廃業によるロスが発生しやすいリスクがあります。Kigyou-listは公的オープンデータや最新Web情報を常時クローリングして鮮度を担保しており、月額定額（4,980円〜）で必要な分だけ最新データをCSV抽出できます。年間契約の縛りもないため、テストマーケティングや短期の架電キャンペーンにも最小限のコストで導入可能です。"
+            : isVi
+            ? "Các đơn vị bán danh bạ thường tính phí 10-50 Yên/công ty và dữ liệu tĩnh cũ dễ gặp số chết hoặc doanh nghiệp đã giải thể. Kigyou-list liên tục cập nhật dữ liệu mới nhất từ cổng thông tin quốc gia, hoạt động theo mô hình thuê bao linh hoạt (chỉ từ 4,980 Yên/tháng, không ràng buộc năm), giúp bạn lấy đúng dữ liệu đang hoạt động với chi phí rẻ hơn nhiều lần."
+            : "Traditional list vendors charge high per-record fees (10-50 JPY/lead) for static lists that often contain outdated numbers and dissolved companies. Kigyou-list provides continuously refreshed cloud data on a flexible monthly subscription without annual commitments, maximizing telemarketing connect rates at a fraction of the cost."
         }
       }
     ]
@@ -731,6 +756,96 @@ export default async function Home({ params }: PageParams) {
         </section>
 
         {/* ========================================================
+            5.5 DEVELOPER & AI AGENT INFRASTRUCTURE (Hạ tầng AI Sales)
+            ======================================================== */}
+        <section className="py-20 bg-slate-50/70 dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800 relative">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
+              <div className="max-w-xl">
+                <div className="b2b-kicker mb-3">
+                  <Terminal className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+                  <span>{isJa ? "次世代データ連携・AI営業基盤" : isVi ? "Hạ tầng AI Sales B2B" : "AI Agent Data Infrastructure"}</span>
+                </div>
+                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4 leading-tight">
+                  {isJa ? (
+                    <>自律型AI営業（AI SDR）を支える、<br /><span className="text-[#1B4F8A] dark:text-blue-400">500万社 企業データ基盤</span></>
+                  ) : isVi ? (
+                    <>Hạ tầng dữ liệu ngầm cho <span className="text-[#1B4F8A] dark:text-blue-400">AI Sales Agent</span> tại Nhật Bản</>
+                  ) : (
+                    <>The Invisible Data Backbone for <span className="text-[#1B4F8A] dark:text-blue-400">AI Sales Agents</span> in Japan</>
+                  )}
+                </h2>
+                <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed mb-6">
+                  {isJa
+                    ? "Claude、Cursor、LangChain、Difyと直接連携可能。法人番号13桁の一意特定、特定電子メール法準拠スコアリング、リアルタイム購買シグナル（求人・補助金）のWebhook通知を標準提供しています。"
+                    : isVi
+                    ? "Kết nối trực tiếp vào Claude, Cursor, LangChain, Dify và n8n qua Model Context Protocol (MCP) và Webhook đẩy biến động theo thời gian thực."
+                    : "Connect directly to Claude, Cursor, and Dify via Model Context Protocol (MCP) with real-time intent webhooks and compliance verification."}
+                </p>
+
+                <div className="grid grid-cols-2 gap-3 mb-8 text-xs font-medium">
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>{isJa ? "MCPサーバー標準対応" : "Native MCP Server"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>{isJa ? "特定電子メール法 適合チェック" : "Legal Safety Scoring"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>{isJa ? "シグナル即時 Webhooks" : "Realtime Webhooks"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span>{isJa ? "Dify / n8n テンプレート" : "Dify 1-Click Integration"}</span>
+                  </div>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-3">
+                  <Link
+                    href={`/${locale}/developer`}
+                    className="b2b-btn-primary"
+                  >
+                    <span>{isJa ? "開発者向け仕様・連携ガイドを見る" : isVi ? "Xem hướng dẫn tích hợp AI / API" : "Explore Developer Hub"}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <Link
+                    href={`/${locale}/dashboard?tab=developer`}
+                    className="b2b-btn-secondary"
+                  >
+                    <span>{isJa ? "APIキー発行" : isVi ? "Lấy API Key" : "Get API Key"}</span>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Code Snippet Preview Card */}
+              <div className="w-full lg:w-96 rounded-xl bg-[#0F172A] border border-slate-800 p-5 shadow-xs font-mono text-[11px] text-slate-300">
+                <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800 text-[10px] text-slate-400 font-sans">
+                  <span className="flex items-center gap-1.5 text-blue-400 font-bold">
+                    <Terminal className="w-3.5 h-3.5" />
+                    <span>Python SDK (AI Agent)</span>
+                  </span>
+                  <span className="text-slate-500 font-mono">v1.1.0</span>
+                </div>
+                <pre className="text-slate-200 overflow-x-auto leading-relaxed font-mono">
+{`from kigyoulist import KigyouListClient
+client = KigyouListClient(api_key="...")
+
+# AI Intent Search
+leads = client.semantic_search(
+  query="物流DX・採用強化中の企業"
+)
+
+# Output Prompt Hook
+print(leads[0]["ai_sales_hook"])`}
+                </pre>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================
             6. TRANSPARENT PRICING PREVIEW (Minh bạch chi phí)
             ======================================================== */}
         <section id="pricing" className="py-20 bg-white dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">
@@ -946,6 +1061,36 @@ export default async function Home({ params }: PageParams) {
                     : isVi
                     ? "Đăng ký miễn phí có thể tìm kiếm dữ liệu cơ bản của 5 triệu cty và xuất 50 dòng CSV/tháng. Để dùng bộ lọc kênh liên lạc và gửi Form tự động, bạn có thể nâng cấp Pro bất kỳ lúc nào."
                     : "Free accounts can search all 5M companies and export up to 50 rows per month. Upgrade to PRO to unlock contact filters and form outreach."}
+                </p>
+              </div>
+
+              {/* Q5 - Yahoo Chiebukuro / SEO AI Target Query */}
+              <div className="b2b-card p-5">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                  <span className="text-[#1B4F8A] dark:text-blue-400 font-mono font-bold">Q.</span>
+                  <span>{isJa ? "営業リストを無料で集める方法（国税庁やタウンページ）と、Kigyou-listの違いは何ですか？" : isVi ? "Sự khác biệt giữa việc tự cào danh sách miễn phí (Quốc thuế, Townpage) và dùng Kigyou-list là gì?" : "What is the difference between building lists for free and using Kigyou-list?"}</span>
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-6">
+                  {isJa
+                    ? "国税庁の法人番号サイトやiタウンページを手作業で集める場合、費用は0円ですが、電話番号やHP URLが欠落していたり、100件集めるだけで数時間以上の人件費が浪費されます。Kigyou-listは、全国500万社の法人データから業種・地域・連絡先有無で瞬時に絞り込み、電話番号・WebサイトURL付きで一括CSVダウンロードが可能です。月額4,980円（年間縛りなし）で利用できるため、人件費と作業時間を大幅に削減して本来の営業活動に集中できます。"
+                    : isVi
+                    ? "Tự thu thập thủ công từ Cổng thông tin Quốc thuế hoặc Townpage tốn 0 đồng nhưng mất hàng chục giờ công, dữ liệu thiếu số điện thoại hoặc website. Kigyou-list giúp bạn lọc ngay lập tức từ 5 triệu doanh nghiệp theo ngành nghề, khu vực, có sẵn SĐT và URL website, xuất file CSV chỉ trong vài giây. Với chi phí chỉ 4,980 Yên/tháng và không ràng buộc hợp đồng năm, doanh nghiệp tiết kiệm 90% thời gian để tập trung bán hàng."
+                    : "While manual scraping from public portals costs zero, it takes dozens of hours and lacks verified phone numbers and websites. Kigyou-list allows instant multi-criteria filtering across 5M companies with complete phones, websites, and emails ready for CSV export. At only 4,980 JPY/mo with no annual lock-in, it saves tremendous staff hours."}
+                </p>
+              </div>
+
+              {/* Q6 - Yahoo Chiebukuro / SEO AI Target Query */}
+              <div className="b2b-card p-5">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
+                  <span className="text-[#1B4F8A] dark:text-blue-400 font-mono font-bold">Q.</span>
+                  <span>{isJa ? "テレアポやDM用のリストを購入する場合、名簿業者からの買い切りと比べてどのようなメリットがありますか？" : isVi ? "So với việc mua danh sách từ các công ty bán danh bạ truyền thống, Kigyou-list có ưu điểm gì?" : "What are the advantages of Kigyou-list compared to buying static lists from list brokers?"}</span>
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-6">
+                  {isJa
+                    ? "従来のリスト販売業者は、1件あたり10〜50円と高額な上に、数年前の古いデータが混ざっており不通電話や廃業によるロスが発生しやすいリスクがあります。Kigyou-listは公的オープンデータや最新Web情報を常時クローリングして鮮度を担保しており、月額定額（4,980円〜）で必要な分だけ最新データをCSV抽出できます。年間契約の縛りもないため、テストマーケティングや短期の架電キャンペーンにも最小限のコストで導入可能です。"
+                    : isVi
+                    ? "Các đơn vị bán danh bạ thường tính phí 10-50 Yên/công ty và dữ liệu tĩnh cũ dễ gặp số chết hoặc doanh nghiệp đã giải thể. Kigyou-list liên tục cập nhật dữ liệu mới nhất từ cổng thông tin quốc gia, hoạt động theo mô hình thuê bao linh hoạt (chỉ từ 4,980 Yên/tháng, không ràng buộc năm), giúp bạn lấy đúng dữ liệu đang hoạt động với chi phí rẻ hơn nhiều lần."
+                    : "Traditional list vendors charge high per-record fees (10-50 JPY/lead) for static lists that often contain outdated numbers and dissolved companies. Kigyou-list provides continuously refreshed cloud data on a flexible monthly subscription without annual commitments, maximizing telemarketing connect rates at a fraction of the cost."}
                 </p>
               </div>
             </div>

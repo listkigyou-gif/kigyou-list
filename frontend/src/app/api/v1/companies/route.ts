@@ -136,11 +136,50 @@ export async function GET(request: Request) {
 
     const remainingQuota = Math.max(0, totalAvailable - finalCompanies.length);
 
+    // Generate AI Agent Context (Prompt-ready icebreaker and intent triggers)
+    const enrichedCompanies = finalCompanies.map(comp => {
+      const triggers: string[] = [];
+      if (comp.has_hiring) triggers.push("求人・採用活動中 (事業拡大・人材強化中)");
+      if (comp.has_subsidy) triggers.push("助成金・補助金の採択実績あり (新規投資余力)");
+      if (comp.has_bidding) triggers.push("官公庁・公共調達の入札実績あり (信頼性・公共案件)");
+      if (comp.has_patent) triggers.push("特許・知財保有企業 (高付加価値・独自技術)");
+
+      const loc = comp.prefecture_name || comp.prefecture || "国内";
+      const ind = comp.industry_name || "貴社業界";
+      const name = comp.company_name || comp.name;
+
+      let icebreaker = `突然のご連絡にて大変恐れ入ります。${name}様の${ind}における先進的なお取り組みと、`;
+      if (comp.has_hiring) {
+        icebreaker += `現在注力されている組織強化・採用動向を拝見し、ご連絡申し上げました。`;
+      } else if (comp.has_subsidy) {
+        icebreaker += `近年のDX推進および新たな事業拡大への投資実績を拝見し、ご連絡申し上げました。`;
+      } else {
+        icebreaker += `${loc}地域での確固たる実績と事業展開を拝見し、ご連絡申し上げました。`;
+      }
+
+      let pitch = "業務効率化・コスト削減または売上拡大に直結するB2Bソリューション提案";
+      if (comp.has_hiring) {
+        pitch = "採用効率化、または新規増員に伴う業務DX・自動化ツールの提案";
+      } else if (comp.has_subsidy) {
+        pitch = "補助金対象となるITツール・ソフトウェア・マーケティング支援の提案";
+      }
+
+      return {
+        ...comp,
+        ai_agent_context: {
+          triggers,
+          icebreaker_ja: icebreaker,
+          recommended_pitch_angle: pitch,
+          agent_action_hint: comp.has_email ? "email_direct" : (comp.website ? "inquiry_form_submission" : "phone_cold_call")
+        }
+      };
+    });
+
     return NextResponse.json({
       success: true,
       total_count: searchResult.totalCount,
-      count_returned: finalCompanies.length,
-      companies: finalCompanies
+      count_returned: enrichedCompanies.length,
+      companies: enrichedCompanies
     }, {
       headers: {
         "X-Quota-Limit": String(quota.monthly_base_allowance + quota.purchased_add_on_balance),

@@ -138,6 +138,10 @@ export const Header: React.FC = () => {
             <span>{t.header.formDm}</span>
             <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider">NEW</span>
           </LocaleLink>
+          <LocaleLink href="/developer" prefetch={true} className="text-slate-600 hover:text-[#1B4F8A] dark:text-slate-350 dark:hover:text-cyan-400 transition-colors flex items-center gap-1.5">
+            <span>{locale === 'en' ? "Developers / AI" : locale === 'vi' ? "Dành cho AI / Dev" : "開発者・AI基盤"}</span>
+            <span className="text-[9px] bg-cyan-600 text-white font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider">API</span>
+          </LocaleLink>
           {isLoggedIn && (
             <LocaleLink href="/dashboard" prefetch={true} className="text-slate-600 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400 transition-colors flex items-center gap-1.5">
               <LayoutDashboard className="w-3.5 h-3.5" />
@@ -522,6 +526,15 @@ export const Header: React.FC = () => {
           >
             <span>{t.header.formDm}</span>
             <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.5 rounded-full uppercase">NEW</span>
+          </LocaleLink>
+          <LocaleLink 
+            href="/developer" 
+            prefetch={true}
+            onClick={() => setMobileMenuOpen(false)}
+            className="text-sm font-bold text-slate-600 hover:text-primary dark:text-slate-300 py-1 flex items-center justify-between"
+          >
+            <span>{locale === 'en' ? "Developers / AI Infrastructure" : locale === 'vi' ? "Dành cho AI / Lập trình viên" : "開発者・AI基盤 / API"}</span>
+            <span className="text-[9px] bg-cyan-600 text-white font-bold px-1.5 py-0.5 rounded-full uppercase">API</span>
           </LocaleLink>
           {isLoggedIn && (
             <LocaleLink 

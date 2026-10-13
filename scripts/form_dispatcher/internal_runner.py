@@ -41,13 +41,13 @@ from dispatcher import FormDispatcher, parse_proxy_url, HAS_PLAYWRIGHT
 if HAS_PLAYWRIGHT:
     from playwright.sync_api import sync_playwright
 
-def get_pg_connection():
+def get_pg_connection(statement_timeout_ms: int = 30000):
     db_url = os.environ.get("DATABASE_URL")
     if not db_url:
         raise ValueError("DATABASE_URL is not set in environment or frontend/.env.local")
     import psycopg2
     import psycopg2.extras
-    return psycopg2.connect(db_url, connect_timeout=3)
+    return psycopg2.connect(db_url, connect_timeout=10, options=f"-c statement_timeout={statement_timeout_ms}")
 
 def fetch_campaign(campaign_id: str) -> Optional[Dict[str, Any]]:
     conn = get_pg_connection()
@@ -59,7 +59,7 @@ def fetch_campaign(campaign_id: str) -> Optional[Dict[str, Any]]:
     return dict(row) if row else None
 
 def fetch_target_companies_pg(filters: Dict[str, Any], limit: int = 50, campaign_id: Optional[str] = None, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    conn = get_pg_connection()
+    conn = get_pg_connection(statement_timeout_ms=180000)
     import psycopg2.extras
     c = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
@@ -137,44 +137,53 @@ def fetch_target_companies_pg(filters: Dict[str, Any], limit: int = 50, campaign
     return [dict(r) for r in rows]
 
 def record_log_pg(campaign_id: str, company: Dict[str, Any], status: str, message: str):
-    conn = get_pg_connection()
-    c = conn.cursor()
     corp_num = company.get("corporate_number")
-    c.execute(
-        """
-        INSERT INTO internal_form_send_logs (
-            campaign_id, corporate_number, company_name, form_url, prefecture_name, website_url, status, message, sent_at
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
-        """,
-        (
-            campaign_id,
-            corp_num,
-            company.get("company_name"),
-            company.get("contact_form_url"),
-            company.get("prefecture_name"),
-            company.get("website_url"),
-            status,
-            message
-        )
-    )
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            conn = get_pg_connection()
+            c = conn.cursor()
+            c.execute(
+                """
+                INSERT INTO internal_form_send_logs (
+                    campaign_id, corporate_number, company_name, form_url, prefecture_name, website_url, status, message, sent_at
+                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, NOW())
+                """,
+                (
+                    campaign_id,
+                    corp_num,
+                    company.get("company_name"),
+                    company.get("contact_form_url"),
+                    company.get("prefecture_name"),
+                    company.get("website_url"),
+                    status,
+                    message
+                )
+            )
 
-    if status == "SUCCESS_SENT":
-        c.execute("UPDATE internal_form_campaigns SET sent_count = sent_count + 1, updated_at = NOW() WHERE id = %s", (campaign_id,))
-        if corp_num:
-            c.execute("UPDATE companies SET last_form_dm_sent_at = NOW() WHERE corporate_number = %s", (corp_num,))
-    elif status.startswith("SKIPPED") or status.startswith("BLOCKED") or status in ("NO_FORM_ELEMENT", "ALREADY_CONTACTED", "DEAD_WEBSITE"):
-        c.execute("UPDATE internal_form_campaigns SET skipped_count = skipped_count + 1, updated_at = NOW() WHERE id = %s", (campaign_id,))
-    elif status == "SUCCESS_DRY_RUN":
-        pass  # Dry-run success simulation, don't increment failure counter
-    else:
-        c.execute("UPDATE internal_form_campaigns SET failed_count = failed_count + 1, updated_at = NOW() WHERE id = %s", (campaign_id,))
+            if status == "SUCCESS_SENT":
+                c.execute("UPDATE internal_form_campaigns SET sent_count = sent_count + 1, updated_at = NOW() WHERE id = %s", (campaign_id,))
+                if corp_num:
+                    c.execute("UPDATE companies SET last_form_dm_sent_at = NOW() WHERE corporate_number = %s", (corp_num,))
+            elif status.startswith("SKIPPED") or status.startswith("BLOCKED") or status in ("NO_FORM_ELEMENT", "ALREADY_CONTACTED", "DEAD_WEBSITE"):
+                c.execute("UPDATE internal_form_campaigns SET skipped_count = skipped_count + 1, updated_at = NOW() WHERE id = %s", (campaign_id,))
+            elif status == "SUCCESS_DRY_RUN":
+                pass  # Dry-run success simulation, don't increment failure counter
+            else:
+                c.execute("UPDATE internal_form_campaigns SET failed_count = failed_count + 1, updated_at = NOW() WHERE id = %s", (campaign_id,))
 
-    conn.commit()
-    conn.close()
+            conn.commit()
+            conn.close()
 
-    # Automatically persist compliance and captcha protections into global suppression list
-    if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT") and corp_num:
-        record_suppression_pg(corp_num, company.get("company_name"), company.get("contact_form_url"), status, message)
+            # Automatically persist compliance and captcha protections into global suppression list
+            if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT") and corp_num:
+                record_suppression_pg(corp_num, company.get("company_name"), company.get("contact_form_url"), status, message)
+            break
+        except Exception as e:
+            if attempt == max_retries - 1:
+                print(f"  [DB Log Alert] Failed to record log after {max_retries} retries: {e}")
+            else:
+                time.sleep(1.0 * (attempt + 1))
 
 def load_global_suppressions() -> Dict[str, Dict[str, Any]]:
     """Loads all known suppressed companies (Disclaimers, Captchas, No-Forms) into memory with severity levels."""
@@ -194,21 +203,23 @@ def record_suppression_pg(corp_num: str, comp_name: str, form_url: str, status: 
     if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT") and corp_num:
         reason_type = "DISCLAIMER" if status == "SKIPPED_DISCLAIMER" else ("CAPTCHA" if "CAPTCHA" in status else "NO_FORM")
         severity_level = "PERMANENT" if reason_type in ("DISCLAIMER", "CAPTCHA") else "TEMPORARY"
-        try:
-            conn = get_pg_connection()
-            c = conn.cursor()
-            c.execute("""
-                INSERT INTO form_marketing_global_suppressions (corporate_number, company_name, form_url, reason_type, detail_message, severity_level, updated_at)
-                VALUES (%s, %s, %s, %s, %s, %s, NOW())
-                ON CONFLICT (corporate_number) DO UPDATE SET 
-                    updated_at = NOW(), 
-                    detail_message = EXCLUDED.detail_message,
-                    severity_level = EXCLUDED.severity_level;
-            """, (corp_num, comp_name, form_url, reason_type, (message or "")[:255], severity_level))
-            conn.commit()
-            conn.close()
-        except Exception:
-            pass
+        for attempt in range(2):
+            try:
+                conn = get_pg_connection()
+                c = conn.cursor()
+                c.execute("""
+                    INSERT INTO form_marketing_global_suppressions (corporate_number, company_name, form_url, reason_type, detail_message, severity_level, updated_at)
+                    VALUES (%s, %s, %s, %s, %s, %s, NOW())
+                    ON CONFLICT (corporate_number) DO UPDATE SET 
+                        updated_at = NOW(), 
+                        detail_message = EXCLUDED.detail_message,
+                        severity_level = EXCLUDED.severity_level;
+                """, (corp_num, comp_name, form_url, reason_type, (message or "")[:255], severity_level))
+                conn.commit()
+                conn.close()
+                break
+            except Exception:
+                time.sleep(1.0)
 
 def complete_campaign_pg(campaign_id: str, duration_sec: int, report_url: str):
     conn = get_pg_connection()
@@ -245,12 +256,39 @@ def scan_docker_warp_ports() -> List[int]:
     return active_ports
 
 def create_browser_session(playwright_instance, proxy_config: Optional[Dict[str, Any]]):
-    browser = playwright_instance.chromium.launch(headless=True, proxy=proxy_config)
+    browser = playwright_instance.chromium.launch(
+        headless=True, 
+        proxy=proxy_config,
+        args=[
+            "--disable-dev-shm-usage",
+            "--disable-gpu",
+            "--no-sandbox",
+            "--disable-extensions",
+            "--disable-background-networking"
+        ]
+    )
     context = browser.new_context(
         user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
         viewport={"width": 1280, "height": 800},
         ignore_https_errors=True
     )
+    # Block heavy assets (images, fonts, media, and trackers) for ultra-fast load
+    def block_heavy_resources(route):
+        try:
+            req = route.request
+            if req.resource_type in ("image", "media", "font"):
+                return route.abort()
+            url = req.url.lower()
+            if any(tk in url for tk in ("google-analytics.com", "googletagmanager.com", "facebook.net", "clarity.ms", "youtube.com", "doubleclick.net")):
+                return route.abort()
+            return route.continue_()
+        except Exception:
+            try:
+                route.continue_()
+            except Exception:
+                pass
+
+    context.route("**/*", block_heavy_resources)
     page = context.new_page()
     return browser, context, page
 
@@ -338,6 +376,7 @@ def worker_routine(
                     record_log_pg(campaign_id, comp, status, msg)
                 except Exception as e:
                     print(f"  [Worker #{worker_id}] DB log error: {e}")
+                task_queue.task_done()
                 continue
 
             # 1. Check if scheduled rotation is due
@@ -577,8 +616,17 @@ def main():
         threads.append(t)
         t.start()
 
+    # Wait until task queue is empty and all in-flight tasks finish
+    while not task_queue.empty():
+        time.sleep(1)
+
+    for _ in range(30):
+        if progress_counter["done"] >= len(targets):
+            break
+        time.sleep(1)
+
     for t in threads:
-        t.join()
+        t.join(timeout=5)
 
     total_duration = int(time.time() - start_time)
 

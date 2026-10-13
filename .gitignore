@@ -33,15 +33,21 @@ frontend/scratch*
 # Browser profiles for social publishers (keeps sessions safe locally, ignores from git)
 .*_user_profile/
 *_user_profile/
-.note_user_profile/
-.x_user_profile/
+.facebook_user_profile/
 .linkedin_user_profile/
+.note_user_profile/
 .valuepress_user_profile/
+.x_user_profile/
+.zenn_user_profile/
+zenn_*.json
+*_auth_state.json
+*_cookies.json
 scripts/.note_profile/
 scripts/note_state.json
 scripts/check_current_user.py
+scripts/**/*.png
 scripts/*.png
-tweet*.png
+*.png
 scripts/form_dispatcher/reports/
 scripts/inspect_*.py
 scripts/probe_*.py
@@ -50,3 +56,6 @@ scripts/sniff_*.py
 scripts/save_note_state.py
 scripts/check_notes.py
 scripts/test_*.py
+scripts/zenn/test_*.py
+scripts/zenn/check_*.py
+scripts/zenn/*.png
