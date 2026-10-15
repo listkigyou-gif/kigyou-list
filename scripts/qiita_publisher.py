@@ -110,6 +110,17 @@ def publish_article_5(is_private=False):
     tags = ['Python', 'Playwright', 'スクレイピング', 'Cloudflare', 'アーキテクチャ']
     return post_article(title, body, tags, is_private=is_private)
 
+def publish_article_6(is_private=False):
+    article_path = os.path.join(os.path.dirname(__file__), 'articles', 'article_06.md')
+    if not os.path.exists(article_path):
+        article_path = r'C:\kigyou-list\scripts\articles\article_06.md'
+    with open(article_path, 'r', encoding='utf-8') as f:
+        body = f.read()
+    
+    title = '【PostgreSQL/Python】500万社をミリ秒で検索する：日本語形態素解析・カナ曖昧検索・pg_trgmチューニングの実践アーキテクチャ'
+    tags = ['PostgreSQL', 'Python', '全文検索', 'データ分析', 'アーキテクチャ']
+    return post_article(title, body, tags, is_private=is_private)
+
 def publish_from_file(file_path: str, title: str, tags: list, is_private: bool = False):
     if not os.path.isabs(file_path):
         file_path = os.path.join(os.path.dirname(__file__), file_path)
@@ -125,6 +136,7 @@ if __name__ == '__main__':
     parser.add_argument('--publish-03', action='store_true', help='Publish Article 03')
     parser.add_argument('--publish-04', action='store_true', help='Publish Article 04')
     parser.add_argument('--publish-05', action='store_true', help='Publish Article 05')
+    parser.add_argument('--publish-06', action='store_true', help='Publish Article 06')
     parser.add_argument('--file', type=str, help='Path to markdown article file to publish')
     parser.add_argument('--title', type=str, help='Title of the article')
     parser.add_argument('--tags', type=str, help='Comma-separated tags (up to 5 tags, e.g. "Python,PostgreSQL,DX")')
@@ -153,6 +165,9 @@ if __name__ == '__main__':
 
     if args.publish_05:
         publish_article_5(is_private=args.private)
+
+    if args.publish_06:
+        publish_article_6(is_private=args.private)
 
     if args.check:
         items = list_my_items()
