@@ -79,6 +79,7 @@ Mỗi bài viết phải tuân thủ cấu trúc 6 phần:
 | **04** | AI Tagging & NLP: Tự động gắn thẻ ngành nghề từ Website doanh nghiệp | Python, OpenAI/Gemini Embeddings, scikit-learn | [Đã xuất bản](https://qiita.com/listkigyou/items/2580d842354f9c9cbfdb) |
 | **05** | Kiến trúc vượt Cloudflare Turnstile & Tối ưu HTTP Connection Pool quy mô lớn | Python, httpx, Playwright, Stealth | [Đã xuất bản](https://qiita.com/listkigyou/items/b5715e7153054e01f1c8) |
 | **06** | Tìm kiếm tiếng Nhật siêu tốc: Xử lý Kana, phân tích hình thái từ (MeCab) | PostgreSQL, Full-Text Search, pg_trgm | [Đã xuất bản](https://qiita.com/listkigyou/items/d3179d0d541e9d307d84) |
+| **SP** | **B2B / SaaS カオスマップ 2026 完全解説：500万社データ技術生態系** | SaaS, BtoB, カオスマップ, DX, 比較 | [Đã xuất bản](https://qiita.com/listkigyou/items/25ae97774519d7bf2a5f) |
 | **07** | Vector Search cho B2B: Tìm kiếm đối tác & công ty tương đồng qua Embeddings | pgvector, Python, Sentence-Transformers | Bài tiếp theo |
 | **08** | Hệ thống tự động đồng bộ Delta gBizINFO & Quốc thuế NTA hàng tuần | Python, Bash, Cron, Systemd, Logging | Dự kiến |
 | **09** | Xây dựng API tra cứu doanh nghiệp tốc độ cao < 50ms | FastAPI, Redis Caching, PostgreSQL | Dự kiến |
