@@ -55,6 +55,15 @@ def post_article(title: str, body_markdown: str, tags: list, is_private: bool = 
         print(f'Failed to publish ({res.status_code}): {res.text}')
         return None
 
+def delete_article(item_id: str):
+    res = requests.delete(f'{API_BASE}/items/{item_id}', headers=headers)
+    if res.status_code == 204:
+        print(f'Successfully deleted article: {item_id}')
+        return True
+    else:
+        print(f'Failed to delete article ({res.status_code}): {res.text}')
+        return False
+
 def publish_article_1(is_private=False):
     article_path = os.path.join(os.path.dirname(__file__), 'articles', 'article_01.md')
     if not os.path.exists(article_path):
@@ -149,6 +158,7 @@ if __name__ == '__main__':
     parser.add_argument('--publish-05', action='store_true', help='Publish Article 05')
     parser.add_argument('--publish-06', action='store_true', help='Publish Article 06')
     parser.add_argument('--publish-chaos-map', action='store_true', help='Publish B2B SaaS Chaos Map 2026 Article')
+    parser.add_argument('--delete', type=str, help='Delete article by Item ID')
     parser.add_argument('--file', type=str, help='Path to markdown article file to publish')
     parser.add_argument('--title', type=str, help='Title of the article')
     parser.add_argument('--tags', type=str, help='Comma-separated tags (up to 5 tags, e.g. "Python,PostgreSQL,DX")')
@@ -158,6 +168,9 @@ if __name__ == '__main__':
     user = get_current_user()
     print(f'Authenticated as: @{user["id"]} ({user.get("name") or "No display name"})')
     print(f'Profile URL: https://qiita.com/{user["id"]}')
+
+    if args.delete:
+        delete_article(args.delete)
 
     if args.file and args.title:
         tags_list = [t.strip() for t in args.tags.split(',')] if args.tags else ['Python', 'Tech']
