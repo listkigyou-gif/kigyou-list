@@ -58,13 +58,11 @@ def main():
         print("\n--- STEP 1: Git Pull Latest Code on VPS ---")
         git_cmd = (
             "cd /var/www/kigyou-list && "
-            "git status && "
-            "git pull origin main"
+            "git fetch origin main && "
+            "git reset --hard origin/main && "
+            "git status"
         )
         exit_code, _ = run_ssh_command(client, git_cmd)
-        if exit_code != 0:
-            print("[WARN] Trying git stash / reset if needed...")
-            run_ssh_command(client, "cd /var/www/kigyou-list && git stash && git pull origin main")
 
         # Step 2: Build Next.js
         print("\n--- STEP 2: Install dependencies & Build Next.js ---")
