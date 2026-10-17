@@ -78,9 +78,9 @@ export async function POST(request: Request) {
     }
 
     const { keyInfo, plan } = verification;
-    if (plan !== "business" && plan !== "enterprise") {
+    if (plan !== "pro" && plan !== "business" && plan !== "enterprise") {
       return NextResponse.json({
-        error: "Forbidden: Semantic Search API is restricted to BUSINESS or ENTERPRISE plans."
+        error: "Forbidden: Semantic Search API is restricted to PRO, BUSINESS or ENTERPRISE plans."
       }, { status: 403 });
     }
 

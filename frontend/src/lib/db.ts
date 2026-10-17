@@ -1725,6 +1725,7 @@ export interface UserQuota {
   stripe_customer_id?: string | null;
   subscription_status?: string | null;
   is_verified_partner?: boolean;
+  plan_expires_at?: string | null;
 }
 
 export interface ExportJob {
@@ -1778,6 +1779,7 @@ async function initQuotaTables(): Promise<void> {
           stripe_subscription_id VARCHAR(255),
           stripe_customer_id VARCHAR(255),
           subscription_status VARCHAR(50) DEFAULT 'inactive',
+          plan_expires_at TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
@@ -1796,6 +1798,9 @@ async function initQuotaTables(): Promise<void> {
       } catch {}
       try {
         await client.query(`ALTER TABLE user_export_quotas ADD COLUMN subscription_status VARCHAR(50) DEFAULT 'inactive';`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN plan_expires_at TIMESTAMP;`);
       } catch {}
 
       await client.query(`
@@ -1947,6 +1952,7 @@ async function initQuotaTables(): Promise<void> {
           stripe_subscription_id TEXT,
           stripe_customer_id TEXT,
           subscription_status TEXT DEFAULT 'inactive',
+          plan_expires_at TEXT,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
@@ -1965,6 +1971,9 @@ async function initQuotaTables(): Promise<void> {
       } catch {}
       try {
         db.exec(`ALTER TABLE user_export_quotas ADD COLUMN subscription_status TEXT DEFAULT 'inactive';`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE user_export_quotas ADD COLUMN plan_expires_at TEXT;`);
       } catch {}
 
       db.exec(`
@@ -2322,8 +2331,30 @@ export async function getUserQuota(email: string): Promise<UserQuota & { last_re
     if (row) {
       let used = Number(row.monthly_base_used);
       let lastReset = row.last_reset_date;
-      const plan = row.plan || 'free';
+      let plan = row.plan || 'free';
       let currentAllowance = Number(row.monthly_base_allowance);
+      let subStatus = row.subscription_status || 'inactive';
+      let planExpiresAt = row.plan_expires_at ? String(row.plan_expires_at) : null;
+
+      // Check if plan has expired for manual subscriptions (no active Stripe subscription)
+      if (plan !== 'free' && planExpiresAt && !row.stripe_subscription_id) {
+        const expiresDate = new Date(planExpiresAt);
+        if (!isNaN(expiresDate.getTime()) && expiresDate.getTime() < Date.now()) {
+          // Expired: downgrade back to free tier
+          plan = 'free';
+          currentAllowance = expectedBaseAllowance;
+          used = 0;
+          subStatus = 'expired';
+          const downgradeSql = 'UPDATE user_export_quotas SET plan = \'free\', monthly_base_allowance = ?, monthly_base_used = 0, subscription_status = \'expired\', updated_at = CURRENT_TIMESTAMP WHERE user_email = ?';
+          if (DATABASE_URL) {
+            const pool = getPGPool();
+            await pool.query(convertSqlForPG(downgradeSql), [expectedBaseAllowance, email]);
+          } else {
+            const db = getSQLiteDB();
+            db.prepare(downgradeSql).run(expectedBaseAllowance, email);
+          }
+        }
+      }
 
       // Dynamically sync allowance for free tier based on enterprise verification status
       if (plan === 'free' && currentAllowance !== expectedBaseAllowance) {
@@ -2390,12 +2421,13 @@ export async function getUserQuota(email: string): Promise<UserQuota & { last_re
         monthly_base_allowance: currentAllowance,
         monthly_base_used: used,
         purchased_add_on_balance: Number(row.purchased_add_on_balance),
-        plan: row.plan || 'free',
+        plan: plan,
         stripe_subscription_id: row.stripe_subscription_id || null,
         stripe_customer_id: row.stripe_customer_id || null,
-        subscription_status: row.subscription_status || 'inactive',
+        subscription_status: subStatus,
         last_reset_date: lastReset,
-        is_verified_partner: isPartner
+        is_verified_partner: isPartner,
+        plan_expires_at: planExpiresAt
       };
     }
     
@@ -2448,8 +2480,7 @@ export async function deductUserQuota(email: string, amount: number): Promise<bo
   try {
     const quota = await getUserQuota(email);
     const baseRemaining = quota.monthly_base_allowance - quota.monthly_base_used;
-    const isFreePlan = (quota.plan === 'free');
-    const addOnBalance = isFreePlan ? 0 : quota.purchased_add_on_balance;
+    const addOnBalance = quota.purchased_add_on_balance || 0;
     const totalAvailable = baseRemaining + addOnBalance;
     
     if (totalAvailable < amount) {
@@ -2898,19 +2929,25 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
 /**
  * Update the user's monthly quota and reset used balance when upgrading/downgrading plans.
  */
-export async function updateUserPlanQuota(email: string, allowance: number, plan: string): Promise<boolean> {
+export async function updateUserPlanQuota(
+  email: string, 
+  allowance: number, 
+  plan: string, 
+  expiresAt?: string | null
+): Promise<boolean> {
   await initQuotaTables();
   try {
     const status = plan === 'free' ? 'inactive' : 'active';
+    const finalExpiresAt = plan === 'free' ? null : (expiresAt !== undefined ? expiresAt : null);
     if (DATABASE_URL) {
       // PostgreSQL: Use native UPSERT with ON CONFLICT
       const pool = getPGPool();
       await pool.query(
-        `INSERT INTO user_export_quotas (user_email, monthly_base_allowance, monthly_base_used, purchased_add_on_balance, plan, subscription_status, updated_at)
-         VALUES ($1, $2, 0, 0, $3, $4, CURRENT_TIMESTAMP)
+        `INSERT INTO user_export_quotas (user_email, monthly_base_allowance, monthly_base_used, purchased_add_on_balance, plan, subscription_status, plan_expires_at, updated_at)
+         VALUES ($1, $2, 0, 0, $3, $4, $5, CURRENT_TIMESTAMP)
          ON CONFLICT (user_email)
-         DO UPDATE SET monthly_base_allowance = $2, monthly_base_used = 0, plan = $3, subscription_status = $4, updated_at = CURRENT_TIMESTAMP`,
-        [email, allowance, plan, status]
+         DO UPDATE SET monthly_base_allowance = $2, monthly_base_used = 0, plan = $3, subscription_status = $4, plan_expires_at = $5, updated_at = CURRENT_TIMESTAMP`,
+        [email, allowance, plan, status, finalExpiresAt]
       );
     } else {
       // SQLite: INSERT OR REPLACE to handle both new and existing users
@@ -2920,14 +2957,14 @@ export async function updateUserPlanQuota(email: string, allowance: number, plan
       if (existing) {
         db.prepare(
           `UPDATE user_export_quotas
-           SET monthly_base_allowance = ?, monthly_base_used = 0, plan = ?, subscription_status = ?, updated_at = CURRENT_TIMESTAMP
+           SET monthly_base_allowance = ?, monthly_base_used = 0, plan = ?, subscription_status = ?, plan_expires_at = ?, updated_at = CURRENT_TIMESTAMP
            WHERE user_email = ?`
-        ).run(allowance, plan, status, email);
+        ).run(allowance, plan, status, finalExpiresAt, email);
       } else {
         db.prepare(
-          `INSERT INTO user_export_quotas (user_email, monthly_base_allowance, monthly_base_used, purchased_add_on_balance, plan, subscription_status)
-           VALUES (?, ?, 0, 0, ?, ?)`
-        ).run(email, allowance, plan, status);
+          `INSERT INTO user_export_quotas (user_email, monthly_base_allowance, monthly_base_used, purchased_add_on_balance, plan, subscription_status, plan_expires_at)
+           VALUES (?, ?, 0, 0, ?, ?, ?)`
+        ).run(email, allowance, plan, status, finalExpiresAt);
       }
     }
     return true;
@@ -3067,6 +3104,68 @@ export async function getUserQuotaBySubscriptionId(subscriptionId: string): Prom
   } catch (error) {
     console.error(`Error in getUserQuotaBySubscriptionId(${subscriptionId}):`, error);
     return null;
+  }
+}
+
+/**
+ * Check if a user is eligible for first-time subscriber discount (70% OFF first month).
+ * Returns false if the user has ever had an active, cancelled, or previous paid subscription.
+ */
+export async function isFirstTimeSubscriber(email: string): Promise<boolean> {
+  await initQuotaTables();
+  try {
+    // 1. Check if user already has an active, previous, or cancelled subscription in user_export_quotas
+    const quotaSql = 'SELECT stripe_customer_id, stripe_subscription_id, subscription_status, plan FROM user_export_quotas WHERE user_email = ? LIMIT 1';
+    const quotaRow = await runGetQuery(quotaSql, [email]);
+    if (quotaRow) {
+      if (quotaRow.stripe_subscription_id) return false;
+      if (quotaRow.subscription_status === 'canceled' || quotaRow.subscription_status === 'active') return false;
+      if (quotaRow.plan && quotaRow.plan !== 'free' && quotaRow.plan !== 'trial') return false;
+    }
+
+    // 2. Check if user has any completed subscription payment records in deposit_history
+    const historySql = `
+      SELECT COUNT(*) as count 
+      FROM deposit_history 
+      WHERE user_email = ? 
+        AND pack_id IN ('pro', 'business', 'enterprise') 
+        AND status = 'completed'
+    `;
+    const historyRow = await runGetQuery(historySql, [email]);
+    if (historyRow && Number(historyRow.count || 0) > 0) {
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error(`Error checking isFirstTimeSubscriber(${email}):`, error);
+    // In case of transient error, allow discount so user checkout is not broken
+    return true;
+  }
+}
+
+/**
+ * Check if a user is eligible for first-time Form Marketing purchase discount (70% OFF).
+ * Returns false if the user has ever purchased a Form Outreach package before.
+ */
+export async function isFirstTimeFormBuyer(email: string): Promise<boolean> {
+  await initQuotaTables();
+  try {
+    const historySql = `
+      SELECT COUNT(*) as count 
+      FROM deposit_history 
+      WHERE user_email = ? 
+        AND pack_id IN ('form_1k', 'form_3k', 'form_5k') 
+        AND status = 'completed'
+    `;
+    const historyRow = await runGetQuery(historySql, [email]);
+    if (historyRow && Number(historyRow.count || 0) > 0) {
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error(`Error checking isFirstTimeFormBuyer(${email}):`, error);
+    return true;
   }
 }
 
@@ -3454,6 +3553,9 @@ export interface UserAdminView {
   form_credits_balance?: number;
   form_credits_purchased?: number;
   form_credits_used?: number;
+  plan_expires_at?: string | null;
+  stripe_subscription_id?: string | null;
+  last_reset_date?: string | null;
 }
 
 let adminTablesInitialized = false;
@@ -3617,6 +3719,9 @@ export async function getAllUsers(): Promise<UserAdminView[]> {
         form_credits_balance: fc ? fc.balance : 0,
         form_credits_purchased: fc ? fc.total_purchased : 0,
         form_credits_used: fc ? fc.total_used : 0,
+        plan_expires_at: r.plan_expires_at ? String(r.plan_expires_at) : null,
+        stripe_subscription_id: r.stripe_subscription_id ? String(r.stripe_subscription_id) : null,
+        last_reset_date: r.last_reset_date ? String(r.last_reset_date) : null,
       };
     }) : [];
   } catch (error) {

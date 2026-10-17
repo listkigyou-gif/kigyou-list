@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
     await runQuery(
       `INSERT INTO form_marketing_opt_outs (user_id, corporate_number, company_name, domain, email, reason, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, datetime('now'))`,
+       VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
       [
         "admin",
         (corporate_number || "").trim(),

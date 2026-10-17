@@ -1,0 +1,2 @@
+ARCH=https://static.zenn.studio/user-upload/84ed9757c619-20261016.jpg
+BENCHMARK=https://static.zenn.studio/user-upload/7eb56915f7a5-20261016.jpg

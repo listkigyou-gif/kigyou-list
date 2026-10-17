@@ -13,6 +13,7 @@ import {
   Database, Send, ChevronDown, Target, BarChart3, FileText, Zap, CheckCircle2,
   Users, Building2
 } from "lucide-react";
+import { trackBeginCheckout } from "@/lib/gtag";
 
 interface PlanDetails {
   id: "free" | "pro" | "business" | "enterprise";
@@ -64,8 +65,8 @@ export default function PricingPage() {
       name: isEn ? "Starter (1,000 Forms)" : isVi ? "Gói Starter 1.000 Form" : "1,000 件プラン",
       count: 1000,
       listPrice: 28000,
-      campaignPrice: 19600,
-      unitPrice: 19.6,
+      campaignPrice: 8400,
+      unitPrice: 8.4,
       description: isEn ? "Ideal for testing product-market fit" : isVi ? "Thử nghiệm phản hồi thị trường" : "まずは効果検証・テスト送信に最適",
       recommended: false
     },
@@ -74,8 +75,8 @@ export default function PricingPage() {
       name: isEn ? "Standard (3,000 Forms)" : isVi ? "Gói Standard 3.000 Form" : "3,000 件プラン",
       count: 3000,
       listPrice: 69000,
-      campaignPrice: 48300,
-      unitPrice: 16.1,
+      campaignPrice: 20700,
+      unitPrice: 6.9,
       description: isEn ? "Optimal for scalable lead generation" : isVi ? "Đạt lượng chuyển đổi cuộc hẹn ổn định" : "本格的なリード獲得・商談創出に",
       recommended: true
     },
@@ -84,8 +85,8 @@ export default function PricingPage() {
       name: isEn ? "Enterprise (5,000 Forms)" : isVi ? "Gói Enterprise 5.000 Form" : "5,000 件プラン",
       count: 5000,
       listPrice: 99000,
-      campaignPrice: 69300,
-      unitPrice: 13.8,
+      campaignPrice: 29700,
+      unitPrice: 5.9,
       description: isEn ? "Maximum appointment pipeline volume" : isVi ? "Quy mô lớn, chi phí trên mỗi form rẻ nhất" : "大量アプローチで商談数を最大化",
       recommended: false
     }
@@ -219,40 +220,43 @@ export default function PricingPage() {
       quotaNum: 20,
       description: isEn ? "Perfect for testing usability" : isVi ? "Lý tưởng để kiểm tra thử tính năng của hệ thống" : "まずは使い勝手を試してみたい方に最適",
       features: isEn ? [
-        "20 CSV exports per day",
-        "View FAX & key shareholders (after login)",
-        "View intent signals (after login)"
+        "20 CSV exports per day (50 for verified business)",
+        "Full access to contact & sales intent filters",
+        "View company profiles, FAX, shareholders & signals"
       ] : isVi ? [
-        "Tải xuống tối đa 20 dòng CSV mỗi ngày",
-        "Xem số FAX & cổ đông lớn (sau khi đăng nhập)",
-        "Xem chi tiết tín hiệu nhu cầu (sau khi đăng nhập)"
+        "Tải xuống 20 dòng CSV mỗi ngày (50 dòng nếu định danh doanh nghiệp)",
+        "Mở toàn bộ bộ lọc kênh liên hệ & tín hiệu kinh doanh",
+        "Xem toàn bộ chi tiết doanh nghiệp, số FAX & cổ đông"
       ] : [
-        "毎日 20 件の CSV ダウンロード枠",
-        "FAX番号 & 主要株主情報の閲覧 (ログイン後)",
-        "詳細シグナル閲覧 (ログイン後)"
+        "毎日 20 件の CSV ダウンロード枠 (企業認証で50件/日)",
+        "全検索条件・営業シグナル・連絡先絞り込みの利用",
+        "企業詳細プロフィール・FAX・主要株主の閲覧"
       ]
     },
     {
       id: "pro",
       name: isEn ? "PRO Plan" : isVi ? "Gói PRO" : "PROプラン",
       listPrice: 4200,
-      campaignPrice: 2900,
+      campaignPrice: 1260,
       referralPrice: 2100,
       quota: isEn ? "2,000 rows / month" : isVi ? "2.000 dòng / tháng" : "2,000 行 / 月",
       quotaNum: 2000,
       description: isEn ? "Ideal for sole proprietors & salespeople running outreach" : isVi ? "Lý tưởng cho cá nhân kinh doanh & nhân viên bán hàng tiếp cận khách hàng" : "テレアポ・DM営業を始めたい個人事業主や営業マンに最適",
       features: isEn ? [
         "2,000 CSV downloads per month",
+        "API integration (Key issuance & CRM/ERP syncing)",
         "Email address disclosure",
         "ABM Kanban CRM board",
         "Filter by email/phone availability"
       ] : isVi ? [
         "Tải xuống 2.000 dòng CSV mỗi tháng",
+        "Tích hợp API (Cấp khóa API & đồng bộ CRM/ERP)",
         "Mở khóa địa chỉ email doanh nghiệp",
         "Bảng quản lý phễu CRM Kanban ABM",
         "Lọc theo sự tồn tại của email/số điện thoại"
       ] : [
         "毎月 2,000 件の CSV ダウンロード枠",
+        "API連携 (API Key 発行・外部CRM/ERP連携)",
         "メールアドレスの開示",
         "ABM かんばん営業管理 CRM ボード",
         "連絡先情報（電話・メール）の有無での絞り込み"
@@ -262,7 +266,7 @@ export default function PricingPage() {
       id: "business",
       name: isEn ? "BUSINESS Plan" : isVi ? "Gói BUSINESS" : "BUSINESSプラン",
       listPrice: 14000,
-      campaignPrice: 9800,
+      campaignPrice: 4200,
       referralPrice: 7000,
       quota: isEn ? "10,000 rows / month" : isVi ? "10.000 dòng / tháng" : "10,000 行 / 月",
       quotaNum: 10000,
@@ -292,7 +296,7 @@ export default function PricingPage() {
       id: "enterprise",
       name: isEn ? "ENTERPRISE Plan" : isVi ? "Gói ENTERPRISE" : "ENTERPRISEプラン",
       listPrice: 42000,
-      campaignPrice: 29000,
+      campaignPrice: 12600,
       referralPrice: 21000,
       quota: isEn ? "40,000 rows / month" : isVi ? "40.000 dòng / tháng" : "40,000 行 / 月",
       quotaNum: 40000,
@@ -329,6 +333,7 @@ export default function PricingPage() {
       return;
     }
     setShowCheckoutModal(plan);
+    trackBeginCheckout(plan.id, plan.name, plan.campaignPrice || plan.listPrice);
   };
 
   const verifyCouponCode = async () => {
@@ -404,11 +409,8 @@ export default function PricingPage() {
       setAuthModalOpen(true);
       return;
     }
-    if (user?.role === "free" || user?.role === "trial") {
-      alert(t.pricing.packWarning);
-      return;
-    }
     setShowPackCheckoutModal(pack);
+    trackBeginCheckout(pack.id, pack.name, pack.price);
   };
 
   const handlePackSubscribe = async (e: React.FormEvent) => {
@@ -453,6 +455,7 @@ export default function PricingPage() {
       return;
     }
     setShowFormCheckoutModal(plan);
+    trackBeginCheckout(plan.id, plan.name, plan.campaignPrice || plan.listPrice);
   };
 
   const handleFormSubscribe = async (e: React.FormEvent) => {
@@ -604,10 +607,10 @@ export default function PricingPage() {
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-350 leading-relaxed max-w-2xl font-normal">
                     {isEn
-                      ? "Looking to pitch decision-makers directly? Filter hyper-targeted prospects from our 5M+ database and dispatch your pitch directly to verified corporate contact forms starting at 16.1 JPY/form."
+                      ? "Looking to pitch decision-makers directly? Filter hyper-targeted prospects from our 5M+ database and dispatch your pitch directly to verified corporate contact forms starting at just 5.9 JPY/form (70% OFF First Order)."
                       : isVi
-                      ? "Muốn chào hàng trực tiếp đến ban lãnh đạo công ty? Lọc tệp khách hàng từ 5 triệu doanh nghiệp và tự động gửi thông điệp chào hàng vào Form liên hệ ngay trên hệ thống (chỉ từ 16.1 JPY/form)."
-                      : "自社でリストを精査し、手動でフォーム送信する工数はもう不要。500万社DBからターゲットを抽出し、管理画面から自社の営業文面を即時オンライン配信（1件16.1円〜）。"}
+                      ? "Muốn chào hàng trực tiếp đến ban lãnh đạo công ty? Lọc tệp khách hàng từ 5 triệu doanh nghiệp và tự động gửi thông điệp chào hàng vào Form liên hệ ngay trên hệ thống (chỉ từ 5.9 JPY/form - Giảm 70% lần đầu)."
+                      : "自社でリストを精査し、手動でフォーム送信する工数はもう不要。500万社DBからターゲットを抽出し、管理画面から自社の営業文面を即時オンライン配信（初回限定70%OFF 1件5.9円〜）。"}
                   </p>
                 </div>
                 <div className="shrink-0 flex flex-col sm:flex-row items-center gap-3">
@@ -676,7 +679,7 @@ export default function PricingPage() {
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch max-w-7xl mx-auto w-full relative z-10">
           {plans.map((plan) => {
             const listPrice = plan.listPrice;
-            let savingsPercent = 30;
+            let savingsPercent = 70;
             let currentPrice = plan.campaignPrice;
             
             if (appliedCoupon && couponDiscount) {
@@ -709,16 +712,25 @@ export default function PricingPage() {
                     <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                       {plan.id === "free" ? (isEn ? "Free" : isVi ? "Miễn phí" : "無料") : `¥${currentPrice.toLocaleString()}`}
                     </span>
-                    {plan.id !== "free" && <span className="text-xs text-slate-500 font-medium">/ {t.pricing.month}</span>}
+                    {plan.id !== "free" && (
+                      <span className="text-xs text-rose-600 font-bold">
+                        / {isEn ? "1st mo" : isVi ? "tháng đầu" : "初月"}
+                      </span>
+                    )}
                   </div>
 
                   {plan.id !== "free" ? (
-                    <div className="mt-1.5 flex items-center gap-2 text-xs">
-                      <span className="line-through text-slate-400">
-                        ¥{listPrice.toLocaleString()}
-                      </span>
-                      <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
-                        {savingsPercent}% OFF
+                    <div className="mt-1.5 flex flex-col gap-1">
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="line-through text-slate-400">
+                          ¥{listPrice.toLocaleString()}
+                        </span>
+                        <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
+                          {savingsPercent}% OFF
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500">
+                        {isEn ? `2nd mo+: ¥${listPrice.toLocaleString()}/mo` : isVi ? `Từ tháng 2: ¥${listPrice.toLocaleString()}/tháng` : `2ヶ月目以降: ¥${listPrice.toLocaleString()}/月`}
                       </span>
                     </div>
                   ) : (
@@ -924,16 +936,40 @@ export default function PricingPage() {
                   <td className="py-4 px-4 font-semibold text-slate-800 dark:text-slate-200">{t.pricing.compRowPrice}</td>
                   <td className="py-4 px-4">¥30,000 〜 ¥100,000</td>
                   <td className="py-4 px-4">¥9,800 〜 ¥29,800</td>
-                  <td className="py-4 px-5 bg-blue-50/60 dark:bg-blue-950/20 font-bold text-rose-600 dark:text-rose-400 border-l border-r border-blue-200/60 dark:border-blue-900/40">
-                    {t.pricing.compRowPriceCampaign}
+                  <td className="py-4 px-5 bg-blue-50/60 dark:bg-blue-950/20 border-l border-r border-blue-200/60 dark:border-blue-900/40">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-extrabold text-sm text-rose-600 dark:text-rose-400">
+                          {isEn ? "1st mo ¥1,260" : isVi ? "Tháng đầu ¥1.260" : "初月 ¥1,260"}
+                        </span>
+                        <span className="bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                          70% OFF
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                        {isEn ? "(2nd mo+: ¥4,200/mo)" : isVi ? "(Từ tháng 2: ¥4.200/tháng)" : "（2ヶ月目以降: 通常 ¥4,200/月）"}
+                      </span>
+                    </div>
                   </td>
                 </tr>
                 <tr className="hover:bg-slate-50/50 dark:hover:bg-[#12161E]">
                   <td className="py-4 px-4 font-semibold text-slate-800 dark:text-slate-200">{t.pricing.compRowPriceUnit}</td>
                   <td className="py-4 px-4">¥20 〜 ¥60</td>
                   <td className="py-4 px-4">¥30 〜 ¥100</td>
-                  <td className="py-4 px-5 bg-blue-50/60 dark:bg-blue-950/20 font-bold text-slate-900 dark:text-white border-l border-r border-blue-200/60 dark:border-blue-900/40">
-                    {t.pricing.compRowPriceUnitValue}
+                  <td className="py-4 px-5 bg-blue-50/60 dark:bg-blue-950/20 border-l border-r border-blue-200/60 dark:border-blue-900/40">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                          {isEn ? "1st mo ~¥0.63 / row" : isVi ? "Tháng đầu ~¥0.63 / dòng" : "初月 約 ¥0.63 / 件"}
+                        </span>
+                        <span className="bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                          {isEn ? "Industry Best" : isVi ? "Rẻ nhất thị trường" : "業界最安クラス"}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                        {isEn ? "(Regular: ~¥2.1 / row)" : isVi ? "(Giá gốc: ~¥2.1 / dòng)" : "（通常: 約 ¥2.1 / 件）"}
+                      </span>
+                    </div>
                   </td>
                 </tr>
                 <tr className="hover:bg-slate-50/50 dark:hover:bg-[#12161E]">
@@ -1053,47 +1089,6 @@ export default function PricingPage() {
             </div>
           </div>
         </section>
-
-        {/* Bottom High-Converting CTA Banner */}
-        <section className="max-w-7xl mx-auto w-full mt-4">
-          <div className="relative overflow-hidden rounded-xl bg-slate-900 text-white p-7 sm:p-10 border border-slate-800 shadow-md flex flex-col md:flex-row items-center justify-between gap-8 text-center md:text-left">
-            <div className="space-y-2.5 max-w-xl">
-              <span className="text-[11px] font-bold text-blue-400 uppercase tracking-wider bg-blue-500/10 border border-blue-500/20 px-2.5 py-1 rounded-md w-fit mx-auto md:mx-0 block">
-                {isEn ? "START NOW FOR FREE" : isVi ? "BẮT ĐẦU HOÀN TOÀN MIỄN PHÍ" : "まずは無料プランからスタート"}
-              </span>
-              <h3 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight">
-                {isEn 
-                  ? "Supercharge your B2B sales outreach today."
-                  : isVi 
-                  ? "Nâng tầm hiệu suất bán hàng B2B của bạn ngay hôm nay."
-                  : "鮮度の高い法人データで、営業アプローチを加速しましょう。"}
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-400 leading-relaxed font-normal">
-                {isEn 
-                  ? "Register in 10 seconds. Enjoy 20 daily free CSV downloads without entering credit card details."
-                  : isVi 
-                  ? "Đăng ký chỉ mất 10 giây. Trải nghiệm 20 lượt tải CSV miễn phí mỗi ngày không cần thẻ tín dụng."
-                  : "クレジットカード不要、10秒で無料登録。毎日20件の無料ダウンロード枠で今すぐお試しいただけます。"}
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
-              <LocaleLink
-                href="/auth/register"
-                className="w-full sm:w-auto px-5 py-3 bg-[#1B4F8A] hover:bg-[#163e6d] text-white text-xs sm:text-sm font-bold rounded-lg shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
-              >
-                <span>{isEn ? "Create Free Account (10s)" : isVi ? "Đăng ký miễn phí (10 giây)" : "無料会員登録 (10秒)"}</span>
-                <ArrowRight className="w-4 h-4" />
-              </LocaleLink>
-              <LocaleLink
-                href="/contact"
-                className="w-full sm:w-auto px-5 py-3 bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs sm:text-sm font-semibold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>{isEn ? "Contact Sales" : isVi ? "Liên hệ tư vấn" : "お問い合わせ・ご相談"}</span>
-              </LocaleLink>
-            </div>
-          </div>
-        </section>
       </>
     )}
 
@@ -1115,10 +1110,10 @@ export default function PricingPage() {
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
                 {isEn
-                  ? "Zero setup fee, zero monthly commitments. Filter hyper-targeted prospects from our 5M+ database and dispatch your pitch directly to verified corporate contact forms starting at 20 JPY/form."
+                  ? "Zero setup fee, zero monthly commitments. Filter hyper-targeted prospects from our 5M+ database and dispatch your pitch directly to verified corporate contact forms starting at 5.9 JPY/form (First-time Special)."
                   : isVi
-                  ? "Không phí khởi tạo, không phí duy trì. Lọc khách hàng từ 5 triệu doanh nghiệp và tự động gửi thông điệp chào hàng vào Form liên hệ ngay trên hệ thống (chỉ từ 20 JPY/form)."
-                  : "初期費用・月額固定費0円。自社でリストを精査し、手動でフォーム送信する工数はもう不要。500万社DBからターゲットを抽出し、管理画面から自社の営業文面を即時オンライン配信（1件20円〜）。"}
+                  ? "Không phí khởi tạo, không phí duy trì. Lọc khách hàng từ 5 triệu doanh nghiệp và tự động gửi thông điệp chào hàng vào Form liên hệ ngay trên hệ thống (chỉ từ 5.9 JPY/form)."
+                  : "初期費用・月額固定費0円。自社でリストを精査し、手動でフォーム送信する工数はもう不要。500万社DBからターゲットを抽出し、管理画面から自社の営業文面を即時オンライン配信（初回限定 1件5.9円〜）。"}
               </p>
             </div>
             <div className="shrink-0 flex flex-col sm:flex-row items-center gap-3">
@@ -1141,14 +1136,14 @@ export default function PricingPage() {
         <section className="flex flex-col items-center gap-2">
           <div className="p-2 bg-slate-50 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700/80 rounded-lg flex items-center gap-2 text-xs font-semibold text-slate-800 dark:text-slate-200 px-4 py-2 shadow-2xs">
             <Sparkles className="w-4 h-4 text-amber-500 shrink-0" />
-            <span>{isEn ? "Special Campaign Discount (30% OFF) Applied" : isVi ? "Áp dụng giá ưu đãi chiến dịch (Giảm 30%)" : "今月のキャンペーン特別価格 (30% OFF) 適用中"}</span>
+            <span>{isEn ? "New Customer Special: 70% OFF First Purchase Applied" : isVi ? "Ưu đãi khách hàng mới: Giảm 70% lần đầu" : "新規限定・初回70%OFFキャンペーン適用中"}</span>
           </div>
           <p className="text-xs text-slate-500 text-center max-w-md leading-relaxed">
             {isEn 
-              ? "All outreach volume plans discounted by 30%. Secure payment via Stripe." 
+              ? "First-time buyers get 70% OFF on all outreach volume tiers. Secure Stripe checkout." 
               : isVi 
-              ? "Toàn bộ các gói gửi Form đều được chiết khấu trực tiếp 30%. Thanh toán bảo mật qua Stripe." 
-              : "全ボリューム枠に30%割引が自動適用されています。Stripe決済で即時配信枠チャージ完了。"}
+              ? "Ưu đãi dành riêng cho lần mua đầu tiên: Giảm trực tiếp 70% toàn bộ các gói gửi Form. Thanh toán bảo mật qua Stripe." 
+              : "初回ご購入限定で全ボリューム枠に70%割引が自動適用されています。Stripe決済で即時配信枠チャージ完了。"}
           </p>
         </section>
 
@@ -1179,17 +1174,17 @@ export default function PricingPage() {
                 </p>
 
                 <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-3xl font-bold font-mono text-slate-900 dark:text-white">¥19,600</span>
+                  <span className="text-3xl font-bold font-mono text-slate-900 dark:text-white">¥8,400</span>
                   <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="line-through text-slate-400 font-mono text-xs">¥28,000</span>
                   <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
-                    30% OFF
+                    初回 70% OFF
                   </span>
                 </div>
                 <div className="text-xs text-slate-500 font-semibold mb-6">
-                  {isEn ? "Unit rate: 19.6 JPY / form" : isVi ? "Đơn giá: 19.6 JPY / form" : "単価: 19.6円 / 送信完了"}
+                  {isEn ? "Unit rate: 8.4 JPY / form (First-time)" : isVi ? "Đơn giá: 8.4 JPY / form (Lần đầu)" : "単価: 8.4円 / 送信完了 (初回限定)"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -1241,17 +1236,17 @@ export default function PricingPage() {
                 </p>
 
                 <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-3xl font-bold font-mono text-[#1B4F8A] dark:text-blue-300">¥48,300</span>
+                  <span className="text-3xl font-bold font-mono text-[#1B4F8A] dark:text-blue-300">¥20,700</span>
                   <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="line-through text-slate-400 font-mono text-xs">¥69,000</span>
                   <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
-                    30% OFF
+                    初回 70% OFF
                   </span>
                 </div>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6">
-                  {isEn ? "Unit rate: 16.1 JPY / form (Save 42% from standard)" : isVi ? "Đơn giá: 16.1 JPY / form (Tiết kiệm tối đa)" : "単価: 16.1円 / 送信完了 (業界最安級)"}
+                  {isEn ? "Unit rate: 6.9 JPY / form (Industry Lowest)" : isVi ? "Đơn giá: 6.9 JPY / form (Rẻ nhất thị trường)" : "単価: 6.9円 / 送信完了 (業界最安級・初回限定)"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -1301,17 +1296,17 @@ export default function PricingPage() {
                 </p>
 
                 <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-3xl font-bold font-mono text-slate-900 dark:text-white">¥69,300</span>
+                  <span className="text-3xl font-bold font-mono text-slate-900 dark:text-white">¥29,700</span>
                   <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="line-through text-slate-400 font-mono text-xs">¥99,000</span>
                   <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
-                    30% OFF
+                    初回 70% OFF
                   </span>
                 </div>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6">
-                  {isEn ? "Unit rate: 13.8 JPY / form (Best rate)" : isVi ? "Đơn giá: 13.8 JPY / form (Tốt nhất)" : "単価: 13.8円 / 送信完了 (最安値レート)"}
+                  {isEn ? "Unit rate: 5.9 JPY / form (Best rate)" : isVi ? "Đơn giá: 5.9 JPY / form (Tốt nhất thị trường)" : "単価: 5.9円 / 送信完了 (最安値レート・初回限定)"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -1496,43 +1491,6 @@ export default function PricingPage() {
             ))}
           </div>
         </section>
-
-        {/* Bottom Form DM CTA */}
-        <section className="max-w-5xl mx-auto w-full">
-          <div className="relative overflow-hidden rounded-xl bg-slate-900 text-white p-7 sm:p-9 border border-slate-800 shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 text-center md:text-left">
-            <div className="space-y-2 max-w-xl">
-              <span className="text-[11px] font-bold text-blue-300 uppercase tracking-wider bg-blue-500/15 border border-blue-500/25 px-2.5 py-1 rounded-md w-fit mx-auto md:mx-0 block">
-                {isEn ? "READY TO LAUNCH" : isVi ? "BẮT ĐẦU NGAY" : "最短即日オンライン配信"}
-              </span>
-              <h3 className="text-2xl sm:text-3xl font-bold tracking-tight">
-                {isEn ? "Start Your Form Outreach Campaign" : isVi ? "Khởi Tạo Chiến Dịch Tiếp Cận B2B Ngay" : "自社の営業文面を管理画面で即時配信"}
-              </h3>
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                {isEn
-                  ? "Zero setup fees. Filter prospects and create your campaign draft in dashboard right now."
-                  : isVi
-                  ? "Không phí khởi tạo. Chọn tệp khách hàng và lên kịch bản nháp trên Dashboard ngay bây giờ."
-                  : "初期費用ゼロ。管理画面から500万社DBを絞り込み、下書き文面を作成してお試しいただけます。"}
-              </p>
-            </div>
-            <div className="flex flex-col sm:flex-row items-center gap-3 shrink-0 w-full sm:w-auto">
-              <LocaleLink
-                href="/dashboard?tab=formCampaigns"
-                className="w-full sm:w-auto px-5 py-2.5 bg-[#1B4F8A] hover:bg-[#163e6d] text-white text-xs sm:text-sm font-bold rounded-lg shadow-2xs transition-all flex items-center justify-center gap-2 active:scale-[0.99]"
-              >
-                <span>{isEn ? "Go to Form DM Dashboard" : isVi ? "Đến Dashboard Gửi Form" : "管理画面でキャンペーン作成"}</span>
-                <ArrowRight className="w-4 h-4" />
-              </LocaleLink>
-              <button
-                type="button"
-                onClick={() => handleTabChange("data")}
-                className="w-full sm:w-auto px-5 py-2.5 bg-white/10 hover:bg-white/15 text-white border border-white/20 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer"
-              >
-                <span>{isEn ? "View Data Plans" : isVi ? "Xem bảng giá Dữ liệu" : "企業データプランを見る"}</span>
-              </button>
-            </div>
-          </div>
-        </section>
       </div>
     )}
       </main>
@@ -1576,10 +1534,10 @@ export default function PricingPage() {
                             ¥{showCheckoutModal.listPrice.toLocaleString()}
                           </span>
                           <span className="bg-rose-100 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 text-[10px] px-1.5 py-0.5 rounded font-bold shrink-0">
-                            {appliedCoupon && couponDiscount ? couponDiscount : 30}% OFF
+                            {appliedCoupon && couponDiscount ? couponDiscount : 70}% OFF
                           </span>
                           <span className="font-bold text-rose-600">
-                            = ¥{(appliedCoupon && couponDiscount ? Math.floor(showCheckoutModal.listPrice * (1 - couponDiscount / 100)) : showCheckoutModal.campaignPrice).toLocaleString()} / {isEn ? "mo" : isVi ? "tháng" : "月"}
+                            = ¥{(appliedCoupon && couponDiscount ? Math.floor(showCheckoutModal.listPrice * (1 - couponDiscount / 100)) : showCheckoutModal.campaignPrice).toLocaleString()} / {isEn ? "1st mo" : isVi ? "tháng đầu" : "初月"}
                           </span>
                         </span>
                       ) : (
@@ -1587,6 +1545,15 @@ export default function PricingPage() {
                       )}
                     </span>
                   </div>
+                  {showCheckoutModal.listPrice > 0 && (
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 border-t border-slate-200/60 dark:border-slate-800 pt-1">
+                      {isEn 
+                        ? `※ 70% OFF applies to the 1st month for first-time subscribers. Renews at ¥${showCheckoutModal.listPrice.toLocaleString()}/mo from 2nd month.`
+                        : isVi 
+                        ? `※ Giảm 70% áp dụng cho tháng đầu tiên khi đăng ký mới. Tự động gia hạn ¥${showCheckoutModal.listPrice.toLocaleString()}/tháng từ tháng thứ 2.`
+                        : `※ 新規登録限定で初月70%OFF！2ヶ月目以降は通常価格（¥${showCheckoutModal.listPrice.toLocaleString()}/月・税込）での自動更新となります。`}
+                    </div>
+                  )}
                   {appliedCoupon && (
                     <div className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 mt-1 flex justify-between items-center border-t border-slate-200/60 dark:border-slate-800 pt-1.5">
                       <span>{isEn ? `Coupon active: ${appliedCoupon}` : isVi ? `Đã áp dụng mã: ${appliedCoupon}` : `適用中のクーポン: ${appliedCoupon}`}</span>
@@ -1811,7 +1778,14 @@ export default function PricingPage() {
                   </div>
                   <div className="flex justify-between items-center text-[10px] text-slate-400">
                     <span className="line-through">¥{showFormCheckoutModal.listPrice.toLocaleString()}</span>
-                    <span className="font-bold text-rose-500">30% OFF 適用</span>
+                    <span className="font-bold text-rose-500">初回限定 70% OFF 適用</span>
+                  </div>
+                  <div className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 border-t border-slate-200/60 dark:border-slate-800 pt-1">
+                    {isEn 
+                      ? `※ 70% OFF applies to your 1st package purchase. Regular price (¥${showFormCheckoutModal.listPrice.toLocaleString()}) applies for subsequent orders.`
+                      : isVi 
+                      ? `※ Giảm 70% áp dụng cho đơn hàng đầu tiên. Các lần mua tiếp theo áp dụng giá gốc (¥${showFormCheckoutModal.listPrice.toLocaleString()}).`
+                      : `※ 初回ご購入限定で70%OFF！2回目以降の追加購入は通常価格（¥${showFormCheckoutModal.listPrice.toLocaleString()}）となります。`}
                   </div>
                   <div className="text-[11px] text-slate-500 mt-1 border-t border-slate-200/60 dark:border-slate-800 pt-1 flex justify-between">
                     <span>{isEn ? "Delivery Volume" : isVi ? "Số lượng Form" : "配信可能件数"}</span>

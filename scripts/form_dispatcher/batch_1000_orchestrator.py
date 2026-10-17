@@ -42,7 +42,8 @@ def run_batch(campaign_id: str, batch_size: int = 5000, concurrency: int = 40, r
         "--live"
     ]
 
-    ret = subprocess.call(cmd)
+    sub_env = dict(os.environ, PYTHONIOENCODING="utf-8")
+    ret = subprocess.call(cmd, env=sub_env)
     return ret
 
 def run_diagnostics(campaign_id: str, batch_size: int = 5000):

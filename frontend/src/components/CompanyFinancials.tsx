@@ -5,7 +5,6 @@ import {
   BarChart3, PieChart, Users, AlertCircle, Info
 } from 'lucide-react';
 import { CompanyFinancial } from '@/lib/db';
-import { UnlockCard } from './UnlockCard';
 import { useLanguage } from '@/context/LanguageContext';
 
 interface CompanyFinancialsProps {
@@ -771,28 +770,26 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
             <Users className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
             {t.company.shareholdersTitle}
           </h3>
-          <UnlockCard type="block" fallbackText={t.company.shareholdersFallback}>
-            <div className="overflow-hidden border border-slate-200 dark:border-slate-800 rounded-lg">
-              <table className="w-full text-xs text-left text-slate-500 dark:text-slate-400">
-                <thead className="text-[10px] text-slate-600 dark:text-slate-300 uppercase bg-slate-50 dark:bg-slate-800/60 font-semibold border-b border-slate-200 dark:border-slate-800">
-                  <tr>
-                    <th scope="col" className="px-4 py-2.5">{t.company.shareholderName}</th>
-                    <th scope="col" className="px-4 py-2.5 text-right">{t.company.shareholderRatio}</th>
+          <div className="overflow-hidden border border-slate-200 dark:border-slate-800 rounded-lg">
+            <table className="w-full text-xs text-left text-slate-500 dark:text-slate-400">
+              <thead className="text-[10px] text-slate-600 dark:text-slate-300 uppercase bg-slate-50 dark:bg-slate-800/60 font-semibold border-b border-slate-200 dark:border-slate-800">
+                <tr>
+                  <th scope="col" className="px-4 py-2.5">{t.company.shareholderName}</th>
+                  <th scope="col" className="px-4 py-2.5 text-right">{t.company.shareholderRatio}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                {shareholders.map((sh, idx) => (
+                  <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                    <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">{sh.name}</td>
+                    <td className="px-4 py-2.5 text-right font-semibold text-emerald-700 dark:text-emerald-400 font-mono">
+                      {sh.ratio !== null ? `${sh.ratio}%` : '-'}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {shareholders.map((sh, idx) => (
-                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                      <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">{sh.name}</td>
-                      <td className="px-4 py-2.5 text-right font-semibold text-emerald-700 dark:text-emerald-400 font-mono">
-                        {sh.ratio !== null ? `${sh.ratio}%` : '-'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </UnlockCard>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>

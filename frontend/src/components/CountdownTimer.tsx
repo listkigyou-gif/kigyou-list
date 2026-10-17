@@ -70,18 +70,18 @@ export const CountdownTimer: React.FC = () => {
   const d = locale === "vi" ? {
     calculating: "Đang tính toán thời gian kết thúc...",
     limitedOffer: `Ưu đãi giới hạn ${currentMonthName}`,
-    discount: "Giảm tới 30%",
-    hurry: "Nhanh lên, chương trình giảm giá sắp kết thúc!",
+    discount: "Tài khoản mới: Giảm 70% tháng đầu",
+    hurry: "Chương trình ưu đãi giảm 70% tháng đầu sắp kết thúc, đăng ký ngay!",
   } : locale === "en" ? {
     calculating: "Calculating campaign end time...",
     limitedOffer: `${currentMonthName} Limited Offer`,
-    discount: "Up to 30% OFF",
-    hurry: "Hurry, campaign pricing ends soon!",
+    discount: "First Month 70% OFF",
+    hurry: "Hurry, first-month 70% OFF special offer ends soon!",
   } : {
     calculating: "キャンペーン期間計算中...",
     limitedOffer: `${currentMonthName}限定特別枠`,
-    discount: "最大30%OFF",
-    hurry: "今期キャンペーン価格の適用終了まで、残り時間わずかです！",
+    discount: "新規限定・初月70%OFF",
+    hurry: "新規登録者限定・初月70%OFFの適用終了まで、残り時間わずかです！",
   };
 
   if (!mounted) {

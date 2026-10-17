@@ -22,7 +22,7 @@ Khi người dùng đưa ra các câu lệnh như:
    - Cấu trúc 4 phần:
      1. Hook 2 dòng đầu giật chú ý (gây tò mò trước nút `...see more`).
      2. Nỗi đau thực tế (痛みの深掘り) của CxO / Sales Manager.
-     3. Giải pháp & Bảng so sánh định lượng của Kigyou-list (500万社, 4,980円/月, 縛りなし).
+     3. Giải pháp & Bảng so sánh định lượng của Kigyou-list (500万社, 初月 ¥1,260 70% OFF / thường ¥4,200/月, 縛りなし, 他社の1/25〜1/80).
      4. Call to Action: Điều hướng người đọc xuống **First Comment**.
    - Bộ Hashtag B2B chuẩn: `#営業DX #法人リスト #インサイドセールス #B2Bマーケティング #新規開拓 #KigyouList`.
 3. **Tạo hình ảnh (nếu cần eyecatch/infographic)**:
@@ -37,7 +37,7 @@ Khi người dùng đưa ra các câu lệnh như:
 
 ### Trụ cột 1: Bóc trần chi phí & Bảng so sánh (Cost Disruption)
 - Nêu nỗi đau: Thị trường bán 30,000 - 100,000 JPY/tháng kèm hợp đồng năm (年間縛り).
-- Giải pháp: Kigyou-list chỉ **4,980 JPY/tháng (年間縛りなし)**, trọn gói 5,000,000 pháp nhân.
+- Giải pháp: Kigyou-list chỉ **初月わずか ¥1,260（70% OFF）・通常 ¥4,200/月（年間縛りなし）**, rẻ bằng **1/25〜1/80** chi phí đối thủ, mở khóa trọn gói 5,000,000 pháp nhân, tặng 50 CSV miễn phí mỗi tháng.
 - Link First Comment: `https://kigyoulist.com/ja/compare?utm_source=linkedin&utm_medium=social`
 
 ### Trụ cột 2: Intent Data & Signal Selling (シグナル営業)

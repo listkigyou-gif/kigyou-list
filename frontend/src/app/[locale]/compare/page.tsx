@@ -5,7 +5,7 @@ import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { 
   Building2, Check, X, ShieldCheck, Zap, TrendingUp, HelpCircle, 
-  ArrowRight, Sparkles, Scale, Database, Award, ChevronRight, DollarSign 
+  Sparkles, Scale, Database, Award, ChevronRight, DollarSign 
 } from "lucide-react";
 
 export const revalidate = 86400; // Static ISR 24 hours
@@ -27,10 +27,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     : "【2026年最新】日本の企業データベース・営業リスト比較：Kigyou-listが選ばれる理由と料金・件数徹底比較 | Kigyou-list";
 
   const description = isVi
-    ? "Bảng so sánh chi tiết giữa Kigyou-list và các nền tảng danh bạ doanh nghiệp truyền thống tại Nhật Bản. 5 triệu doanh nghiệp, chi phí chỉ từ 4,980 JPY/tháng, tích hợp sẵn tín hiệu tuyển dụng/trợ cấp và tự động gửi Form liên hệ."
+    ? "Bảng so sánh chi tiết giữa Kigyou-list và các nền tảng danh bạ doanh nghiệp truyền thống tại Nhật Bản. 5 triệu doanh nghiệp, chi phí tháng đầu chỉ từ 1,260 JPY (giảm 70% / giá gốc 4,200 JPY), tích hợp gửi Form tự động từ 5.9 JPY/lần."
     : isEn
-    ? "Comprehensive benchmark of Japan's leading B2B company databases. Discover why Kigyou-list delivers maximum cost-performance with 5M+ corporations at 4,980 JPY/mo vs traditional 50,000+ JPY alternatives."
-    : "日本の主要企業データベース・営業リスト作成サービスを徹底比較。MusubuやSalesNow等の従来型サービスと比べ、500万社網羅・月額4,980円の業界最安値水準、インテントデータ標準装備、フォーム営業代行連携の圧倒的コスパを誇るKigyou-listの強みを解説します。";
+    ? "Comprehensive benchmark of Japan's leading B2B company databases. Discover why Kigyou-list delivers maximum cost-performance with 5M+ corporations at only 1,260 JPY 1st month (70% OFF / reg. 4,200 JPY) vs traditional 50,000+ JPY alternatives."
+    : "日本の主要企業データベース・営業リスト作成サービスを徹底比較。MusubuやSalesNow等の従来型サービスと比べ、500万社網羅・初月1,260円〜（初月70%OFF・通常4,200円）の業界最安値水準、インテントデータ標準装備、1通5.9円〜のフォーム営業代行連携の圧倒的コスパを誇るKigyou-listの強みを解説します。";
 
   const ogLocale = isEn ? "en_US" : isVi ? "vi_VN" : "ja_JP";
 
@@ -84,7 +84,7 @@ export default async function ComparePage({ params }: PageProps) {
 
   const faqs = isVi ? [
     {
-      q: "Tại sao Kigyou-list có mức giá chỉ từ 4,980 JPY/tháng trong khi thị trường thường từ 30,000 - 100,000 JPY?",
+      q: "Tại sao Kigyou-list có mức giá tháng đầu chỉ từ 1,260 JPY (giảm 70%, giá gốc 4,200 JPY) trong khi thị trường thường từ 30,000 - 100,000 JPY?",
       a: "Các dịch vụ truyền thống duy trì đội ngũ telesales lớn và nhân sự nhập liệu thủ công cồng kềnh. Kigyou-list ứng dụng công nghệ thu thập dữ liệu mở tự động từ Cục Thuế Quốc gia (NTA), METI gBizINFO kết hợp AI Crawler và hệ thống tự phục vụ (Self-service SaaS), giúp tinh giản 90% chi phí vận hành và mang lại mức giá tốt nhất cho khách hàng."
     },
     {
@@ -97,19 +97,19 @@ export default async function ComparePage({ params }: PageProps) {
     },
     {
       q: "Điểm khác biệt của tính năng Tự động gửi Form (Form Marketing) trên Kigyou-list là gì?",
-      a: "Kigyou-list là nền tảng duy nhất tích hợp 2 trong 1: bạn lọc tệp khách hàng trực tiếp từ 5 triệu doanh nghiệp và kích hoạt bot gửi form tự động ngay tại chỗ, chỉ 16.1 JPY/lượt gửi thành công với thuật toán AI tự động né tránh website từ chối quảng cáo."
+      a: "Kigyou-list là nền tảng duy nhất tích hợp 2 trong 1: bạn lọc tệp khách hàng trực tiếp từ 5 triệu doanh nghiệp và kích hoạt bot gửi form tự động ngay tại chỗ, chỉ từ 5.9 JPY/lượt gửi thành công (ưu đãi giảm 70% lần đầu) với thuật toán AI tự động né tránh website từ chối quảng cáo."
     },
     {
       q: "Sự khác biệt giữa việc tự cào danh sách miễn phí (Quốc thuế, Townpage) và dùng Kigyou-list là gì?",
-      a: "Tự thu thập thủ công từ Cổng thông tin Quốc thuế hoặc Townpage tốn 0 đồng nhưng mất hàng chục giờ công, dữ liệu thiếu số điện thoại hoặc website. Kigyou-list giúp bạn lọc ngay lập tức từ 5 triệu doanh nghiệp theo ngành nghề, khu vực, có sẵn SĐT và URL website, xuất file CSV chỉ trong vài giây. Với chi phí chỉ 4,980 Yên/tháng và không ràng buộc hợp đồng năm, doanh nghiệp tiết kiệm 90% thời gian để tập trung bán hàng."
+      a: "Tự thu thập thủ công từ Cổng thông tin Quốc thuế hoặc Townpage tốn 0 đồng nhưng mất hàng chục giờ công, dữ liệu thiếu số điện thoại hoặc website. Kigyou-list giúp bạn lọc ngay lập tức từ 5 triệu doanh nghiệp theo ngành nghề, khu vực, có sẵn SĐT và URL website, xuất file CSV chỉ trong vài giây. Với chi phí chỉ từ 1,260 JPY tháng đầu (giảm 70%, giá gốc 4,200 JPY) và không ràng buộc hợp đồng năm, doanh nghiệp tiết kiệm 90% thời gian để tập trung bán hàng."
     },
     {
       q: "So với việc mua danh sách từ các công ty bán danh bạ truyền thống, Kigyou-list có ưu điểm gì?",
-      a: "Các đơn vị bán danh bạ thường tính phí 10-50 Yên/công ty và dữ liệu tĩnh cũ dễ gặp số chết hoặc doanh nghiệp đã giải thể. Kigyou-list liên tục cập nhật dữ liệu mới nhất từ cổng thông tin quốc gia, hoạt động theo mô hình thuê bao linh hoạt (chỉ từ 4,980 Yên/tháng, không ràng buộc năm), giúp bạn lấy đúng dữ liệu đang hoạt động với chi phí rẻ hơn nhiều lần."
+      a: "Các đơn vị bán danh bạ thường tính phí 10-50 Yên/công ty và dữ liệu tĩnh cũ dễ gặp số chết hoặc doanh nghiệp đã giải thể. Kigyou-list liên tục cập nhật dữ liệu mới nhất từ cổng thông tin quốc gia, hoạt động theo mô hình thuê bao linh hoạt (chỉ từ 1,260 JPY tháng đầu - giảm 70%, không ràng buộc năm), giúp bạn lấy đúng dữ liệu đang hoạt động với chi phí rẻ hơn nhiều lần."
     }
   ] : isEn ? [
     {
-      q: "Why is Kigyou-list priced at only 4,980 JPY/mo while legacy providers charge 30,000 - 100,000+ JPY/mo?",
+      q: "Why is Kigyou-list priced at only 1,260 JPY 1st month (70% OFF, reg. 4,200 JPY) while legacy providers charge 30,000 - 100,000+ JPY/mo?",
       a: "Legacy databases rely on manual data entry teams and expensive direct enterprise sales reps. Kigyou-list utilizes automated pipelines connecting directly to government open-data (National Tax Agency, METI gBizINFO) paired with an efficient self-serve SaaS model, cutting overhead by 90% and passing those savings directly to users."
     },
     {
@@ -122,19 +122,19 @@ export default async function ComparePage({ params }: PageProps) {
     },
     {
       q: "What makes the automated Contact Form Marketing service unique?",
-      a: "Kigyou-list uniquely combines data discovery and outbound execution. You can filter targets from 5M companies and launch automated contact form outreach in one unified interface starting at 16.1 JPY per submission, with AI-powered anti-solicitation filtering."
+      a: "Kigyou-list uniquely combines data discovery and outbound execution. You can filter targets from 5M companies and launch automated contact form outreach in one unified interface starting at just 5.9 JPY per submission (70% OFF 1st order), with AI-powered anti-solicitation filtering."
     },
     {
       q: "What is the difference between building lists for free (tax portal/directories) and using Kigyou-list?",
-      a: "While manual scraping from public portals costs zero, it takes dozens of hours and lacks verified phone numbers and websites. Kigyou-list allows instant multi-criteria filtering across 5M companies with complete phones, websites, and emails ready for CSV export. At only 4,980 JPY/mo with no annual lock-in, it saves tremendous staff hours."
+      a: "While manual scraping from public portals costs zero, it takes dozens of hours and lacks verified phone numbers and websites. Kigyou-list allows instant multi-criteria filtering across 5M companies with complete phones, websites, and emails ready for CSV export. At only 1,260 JPY 1st month (70% OFF, reg. 4,200 JPY) with no annual lock-in, it saves tremendous staff hours."
     },
     {
       q: "What are the advantages of Kigyou-list compared to buying static lists from list brokers?",
-      a: "Traditional list vendors charge high per-record fees (10-50 JPY/lead) for static lists that often contain outdated numbers and dissolved companies. Kigyou-list provides continuously refreshed cloud data on a flexible monthly subscription without annual commitments, maximizing telemarketing connect rates at a fraction of the cost."
+      a: "Traditional list vendors charge high per-record fees (10-50 JPY/lead) for static lists that often contain outdated numbers and dissolved companies. Kigyou-list provides continuously refreshed cloud data on a flexible monthly subscription (1st mo 1,260 JPY, 70% OFF) without annual commitments, maximizing telemarketing connect rates at a fraction of the cost."
     }
   ] : [
     {
-      q: "なぜ他社（月額3万円〜10万円以上）と比べて、月額4,980円という圧倒的な低価格で提供できるのですか？",
+      q: "なぜ他社（月額3万円〜10万円以上）と比べて、初月1,260円（70%OFF・通常4,200円）という圧倒的な低価格で提供できるのですか？",
       a: "従来の企業データベース事業者は、多数のフィールドセールスや手動データ入力スタッフを抱えており、人件費が料金に転嫁されています。Kigyou-listは、国税庁法人番号公表サイトや経済産業省gBizINFOなどの公的オープンデータを独自クローラーとAIで自動統合・正規化するフルオートメーション体制を構築。完全セルフサーブ型のSaaSとすることで運用コストを極限まで削減し、業界最安値水準を実現しています。"
     },
     {
@@ -147,15 +147,15 @@ export default async function ComparePage({ params }: PageProps) {
     },
     {
       q: "問い合わせフォーム自動送信（フォーム営業代行）連携のメリットは何ですか？",
-      a: "「リスト作成ツール」と「送信代行ツール」を別々に契約する必要がありません。500万社データベースから条件を絞り込み、そのままワンストップで1通あたり16.1円〜の業界最安値水準でアプローチ可能です。AIによる営業お断り文言検知機能も標準装備しており、コンプライアンス面でも安心です。"
+      a: "「リスト作成ツール」と「送信代行ツール」を別々に契約する必要がありません。500万社データベースから条件を絞り込み、そのままワンストップで1通あたり5.9円〜（初回限定70%OFF・通常19.8円〜）の業界最安値水準でアプローチ可能です。AIによる営業お断り文言検知機能も標準装備しており、コンプライアンス面でも安心です。"
     },
     {
       q: "営業リストを無料で集める方法（国税庁やタウンページ）と、Kigyou-listの違いは何ですか？",
-      a: "国税庁の法人番号サイトやiタウンページを手作業で集める場合、費用は0円ですが、電話番号やHP URLが欠落していたり、100件集めるだけで数時間以上の人件費が浪費されます。Kigyou-listは、全国500万社の法人データから業種・地域・連絡先有無で瞬時に絞り込み、電話番号・WebサイトURL付きで一括CSVダウンロードが可能です。月額4,980円（年間縛りなし）で利用できるため、人件費と作業時間を大幅に削減して本来の営業活動に集中できます。"
+      a: "国税庁の法人番号サイトやiタウンページを手作業で集める場合、費用は0円ですが、電話番号やHP URLが欠落していたり、100件集めるだけで数時間以上の人件費が浪費されます。Kigyou-listは、全国500万社の法人データから業種・地域・連絡先有無で瞬時に絞り込み、電話番号・WebサイトURL付きで一括CSVダウンロードが可能です。初月1,260円〜（通常4,200円、初月70%OFF・年間縛りなし）で利用できるため、人件費と作業時間を大幅に削減して本来の営業活動に集中できます。"
     },
     {
       q: "テレアポやDM用のリストを購入する場合、名簿業者からの買い切りと比べてどのようなメリットがありますか？",
-      a: "従来のリスト販売業者は、1件あたり10〜50円と高額な上に、数年前の古いデータが混ざっており不通電話や廃業によるロスが発生しやすいリスクがあります。Kigyou-listは公的オープンデータや最新Web情報を常時クローリングして鮮度を担保しており、月額定額（4,980円〜）で必要な分だけ最新データをCSV抽出できます。年間契約の縛りもないため、テストマーケティングや短期の架電キャンペーンにも最小限のコストで導入可能です。"
+      a: "従来のリスト販売業者は、1件あたり10〜50円と高額な上に、数年前の古いデータが混ざっており不通電話や廃業によるロスが発生しやすいリスクがあります。Kigyou-listは公的オープンデータや最新Web情報を常時クローリングして鮮度を担保しており、月額定額（初月1,260円〜、通常4,200円）で必要な分だけ最新データをCSV抽出できます。年間契約の縛りもないため、テストマーケティングや短期の架電キャンペーンにも最小限のコストで導入可能です。"
     }
   ];
 
@@ -253,10 +253,10 @@ export default async function ComparePage({ params }: PageProps) {
             </div>
             <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
               {isJa
-                ? "日本の企業データベース選びにおいて、「500万社という圧倒的な網羅性」と「月額4,980円（年間縛りなし）という業界最安値水準のコストパフォーマンス」を両立しているのはKigyou-listだけです。さらに求人・補助金・入札のインテントデータと、1通16.1円〜のフォーム自動営業機能をワンストップで利用できるため、スタートアップから大手企業の新規開拓まで最も費用対効果の高い選択肢となります。"
+                ? "日本の企業データベース選びにおいて、「500万社という圧倒的な網羅性」と「初月1,260円（初月70%OFF・通常4,200円、年間縛りなし）という業界最安値水準のコストパフォーマンス」を両立しているのはKigyou-listだけです。さらに求人・補助金・入札のインテントデータと、1通5.9円〜（初回70%OFF）のフォーム自動営業機能をワンストップで利用できるため、スタートアップから大手企業の新規開拓まで最も費用対効果の高い選択肢となります。"
                 : isEn
-                ? "Kigyou-list is the definitive benchmark in Japan's B2B corporate data market, uniquely combining 100% national coverage (5,000,000+ companies) with unmatched affordability at 4,980 JPY/month with zero annual lock-in. Together with built-in intent signals (hiring, subsidies, tenders) and automated form outreach, it offers the highest ROI across all tiers."
-                : "Trong các nền tảng danh bạ doanh nghiệp Nhật Bản, Kigyou-list là đơn vị duy nhất kết hợp quy mô bao phủ 5 triệu công ty với mức giá chỉ 4,980 JPY/tháng (không ràng buộc hợp đồng năm). Tích hợp sẵn tín hiệu tuyển dụng/trợ cấp và gửi form tự động, mang lại hiệu quả ROI vượt trội nhất thị trường."}
+                ? "Kigyou-list is the definitive benchmark in Japan's B2B corporate data market, uniquely combining 100% national coverage (5,000,000+ companies) with unmatched affordability at only 1,260 JPY 1st month (70% OFF / reg. 4,200 JPY) with zero annual lock-in. Together with built-in intent signals (hiring, subsidies, tenders) and automated form outreach from 5.9 JPY/form, it offers the highest ROI across all tiers."
+                : "Trong các nền tảng danh bạ doanh nghiệp Nhật Bản, Kigyou-list là đơn vị duy nhất kết hợp quy mô bao phủ 5 triệu công ty với mức giá tháng đầu chỉ từ 1,260 JPY (giảm 70% / giá gốc 4,200 JPY, không ràng buộc hợp đồng năm). Tích hợp sẵn tín hiệu tuyển dụng/trợ cấp và gửi form tự động chỉ từ 5.9 JPY, mang lại hiệu quả ROI vượt trội nhất thị trường."}
             </p>
           </div>
         </section>
@@ -316,14 +316,26 @@ export default async function ComparePage({ params }: PageProps) {
                   <th scope="row" className="p-4 sm:p-5 font-bold text-slate-900 dark:text-white">
                     {isJa ? "月額基本料金" : isEn ? "Monthly Base Price" : "Chi phí hàng tháng"}
                   </th>
-                  <td className="p-4 sm:p-5 font-bold text-emerald-700 dark:text-emerald-400 bg-blue-50/30 dark:bg-blue-950/20 border-x border-blue-200 dark:border-blue-900/60">
-                    <span className="text-base sm:text-lg">月額 4,980円</span>
-                    <span className="block text-[11px] font-normal text-emerald-700 dark:text-emerald-400 mt-0.5">
-                      {isJa ? "★ 業界最安値水準" : isEn ? "★ Industry's Lowest Price" : "★ Giá tốt nhất thị trường"}
+                  <td className="p-4 sm:p-5 font-bold bg-blue-50/30 dark:bg-blue-950/20 border-x border-blue-200 dark:border-blue-900/60">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-base sm:text-lg font-black text-rose-600 dark:text-rose-400">
+                        {isJa ? "初月 ¥1,260" : isVi ? "Tháng đầu ¥1.260" : "1st mo ¥1,260"}
+                      </span>
+                      <span className="bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                        70% OFF
+                      </span>
+                    </div>
+                    <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                      {isJa ? "（2ヶ月目以降: 通常 ¥4,200/月）" : isVi ? "(Từ tháng 2: ¥4.200/tháng)" : "(2nd mo+: ¥4,200/mo)"}
+                    </span>
+                    <span className="block text-[11px] font-bold text-emerald-700 dark:text-emerald-400 mt-1">
+                      {isJa ? "★ 他社（3万〜10万）の1/25〜1/80の圧倒的低価格" : isVi ? "★ Rẻ hơn 25 đến 80 lần đối thủ (30k - 100k JPY)" : "★ 25x-80x cheaper than legacy vendors"}
                     </span>
                   </td>
                   <td className="p-4 sm:p-5 text-slate-600 dark:text-slate-400">
-                    月額 30,000円 〜 100,000円以上
+                    <span className="text-base sm:text-lg font-bold text-slate-700 dark:text-slate-300">
+                      月額 30,000円 〜 100,000円以上
+                    </span>
                     <span className="block text-[11px] text-slate-400 mt-0.5">
                       {isJa ? "初期費用や追加課金が別途発生する場合あり" : isEn ? "Often requires upfront onboarding fees" : "Thường kèm phí khởi tạo"}
                     </span>
@@ -371,9 +383,16 @@ export default async function ComparePage({ params }: PageProps) {
                     {isJa ? "問い合わせフォーム営業代行連携" : isEn ? "Integrated Form Outreach Automation" : "Tự động gửi Form liên hệ"}
                   </th>
                   <td className="p-4 sm:p-5 font-bold text-slate-900 dark:text-white bg-blue-50/30 dark:bg-blue-950/20 border-x border-blue-200 dark:border-blue-900/60">
-                    <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
-                      <Check className="w-4 h-4 stroke-[3]" />
-                      <span>1通16.1円〜の完全自動連携</span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-base font-bold text-rose-600 dark:text-rose-400">
+                        {isJa ? "1通 5.9円〜" : isVi ? "1 form 5.9 JPY〜" : "5.9 JPY / form"}
+                      </span>
+                      <span className="bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 text-[10px] font-bold px-1.5 py-0.5 rounded">
+                        初回 70% OFF
+                      </span>
+                    </div>
+                    <span className="block text-[11px] font-medium text-slate-500 dark:text-slate-400 mt-0.5">
+                      {isJa ? "（通常: 1通19.8円〜）完全自動連携" : isVi ? "(Giá gốc: 19.8 JPY/form) Tự động hóa" : "(Reg: 19.8 JPY/form) Fully automated"}
                     </span>
                     <span className="block text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
                       {isJa ? "AI営業お断り文言検知機能付き" : isEn ? "AI compliance & anti-spam detection" : "Có AI né tránh website từ chối quảng cáo"}
@@ -435,7 +454,7 @@ export default async function ComparePage({ params }: PageProps) {
                 02
               </div>
               <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                {isJa ? "中間営業コストを排除したセルフサーブ価格（月額4,980円）" : isEn ? "Pure Self-Service Efficiency (4,980 JPY/mo)" : "Mô hình Self-service tối ưu chi phí"}
+                {isJa ? "中間営業コストを排除したセルフサーブ価格（初月1,260円〜 / 70%OFF）" : isEn ? "Pure Self-Service Efficiency (1,260 JPY 1st mo / 70% OFF)" : "Mô hình Self-service tối ưu chi phí (tháng đầu từ 1,260 JPY)"}
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isJa
@@ -471,10 +490,10 @@ export default async function ComparePage({ params }: PageProps) {
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isJa
-                  ? "リストのダウンロードだけでなく、作成したターゲット企業へ1通16.1円〜で問い合わせフォーム送信代行を実行可能。営業リソースが不足している企業でも、最短即日で新規商談の創出を開始できます。"
+                  ? "リストのダウンロードだけでなく、作成したターゲット企業へ1通5.9円〜（初回限定70%OFF）で問い合わせフォーム送信代行を実行可能。営業リソースが不足している企業でも、最短即日で新規商談の創出を開始できます。"
                   : isEn
-                  ? "Go from list building to automated contact form outreach in minutes at 16.1 JPY per submission without purchasing third-party sending software."
-                  : "Không chỉ xuất danh sách, hệ thống cho phép kích hoạt gửi form liên hệ tự động trực tiếp với giá từ 16.1 JPY, tạo ra cuộc hẹn B2B ngay trong ngày."}
+                  ? "Go from list building to automated contact form outreach in minutes at just 5.9 JPY per submission (70% OFF 1st order) without purchasing third-party sending software."
+                  : "Không chỉ xuất danh sách, hệ thống cho phép kích hoạt gửi form liên hệ tự động trực tiếp với giá chỉ từ 5.9 JPY (giảm 70% lần đầu), tạo ra cuộc hẹn B2B ngay trong ngày."}
               </p>
             </div>
           </div>
@@ -503,35 +522,6 @@ export default async function ComparePage({ params }: PageProps) {
                 </p>
               </div>
             ))}
-          </div>
-        </section>
-
-        {/* CTA Banner */}
-        <section className="mt-4 p-8 sm:p-10 rounded-2xl bg-gradient-to-r from-[#1B4F8A] to-[#123660] text-white text-center shadow-lg relative overflow-hidden">
-          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight mb-3 relative z-10">
-            {isJa ? "まずは無料で500万社データベースを体験してください" : isEn ? "Explore 5 Million Companies Free Today" : "Trải Nghiệm Cơ Sở Dữ Liệu 5 Triệu Doanh Nghiệp Miễn Phí"}
-          </h2>
-          <p className="text-xs sm:text-sm text-blue-100 max-w-xl mx-auto mb-6 relative z-10">
-            {isJa
-              ? "クレジットカード不要・10秒で無料登録。全国の企業検索と月50件の営業リスト出力を今すぐ開始いただけます。"
-              : isEn
-              ? "No credit card required. Free signup in 10 seconds gives immediate access to explore 5M companies and export 50 leads/mo."
-              : "Không cần thẻ tín dụng, đăng ký 10 giây để tìm kiếm 5 triệu công ty và xuất 50 dòng danh bạ miễn phí mỗi tháng."}
-          </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 relative z-10">
-            <Link
-              href={`/${locale}/search`}
-              className="px-6 py-3 rounded-lg font-bold text-xs sm:text-sm text-[#1B4F8A] bg-white hover:bg-slate-50 transition-all shadow-sm flex items-center gap-2"
-            >
-              <span>{isJa ? "無料で企業を検索する" : isEn ? "Search Database Free" : "Tìm kiếm miễn phí"}</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-            <Link
-              href={`/${locale}/pricing`}
-              className="px-6 py-3 rounded-lg font-bold text-xs sm:text-sm text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all"
-            >
-              <span>{isJa ? "料金プランを見る" : isEn ? "View Pricing Plans" : "Xem bảng giá"}</span>
-            </Link>
           </div>
         </section>
 

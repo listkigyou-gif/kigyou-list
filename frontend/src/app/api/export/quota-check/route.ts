@@ -34,8 +34,7 @@ export async function GET(request: Request) {
       getUserFormCredits(email).catch(() => ({ balance: 0, total_purchased: 0, total_used: 0 }))
     ]);
 
-    const isFreePlan = (quota.plan === 'free');
-    const remaining = (quota.monthly_base_allowance - quota.monthly_base_used) + (isFreePlan ? 0 : quota.purchased_add_on_balance);
+    const remaining = (quota.monthly_base_allowance - quota.monthly_base_used) + (quota.purchased_add_on_balance || 0);
 
     return NextResponse.json({
       quota: {

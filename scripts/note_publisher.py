@@ -164,27 +164,30 @@ def create_note(title: str, content_paragraphs: list, hashtags: list = None, ima
             if save_btn.count() > 0 and save_btn.is_enabled():
                 save_btn.click()
                 time.sleep(2)
+            browser.close()
 
-            # Chuyển trực tiếp sang trang xuất bản công khai
-            print("-> Đang tiến hành xuất bản công khai...")
-            publish_page_url = f"https://editor.note.com/notes/{note_key}/publish/"
-            page.goto(publish_page_url, wait_until="networkidle")
-            time.sleep(2)
-
-            if hashtags:
-                tag_input = page.locator("input[placeholder*='ハッシュタグ'], input[placeholder*='タグ']").first
-                if tag_input.count() > 0:
-                    for tag in hashtags:
-                        tag_input.fill(tag)
-                        page.keyboard.press("Enter")
-                        time.sleep(0.3)
-
-            final_post_btn = page.locator("button:has-text('投稿する'), button:has-text('公開する')").first
-            if final_post_btn.count() > 0:
-                final_post_btn.click(force=True)
-                time.sleep(5)
+            # Xuất bản công khai trực tiếp qua API
+            print("-> Đang tiến hành xuất bản công khai qua API...")
+            pub_headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+                "Origin": "https://note.com",
+                "Referer": "https://note.com/",
+                "Content-Type": "application/json",
+                "X-Requested-With": "XMLHttpRequest"
+            }
+            pub_payload = {
+                "name": title,
+                "free_body": body_html,
+                "body_length": len(body_html),
+                "hashtags": hashtags or [],
+                "status": "published"
+            }
+            pub_res = requests.put(f"https://note.com/api/v1/text_notes/{note_id}", headers=pub_headers, cookies=cookie_dict, json=pub_payload)
+            if pub_res.status_code == 200:
                 print(f"\n[XUẤT BẢN THÀNH CÔNG] Bài viết đã chính thức lên sóng công khai!")
                 print(f"👉 https://note.com/kigyoulist/n/{note_key}")
+            else:
+                print(f"[CẢNH BÁO] Không thể chuyển trạng thái published qua API: {pub_res.status_code} - {pub_res.text}")
+                print(f"👉 https://note.com/kigyoulist/n/{note_key}")
 
-            browser.close()
             return f"https://note.com/kigyoulist/n/{note_key}"

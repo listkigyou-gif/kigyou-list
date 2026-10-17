@@ -17,6 +17,14 @@ Key Capabilities:
 import os
 import sys
 import time
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import argparse
 import sqlite3
 import csv
@@ -162,6 +170,13 @@ class FormDispatcher:
             return result
 
         try:
+            # Set hard interaction timeouts to prevent hanging on stalled elements
+            try:
+                page.set_default_timeout(12000)
+                page.set_default_navigation_timeout(20000)
+            except Exception:
+                pass
+
             # Auto-accept JavaScript confirmation dialogs (window.confirm, alert)
             try:
                 def _safe_dialog_accept(dialog):
@@ -231,7 +246,7 @@ class FormDispatcher:
                     if cand.count() > 0 and cand.first.is_visible():
                         try:
                             print(f"  [↳] Hub page detected. Entering actual form via '{kw}'...")
-                            cand.first.click(timeout=5000)
+                            cand.first.click(timeout=5000, no_wait_after=True)
                             page.wait_for_timeout(2500)
                             html_content = page.content()
                             hub_navigated = True
@@ -249,7 +264,7 @@ class FormDispatcher:
                             if not any(bad in txt for bad in ['English', 'Privacy', 'プライバシー', '個人情報', '規約', 'English', 'Global']):
                                 print(f"  [↳] Hub candidate link detected ('{txt[:30]}'). Entering form...")
                                 try:
-                                    lnk.click(timeout=5000)
+                                    lnk.click(timeout=5000, no_wait_after=True)
                                     page.wait_for_timeout(2500)
                                     html_content = page.content()
                                     break
@@ -978,7 +993,13 @@ class FormDispatcher:
                     pass
 
             if submit_btn:
-                submit_btn.click()
+                try:
+                    submit_btn.click(timeout=8000, no_wait_after=True)
+                except Exception:
+                    try:
+                        submit_btn.click(timeout=5000)
+                    except Exception:
+                        pass
                 page.wait_for_timeout(3000)
 
                 # Check if it was a confirmation page and needs one more click to final submit
@@ -988,7 +1009,13 @@ class FormDispatcher:
                     'button:has-text("完了"), a:has-text("送信する")'
                 )
                 if final_btn.count() > 0 and final_btn.first.is_visible():
-                    final_btn.first.click()
+                    try:
+                        final_btn.first.click(timeout=8000, no_wait_after=True)
+                    except Exception:
+                        try:
+                            final_btn.first.click(timeout=5000)
+                        except Exception:
+                            pass
                     page.wait_for_timeout(3000)
 
                 if self.save_screenshot:

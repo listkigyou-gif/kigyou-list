@@ -31,9 +31,20 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   
-  let title = "Kigyou-list | 500万社の日本企業データベース・営業リスト";
-  let description = "日本全国500万社以上の企業情報を網羅した国内最大級 of B2Bデータベース。業界最安値の料金、JSIC産業分類や都道府県、資本金、従業員数による高度な絞り込みに加え、採用・助成金・入札などの最新 of 営業意欲（インテント）シグナルをご活用いただけます。";
-  let keywords = ["企業リスト", "営業リスト", "企業データベース", "求人活動", "助成金", "補助金", "入札調達"];
+  let title = "企業リスト・企業データ検索ならKigyou-list | 全国500万社の営業リスト作成・無料ダウンロード";
+  let description = "【無料DLあり】日本全国500万社以上の企業リスト・企業データを網羅した国内最大級のB2Bデータベース。業界・地域・資本金や求人・補助金・入札シグナルで高確度ターゲティング。電話番号・HP・お問い合わせフォームURL付きの最新営業リストを即時作成＆CSV一括出力可能です。";
+  let keywords = [
+    "企業リスト",
+    "企業データ",
+    "営業リスト",
+    "全国企業リスト",
+    "企業情報 検索",
+    "日本企業データベース",
+    "B2B営業リスト",
+    "法人リスト 無料",
+    "テレアポ リスト",
+    "問い合わせフォーム営業"
+  ];
   let ogLocale = "ja_JP";
 
   if (locale === "en") {
@@ -60,6 +71,12 @@ export async function generateMetadata({
         en: "/en",
         vi: "/vi",
         "x-default": "/ja",
+      },
+      types: {
+        "text/plain": [
+          { url: "/llms.txt", title: "LLMs Context" },
+          { url: "/llms-full.txt", title: "Full LLMs Context" },
+        ],
       },
     },
     openGraph: {
@@ -140,30 +157,35 @@ export default async function LocalizedLayout({
     <html
       lang={locale}
       className={`h-full antialiased ${notoSansJP.variable}`}
+      suppressHydrationWarning
     >
-      <head>
+      <body 
+        className="min-h-full flex flex-col font-sans bg-bg-light text-slate-900 dark:bg-[#0D1117] dark:text-slate-100"
+        suppressHydrationWarning
+      >
         <script
+          id="organization-schema"
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
         />
-      </head>
-      {gaId && (
-        <>
-          <Script
-            src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
-            strategy="afterInteractive"
-          />
-          <Script id="google-analytics" strategy="afterInteractive">
-            {`
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', '${gaId}');
-            `}
-          </Script>
-        </>
-      )}
-      <body className="min-h-full flex flex-col font-sans bg-bg-light text-slate-900 dark:bg-[#0D1117] dark:text-slate-100">
+        {gaId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${gaId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${gaId}', {
+                  form_submissions: false
+                });
+              `}
+            </Script>
+          </>
+        )}
         <Suspense fallback={null}>
           <TopProgressBar />
         </Suspense>

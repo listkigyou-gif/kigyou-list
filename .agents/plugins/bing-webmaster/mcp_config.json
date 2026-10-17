@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "bing-webmaster": {
+      "command": "python",
+      "args": [
+        "c:\\kigyou-list\\scripts\\mcp\\bing_mcp_server.py"
+      ],
+      "env": {
+        "BING_API_KEY": "7c742571ab6a4103aa339488f8220031",
+        "SITE_URL": "https://kigyoulist.com/"
+      }
+    }
+  }
+}

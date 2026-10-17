@@ -18,8 +18,8 @@ Khi người dùng ra lệnh:
 
 1. **Sinh nội dung PR tiếng Nhật chuẩn quy chuẩn PR-FREE**:
    - **Tên thương hiệu (`company_brand`)**: Tối đa **10-15 ký tự** (ví dụ: `Kigyou-list`).
-   - **Tiêu đề (`title`)**: Tối đa **140 ký tự** (Khuyên dùng 40-70 ký tự). Có số liệu định lượng (`500万社`, `月額4,980円`) + góc nhìn tin tức.
-   - **Phụ đề (`subtitle`)**: Tối đa **140 ký tự** (Nêu bật giải pháp: Giảm 90% chi phí tìm khách hàng, không ràng buộc hợp đồng năm).
+   - **Tiêu đề (`title`)**: Tối đa **140 ký tự** (Khuyên dùng 40-70 ký tự). Có số liệu định lượng (`500万社`, `初月1,260円`) + góc nhìn tin tức.
+   - **Phụ đề (`subtitle`)**: Tối đa **140 ký tự** (Nêu bật giải pháp: Giảm 90% chi phí tìm khách hàng, rẻ bằng 1/25〜1/80 đối thủ, không ràng buộc hợp đồng năm).
    - **Thân bài (`body`)**: Plain text (**Tối thiểu 300 ký tự**). Không dùng HTML tags `<p>`, `<a>`. Sử dụng ký tự phân cách như `■`, `━━━━━━━━━━━━━` để chia đoạn rõ ràng. Luôn gắn link chính thức kèm tracking: `https://kigyoulist.com/?utm_source=prfree&utm_medium=pr`.
 2. **Banner thương hiệu (`image_path`)**:
    - Sử dụng ảnh Banner chuẩn tỉ lệ 16:9 lưu tại `scripts/press_releases/eyecatch_01.jpg` (Chứa logo và tên miền **`kigyoulist.com`**).
@@ -72,9 +72,9 @@ Khi người dùng ra lệnh:
   "url": "https://kigyoulist.com/?utm_source=prfree&utm_medium=pr",
   "category": "ＩＴ・通信",
   "company_brand": "Kigyou-list",
-  "title": "国内最大級500万社を網羅する法人データベース『Kigyou-list』が大型アップデート。月額4,980円で求人・助成金シグナルに対応",
-  "subtitle": "初期費用0円・年間契約の縛りなし。中小企業やスタートアップの新規開拓コストを最大90%削減する営業DXを推進。",
-  "body": "国内最大級500万件超の法人オープンデータを統合するB2B営業・マーケティング支援プラットフォーム『Kigyou-list（企業リスト.com）』は、ハローワークの最新求人募集情報および政府助成金・補助金採択シグナルを抽出可能な大型アップデートを実施いたしました。\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n■ サービス概要\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n・サービス名：Kigyou-list（企業リスト.com）\n・公式サイト：https://kigyoulist.com/?utm_source=prfree&utm_medium=pr\n・利用料金：月額 4,980円（税込）\n・初期費用：0円（即日利用可能）",
+  "title": "国内最大級500万社を網羅する法人データベース『Kigyou-list』が大型アップデート。初月1,260円（通常4,200円）で求人・助成金シグナルに対応",
+  "subtitle": "初期費用0円・年間契約の縛りなし。他社（3万〜10万）の1/25〜1/80の圧倒的低価格で中小企業の営業DXを推進。",
+  "body": "国内最大級500万件超の法人オープンデータを統合するB2B営業・マーケティング支援プラットフォーム『Kigyou-list（企業リスト.com）』は、ハローワークの最新求人募集情報および政府助成金・補助金採択シグナルを抽出可能な大型アップデートを実施いたしました。\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n■ サービス概要\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n・サービス名：Kigyou-list（企業リスト.com）\n・公式サイト：https://kigyoulist.com/?utm_source=prfree&utm_medium=pr\n・利用料金：初月 1,260円（税込・70%OFFキャンペーン）／ 2ヶ月目以降 通常4,200円（税込）\n・初期費用：0円（即日利用可能・年間契約縛りなし）\n・無料特典：全500万社検索＆月50件CSVダウンロード永久無料",
   "image_path": "c:\\kigyou-list\\scripts\\press_releases\\eyecatch_01.jpg"
 }
 ```

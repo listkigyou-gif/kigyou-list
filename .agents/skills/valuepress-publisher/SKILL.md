@@ -19,7 +19,7 @@ Khi người dùng ra lệnh:
 1. **Sinh nội dung PR tiếng Nhật chuẩn quy chuẩn ValuePress Free Plan**:
    - **Tiêu đề (`title`)**: Tối đa **80 ký tự** (Quy định cứng của ValuePress Free Plan). Có số liệu định lượng + tên thương hiệu `Kigyou-list`.
    - **Tóm tắt (`summary`)**: Tối đa **400 ký tự** (Quy định cứng của ValuePress Free Plan). Trả lời 5W1H (Ai, làm gì, khi nào, vì sao, giá bao nhiêu).
-   - **Thân bài (`body`)**: Định dạng HTML với các thẻ `<p>`, `<br>`. Có 3 ưu thế cạnh tranh, bảng giá `月額4,980円（税込）・年縛りなし`, và link chính thức có gắn tracking `https://kigyoulist.com/?utm_source=valuepress&utm_medium=pr`.
+   - **Thân bài (`body`)**: Định dạng HTML với các thẻ `<p>`, `<br>`. Có 3 ưu thế cạnh tranh, bảng giá `初月1,260円（通常4,200円）・年縛りなし（他社の1/25〜1/80の圧倒的低価格）`, và link chính thức có gắn tracking `https://kigyoulist.com/?utm_source=valuepress&utm_medium=pr`.
 2. **Banner thương hiệu (`eyecatch`)**:
    - Sử dụng ảnh Banner chuẩn tỉ lệ 16:9 lưu tại `scripts/press_releases/eyecatch_01.jpg` (Chứa logo và tên miền **`kigyoulist.com`**).
    - Nếu cần ảnh mới cho chủ đề đặc biệt, gọi `generate_image` với text bắt buộc là `kigyoulist.com` (tuyệt đối không viết `企業リスト.com` làm tên miền chính).
@@ -88,7 +88,7 @@ Khi cần xuất bản bài mới, chỉ cần tạo file JSON theo mẫu:
 ```json
 {
   "title": "【国内最大級500万社】法人DB『Kigyou-list』、地域別・業種別詳細フィルター機能を強化",
-  "summary": "国内最大級500万件超の法人データを網羅する『Kigyou-list（kigyoulist.com）』が検索機能をアップデート。全国47都道府県・細分類業種での高精度ターゲティングに対応し、月額4,980円（税込）・年縛りなしで新規営業の無駄打ちをゼロにします。",
+  "summary": "国内最大級500万件超の法人データを網羅する『Kigyou-list（kigyoulist.com）』が検索機能をアップデート。全国47都道府県・細分類業種での高精度ターゲティングに対応し、初月1,260円（通常4,200円）・年縛りなし・他社の1/25〜1/80の圧倒的低価格で新規営業の無駄打ちをゼロにします。",
   "body": "<p>■ アップデートの背景...</p><p>■ 主な機能と特徴...</p><p>■ サービス公式サイト: https://kigyoulist.com/?utm_source=valuepress&utm_medium=pr</p>",
   "eyecatch": "c:\\kigyou-list\\scripts\\press_releases\\eyecatch_01.jpg"
 }

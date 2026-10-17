@@ -419,14 +419,9 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <Send className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
               <span>{locale === 'ja' ? '連絡先・営業手段' : locale === 'vi' ? 'Kênh liên hệ & Gửi Form' : 'Outreach & Contact'}</span>
             </div>
-            {!isProOrHigher && (
-              <span className="text-[10px] bg-amber-100 text-amber-900 dark:bg-amber-950/80 dark:text-amber-300 font-bold px-1.5 py-0.2 rounded flex items-center gap-0.5 border border-amber-300 dark:border-amber-700">
-                <Lock className="w-2.5 h-2.5" /> PRO
-              </span>
-            )}
           </div>
 
-          <div className={`${!isProOrHigher ? "blur-[2.5px] pointer-events-none select-none opacity-60" : ""} flex flex-col gap-2`}>
+          <div className="flex flex-col gap-2">
             {/* Highlighted Flagship: お問い合わせフォーム */}
             <label className={`flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer ${
               hasContactForm 
@@ -436,7 +431,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={!!hasContactForm}
-                disabled={!isProOrHigher}
                 onChange={(e) => navigate({ contact_form: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
               />
@@ -461,7 +455,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 <input
                   type="checkbox"
                   checked={hasEmail}
-                  disabled={!isProOrHigher}
                   onChange={(e) => navigate({ 
                     email: e.target.checked ? "true" : null,
                     email_type: e.target.checked ? emailType : null 
@@ -481,7 +474,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   </span>
                   <select
                     value={emailType || ""}
-                    disabled={!isProOrHigher}
                     onChange={(e) => navigate({ email_type: e.target.value || null })}
                     className="w-full text-[10px] font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 focus:outline-none dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700"
                   >
@@ -501,7 +493,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 <input
                   type="checkbox"
                   checked={hasPhone}
-                  disabled={!isProOrHigher}
                   onChange={(e) => navigate({ phone: e.target.checked ? "true" : null })}
                   className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
                 />
@@ -513,7 +504,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 <input
                   type="checkbox"
                   checked={hasWebsite}
-                  disabled={!isProOrHigher}
                   onChange={(e) => navigate({ website: e.target.checked ? "true" : null })}
                   className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
                 />
@@ -525,7 +515,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 <input
                   type="checkbox"
                   checked={hasFax}
-                  disabled={!isProOrHigher}
                   onChange={(e) => navigate({ fax: e.target.checked ? "true" : null })}
                   className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
                 />
@@ -534,25 +523,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               </label>
             </div>
           </div>
-
-          {!isProOrHigher && (
-            <div 
-              onClick={() => {
-                if (!isLoggedIn) {
-                  setAuthModalOpen(true);
-                } else {
-                  router.push(locale === "ja" ? "/pricing" : `/${locale}/pricing`);
-                }
-              }}
-              className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-transparent z-10"
-              title={isLoggedIn ? (locale === 'en' ? "Upgrade to PRO" : locale === 'vi' ? "Nâng cấp lên PRO" : "Proプランにアップグレード") : (locale === 'en' ? "Register Free" : locale === 'vi' ? "Đăng ký miễn phí" : "無料登録")}
-            >
-              <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 shadow-xs text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 transition-colors">
-                <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                {locale === 'en' ? "PRO Plan Required" : locale === 'vi' ? "Yêu cầu tài khoản PRO" : "Proプランで利用可能"}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ========================================================
@@ -564,19 +534,13 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <Zap className="w-3.5 h-3.5 text-amber-500" />
               <span>{locale === 'ja' ? '営業活動シグナル' : locale === 'vi' ? 'Tín hiệu kinh doanh' : 'Sales Intent Signals'}</span>
             </div>
-            {!isLoggedIn && (
-              <span className="text-[10px] bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300 font-bold px-1.5 py-0.2 rounded flex items-center gap-0.5">
-                <Lock className="w-2.5 h-2.5" /> FREE
-              </span>
-            )}
           </div>
 
-          <div className={`${!isLoggedIn ? "blur-[2.5px] pointer-events-none select-none opacity-60" : ""} flex flex-col gap-2 pt-0.5`}>
+          <div className="flex flex-col gap-2 pt-0.5">
             <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
               <input
                 type="checkbox"
                 checked={hasHiring}
-                disabled={!isLoggedIn}
                 onChange={(e) => navigate({ hiring: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
               />
@@ -587,7 +551,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasSubsidy}
-                disabled={!isLoggedIn}
                 onChange={(e) => navigate({ subsidy: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
               />
@@ -598,7 +561,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasBidding}
-                disabled={!isLoggedIn}
                 onChange={(e) => navigate({ bidding: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
               />
@@ -609,7 +571,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasAward}
-                disabled={!isLoggedIn}
                 onChange={(e) => navigate({ award: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
               />
@@ -620,7 +581,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasCertification}
-                disabled={!isLoggedIn}
                 onChange={(e) => navigate({ certification: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
               />
@@ -631,7 +591,6 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasPatent}
-                disabled={!isLoggedIn}
                 onChange={(e) => navigate({ patent: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
               />
@@ -642,26 +601,12 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasFinancials}
-                disabled={!isLoggedIn}
                 onChange={(e) => navigate({ financials: e.target.checked ? "true" : null })}
                 className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
               />
               <span>{t.search.hasFinancials}</span>
             </label>
           </div>
-
-          {!isLoggedIn && (
-            <div 
-              onClick={() => setAuthModalOpen(true)}
-              className="absolute inset-0 cursor-pointer flex flex-col items-center justify-center bg-transparent z-10"
-              title={locale === 'en' ? "Register free to unlock" : locale === 'vi' ? "Đăng ký miễn phí để mở khóa" : "無料登録で利用可能"}
-            >
-              <div className="bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 flex items-center gap-1.5 shadow-xs text-[11px] font-semibold text-slate-700 dark:text-slate-200 hover:border-slate-400 dark:hover:border-slate-500 transition-colors">
-                <Lock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                {locale === 'en' ? "Register Free to Unlock" : locale === 'vi' ? "Đăng ký miễn phí để mở khóa" : "無料登録で利用可能"}
-              </div>
-            </div>
-          )}
         </div>
 
         {/* ========================================================

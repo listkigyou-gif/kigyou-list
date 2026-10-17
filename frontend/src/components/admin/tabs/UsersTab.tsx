@@ -4,7 +4,8 @@ import React, { useState, useEffect, useMemo } from "react";
 import { 
   Users, Search, Filter, RefreshCcw, Download, 
   ShieldAlert, ShieldCheck, Edit3, Loader2, Phone, UserCheck,
-  Send, Database, Plus, CheckCircle2, Sparkles, MessageSquare
+  Send, Database, Plus, CheckCircle2, Sparkles, MessageSquare,
+  Calendar, Clock, CreditCard
 } from "lucide-react";
 import { parseUTCDate } from "@/lib/dateUtils";
 import { useAdminToast } from "../AdminToast";
@@ -24,6 +25,9 @@ export interface UserAdminView {
   form_credits_balance?: number;
   form_credits_purchased?: number;
   form_credits_used?: number;
+  plan_expires_at?: string | null;
+  stripe_subscription_id?: string | null;
+  last_reset_date?: string | null;
 }
 
 interface UsersTabProps {
@@ -58,6 +62,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   // Plan Modal
   const [planModalUser, setPlanModalUser] = useState<UserAdminView | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<string>("free");
+  const [planDuration, setPlanDuration] = useState<string>("1m");
   const [updatingPlan, setUpdatingPlan] = useState(false);
 
   // Form Outreach (フォーム営業) Credits Modal
@@ -145,6 +150,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
         body: JSON.stringify({
           targetEmail: planModalUser.user_email,
           plan: selectedPlan,
+          duration: selectedPlan === "free" ? undefined : planDuration,
         }),
       });
       const data = await res.json();
@@ -248,25 +254,36 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   const handleExportCSV = () => {
     if (usersList.length === 0) return;
     const headers = [
-      "Email", "Plan", "Status", 
+      "Email", "Plan", "Status", "Contract Type", "Plan Expiration", 
       "Monthly CSV Allowance", "Monthly CSV Used", "CSV Add-on Balance", 
       "Form Credits Balance", "Form Credits Used", "Form Credits Total Granted",
       "Contact Person", "Phone", "Updated At"
     ];
-    const rows = filteredUsers.map(u => [
-      `"${u.user_email}"`,
-      `"${u.plan || "free"}"`,
-      `"${u.subscription_status || "active"}"`,
-      u.monthly_base_allowance,
-      u.monthly_base_used,
-      u.purchased_add_on_balance,
-      u.form_credits_balance ?? 0,
-      u.form_credits_used ?? 0,
-      u.form_credits_purchased ?? 0,
-      `"${u.contact_person || ""}"`,
-      `"${u.contact_phone || ""}"`,
-      `"${u.updated_at}"`,
-    ]);
+    const rows = filteredUsers.map(u => {
+      const contractType = u.plan === "free" 
+        ? "Free" 
+        : (u.stripe_subscription_id ? "Stripe Auto-Renew" : "Manual Grant");
+      const expiration = u.plan === "free" 
+        ? "N/A" 
+        : (u.plan_expires_at || (u.stripe_subscription_id ? "Recurring" : "Unlimited"));
+
+      return [
+        `"${u.user_email}"`,
+        `"${u.plan || "free"}"`,
+        `"${u.subscription_status || "active"}"`,
+        `"${contractType}"`,
+        `"${expiration}"`,
+        u.monthly_base_allowance,
+        u.monthly_base_used,
+        u.purchased_add_on_balance,
+        u.form_credits_balance ?? 0,
+        u.form_credits_used ?? 0,
+        u.form_credits_purchased ?? 0,
+        `"${u.contact_person || ""}"`,
+        `"${u.contact_phone || ""}"`,
+        `"${u.updated_at}"`,
+      ];
+    });
 
     const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(e => e.join(","))].join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
@@ -451,17 +468,102 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                     {usr.user_email}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${
-                      usr.plan === "pro"
-                        ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                        : usr.plan === "business"
-                          ? "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300"
-                          : usr.plan === "enterprise"
-                            ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                            : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
-                    }`}>
-                      {usr.plan || "free"}
-                    </span>
+                    <div className="flex flex-col gap-1 items-start min-w-[130px]">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                          usr.plan === "pro"
+                            ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300 border border-blue-200 dark:border-blue-900"
+                            : usr.plan === "business"
+                              ? "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-300 border border-purple-200 dark:border-purple-900"
+                              : usr.plan === "enterprise"
+                                ? "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-200 dark:border-amber-900"
+                                : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                        }`}>
+                          {usr.plan || "free"}
+                        </span>
+
+                        {usr.plan && usr.plan !== "free" && (
+                          usr.stripe_subscription_id ? (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800" title="Stripeによる毎月自動決済">
+                              <CreditCard className="w-2.5 h-2.5" />
+                              Stripe自動更新
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-50 text-indigo-700 dark:bg-indigo-950/60 dark:text-indigo-300 border border-indigo-200/80 dark:border-indigo-800" title="管理画面から手動付与されたプラン">
+                              <Sparkles className="w-2.5 h-2.5 text-indigo-500" />
+                              手動付与
+                            </span>
+                          )
+                        )}
+                      </div>
+
+                      {/* Expiration & Renewal Cycle Details */}
+                      {usr.plan && usr.plan !== "free" ? (
+                        usr.stripe_subscription_id ? (
+                          <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                            <Clock className="w-3 h-3 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span>
+                              {usr.last_reset_date 
+                                ? `毎月${parseInt(usr.last_reset_date.split("-")[2] || "1", 10)}日 自動更新` 
+                                : "月額自動更新"}
+                            </span>
+                          </div>
+                        ) : (
+                          (() => {
+                            if (!usr.plan_expires_at) {
+                              return (
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  有効期限: 無期限
+                                </span>
+                              );
+                            }
+                            const expDate = new Date(usr.plan_expires_at);
+                            if (isNaN(expDate.getTime())) {
+                              return (
+                                <span className="text-[10px] text-slate-400 font-medium">
+                                  有効期限: 未定
+                                </span>
+                              );
+                            }
+                            const now = new Date();
+                            const diffMs = expDate.getTime() - now.getTime();
+                            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                            const dateStr = expDate.toLocaleDateString("ja-JP", {
+                              year: "numeric",
+                              month: "2-digit",
+                              day: "2-digit"
+                            });
+
+                            if (diffDays < 0) {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 px-1.5 py-0.5 rounded border border-rose-200/80 dark:border-rose-900">
+                                  <Clock className="w-3 h-3" />
+                                  期限切れ ({dateStr})
+                                </span>
+                              );
+                            }
+                            if (diffDays <= 3) {
+                              return (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-200/80 dark:border-amber-900">
+                                  <Clock className="w-3 h-3 animate-pulse text-amber-600" />
+                                  残り{diffDays}日 (〜{dateStr})
+                                </span>
+                              );
+                            }
+                            return (
+                              <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400 font-mono">
+                                <Calendar className="w-3 h-3 text-slate-400 shrink-0" />
+                                <span>〜{dateStr} (残り{diffDays}日)</span>
+                              </div>
+                            );
+                          })()
+                        )
+                      ) : (
+                        <span className="text-[10px] text-slate-400">
+                          毎日0時 リセット
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     {usr.contact_person || usr.contact_phone ? (
@@ -562,6 +664,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                         onClick={() => {
                           setPlanModalUser(usr);
                           setSelectedPlan(usr.plan || "free");
+                          setPlanDuration("1m");
                         }}
                         className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-lg transition-colors cursor-pointer text-[11px]"
                         title="契約プラン変更"
@@ -884,6 +987,38 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                 </label>
               ))}
             </div>
+
+            {/* When not Free, select duration */}
+            {selectedPlan !== "free" && (
+              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">
+                  有効期間・契約サイクル (Contract Duration)
+                </label>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  {[
+                    { id: "1m", label: "1ヶ月 (+1 Month)", desc: "標準の月額契約" },
+                    { id: "3m", label: "3ヶ月 (+3 Months)", desc: "四半期契約・お試し" },
+                    { id: "6m", label: "6ヶ月 (+6 Months)", desc: "半期契約" },
+                    { id: "1y", label: "1年間 (+1 Year)", desc: "年間一括契約" },
+                    { id: "lifetime", label: "無期限 (Unlimited)", desc: "社内・VIP・無期限" },
+                  ].map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      onClick={() => setPlanDuration(d.id)}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                        planDuration === d.id
+                          ? "border-primary bg-primary/10 text-primary dark:border-secondary dark:bg-secondary/20 dark:text-secondary shadow-xs ring-1 ring-primary/40 font-bold"
+                          : "border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-900"
+                      }`}
+                    >
+                      <div className="font-bold text-xs">{d.label}</div>
+                      <div className="text-[10px] text-slate-400 mt-0.5">{d.desc}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-2.5 mt-6 pt-4 border-t border-slate-100 dark:border-slate-800">
               <button

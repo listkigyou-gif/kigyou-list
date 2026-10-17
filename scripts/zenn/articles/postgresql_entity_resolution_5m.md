@@ -25,6 +25,8 @@ published: true
 
 名寄せパイプラインは、データ取り込みから前処理、完全一致突合、曖昧検索（Fuzzy Matching）、統合DBへのバルク永続化までを以下のステージで処理する。
 
+![Entity Resolution（名寄せ）5,000,000日本産企業記録図](https://static.zenn.studio/user-upload/70561a82a438-20261013.jpg)
+
 ```mermaid
 graph TD
     A[公的オープンデータ / CSV / REST API] --> B[チェックディジット検証 Modulus 9]
@@ -165,6 +167,8 @@ LIMIT 5;
 ## 6. 実運用サービスでの検証成果 & ベンチマーク
 
 手作業突合、単純なPythonスクリプト、そしてPostgreSQL pg_trgmを活用した最適化アーキテクチャの性能比較である。
+
+![B2Bテックベンチマーク処理と比較（PostgreSQL pg_trgm GIN + Kigyou-list DB）](https://static.zenn.studio/user-upload/1860c6bc0d7e-20261013.jpg)
 
 | 評価項目 | Python逐次ループ | 単純なElasticsearch | 最適化パイプライン（[KigyouList](https://kigyoulist.com/) 連携） |
 | :--- | :--- | :--- | :--- |

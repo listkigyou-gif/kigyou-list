@@ -33,13 +33,21 @@ function getLocale(request: NextRequest): string {
 }
 
 export function middleware(request: NextRequest) {
+  const host = request.headers.get("host") || "";
   const { pathname, search } = request.nextUrl;
 
-  // Bypass API routes, static assets, and Next.js internal folders
+  // 1. Force non-www permanent redirect if request came with www
+  if (host.startsWith("www.")) {
+    const nonWwwUrl = new URL(`https://kigyoulist.com${pathname}${search}`);
+    return NextResponse.redirect(nonWwwUrl, 308);
+  }
+
+  // Bypass API routes, static assets, sitemaps, and Next.js internal folders
   const isBypass = 
     pathname.startsWith("/api") || 
     pathname.startsWith("/_next") || 
     pathname.startsWith("/static") ||
+    pathname.startsWith("/sitemap") ||
     pathname.includes(".") || // e.g. favicon.ico, icon.svg, robots.txt, sitemap.xml
     pathname === "/favicon.ico" ||
     pathname === "/robots.txt" ||
@@ -67,10 +75,12 @@ export function middleware(request: NextRequest) {
     request.url
   );
 
-  return NextResponse.redirect(redirectUrl);
+  // Return 308 Permanent Redirect for SEO canonical consistency
+  return NextResponse.redirect(redirectUrl, 308);
 }
 
 export const config = {
   // Matcher ignoring API routes and static file extensions
-  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml).*)"],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|robots.txt|sitemap).*)"],
 };
+

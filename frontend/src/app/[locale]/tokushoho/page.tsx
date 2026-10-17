@@ -167,7 +167,7 @@ export default async function TokushohoPage({ params }: PageProps) {
         icon: <FileText className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />,
         label: "販売価格（利用料金）",
         badge: "総額表示 (税込)",
-        value: "各プラン紹介ページ（料金プラン）およびフォーム営業詳細ページに表示された価格（すべて消費税10%込みの総額表示）。\n\n【企業リスト月額プラン（サブスクリプション）】\n・FREEプラン: 0円 / 月（1日20件までCSVダウンロード）\n・PROプラン: 月額 2,900円（税込）（定価 4,200円、2,000行/月）\n・BUSINESSプラン: 月額 9,800円（税込）（定価 14,000円、10,000行/月・大量エクスポート対応）\n・ENTERPRISEプラン: 月額 29,000円（税込）（定価 42,000円、40,000行/月・専任サポート付）\n\n【追加ダウンロード容量パック（買い切り型）】\n・10,000行パック: 14,800円（税込）\n・50,000行パック: 49,800円（税込）\n・100,000行パック: 79,800円（税込）\n\n【問い合わせフォーム営業配信プラン（都度購入型）】\n・1,000件プラン: 19,600円（税込）（定価 28,000円、19.6円/件）\n・3,000件プラン: 48,300円（税込）（定価 69,000円、16.1円/件）\n・5,000件プラン: 69,300円（税込）（定価 99,000円、13.8円/件）\n・10,000件以上の大口配信・特注カスタムプラン: 個別お見積もり"
+        value: "各プラン紹介ページ（料金プラン）およびフォーム営業詳細ページに表示された価格（すべて消費税10%込みの総額表示）。\n\n【企業リスト月額プラン（サブスクリプション）】\n・FREEプラン: 0円 / 月（1日20件までCSVダウンロード）\n・PROプラン: 初月 1,260円（定価 4,200円、初月70%OFF、2,000行/月）\n・BUSINESSプラン: 初月 4,200円（定価 14,000円、初月70%OFF、10,000行/月・大量エクスポート対応）\n・ENTERPRISEプラン: 初月 14,400円（定価 48,000円、初月70%OFF、40,000行/月・専任サポート付）\n\n【追加ダウンロード容量パック（買い切り型）】\n・10,000行パック: 14,800円（税込）\n・50,000行パック: 49,800円（税込）\n・100,000行パック: 79,800円（税込）\n\n【問い合わせフォーム営業配信プラン（都度購入型）】\n・1,000件プラン: 8,400円（定価 28,000円、初回限定70%OFF、8.4円/件）\n・3,000件プラン: 20,700円（定価 69,000円、初回限定70%OFF、6.9円/件）\n・5,000件プラン: 29,700円（定価 99,000円、初回限定70%OFF、5.9円/件）\n・10,000件以上の大口配信・特注カスタムプラン: 個別お見積もり"
       },
       {
         icon: <FileText className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />,
@@ -457,7 +457,7 @@ export default async function TokushohoPage({ params }: PageProps) {
         icon: <FileText className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />,
         label: "Selling Prices",
         badge: "Tax Included (10%)",
-        value: "As listed on the Pricing Page and Form Marketing Page (All prices include 10% Japanese consumption tax).\n\n【Corporate Database Monthly Subscriptions】\n・FREE Plan: ¥0 / month (Up to 20 CSV downloads/day)\n・PRO Plan: ¥2,900 / month (List: ¥4,200, 2,000 CSV rows/month)\n・BUSINESS Plan: ¥9,800 / month (List: ¥14,000, 10,000 CSV rows/month, bulk export support)\n・ENTERPRISE Plan: ¥29,000 / month (List: ¥42,000, 40,000 CSV rows/month, dedicated account manager)\n\n【CSV Quota Add-on Packs (One-off)】\n・10,000 Row Pack: ¥14,800\n・50,000 Row Pack: ¥49,800\n・100,000 Row Pack: ¥79,800\n\n【Form Marketing Outreach Packs (Pay-per-send)】\n・1,000 Forms: ¥19,600 (List: ¥28,000, ¥19.6/form)\n・3,000 Forms: ¥48,300 (List: ¥69,000, ¥16.1/form)\n・5,000 Forms: ¥69,300 (List: ¥99,000, ¥13.8/form)\n・High-volume 10,000+ outreach: Custom quotation upon request"
+        value: "As listed on the Pricing Page and Form Marketing Page (All prices include 10% Japanese consumption tax).\n\n【Corporate Database Monthly Subscriptions】\n・FREE Plan: ¥0 / month (Up to 20 CSV downloads/day)\n・PRO Plan: ¥1,260 1st mo (List: ¥4,200, 70% OFF, 2,000 CSV rows/month)\n・BUSINESS Plan: ¥4,200 1st mo (List: ¥14,000, 70% OFF, 10,000 CSV rows/month)\n・ENTERPRISE Plan: ¥14,400 1st mo (List: ¥48,000, 70% OFF, 40,000 CSV rows/month)\n\n【CSV Quota Add-on Packs (One-off)】\n・10,000 Row Pack: ¥14,800\n・50,000 Row Pack: ¥49,800\n・100,000 Row Pack: ¥79,800\n\n【Form Marketing Outreach Packs (Pay-per-send)】\n・1,000 Forms: ¥8,400 (List: ¥28,000, 70% OFF 1st order, ¥8.4/form)\n・3,000 Forms: ¥20,700 (List: ¥69,000, 70% OFF 1st order, ¥6.9/form)\n・5,000 Forms: ¥29,700 (List: ¥99,000, 70% OFF 1st order, ¥5.9/form)\n・High-volume 10,000+ outreach: Custom quotation upon request"
       },
       {
         icon: <FileText className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />,
@@ -767,7 +767,7 @@ export default async function TokushohoPage({ params }: PageProps) {
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between gap-3">
                 <div>
                   <span className="text-[11px] font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider block">PRO Plan</span>
-                  <div className="text-xl font-black text-slate-900 dark:text-white mt-1">¥2,900 <span className="text-xs font-normal text-slate-500">/ 月 (税込)</span></div>
+                  <div className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">¥1,260 <span className="text-xs font-normal text-slate-500">/ 初月 (通常: ¥4,200)</span></div>
                 </div>
                 <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
                   {isJa ? "毎月 2,000行 CSV枠 + メール開示 + かんばんCRM" : isVi ? "2.000 dòng CSV/tháng + Email + Kanban CRM" : "2,000 rows/mo + Emails + Kanban CRM"}
@@ -780,7 +780,7 @@ export default async function TokushohoPage({ params }: PageProps) {
                 </div>
                 <div>
                   <span className="text-[11px] font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider block">BUSINESS Plan</span>
-                  <div className="text-xl font-black text-[#1B4F8A] dark:text-blue-300 mt-1">¥9,800 <span className="text-xs font-normal text-slate-500">/ 月 (税込)</span></div>
+                  <div className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">¥4,200 <span className="text-xs font-normal text-slate-500">/ 初月 (通常: ¥14,000)</span></div>
                 </div>
                 <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
                   {isJa ? "毎月 10,000行 CSV枠 + Mechanism B 大量出力" : isVi ? "10.000 dòng CSV/tháng + Mechanism B" : "10,000 rows/mo + Mechanism B bulk export"}
@@ -790,7 +790,7 @@ export default async function TokushohoPage({ params }: PageProps) {
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200/80 dark:border-slate-700 flex flex-col justify-between gap-3">
                 <div>
                   <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 uppercase tracking-wider block">ENTERPRISE Plan</span>
-                  <div className="text-xl font-black text-slate-900 dark:text-white mt-1">¥29,000 <span className="text-xs font-normal text-slate-500">/ 月 (税込)</span></div>
+                  <div className="text-xl font-black text-rose-600 dark:text-rose-400 mt-1">¥14,400 <span className="text-xs font-normal text-slate-500">/ 初月 (通常: ¥48,000)</span></div>
                 </div>
                 <div className="text-[11px] text-slate-600 dark:text-slate-400 font-medium">
                   {isJa ? "毎月 40,000行 CSV枠 + API連携 + 専任サポート" : isVi ? "40.000 dòng CSV/tháng + API + Kỹ sư riêng" : "40,000 rows/mo + API Key + Dedicated manager"}
@@ -843,26 +843,26 @@ export default async function TokushohoPage({ params }: PageProps) {
               <div className="flex flex-col gap-2.5">
                 <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white block">1,000 件送信プラン</span>
-                    <span className="text-[11px] text-slate-500">{isJa ? "単価 19.6円/件・テスト送信に最適" : isVi ? "Đơn giá 19,6 JPY/form" : "@¥19.6/form (Starter test)"}</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block">1,000 件送信プラン（初回70%OFF）</span>
+                    <span className="text-[11px] text-slate-500">{isJa ? "単価 8.4円/件（通常: 28,000円）" : isVi ? "Đơn giá 8.4 JPY/form (Gốc: ¥28.000)" : "@¥8.4/form (Reg: ¥28,000)"}</span>
                   </div>
-                  <span className="text-sm font-black text-slate-900 dark:text-white">¥19,600 <span className="text-[10px] font-normal text-slate-500">(税込)</span></span>
+                  <span className="text-sm font-black text-rose-600 dark:text-rose-400">¥8,400 <span className="text-[10px] font-normal text-slate-500">(税込)</span></span>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 block">3,000 件送信プラン（推奨）</span>
-                    <span className="text-[11px] text-slate-500">{isJa ? "単価 16.1円/件・安定アポ獲得" : isVi ? "Đơn giá 16,1 JPY/form" : "@¥16.1/form (Standard)"}</span>
+                    <span className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 block">3,000 件送信プラン（初回70%OFF・推奨）</span>
+                    <span className="text-[11px] text-slate-500">{isJa ? "単価 6.9円/件（通常: 69,000円）" : isVi ? "Đơn giá 6.9 JPY/form (Gốc: ¥69.000)" : "@¥6.9/form (Reg: ¥69,000)"}</span>
                   </div>
-                  <span className="text-sm font-black text-[#1B4F8A] dark:text-blue-400">¥48,300 <span className="text-[10px] font-normal text-slate-500">(税込)</span></span>
+                  <span className="text-sm font-black text-rose-600 dark:text-rose-400">¥20,700 <span className="text-[10px] font-normal text-slate-500">(税込)</span></span>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700 flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-bold text-slate-900 dark:text-white block">5,000 件送信プラン</span>
-                    <span className="text-[11px] text-slate-500">{isJa ? "単価 13.8円/件・商談数最大化" : isVi ? "Đơn giá 13,8 JPY/form" : "@¥13.8/form (Enterprise)"}</span>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white block">5,000 件送信プラン（初回70%OFF）</span>
+                    <span className="text-[11px] text-slate-500">{isJa ? "単価 5.9円/件（通常: 99,000円）" : isVi ? "Đơn giá 5.9 JPY/form (Gốc: ¥99.000)" : "@¥5.9/form (Reg: ¥99,000)"}</span>
                   </div>
-                  <span className="text-sm font-black text-slate-900 dark:text-white">¥69,300 <span className="text-[10px] font-normal text-slate-500">(税込)</span></span>
+                  <span className="text-sm font-black text-rose-600 dark:text-rose-400">¥29,700 <span className="text-[10px] font-normal text-slate-500">(税込)</span></span>
                 </div>
               </div>
             </div>

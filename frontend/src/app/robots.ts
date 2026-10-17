@@ -24,6 +24,8 @@ export default function robots(): MetadataRoute.Robots {
       // AI Search & Knowledge Grounding Bots (Allow to cite and index public directory/profiles)
       {
         userAgent: [
+          'Bingbot',
+          'msnbot',
           'OAI-SearchBot',
           'GPTBot',
           'Claude-SearchBot',
@@ -33,6 +35,7 @@ export default function robots(): MetadataRoute.Robots {
           'Applebot',
           'Applebot-Extended',
           'cohere-ai',
+          'meta-externalagent',
         ],
         allow: '/',
         disallow: [
@@ -61,6 +64,7 @@ export default function robots(): MetadataRoute.Robots {
     ],
     sitemap: [
       `${baseUrl}/sitemap.xml`,
+      `${baseUrl}/sitemap/core.xml`,
       `${baseUrl}/sitemap-index.xml`,
     ],
   };

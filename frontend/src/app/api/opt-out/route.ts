@@ -87,22 +87,31 @@ export async function POST(req: NextRequest) {
       );
       const companyName = compRes.rows[0]?.company_name || body.company_name || null;
 
-      // 2. Insert into form_marketing_opt_outs if not already present
-      await client.query(
-        `INSERT INTO form_marketing_opt_outs (user_id, corporate_number, company_name, campaign_id, created_at)
-         SELECT $1::varchar, $2::varchar, $3::varchar, $4::varchar, CURRENT_TIMESTAMP
-         WHERE NOT EXISTS (
-           SELECT 1 FROM form_marketing_opt_outs 
-           WHERE corporate_number = $2::varchar AND (user_id = $1::varchar OR (user_id IS NULL AND $1::varchar = 'admin'))
-         )`,
-        [userId, corporateNumber, companyName, campaignId]
+      // 2. Check if already opted out
+      const existingCheck = await client.query(
+        `SELECT id FROM form_marketing_opt_outs 
+         WHERE corporate_number = $1::varchar AND (user_id = $2::varchar OR (user_id IS NULL AND $2::varchar = 'admin'))
+         LIMIT 1`,
+        [corporateNumber, userId]
       );
+      const wasAlreadyOptedOut = (existingCheck.rowCount ?? 0) > 0;
+
+      if (!wasAlreadyOptedOut) {
+        await client.query(
+          `INSERT INTO form_marketing_opt_outs (user_id, corporate_number, company_name, campaign_id, created_at)
+           VALUES ($1::varchar, $2::varchar, $3::varchar, $4::varchar, CURRENT_TIMESTAMP)`,
+          [userId, corporateNumber, companyName, campaignId]
+        );
+      }
 
       return NextResponse.json({
         success: true,
         corporate_number: corporateNumber,
         company_name: companyName,
-        message: "お問い合わせフォーム営業の配信停止を正常に受け付けました。",
+        already_opted_out: wasAlreadyOptedOut,
+        message: wasAlreadyOptedOut 
+          ? "この企業様は既に配信停止リストに登録されております。" 
+          : "お問い合わせフォーム営業の配信停止を正常に受け付けました。",
       });
     } finally {
       client.release();

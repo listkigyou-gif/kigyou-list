@@ -39,13 +39,13 @@ export async function POST(request: Request) {
 
     const email = session.user.email;
     
-    // Check if user is eligible for API (must be business, enterprise, or system admin)
+    // Check if user is eligible for API (must be pro, business, enterprise, or system admin)
     const quota = await getUserQuota(email);
     const plan = quota ? quota.plan : "free";
 
-    if (plan !== "business" && plan !== "enterprise" && !isAdminEmail(email)) {
+    if (plan !== "pro" && plan !== "business" && plan !== "enterprise" && !isAdminEmail(email)) {
       return NextResponse.json({
-        error: "API連携機能はBUSINESSプラン以上でご利用いただけます。"
+        error: "API連携機能はPROプラン以上でご利用いただけます。"
       }, { status: 403 });
     }
 

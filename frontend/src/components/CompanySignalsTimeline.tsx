@@ -4,7 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { 
   ChevronDown, Briefcase, DollarSign, Award, Lightbulb, FileText, Calendar
 } from 'lucide-react';
-import { UnlockCard } from './UnlockCard';
 import { BusinessSignal } from '@/lib/db';
 import { useLanguage } from '@/context/LanguageContext';
 
@@ -157,15 +156,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
             {/* Group Content — CSS-animated, content pre-rendered (no JS lag on toggle) */}
             <AccordionPanel isExpanded={isExpanded}>
               <div className="p-4 sm:p-5 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-[#1C2128]/5">
-                <UnlockCard
-                  type="block"
-                  fallbackText={
-                    isPatent
-                      ? t.company.patentDetailsPlaceholder
-                      : t.company.signalDetailsPlaceholder
-                  }
-                >
-                  <div className="relative border-l-2 border-dashed border-slate-200 dark:border-slate-800/80 ml-4 pl-6 flex flex-col gap-8">
+                <div className="relative border-l-2 border-dashed border-slate-200 dark:border-slate-800/80 ml-4 pl-6 flex flex-col gap-8">
                     {list.map((sig) => (
                       <div key={sig.id} className="relative group">
                         {/* Timeline circle with icon */}
@@ -257,7 +248,6 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                       {t.company.recentRecordsNotice}
                     </div>
                   )}
-                </UnlockCard>
               </div>
             </AccordionPanel>
           </div>

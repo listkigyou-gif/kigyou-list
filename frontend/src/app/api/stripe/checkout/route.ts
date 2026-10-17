@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getUserQuota } from "@/lib/db";
+import { getUserQuota, isFirstTimeSubscriber, isFirstTimeFormBuyer } from "@/lib/db";
 import { auth } from "@/auth";
 
 
@@ -34,19 +34,19 @@ export async function POST(request: Request) {
           listPrice = 4200;
           allowance = 2000;
           priceName = "PROプラン (月額サブスクリプション)";
-          priceJpy = 2900; // campaign default
+          priceJpy = 4200; // Standard list price
           break;
         case "business":
           listPrice = 14000;
           allowance = 10000;
           priceName = "BUSINESSプラン (月額サブスクリプション)";
-          priceJpy = 9800; // campaign default
+          priceJpy = 14000; // Standard list price
           break;
         case "enterprise":
           listPrice = 42000; // ~42,000 JPY
           allowance = 40000;
           priceName = "ENTERPRISEプラン (月額サブスクリプション)";
-          priceJpy = 29000; // campaign default
+          priceJpy = 42000; // Standard list price
           break;
         default:
           return NextResponse.json({ error: "Invalid planId parameter" }, { status: 400 });
@@ -83,31 +83,40 @@ export async function POST(request: Request) {
       }
     } else if (formPlanId) {
       isSubscription = false;
+      const isFirstTimeForm = await isFirstTimeFormBuyer(email);
+      let discountedPrice = 0;
+
       switch (formPlanId) {
         case "form_1k":
           listPrice = 28000;
-          priceJpy = 19600; // 30% OFF Campaign
+          discountedPrice = 8400; // 70% OFF
           allowance = 1000;
-          priceName = "問い合わせフォーム営業 1,000件配信枠 [キャンペーン30%OFF]";
           break;
         case "form_3k":
           listPrice = 69000;
-          priceJpy = 48300; // 30% OFF Campaign
+          discountedPrice = 20700; // 70% OFF
           allowance = 3000;
-          priceName = "問い合わせフォーム営業 3,000件配信枠 [キャンペーン30%OFF]";
           break;
         case "form_5k":
           listPrice = 99000;
-          priceJpy = 69300; // 30% OFF Campaign
+          discountedPrice = 29700; // 70% OFF
           allowance = 5000;
-          priceName = "問い合わせフォーム営業 5,000件配信枠 [キャンペーン30%OFF]";
           break;
         default:
           return NextResponse.json({ error: "Invalid formPlanId parameter" }, { status: 400 });
       }
+
+      if (isFirstTimeForm) {
+        priceJpy = discountedPrice;
+        priceName = `問い合わせフォーム営業 ${allowance.toLocaleString()}件配信枠 [初回限定70%OFF]`;
+      } else {
+        priceJpy = listPrice;
+        priceName = `問い合わせフォーム営業 ${allowance.toLocaleString()}件配信枠 (通常価格)`;
+      }
     }
 
-    const campaignCouponId = process.env.STRIPE_CAMPAIGN_COUPON_ID;
+    const isFirstTime = isSubscription ? await isFirstTimeSubscriber(email) : false;
+    const campaignCouponId = process.env.STRIPE_CAMPAIGN_COUPON_ID || "FIRST_MONTH_70_OFF";
     let activeCouponId: string | undefined = undefined;
 
     // Apply coupon discount if applicable (only for subscription plans)
@@ -118,12 +127,15 @@ export async function POST(request: Request) {
           priceJpy = Math.floor(listPrice * (1 - discountVal / 100));
           priceName = `${priceName} [クーポン ${discountCodeInfo(couponCode)} 適用]`;
         }
-      } else if (campaignCouponId) {
-        // If campaign coupon is configured, set recurring subscription price to standard list price
-        // and apply the coupon so Stripe charges campaign price for month 1 and standard list price afterwards.
+      } else if (isFirstTime && campaignCouponId) {
+        // First-time subscriber: apply 70% OFF coupon for the first month
+        // In Stripe Subscription mode, unit_amount stays listPrice and Stripe applies 70% off for month 1 only
         priceJpy = listPrice;
         activeCouponId = campaignCouponId;
-        priceName = `${priceName} [初月キャンペーン割引適用]`;
+        priceName = `${priceName} [新規登録・初月70%OFF適用]`;
+      } else {
+        // Returning/previous subscriber: standard list price
+        priceJpy = listPrice;
       }
     }
 
@@ -144,14 +156,15 @@ export async function POST(request: Request) {
       }
       
       if (isSubscription) {
-        // Calculate simulated discounted price for first month mock record
-        let simulatedAmountJpy = priceJpy;
-        if (activeCouponId) {
-          if (planId === "pro") simulatedAmountJpy = 2900;
-          else if (planId === "business") simulatedAmountJpy = 9800;
-          else if (planId === "enterprise") simulatedAmountJpy = 29000;
+        // Calculate simulated discounted price for first month mock record (70% OFF if first-time)
+        let simulatedAmountJpy = isFirstTime ? Math.floor(listPrice * 0.3) : listPrice;
+        if (couponCode && couponDiscount) {
+          const discountVal = Number(couponDiscount);
+          if (!isNaN(discountVal) && discountVal > 0 && discountVal <= 100) {
+            simulatedAmountJpy = Math.floor(listPrice * (1 - discountVal / 100));
+          }
         }
-        console.log(`[Stripe Simulator] Creating subscription checkout for ${email} - plan: ${planId} (¥${simulatedAmountJpy}/mo first month, standard: ¥${listPrice}/mo)`);
+        console.log(`[Stripe Simulator] Creating subscription checkout for ${email} - plan: ${planId} (¥${simulatedAmountJpy} first month, standard: ¥${listPrice}/mo, isFirstTime: ${isFirstTime})`);
         const mockSuccessUrl = `${appUrl}/dashboard?stripe_success=true&email=${encodeURIComponent(email)}&plan=${planId}&amount_jpy=${simulatedAmountJpy}&allowance=${allowance}&couponCode=${encodeURIComponent(couponCode || "")}`;
         return NextResponse.json({ 
           url: mockSuccessUrl,
@@ -231,6 +244,7 @@ export async function POST(request: Request) {
       } else if (formPlanId) {
         sessionData.metadata.formPlanId = formPlanId;
         sessionData.metadata.formAllowance = String(allowance);
+        sessionData.metadata.isFirstTime = String(isFirstTimeForm);
       } else {
         sessionData.metadata.packId = packId;
         sessionData.metadata.amount = String(allowance);
@@ -245,11 +259,12 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Stripe checkout session creation failed." }, { status: 500 });
       }
       
-      let simulatedAmountJpy = priceJpy;
-      if (isSubscription && activeCouponId) {
-        if (planId === "pro") simulatedAmountJpy = 2900;
-        else if (planId === "business") simulatedAmountJpy = 9800;
-        else if (planId === "enterprise") simulatedAmountJpy = 29000;
+      let simulatedAmountJpy = isSubscription && isFirstTime && activeCouponId ? Math.floor(listPrice * 0.3) : priceJpy;
+      if (isSubscription && couponCode && couponDiscount) {
+        const discountVal = Number(couponDiscount);
+        if (!isNaN(discountVal) && discountVal > 0 && discountVal <= 100) {
+          simulatedAmountJpy = Math.floor(listPrice * (1 - discountVal / 100));
+        }
       }
       const mockSuccessUrl = formPlanId
         ? `${appUrl}/dashboard?tab=formCampaigns&stripe_success=true&formPlanId=${formPlanId}&allowance=${allowance}&email=${encodeURIComponent(email)}&amount_jpy=${priceJpy}`

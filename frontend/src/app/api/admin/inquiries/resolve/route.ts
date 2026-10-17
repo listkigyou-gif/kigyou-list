@@ -8,7 +8,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { id, action, corporate_number, reason } = await request.json();
+    const body = await request.json();
+    const id = body.id || body.inquiryId;
+    const action = body.action;
+    const corporate_number = body.corporate_number || body.corporateNumber;
+    const reason = body.reason;
 
     if (!id || !action) {
       return NextResponse.json({ error: "IDまたはアクションが不足しています。" }, { status: 400 });

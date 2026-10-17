@@ -139,8 +139,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "rate_limit_exceeded" }, { status: 429 });
     }
 
-    const isFreePlan = (quota.plan === 'free');
-    const remaining = (quota.monthly_base_allowance - quota.monthly_base_used) + (isFreePlan ? 0 : quota.purchased_add_on_balance);
+    const remaining = (quota.monthly_base_allowance - quota.monthly_base_used) + (quota.purchased_add_on_balance || 0);
 
     if (remaining < totalCount) {
       return NextResponse.json({ 

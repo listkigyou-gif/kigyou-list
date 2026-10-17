@@ -4,7 +4,8 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { 
   Building2, Search, MapPin, X, Phone, Globe, Clock,
-  ChevronLeft, ChevronRight, SlidersHorizontal, Lock, ExternalLink, MessageSquare, Send, Mail
+  ChevronLeft, ChevronRight, SlidersHorizontal, Lock, ExternalLink, MessageSquare, Send, Mail,
+  Sparkles, ArrowRight
 } from "lucide-react";
 import { formatShortDate } from "@/lib/dateUtils";
 import { SearchSidebar } from "@/components/SearchSidebar";
@@ -16,6 +17,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { getIndustryName } from "@/lib/locale-mapping";
 import { CopyTextButton } from "@/components/CopyTextButton";
 import { CompanyLogo } from "@/components/CompanyLogo";
+import { trackSearch, trackSignUpIntent } from "@/lib/gtag";
 
 function formatJapaneseCurrency(amount: number | string | null | undefined, locale: string): string {
   if (!amount && amount !== 0) return "";
@@ -203,7 +205,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   initialFilters
 }) => {
   const { locale, t } = useLanguage();
-  const { user, isLoggedIn } = useAuth();
+  const { user, isLoggedIn, setAuthModalOpen } = useAuth();
   const [formCredits, setFormCredits] = useState<number | null>(null);
 
   // 1. Local States
@@ -218,8 +220,8 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   const isProOrHigher = Boolean(user && (user.role === 'pro' || user.role === 'business' || user.role === 'enterprise' || user.role === 'admin'));
 
   const handleOpenFormCampaign = () => {
-    if (!isProOrHigher) {
-      setRequirementModalType("PRO_REQUIRED");
+    if (!isLoggedIn) {
+      setAuthModalOpen(true);
       return;
     }
     if (!hasContactForm) {
@@ -768,6 +770,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     const qValue = (formData.get("q") as string) || "";
     setKeyword(qValue);
     setPage(1);
+    trackSearch(qValue, prefCode, indCode);
     executeSearch({ keyword: qValue, page: 1, forceOffset: true });
   };
 
@@ -1197,6 +1200,49 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
           </div>
         </div>
 
+        {/* Free Quota & Signup Conversion Banner for Unauthenticated Users */}
+        {!isLoggedIn && (
+          <div className="bg-gradient-to-r from-blue-600 via-[#1B4F8A] to-indigo-700 text-white p-3.5 sm:p-4 rounded-xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-blue-400/30">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-white/15 backdrop-blur-xs flex items-center justify-center shrink-0">
+                <Sparkles className="w-4.5 h-4.5 text-amber-300" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[11px] font-bold uppercase bg-amber-400 text-slate-900 px-2 py-0.5 rounded-full tracking-wider">
+                    {locale === 'ja' ? '無料会員特典' : locale === 'vi' ? 'ĐẶC QUYỀN MIỄN PHÍ' : 'FREE TIER'}
+                  </span>
+                  <p className="text-xs sm:text-sm font-bold text-white">
+                    {locale === 'ja' 
+                      ? '今すぐ無料登録で毎月20件のCSVダウンロード枠を即時プレゼント！' 
+                      : locale === 'vi'
+                      ? 'Đăng ký miễn phí ngay để nhận 20 lượt tải CSV doanh nghiệp mỗi tháng!'
+                      : 'Sign up free now to get 20 free CSV company downloads every month!'}
+                  </p>
+                </div>
+                <p className="text-[11px] text-blue-100 hidden sm:block mt-0.5">
+                  {locale === 'ja'
+                    ? 'クレジットカード不要・Googleアカウントで1秒ログイン可能'
+                    : locale === 'vi'
+                    ? 'Không cần thẻ tín dụng • Đăng nhập 1 chạm với Google'
+                    : 'No credit card required • 1-click Google sign in'}
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                trackSignUpIntent("search_banner");
+                setAuthModalOpen(true);
+              }}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0"
+            >
+              <span>{locale === 'ja' ? '無料でCSV枠を受け取る' : locale === 'vi' ? 'Nhận 20 lượt miễn phí' : 'Claim Free CSV Trial'}</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* Stats Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400 bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 p-3.5 sm:p-4 rounded-xl shadow-2xs">
           <span>
@@ -1249,19 +1295,17 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                 type="button"
                 onClick={handleOpenFormCampaign}
                 className={`px-3.5 py-2 text-xs font-bold rounded-lg shadow-2xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-[0.98] ${
-                  !isProOrHigher 
-                    ? "text-slate-300 bg-slate-700 hover:bg-slate-650 border border-slate-600" 
-                    : !hasContactForm
+                  !hasContactForm
                     ? "text-white bg-[#1B4F8A] hover:bg-[#143D6C] border border-[#143D6C] ring-2 ring-amber-400/50"
                     : "text-white bg-[#1B4F8A] hover:bg-[#143D6C] border border-[#143D6C]"
                 }`}
                 title={
-                  !isProOrHigher
-                    ? (locale === 'ja' 
-                        ? "【Proプラン以上限定】フォーム営業を利用するにはProプランへのアップグレードと「お問い合わせフォーム」絞り込みが必要です" 
-                        : locale === 'vi' 
-                        ? "【Yêu cầu gói PRO】Cần nâng cấp lên gói PRO và lọc 'Biểu mẫu liên hệ' để dùng tính năng này" 
-                        : "【PRO Plan Required】Upgrade to PRO and filter by 'Contact Form' to use automated outreach")
+                  !isLoggedIn
+                    ? (locale === 'ja'
+                        ? "フォーム営業を利用するには無料登録・ログインが必要です"
+                        : locale === 'vi'
+                        ? "Đăng ký hoặc đăng nhập miễn phí để sử dụng tính năng gửi form"
+                        : "Register free or login to use automated form outreach")
                     : !hasContactForm
                     ? (locale === 'ja'
                         ? "【条件必須】「連絡先情報の有無 ＞ お問い合わせフォーム」の絞り込みが必要です"
@@ -1275,17 +1319,9 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                         : "Automated Form Outreach to this filtered list (Self-serve)")
                 }
               >
-                {!isProOrHigher ? (
-                  <Lock className="w-3.5 h-3.5 text-amber-300" />
-                ) : (
-                  <Send className="w-3.5 h-3.5" />
-                )}
+                <Send className="w-3.5 h-3.5" />
                 <span>{locale === 'ja' ? 'この条件でフォーム営業 (自動配信)' : locale === 'vi' ? 'Gửi Form tự động (Self-serve)' : 'Automated Form Outreach'}</span>
-                {!isProOrHigher ? (
-                  <span className="text-[9px] bg-amber-400 text-amber-950 font-black px-1.5 py-0.2 rounded uppercase flex items-center gap-0.5">
-                    PRO
-                  </span>
-                ) : !hasContactForm ? (
+                {!hasContactForm ? (
                   <span className="text-[9px] bg-amber-400 text-amber-950 font-black px-1.5 py-0.2 rounded uppercase">
                     {locale === 'ja' ? '要条件' : locale === 'vi' ? 'CẦN LỌC' : 'REQ'}
                   </span>

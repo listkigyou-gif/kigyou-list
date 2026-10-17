@@ -29,7 +29,7 @@ import {
   Target,
   Terminal
 } from "lucide-react";
-import { getDatabaseStats, getFeaturedPartners, getMockPartners } from "@/lib/db";
+import { getDatabaseStats } from "@/lib/db";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getTranslations } from "@/lib/i18n";
@@ -48,14 +48,6 @@ export default async function Home({ params }: PageParams) {
 
   // Fetch real database counts dynamically
   const stats = await getDatabaseStats();
-  const realPartners = await getFeaturedPartners();
-  const mockPartners = await getMockPartners();
-  const partners = [...realPartners, ...mockPartners];
-
-  // Split into 2 rows for partner marquee
-  const halfLength = Math.ceil(partners.length / 2);
-  const row1Partners = partners.slice(0, halfLength);
-  const row2Partners = partners.slice(halfLength);
 
   const websiteSchema = {
     "@context": "https://schema.org",
@@ -138,10 +130,10 @@ export default async function Home({ params }: PageParams) {
         "acceptedAnswer": {
           "@type": "Answer",
           "text": isJa
-            ? "国税庁の法人番号サイトやiタウンページを手作業で集める場合、費用は0円ですが、電話番号やHP URLが欠落していたり、100件集めるだけで数時間以上の人件費が浪費されます。Kigyou-listは、全国500万社の法人データから業種・地域・連絡先有無で瞬時に絞り込み、電話番号・WebサイトURL付きで一括CSVダウンロードが可能です。月額4,980円（年間縛りなし）で利用できるため、人件費と作業時間を大幅に削減して本来の営業活動に集中できます。"
+            ? "国税庁の法人番号サイトやiタウンページを手作業で集める場合、費用は0円ですが、電話番号やHP URLが欠落していたり、100件集めるだけで数時間以上の人件費が浪費されます。Kigyou-listは、全国500万社の法人データから業種・地域・連絡先有無で瞬時に絞り込み、電話番号・WebサイトURL付きで一括CSVダウンロードが可能です。初月1,260円〜（通常4,200円、初月70%OFF・年間縛りなし）で利用できるため、人件費と作業時間を大幅に削減して本来の営業活動に集中できます。"
             : isVi
-            ? "Tự thu thập thủ công từ Cổng thông tin Quốc thuế hoặc Townpage tốn 0 đồng nhưng mất hàng chục giờ công, dữ liệu thiếu số điện thoại hoặc website. Kigyou-list giúp bạn lọc ngay lập tức từ 5 triệu doanh nghiệp theo ngành nghề, khu vực, có sẵn SĐT và URL website, xuất file CSV chỉ trong vài giây. Với chi phí chỉ 4,980 Yên/tháng và không ràng buộc hợp đồng năm, doanh nghiệp tiết kiệm 90% thời gian để tập trung bán hàng."
-            : "While manual scraping from public portals costs zero, it takes dozens of hours and lacks verified phone numbers and websites. Kigyou-list allows instant multi-criteria filtering across 5M companies with complete phones, websites, and emails ready for CSV export. At only 4,980 JPY/mo with no annual lock-in, it saves tremendous staff hours."
+            ? "Tự thu thập thủ công từ Cổng thông tin Quốc thuế hoặc Townpage tốn 0 đồng nhưng mất hàng chục giờ công, dữ liệu thiếu số điện thoại hoặc website. Kigyou-list giúp bạn lọc ngay lập tức từ 5 triệu doanh nghiệp theo ngành nghề, khu vực, có sẵn SĐT và URL website, xuất file CSV chỉ trong vài giây. Với chi phí chỉ từ 1,260 JPY tháng đầu (giảm 70%, giá gốc 4,200 JPY) và không ràng buộc hợp đồng năm, doanh nghiệp tiết kiệm 90% thời gian để tập trung bán hàng."
+            : "While manual scraping from public portals costs zero, it takes dozens of hours and lacks verified phone numbers and websites. Kigyou-list allows instant multi-criteria filtering across 5M companies with complete phones, websites, and emails ready for CSV export. At only 1,260 JPY 1st month (70% OFF, reg. 4,200 JPY) with no annual lock-in, it saves tremendous staff hours."
         }
       },
       {
@@ -150,10 +142,10 @@ export default async function Home({ params }: PageParams) {
         "acceptedAnswer": {
           "@type": "Answer",
           "text": isJa
-            ? "従来のリスト販売業者は、1件あたり10〜50円と高額な上に、数年前の古いデータが混ざっており不通電話や廃業によるロスが発生しやすいリスクがあります。Kigyou-listは公的オープンデータや最新Web情報を常時クローリングして鮮度を担保しており、月額定額（4,980円〜）で必要な分だけ最新データをCSV抽出できます。年間契約の縛りもないため、テストマーケティングや短期の架電キャンペーンにも最小限のコストで導入可能です。"
+            ? "従来のリスト販売業者は、1件あたり10〜50円と高額な上に、数年前の古いデータが混ざっており不通電話や廃業によるロスが発生しやすいリスクがあります。Kigyou-listは公的オープンデータや最新Web情報を常時クローリングして鮮度を担保しており、月額定額（初月1,260円〜、通常4,200円）で必要な分だけ最新データをCSV抽出できます。年間契約の縛りもないため、テストマーケティングや短期の架電キャンペーンにも最小限のコストで導入可能です。"
             : isVi
-            ? "Các đơn vị bán danh bạ thường tính phí 10-50 Yên/công ty và dữ liệu tĩnh cũ dễ gặp số chết hoặc doanh nghiệp đã giải thể. Kigyou-list liên tục cập nhật dữ liệu mới nhất từ cổng thông tin quốc gia, hoạt động theo mô hình thuê bao linh hoạt (chỉ từ 4,980 Yên/tháng, không ràng buộc năm), giúp bạn lấy đúng dữ liệu đang hoạt động với chi phí rẻ hơn nhiều lần."
-            : "Traditional list vendors charge high per-record fees (10-50 JPY/lead) for static lists that often contain outdated numbers and dissolved companies. Kigyou-list provides continuously refreshed cloud data on a flexible monthly subscription without annual commitments, maximizing telemarketing connect rates at a fraction of the cost."
+            ? "Các đơn vị bán danh bạ thường tính phí 10-50 Yên/công ty và dữ liệu tĩnh cũ dễ gặp số chết hoặc doanh nghiệp đã giải thể. Kigyou-list liên tục cập nhật dữ liệu mới nhất từ cổng thông tin quốc gia, hoạt động theo mô hình thuê bao linh hoạt (chỉ từ 1,260 Yên tháng đầu - giảm 70%, không ràng buộc năm), giúp bạn lấy đúng dữ liệu đang hoạt động với chi phí rẻ hơn nhiều lần."
+            : "Traditional list vendors charge high per-record fees (10-50 JPY/lead) for static lists that often contain outdated numbers and dissolved companies. Kigyou-list provides continuously refreshed cloud data on a flexible monthly subscription (1st mo 1,260 JPY, 70% OFF) without annual commitments, maximizing telemarketing connect rates at a fraction of the cost."
         }
       }
     ]
@@ -164,6 +156,7 @@ export default async function Home({ params }: PageParams) {
     "@type": "Dataset",
     "name": "Kigyou-list Japan Corporate Intelligence Database",
     "description": "Comprehensive B2B directory covering over 5,000,000 registered Japanese corporate entities across 47 prefectures and all JSIC industries.",
+    "keywords": ["企業リスト", "企業データ", "営業リスト", "日本企業データベース", "500万社"],
     "url": `https://kigyoulist.com/${locale}`,
     "license": `https://kigyoulist.com/${locale}/terms`,
     "isAccessibleForFree": true,
@@ -226,9 +219,8 @@ export default async function Home({ params }: PageParams) {
             <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.25] text-slate-900 dark:text-white mb-6">
               {isJa ? (
                 <>
-                  日本全国500万社の企業データを、次の一手へ。<br className="hidden sm:inline" />
-                  <span className="text-[#1B4F8A] dark:text-blue-400">高確度ターゲティング</span>
-                  から
+                  日本全国500万社の<span className="text-[#1B4F8A] dark:text-blue-400">企業リスト・企業データ</span>を、次の一手へ。<br className="hidden sm:inline" />
+                  高確度ターゲティングから
                   <span className="text-[#1B4F8A] dark:text-blue-400">自動フォーム営業</span>
                   までワンストップ。
                 </>
@@ -443,47 +435,7 @@ export default async function Home({ params }: PageParams) {
           </div>
         </section>
 
-        {/* ========================================================
-            3. PARTNER MARQUEE SLIDER
-            ======================================================== */}
-        {partners && partners.length > 0 && (
-          <section className="py-10 bg-slate-50/70 dark:bg-[#0D1117] border-b border-slate-200/80 dark:border-slate-800 overflow-hidden relative">
-            <div className="max-w-4xl mx-auto mb-6 text-center px-4">
-              <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                {isJa ? "導入企業・活用パートナー" : isVi ? "Khách hàng & Đối tác doanh nghiệp" : "Trusted by B2B Teams"}
-              </span>
-            </div>
 
-            {/* Marquee Row */}
-            <div className="relative w-full flex flex-col gap-4 overflow-hidden py-1">
-              <div className="absolute inset-y-0 left-0 w-24 bg-gradient-to-r from-slate-50 dark:from-[#0D1117] to-transparent z-10 pointer-events-none" />
-              <div className="absolute inset-y-0 right-0 w-24 bg-gradient-to-l from-slate-50 dark:from-[#0D1117] to-transparent z-10 pointer-events-none" />
-
-              <div className="flex gap-12 custom-marquee-scroll whitespace-nowrap">
-                {[...row1Partners, ...row1Partners].map((partner, index) => (
-                  <div
-                    key={`${partner.user_email}-row1-${index}`}
-                    className="inline-flex items-center select-none opacity-60 hover:opacity-100 transition-opacity duration-200 shrink-0"
-                  >
-                    {(!partner.user_email.startsWith("mock_") && partner.logo_url && !partner.logo_url.startsWith("MOCK_SVG_")) ? (
-                      <div className="h-7 max-w-[130px] flex items-center justify-center">
-                        <img
-                          src={partner.logo_url}
-                          alt={partner.billing_name || "Partner Logo"}
-                          className="max-h-full max-w-full object-contain grayscale hover:grayscale-0 transition-all dark:brightness-200"
-                        />
-                      </div>
-                    ) : (
-                      <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors tracking-wide">
-                        {partner.billing_name}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
 
         {/* ========================================================
             4. THE 5 CORE PILLARS (Tất cả tính năng mới cốt lõi)
@@ -899,16 +851,28 @@ print(leads[0]["ai_sales_hook"])`}
 
               {/* PRO Plan (Recommended) */}
               <div className="b2b-card p-6 flex flex-col justify-between border-2 border-[#1B4F8A] dark:border-blue-500 relative shadow-md">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#1B4F8A] text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-xs">
-                  {isJa ? "一番人気 / おすすめ" : isVi ? "Phổ biến nhất" : "Most Popular"}
+                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-rose-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-xs whitespace-nowrap">
+                  {isJa ? "★ 新規限定・初月70%OFF" : isVi ? "★ Giảm 70% tháng đầu" : "★ 70% OFF 1st Month"}
                 </div>
                 <div>
-                  <div className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider mb-2">PRO</div>
-                  <div className="text-2xl font-black text-slate-900 dark:text-white mb-4">
-                    ¥9,800 <span className="text-xs font-normal text-slate-500">/ 月 (税込)</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider">PRO</div>
+                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900">
+                      70% OFF
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-1.5 mb-1">
+                    <span className="text-2xl sm:text-3xl font-black text-[#1B4F8A] dark:text-blue-300">¥1,260</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">/ {isJa ? "初月" : isVi ? "tháng đầu" : "1st mo"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="line-through text-slate-400 font-mono text-xs">¥4,200</span>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+                      {isJa ? "（2ヶ月目以降: ¥4,200/月）" : isVi ? "(Từ tháng 2: ¥4.200/tháng)" : "(2nd mo+: ¥4,200/mo)"}
+                    </span>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mb-6">
-                    {isJa ? "「連絡先情報の有無」の全解除、求人・助成金シグナル、CSV大量出力、フォーム営業の全連携" : isVi ? "Mở khóa toàn bộ kênh liên lạc (Form, Email, Phone), tín hiệu tuyển dụng, gửi form tự động" : "Unlock all contact filters, intent signals, bulk CSV, and automated form campaigns"}
+                    {isJa ? "「連絡先情報の有無」の全解除、求人・助成金シグナル、毎月2,000件CSV出力、フォーム営業の全連携" : isVi ? "Mở khóa toàn bộ kênh liên lạc (Form, Email, Phone), tín hiệu tuyển dụng, 2.000 dòng CSV/tháng, gửi form tự động" : "Unlock all contact filters, intent signals, 2,000 CSV rows/mo, and automated form campaigns"}
                   </p>
                   <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 mb-6">
                     <li className="flex items-center gap-2">
@@ -917,7 +881,7 @@ print(leads[0]["ai_sales_hook"])`}
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>{isJa ? "CSV出力 5,000件 / 月" : isVi ? "Xuất CSV: 5.000 dòng/tháng" : "5,000 CSV rows / month"}</span>
+                      <span>{isJa ? "CSV出力 2,000件 / 月" : isVi ? "Xuất CSV: 2.000 dòng/tháng" : "2,000 CSV rows / month"}</span>
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
@@ -933,21 +897,33 @@ print(leads[0]["ai_sales_hook"])`}
                   href={`/${locale}/pricing`}
                   className="b2b-btn-primary w-full"
                 >
-                  {isJa ? "Proプランにアップグレード" : isVi ? "Nâng cấp gói PRO ngay" : "Upgrade to PRO"}
+                  {isJa ? "Proプランにアップグレード (70%OFF)" : isVi ? "Nâng cấp gói PRO (Giảm 70%)" : "Upgrade to PRO (70% OFF)"}
                 </Link>
               </div>
 
               {/* Form Outreach Add-on Wallet */}
               <div className="b2b-card p-6 flex flex-col justify-between bg-gradient-to-b from-indigo-50/30 to-white dark:from-indigo-950/20 dark:to-[#161B22]">
                 <div>
-                  <div className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider mb-2">
-                    {isJa ? "フォーム営業クレジット" : isVi ? "Tín dụng gửi Form" : "Outreach Credits"}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">
+                      {isJa ? "フォーム営業配信" : isVi ? "Gửi Form Marketing" : "Form Outreach"}
+                    </div>
+                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900">
+                      初回 70% OFF
+                    </span>
                   </div>
-                  <div className="text-2xl font-black text-slate-900 dark:text-white mb-4">
-                    1通 ¥15〜 <span className="text-xs font-normal text-slate-500">/ 従量課金</span>
+                  <div className="flex items-baseline gap-1.5 mb-1">
+                    <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">1通 ¥5.9〜</span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">/ {isJa ? "初回限定" : isVi ? "lần đầu" : "1st order"}</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="line-through text-slate-400 font-mono text-xs">通常 ¥19.8〜</span>
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
+                      {isJa ? "業界最安値" : isVi ? "Rẻ nhất thị trường" : "Lowest Rate"}
+                    </span>
                   </div>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mb-6">
-                    {isJa ? "必要な送信件数に応じて都度チャージ。月額固定費なし、有効期限なしで柔軟にアプローチ" : isVi ? "Nạp credits gửi form theo nhu cầu, không hết hạn, khấu trừ theo số lượng gửi thực tế" : "Pay-as-you-go credits for form outreach. No expiration, scalable volume"}
+                    {isJa ? "必要な送信件数に応じて都度チャージ。初期費用0円・月額固定費なし、初回70%OFFで格安アプローチ" : isVi ? "Nạp credits theo nhu cầu, không phí duy trì, giảm 70% cho đơn hàng đầu tiên tiếp cận khách hàng siêu rẻ" : "Pay-as-you-go credits for form outreach. No recurring fee, 70% OFF for first-time orders"}
                   </p>
                   <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 mb-6">
                     <li className="flex items-center gap-2">
@@ -960,15 +936,15 @@ print(leads[0]["ai_sales_hook"])`}
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0" />
-                      <span>{isJa ? "最低100件〜 大量配信対応" : isVi ? "Tối thiểu từ 100 form" : "From 100 forms up to 50k"}</span>
+                      <span>{isJa ? "1,000件〜 大量配信対応" : isVi ? "Từ 1.000 form đến 50.000+ form" : "From 1,000 forms up to 50k+"}</span>
                     </li>
                   </ul>
                 </div>
                 <Link
                   href={`/${locale}/pricing?tab=form`}
-                  className="b2b-btn-secondary w-full border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300"
+                  className="b2b-btn-secondary w-full border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 font-bold"
                 >
-                  {isJa ? "配信枠の料金・購入" : isVi ? "Bảng giá gói Form Credits" : "View Credit Packs"}
+                  {isJa ? "フォーム営業プランを見る (70%OFF)" : isVi ? "Xem Bảng Giá Gửi Form (Giảm 70%)" : "View Form Plans (70% OFF)"}
                 </Link>
               </div>
             </div>
@@ -1072,10 +1048,10 @@ print(leads[0]["ai_sales_hook"])`}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-6">
                   {isJa
-                    ? "国税庁の法人番号サイトやiタウンページを手作業で集める場合、費用は0円ですが、電話番号やHP URLが欠落していたり、100件集めるだけで数時間以上の人件費が浪費されます。Kigyou-listは、全国500万社の法人データから業種・地域・連絡先有無で瞬時に絞り込み、電話番号・WebサイトURL付きで一括CSVダウンロードが可能です。月額4,980円（年間縛りなし）で利用できるため、人件費と作業時間を大幅に削減して本来の営業活動に集中できます。"
+                    ? "国税庁の法人番号サイトやiタウンページを手作業で集める場合、費用は0円ですが、電話番号やHP URLが欠落していたり、100件集めるだけで数時間以上の人件費が浪費されます。Kigyou-listは、全国500万社の法人データから業種・地域・連絡先有無で瞬時に絞り込み、電話番号・WebサイトURL付きで一括CSVダウンロードが可能です。初月1,260円〜（通常4,200円、初月70%OFF・年間縛りなし）で利用できるため、人件費と作業時間を大幅に削減して本来の営業活動に集中できます。"
                     : isVi
-                    ? "Tự thu thập thủ công từ Cổng thông tin Quốc thuế hoặc Townpage tốn 0 đồng nhưng mất hàng chục giờ công, dữ liệu thiếu số điện thoại hoặc website. Kigyou-list giúp bạn lọc ngay lập tức từ 5 triệu doanh nghiệp theo ngành nghề, khu vực, có sẵn SĐT và URL website, xuất file CSV chỉ trong vài giây. Với chi phí chỉ 4,980 Yên/tháng và không ràng buộc hợp đồng năm, doanh nghiệp tiết kiệm 90% thời gian để tập trung bán hàng."
-                    : "While manual scraping from public portals costs zero, it takes dozens of hours and lacks verified phone numbers and websites. Kigyou-list allows instant multi-criteria filtering across 5M companies with complete phones, websites, and emails ready for CSV export. At only 4,980 JPY/mo with no annual lock-in, it saves tremendous staff hours."}
+                    ? "Tự thu thập thủ công từ Cổng thông tin Quốc thuế hoặc Townpage tốn 0 đồng nhưng mất hàng chục giờ công, dữ liệu thiếu số điện thoại hoặc website. Kigyou-list giúp bạn lọc ngay lập tức từ 5 triệu doanh nghiệp theo ngành nghề, khu vực, có sẵn SĐT và URL website, xuất file CSV chỉ trong vài giây. Với chi phí chỉ từ 1,260 JPY tháng đầu (giảm 70%, giá gốc 4,200 JPY) và không ràng buộc hợp đồng năm, doanh nghiệp tiết kiệm 90% thời gian để tập trung bán hàng."
+                    : "While manual scraping from public portals costs zero, it takes dozens of hours and lacks verified phone numbers and websites. Kigyou-list allows instant multi-criteria filtering across 5M companies with complete phones, websites, and emails ready for CSV export. At only 1,260 JPY 1st month (70% OFF, reg. 4,200 JPY) with no annual lock-in, it saves tremendous staff hours."}
                 </p>
               </div>
 
@@ -1087,57 +1063,11 @@ print(leads[0]["ai_sales_hook"])`}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-6">
                   {isJa
-                    ? "従来のリスト販売業者は、1件あたり10〜50円と高額な上に、数年前の古いデータが混ざっており不通電話や廃業によるロスが発生しやすいリスクがあります。Kigyou-listは公的オープンデータや最新Web情報を常時クローリングして鮮度を担保しており、月額定額（4,980円〜）で必要な分だけ最新データをCSV抽出できます。年間契約の縛りもないため、テストマーケティングや短期の架電キャンペーンにも最小限のコストで導入可能です。"
+                    ? "従来のリスト販売業者は、1件あたり10〜50円と高額な上に、数年前の古いデータが混ざっており不通電話や廃業によるロスが発生しやすいリスクがあります。Kigyou-listは公的オープンデータや最新Web情報を常時クローリングして鮮度を担保しており、月額定額（初月1,260円〜、通常4,200円）で必要な分だけ最新データをCSV抽出できます。年間契約の縛りもないため、テストマーケティングや短期の架電キャンペーンにも最小限のコストで導入可能です。"
                     : isVi
-                    ? "Các đơn vị bán danh bạ thường tính phí 10-50 Yên/công ty và dữ liệu tĩnh cũ dễ gặp số chết hoặc doanh nghiệp đã giải thể. Kigyou-list liên tục cập nhật dữ liệu mới nhất từ cổng thông tin quốc gia, hoạt động theo mô hình thuê bao linh hoạt (chỉ từ 4,980 Yên/tháng, không ràng buộc năm), giúp bạn lấy đúng dữ liệu đang hoạt động với chi phí rẻ hơn nhiều lần."
-                    : "Traditional list vendors charge high per-record fees (10-50 JPY/lead) for static lists that often contain outdated numbers and dissolved companies. Kigyou-list provides continuously refreshed cloud data on a flexible monthly subscription without annual commitments, maximizing telemarketing connect rates at a fraction of the cost."}
+                    ? "Các đơn vị bán danh bạ thường tính phí 10-50 Yên/công ty và dữ liệu tĩnh cũ dễ gặp số chết hoặc doanh nghiệp đã giải thể. Kigyou-list liên tục cập nhật dữ liệu mới nhất từ cổng thông tin quốc gia, hoạt động theo mô hình thuê bao linh hoạt (chỉ từ 1,260 Yên tháng đầu - giảm 70%, không ràng buộc năm), giúp bạn lấy đúng dữ liệu đang hoạt động với chi phí rẻ hơn nhiều lần."
+                    : "Traditional list vendors charge high per-record fees (10-50 JPY/lead) for static lists that often contain outdated numbers and dissolved companies. Kigyou-list provides continuously refreshed cloud data on a flexible monthly subscription (1st mo 1,260 JPY, 70% OFF) without annual commitments, maximizing telemarketing connect rates at a fraction of the cost."}
                 </p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ========================================================
-            8. FINAL CTA BANNER
-            ======================================================== */}
-        <section className="py-20 bg-white dark:bg-[#0D1117]">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="rounded-2xl p-8 sm:p-12 bg-gradient-to-br from-[#163A5F] via-[#1B4F8A] to-[#122F53] text-white text-center shadow-lg relative overflow-hidden">
-              {/* Subtle light accents */}
-              <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-white/5 blur-2xl pointer-events-none" />
-              <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-64 h-64 rounded-full bg-blue-400/10 blur-2xl pointer-events-none" />
-
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight mb-4 relative z-10 leading-snug">
-                {isJa 
-                  ? "今すぐ、確度の高い見込み企業を見つけましょう" 
-                  : isVi 
-                  ? "Bắt đầu tiếp cận tệp doanh nghiệp tiềm năng ngay hôm nay" 
-                  : "Start Targeting High-Intent B2B Prospects Today"}
-              </h2>
-              <p className="text-sm sm:text-base text-blue-100/90 max-w-2xl mx-auto mb-8 relative z-10 font-normal">
-                {isJa
-                  ? "クレジットカード登録不要・初期費用0円。無料会員登録ですぐにデータベースの検索と営業リスト作成を体験いただけます。"
-                  : isVi
-                  ? "Không cần thẻ tín dụng, không phí khởi tạo. Đăng ký tài khoản miễn phí để trải nghiệm tìm kiếm và tạo danh sách khách hàng ngay."
-                  : "No credit card required. Free registration gives immediate access to explore 5 million companies and start building pipelines."}
-              </p>
-
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5 relative z-10">
-                <Link
-                  href={`/${locale}/search`}
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-lg font-bold text-xs sm:text-sm text-[#1B4F8A] bg-white hover:bg-slate-50 transition-all shadow-sm flex items-center justify-center gap-2 cursor-pointer active:scale-98"
-                >
-                  <Search className="w-4 h-4 text-[#1B4F8A]" />
-                  <span>{isJa ? "まずは無料で企業を検索する" : isVi ? "Tìm kiếm doanh nghiệp miễn phí" : "Search Companies Free"}</span>
-                  <ArrowRight className="w-4 h-4 text-[#1B4F8A]" />
-                </Link>
-                <Link
-                  href={`/${locale}/form-marketing`}
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-lg font-bold text-xs sm:text-sm text-white bg-white/10 hover:bg-white/20 border border-white/25 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Send className="w-4 h-4" />
-                  <span>{isJa ? "自動フォーム営業について詳しく" : isVi ? "Tìm hiểu dịch vụ gửi Form tự động" : "Explore Form Outreach"}</span>
-                </Link>
               </div>
             </div>
           </div>

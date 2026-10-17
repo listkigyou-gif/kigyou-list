@@ -17,6 +17,14 @@ Supports:
 import os
 import sys
 import time
+
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import json
 import argparse
 import csv
@@ -264,7 +272,8 @@ def create_browser_session(playwright_instance, proxy_config: Optional[Dict[str,
             "--disable-gpu",
             "--no-sandbox",
             "--disable-extensions",
-            "--disable-background-networking"
+            "--disable-background-networking",
+            "--blink-settings=imagesEnabled=false"
         ]
     )
     context = browser.new_context(
@@ -272,23 +281,6 @@ def create_browser_session(playwright_instance, proxy_config: Optional[Dict[str,
         viewport={"width": 1280, "height": 800},
         ignore_https_errors=True
     )
-    # Block heavy assets (images, fonts, media, and trackers) for ultra-fast load
-    def block_heavy_resources(route):
-        try:
-            req = route.request
-            if req.resource_type in ("image", "media", "font"):
-                return route.abort()
-            url = req.url.lower()
-            if any(tk in url for tk in ("google-analytics.com", "googletagmanager.com", "facebook.net", "clarity.ms", "youtube.com", "doubleclick.net")):
-                return route.abort()
-            return route.continue_()
-        except Exception:
-            try:
-                route.continue_()
-            except Exception:
-                pass
-
-    context.route("**/*", block_heavy_resources)
     page = context.new_page()
     return browser, context, page
 
@@ -353,117 +345,152 @@ def worker_routine(
                 progress_counter["done"] += 1
                 curr_idx = progress_counter["done"]
 
-            # 0. AI Compliance Guard: Instant suppression check (zero browser overhead)
-            if corp_num and corp_num in suppressed_map:
-                sup_info = suppressed_map[corp_num]
-                r_type = sup_info.get("reason_type", "DISCLAIMER")
-                det = sup_info.get("detail_message") or "AI Compliance Protection"
-                status = "SKIPPED_DISCLAIMER" if r_type == "DISCLAIMER" else ("BLOCKED_CAPTCHA" if r_type == "CAPTCHA" else "NO_FORM_ELEMENT")
-                msg = f"Auto-Skipped: Protected by AI Compliance Guard ({det})"
-                res = {
-                    "corporate_number": corp_num,
-                    "company_name": comp_name,
-                    "form_url": form_url,
-                    "status": status,
-                    "billable": False,
-                    "message": msg,
-                    "timestamp": datetime.now().isoformat()
-                }
-                print(f"\n[Worker #{worker_id} | {curr_idx}/{total_tasks}] 🛡️ [AI Compliance Guard] Auto-Skipped: {comp_name} ({status})")
+            try:
+                # 0. AI Compliance Guard: Instant suppression check (zero browser overhead)
+                if corp_num and corp_num in suppressed_map:
+                    sup_info = suppressed_map[corp_num]
+                    r_type = sup_info.get("reason_type", "DISCLAIMER")
+                    det = sup_info.get("detail_message") or "AI Compliance Protection"
+                    status = "SKIPPED_DISCLAIMER" if r_type == "DISCLAIMER" else ("BLOCKED_CAPTCHA" if r_type == "CAPTCHA" else "NO_FORM_ELEMENT")
+                    msg = f"Auto-Skipped: Protected by AI Compliance Guard ({det})"
+                    res = {
+                        "corporate_number": corp_num,
+                        "company_name": comp_name,
+                        "form_url": form_url,
+                        "status": status,
+                        "billable": False,
+                        "message": msg,
+                        "timestamp": datetime.now().isoformat()
+                    }
+                    print(f"\n[Worker #{worker_id} | {curr_idx}/{total_tasks}] 🛡️ [AI Compliance Guard] Auto-Skipped: {comp_name} ({status})")
+                    with lock:
+                        results_list.append(res)
+                    try:
+                        record_log_pg(campaign_id, comp, status, msg)
+                    except Exception as e:
+                        print(f"  [Worker #{worker_id}] DB log error: {e}")
+                    continue
+
+                # 1. Check if scheduled rotation is due
+                if warp_ports and len(warp_ports) > 1 and submissions_on_curr_proxy >= rotate_every:
+                    print(f"  [🔄 Worker #{worker_id}] Reached {submissions_on_curr_proxy} dispatches. Rotating to next WARP proxy...")
+                    try:
+                        browser.close()
+                    except Exception:
+                        pass
+                    current_port_idx = (current_port_idx + total_workers) % len(warp_ports)
+                    curr_proxy_conf, curr_proxy_label = resolve_proxy(current_port_idx)
+                    print(f"  [🔄 Worker #{worker_id}] Now connected to: {curr_proxy_label}")
+                    try:
+                        browser, context, page = create_browser_session(p, curr_proxy_conf)
+                    except Exception as rot_e:
+                        print(f"  [!] Worker #{worker_id} rotation launch error: {rot_e}")
+                        current_port_idx = (current_port_idx + 1) % len(warp_ports)
+                        curr_proxy_conf, curr_proxy_label = resolve_proxy(current_port_idx)
+                        try:
+                            browser, context, page = create_browser_session(p, curr_proxy_conf)
+                        except Exception:
+                            pass
+                    submissions_on_curr_proxy = 0
+
+                print(f"\n[Worker #{worker_id} | {curr_idx}/{total_tasks}] Processing: {comp_name} ({curr_proxy_label})")
+                print(f"  [>] Form URL: {form_url}")
+
+                # Ensure page is open and valid before dispatch
+                try:
+                    if page is None or page.is_closed():
+                        try:
+                            page = context.new_page()
+                        except Exception:
+                            try:
+                                browser.close()
+                            except Exception:
+                                pass
+                            browser, context, page = create_browser_session(p, curr_proxy_conf)
+                except Exception as ses_e:
+                    print(f"  [!] Worker #{worker_id} session recovery error: {ses_e}")
+
+                try:
+                    res = dispatcher.dispatch_single_company(page, comp)
+                except Exception as e:
+                    res = {
+                        "corporate_number": comp.get("corporate_number"),
+                        "company_name": comp.get("company_name"),
+                        "form_url": comp.get("contact_form_url"),
+                        "status": "TIMEOUT" if "timeout" in str(e).lower() else "FAILED",
+                        "message": f"Execution error: {str(e)[:150]}",
+                        "timestamp": datetime.now().isoformat()
+                    }
+
+                status = res.get("status", "FAILED")
+                msg = res.get("message", "")
+                submissions_on_curr_proxy += 1
+
+                # Update memory map if new suppression discovered
+                if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT") and corp_num:
+                    suppressed_map[corp_num] = {
+                        "reason_type": "DISCLAIMER" if status == "SKIPPED_DISCLAIMER" else ("CAPTCHA" if "CAPTCHA" in status else "NO_FORM"),
+                        "detail_message": msg
+                    }
+
                 with lock:
                     results_list.append(res)
+
+                # Log to DB immediately
                 try:
                     record_log_pg(campaign_id, comp, status, msg)
                 except Exception as e:
                     print(f"  [Worker #{worker_id}] DB log error: {e}")
-                task_queue.task_done()
-                continue
 
-            # 1. Check if scheduled rotation is due
-            if warp_ports and len(warp_ports) > 1 and submissions_on_curr_proxy >= rotate_every:
-                print(f"  [🔄 Worker #{worker_id}] Reached {submissions_on_curr_proxy} dispatches. Rotating to next WARP proxy...")
-                try:
-                    browser.close()
-                except Exception:
-                    pass
-                current_port_idx = (current_port_idx + total_workers) % len(warp_ports)
-                curr_proxy_conf, curr_proxy_label = resolve_proxy(current_port_idx)
-                print(f"  [🔄 Worker #{worker_id}] Now connected to: {curr_proxy_label}")
-                try:
-                    browser, context, page = create_browser_session(p, curr_proxy_conf)
-                except Exception as rot_e:
-                    print(f"  [!] Worker #{worker_id} rotation launch error: {rot_e}")
-                    # Try next port instead of breaking
+                # If dead site, timeout, socket error, or page aborted, refresh page session cleanly
+                if status in ["DEAD_WEBSITE", "ERROR", "TIMEOUT"] or (page and page.is_closed()):
+                    try:
+                        if page and not page.is_closed():
+                            page.close()
+                    except Exception:
+                        pass
+                    try:
+                        page = context.new_page()
+                    except Exception:
+                        try:
+                            browser.close()
+                        except Exception:
+                            pass
+                        try:
+                            browser, context, page = create_browser_session(p, curr_proxy_conf)
+                        except Exception:
+                            pass
+
+                # 2. Check for Failover Instant Rotation if Blocked / Captcha
+                is_blocked = "BLOCKED" in status or "CAPTCHA" in status or "403" in msg or "429" in msg
+                if is_blocked and warp_ports and len(warp_ports) > 1:
+                    print(f"  [⚠️ Worker #{worker_id}] Anti-bot/block triggered ({status}). Forcing instant WARP proxy rotation...")
+                    try:
+                        browser.close()
+                    except Exception:
+                        pass
                     current_port_idx = (current_port_idx + 1) % len(warp_ports)
                     curr_proxy_conf, curr_proxy_label = resolve_proxy(current_port_idx)
+                    print(f"  [🔄 Worker #{worker_id}] Switched instantly to: {curr_proxy_label}")
                     try:
                         browser, context, page = create_browser_session(p, curr_proxy_conf)
                     except Exception:
                         pass
-                submissions_on_curr_proxy = 0
+                    submissions_on_curr_proxy = 0
 
-            print(f"\n[Worker #{worker_id} | {curr_idx}/{total_tasks}] Processing: {comp_name} ({curr_proxy_label})")
-            print(f"  [>] Form URL: {form_url}")
-
-            try:
-                res = dispatcher.dispatch_single_company(page, comp)
-            except Exception as e:
-                res = {
-                    "corporate_number": comp.get("corporate_number"),
-                    "company_name": comp.get("company_name"),
-                    "form_url": comp.get("contact_form_url"),
-                    "status": "FAILED",
-                    "message": f"Execution error: {str(e)[:150]}",
-                    "timestamp": datetime.now().isoformat()
-                }
-
-            status = res.get("status", "FAILED")
-            msg = res.get("message", "")
-            submissions_on_curr_proxy += 1
-
-            # Update memory map if new suppression discovered
-            if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT") and corp_num:
-                suppressed_map[corp_num] = {
-                    "reason_type": "DISCLAIMER" if status == "SKIPPED_DISCLAIMER" else ("CAPTCHA" if "CAPTCHA" in status else "NO_FORM"),
-                    "detail_message": msg
-                }
-
-            with lock:
-                results_list.append(res)
-
-            # Log to DB immediately
-            try:
-                record_log_pg(campaign_id, comp, status, msg)
-            except Exception as e:
-                print(f"  [Worker #{worker_id}] DB log error: {e}")
-
-            # If dead site, timeout, or socket error occurred, refresh page session
-            if status in ["DEAD_WEBSITE", "ERROR", "TIMEOUT"]:
-                try:
-                    page.close()
-                    page = context.new_page()
-                except Exception:
-                    pass
-
-            # 2. Check for Failover Instant Rotation if Blocked / Captcha
-            is_blocked = "BLOCKED" in status or "CAPTCHA" in status or "403" in msg or "429" in msg
-            if is_blocked and warp_ports and len(warp_ports) > 1:
-                print(f"  [⚠️ Worker #{worker_id}] Anti-bot/block triggered ({status}). Forcing instant WARP proxy rotation...")
+            except Exception as loop_e:
+                print(f"  [!] Worker #{worker_id} unhandled task error: {loop_e}")
                 try:
                     browser.close()
                 except Exception:
                     pass
-                current_port_idx = (current_port_idx + 1) % len(warp_ports)
-                curr_proxy_conf, curr_proxy_label = resolve_proxy(current_port_idx)
-                print(f"  [🔄 Worker #{worker_id}] Switched instantly to: {curr_proxy_label}")
                 try:
                     browser, context, page = create_browser_session(p, curr_proxy_conf)
                 except Exception:
                     pass
-                submissions_on_curr_proxy = 0
-
-            task_queue.task_done()
-            time.sleep(1.0)
+            finally:
+                task_queue.task_done()
+                time.sleep(0.5)
 
         try:
             browser.close()

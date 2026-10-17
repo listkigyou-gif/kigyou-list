@@ -317,7 +317,8 @@ export async function POST(request: Request) {
         } else if (metadata.formPlanId) {
           const formAllowance = Number(metadata.formAllowance || 0);
           const formPlanId = metadata.formPlanId;
-          const priceName = `問い合わせフォーム営業 ${formAllowance.toLocaleString()}件配信枠 [キャンペーン30%OFF]`;
+          const isFirstTime = metadata.isFirstTime === "true";
+          const priceName = `問い合わせフォーム営業 ${formAllowance.toLocaleString()}件配信枠 ${isFirstTime ? "[初回限定70%OFF]" : ""}`.trim();
 
           console.log(`[Stripe Webhook] Real Payment Received for Form Outreach. ${userEmail} purchased ${formPlanId} (+${formAllowance} forms)`);
           await addFormCredits(userEmail, formAllowance);

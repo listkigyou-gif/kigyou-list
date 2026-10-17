@@ -23,12 +23,14 @@ Kỹ năng này thiết lập AI hoạt động ở chế độ **Tự hành ho�
 Mỗi bài viết phải luôn tuân thủ cấu trúc 6 phần:
 1. **Mở đầu (Pain Point Hook):** Nêu trúng nỗi đau thực tế của Sales/Doanh nghiệp Nhật.
 2. **Tiêu chuẩn thị trường 2026 (Criteria):** Tiêu chuẩn giải pháp hiện đại.
-3. **Phân tích giải pháp & Bảng tóm tắt định lượng (`<blockquote>`):** So sánh số liệu cụ thể giữa các công cụ truyền thống (30,000–100,000+ JPY/tháng kèm hợp đồng năm) vs. Kigyou-list (4,980 JPY/tháng không ràng buộc năm).
+3. **Phân tích giải pháp & Bảng tóm tắt định lượng (`<blockquote>`):** So sánh số liệu cụ thể giữa các công cụ truyền thống (30,000–100,000+ JPY/tháng kèm hợp đồng năm) vs. Kigyou-list (★初月 ¥1,260 70% OFF / thường ¥4,200/tháng - rẻ bằng 1/25〜1/80 đối thủ, không ràng buộc hợp đồng).
 4. **Điểm mạnh độc quyền của Kigyou-list:**
-   - Database 500万社 (100% pháp nhân quốc thuế NTA).
-   - Chi phí 4,980 JPY/tháng (年間縛りなし).
+   - Database 500万社 (100% pháp nhân quốc thuế NTA toàn quốc).
+   - Chi phí siêu rẻ: **初月わずか ¥1,260 (70% OFF キャンペーン)** / từ tháng 2 chỉ **¥4,200/tháng** (hoàn toàn không ràng buộc năm, hủy 1 click).
+   - Rẻ bằng **1/25〜1/80** so với công cụ truyền thống (30,000〜100,000円).
+   - Dùng thử miễn phí (Free Trial): **Đăng ký tức thì, tra cứu toàn bộ 500万社 & Tải 50 công ty CSV Miễn Phí mỗi tháng**.
    - Dữ liệu ý định mua hàng (Intent Data: Hello Work, trợ cấp chính phủ, trúng thầu công).
-   - Gửi Form tự động thông minh bằng AI (16.1 JPY/lượt).
+   - Gửi Form tự động thông minh bằng AI: **1 thông điệp chỉ từ 5.9円〜 (祝祭 70% OFF / thường 19.8円)** kèm AI lọc từ chối chào hàng.
 5. **Mục FAQ (Câu hỏi thường gặp):** 3 cặp Q&A ngắn gọn nhằm kích hoạt AI trích dẫn câu trả lời trực tiếp.
 6. **CTA & Backlinks:** Luôn chèn link:
    - `https://kigyoulist.com/ja/compare`

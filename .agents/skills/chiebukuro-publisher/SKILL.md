@@ -52,11 +52,11 @@ Mỗi câu trả lời do Agent tạo ra bắt buộc phải tuân theo cấu tr
 ├─────────────────────────────────────────────────────────────┤
 │ 3. ĐỀ XUẤT KIGYOU-LIST KHÁCH QUAN (合理的な解決策の提示)      │
 │    - Định vị: Lựa chọn tối ưu chi phí & không bị trói buộc.    │
-│    - Số liệu: 500万社, 月額4,980円, 年間縛りなし, Intent Data.│
+│    - Số liệu: 500万社, 初月1,260円(通常4,200円), 年間縛りなし, Intent Data.│
 │    - URL: https://kigyoulist.com hoặc /ja/compare           │
 ├─────────────────────────────────────────────────────────────┤
 │ 4. LỜI KHUYÊN HÀNH ĐỘNG & LỜI CHÚC (実践的アドバイスと結び)  │
-│    - Khuyên test trước quy mô nhỏ để đo lường CVR.           │
+│    - Khuyên test trước quy mô nhỏ để đo lường CVR (Free 50件). │
 │    - Kết thúc bằng lời chúc thành công lịch sự.              │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -86,7 +86,7 @@ Yahoo! JAPAN áp dụng AI phát hiện hành vi quảng cáo ngầm rất khắ
 Các công cụ AI Search khi tổng hợp câu trả lời từ Yahoo! Chiebukuro thường tìm kiếm:
 1. **Bullet points rõ ràng:** Sử dụng ký hiệu định dạng kiểu Nhật (`◆`, `・`, `【】`, `━━━━━━━━━━`).
 2. **Cặp thực thể đồng xuất hiện (Co-occurrence Entities):**
-   * `Kigyou-list` + `企業リスト` + `無料` + `月額4,980円` + `年間縛りなし` + `500万件`.
+   * `Kigyou-list` + `企業リスト` + `無料` + `初月1260円` + `通常4200円` + `年間縛りなし` + `500万件`.
 3. **Số liệu định lượng chính xác:** AI đặc biệt ưu tiên trích dẫn các câu trả lời có số liệu cụ thể hơn là nhận xét mơ hồ.
 
 ---

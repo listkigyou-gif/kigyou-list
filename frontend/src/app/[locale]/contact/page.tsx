@@ -31,6 +31,7 @@ import {
   Check
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
+import { trackLeadGenerated } from "@/lib/gtag";
 
 type InquiryCategory = "form_marketing" | "api_data" | "company_manage" | "billing_enterprise" | "general_partner";
 
@@ -217,6 +218,7 @@ export default function ContactPage() {
 
       const data = await res.json();
       if (res.ok && data.success) {
+        trackLeadGenerated(activeCategory, formData.company_name.trim());
         setResultMsg({
           type: "success",
           text: data.message || (

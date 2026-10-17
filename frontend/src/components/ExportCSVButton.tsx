@@ -8,6 +8,7 @@ import {
   Download, Loader2, CreditCard, Coins, CheckCircle2, 
   AlertTriangle, X, ArrowRight, History, Send
 } from "lucide-react";
+import { trackSignUpIntent } from "@/lib/gtag";
 
 interface ExportCSVButtonProps {
   totalCount: number;
@@ -260,6 +261,7 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
   // Download Trigger Handler
   const handleExportClick = async () => {
     if (!isLoggedIn) {
+      trackSignUpIntent("export_csv_guest");
       setAuthModalOpen(true);
       return;
     }
@@ -360,10 +362,6 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
   // Stripe Checkout redirection handler
   const handlePurchasePack = async (packId: string) => {
     if (!user?.email) return;
-    if (user?.role === "free" || user?.role === "trial") {
-      alert(d.onlyPaidNotice);
-      return;
-    }
     setStripeLoading(packId);
 
     try {
@@ -436,6 +434,11 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
             <Download className="w-3.5 h-3.5 text-slate-600 dark:text-slate-300" />
           )}
           <span>{statusMessage || d.downloadBtn}</span>
+          {!isLoggedIn && (
+            <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-extrabold px-1.5 py-0.5 rounded-sm">
+              {locale === 'ja' ? '毎月20件無料' : locale === 'vi' ? '20 dòng free' : '20 free/mo'}
+            </span>
+          )}
         </button>
       </div>
 
@@ -545,20 +548,6 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
               </Link>
             </div>
 
-            {user?.role === "free" || user?.role === "trial" ? (
-              <div className="flex flex-col gap-4 text-center my-6">
-                <div className="p-4 rounded-2xl bg-amber-50 border border-amber-250/50 text-amber-800 dark:bg-[#201515]/20 dark:border-rose-900/30 dark:text-rose-400 text-xs leading-relaxed text-left font-medium">
-                  {d.upgradeToPaidDesc}
-                </div>
-                <Link
-                  href={`/${locale}/pricing`}
-                  className="w-full py-3.5 px-4 rounded-xl font-bold text-xs bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white shadow-md shadow-emerald-500/10 active:scale-[0.98] transition-all flex items-center justify-center gap-1.5"
-                >
-                  <span>{d.viewPlans}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
-            ) : (
               <div className="flex flex-col gap-3.5 mb-6">
                 
                 {/* Terms agreement checkbox */}
@@ -679,7 +668,6 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                 </div>
 
               </div>
-            )}
 
             {/* Footer secure notification */}
             <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-850 py-3 rounded-2xl">

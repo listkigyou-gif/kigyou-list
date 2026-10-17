@@ -11,7 +11,6 @@ import {
   getCompanySignals, getRelatedCompanies, getCompanyIndustries 
 } from '@/lib/db';
 import { Header } from '@/components/Header';
-import { UnlockCard } from '@/components/UnlockCard';
 import { ObfuscatedPhone } from '@/components/ObfuscatedPhone';
 import { CompanyActions } from '@/components/CompanyActions';
 import { CompanyPRSection } from '@/components/CompanyPRSection';
@@ -23,6 +22,7 @@ import { CopyTextButton } from '@/components/CopyTextButton';
 import { getTranslations } from '@/lib/i18n';
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { translatePosition, formatEnglishDate, getPrefectureName, getIndustryName } from '@/lib/locale-mapping';
+import { CompanyConversionBar } from '@/components/CompanyConversionBar';
 
 export const revalidate = 600; // Cache profiles for 10 minutes, ISR enabled
 
@@ -96,31 +96,38 @@ function generateDynamicSummary(
     const datePart = company.establishment_date ? ` Registered${datePrep}${formatEnglishDate(company.establishment_date)},` : "";
     const addressPart = fullAddress ? ` located at ${fullAddress}` : "";
     const phonePart = company.phone_number ? ` Contact phone: ${company.phone_number}.` : "";
+    const salesPart = company.sales_amount ? ` Revenue: ${formatJapaneseCurrency(company.sales_amount, 'en')}.` : "";
+    const employeePart = company.employee_count ? ` Employees: ${company.employee_count.toLocaleString('en-US')}.` : "";
     if (isOnPage) {
-      return `${companyName} is a corporation${addressPart} with corporate/tax ID ${company.corporate_number}.${datePart}${phonePart}`;
+      return `${companyName} is a corporation${addressPart} with corporate/tax ID ${company.corporate_number}.${datePart}${phonePart}${salesPart}${employeePart}`;
     }
-    return `${companyName} is a corporation${addressPart} with corporate/tax ID ${company.corporate_number}.${datePart}${phonePart} This page displays the latest contact details (phone, FAX, email), financial profile, and corporate index history.`;
+    return `${companyName} is a corporation${addressPart} with corporate/tax ID ${company.corporate_number}.${datePart}${phonePart}${salesPart}${employeePart} This page displays the latest contact details (phone, FAX, email), financial profile, and corporate index history.`;
   } else if (locale === 'vi') {
     const isYearOnly = /^\d{4}$/.test(company.establishment_date || "");
     const datePrefix = isYearOnly ? " vào năm " : " ngày ";
     const datePart = company.establishment_date ? ` được thành lập${datePrefix}${formatVietnameseDate(company.establishment_date)},` : "";
     const addressPart = fullAddress ? ` tọa lạc tại địa chỉ ${fullAddress}` : "";
     const phonePart = company.phone_number ? ` Số điện thoại liên hệ: ${company.phone_number}.` : "";
+    const salesPart = company.sales_amount ? ` Doanh thu: ${formatJapaneseCurrency(company.sales_amount, 'vi')}.` : "";
+    const employeePart = company.employee_count ? ` Quy mô: ${company.employee_count.toLocaleString('vi-VN')} nhân viên.` : "";
     if (isOnPage) {
-      return `${companyName} là doanh nghiệp${addressPart}, có mã số thuế/pháp nhân là ${company.corporate_number}. Doanh nghiệp${datePart}${phonePart}`;
+      return `${companyName} là doanh nghiệp${addressPart}, có mã số thuế/pháp nhân là ${company.corporate_number}. Doanh nghiệp${datePart}${phonePart}${salesPart}${employeePart}`;
     }
-    return `${companyName} là doanh nghiệp${addressPart}, có mã số thuế/pháp nhân là ${company.corporate_number}. Doanh nghiệp${datePart}${phonePart} Cập nhật đầy đủ thông tin liên hệ (điện thoại, FAX, email) và biểu đồ tài chính mới nhất.`;
+    return `${companyName} là doanh nghiệp${addressPart}, có mã số thuế/pháp nhân là ${company.corporate_number}. Doanh nghiệp${datePart}${phonePart}${salesPart}${employeePart} Cập nhật đầy đủ thông tin liên hệ (điện thoại, FAX, email) và biểu đồ tài chính mới nhất.`;
   } else {
-    // Japanese locale (ja) - Mirroring G-Search dynamic format closely
+    // Japanese locale (ja) - Mirroring high-intent search queries
     const kanaPart = company.company_name_kana ? `（${company.company_name_kana}）` : "";
     const addressPart = fullAddress ? `${fullAddress}に所在する` : "";
     const datePart = company.establishment_date ? `${formatJapaneseDate(company.establishment_date)}に法人番号が指定され、` : "";
     const phonePart = company.phone_number ? `電話番号:${company.phone_number}。` : "";
+    const salesPart = company.sales_amount ? `売上高:${formatJapaneseCurrency(company.sales_amount, 'ja')}。` : "";
+    const employeePart = company.employee_count ? `従業員数:${company.employee_count.toLocaleString('ja-JP')}名。` : "";
+    const repPart = company.representative_name ? `代表者:${company.representative_name}。` : "";
     
     if (isOnPage) {
-      return `${companyName}${kanaPart}は、${addressPart}法人番号:${company.corporate_number}の法人です。${datePart}${phonePart}`;
+      return `${companyName}${kanaPart}は、${addressPart}法人番号:${company.corporate_number}の法人です。${datePart}${phonePart}${salesPart}${employeePart}${repPart}`;
     }
-    return `${companyName}${kanaPart}は、${addressPart}法人番号:${company.corporate_number}の法人です。${datePart}${phonePart}最新の住所、電話番号、FAX、メールアドレスなどの連絡先情報や財務情報を掲載しています。`;
+    return `【2026年最新】${companyName}${kanaPart}の企業データ・信用調査。${addressPart}法人番号:${company.corporate_number}。${salesPart}${employeePart}${phonePart}${repPart}電話番号、FAX、メール、役員、財務諸表を無料掲載中。`;
   }
 }
 
@@ -155,11 +162,13 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const industryName = primaryIndustry ? primaryIndustry.industry_name : null;
   const summary = generateDynamicSummary(company, locale, industryName, company.prefecture_name);
 
+  const prefPart = company.prefecture_name ? `（${company.prefecture_name}）` : '';
   const pageTitle = locale === 'en'
-    ? `${companyName} - Company Profile, Financials, Contact | Kigyou-list`
+    ? `${companyName}${prefPart ? ` ${prefPart}` : ''} - 2026 Financials, Revenue, Employees, Corporate Profile | Kigyou-list`
     : locale === 'vi'
-    ? `${companyName} - Thông tin doanh nghiệp, tài chính, liên hệ | Kigyou-list`
-    : `${companyName} - 企業基本情報・財務情報・連絡先 | Kigyou-list`;
+    ? `【2026】${companyName}${prefPart ? ` ${prefPart}` : ''} - Doanh thu, nhân sự, số điện thoại, thông tin pháp nhân | Kigyou-list`
+    : `【2026年最新】${companyName}${prefPart}の売上高・従業員数・評判・電話番号 | Kigyou-list`;
+
 
   const ogLocale = locale === 'en' ? 'en_US' : locale === 'vi' ? 'vi_VN' : 'ja_JP';
 
@@ -299,6 +308,27 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     "faxNumber": company.fax_number || undefined,
     "url": company.website_url || undefined,
     "foundingDate": company.establishment_date || undefined,
+    ...(company.representative_name ? {
+      "founder": {
+        "@type": "Person",
+        "name": company.representative_name,
+        "jobTitle": company.representative_position || "代表者"
+      }
+    } : {}),
+    ...(company.sales_amount || company.capital_amount ? {
+      "additionalProperty": [
+        ...(company.sales_amount ? [{
+          "@type": "PropertyValue",
+          "name": "売上高 (Annual Revenue)",
+          "value": formatJapaneseCurrency(company.sales_amount, 'ja')
+        }] : []),
+        ...(company.capital_amount ? [{
+          "@type": "PropertyValue",
+          "name": "資本金 (Capital Amount)",
+          "value": formatJapaneseCurrency(company.capital_amount, 'ja')
+        }] : [])
+      ]
+    } : {}),
     ...(company.employee_count ? {
       "numberOfEmployees": {
         "@type": "QuantitativeValue",
@@ -352,6 +382,57 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     ]
   };
 
+  // 6. Generate FAQ Schema for Google & Bing Rich Snippets
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": `${companyName}の電話番号や問い合わせ先は？`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": company.phone_number 
+            ? `${companyName}の代表電話番号は【${company.phone_number}】です。` 
+            : `${companyName}の所在地は【${company.full_address || '日本国内'}】です。最新の連絡先や役員情報はKigyou-listで確認できます。`
+        }
+      },
+      {
+        "@type": "Question",
+        "name": `${companyName}の法人番号や所在地は？`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `${companyName}の国税庁指定法人番号は【${company.corporate_number}】、所在地は【${company.full_address || '日本国内'}】です。`
+        }
+      },
+      ...(company.sales_amount || company.employee_count ? [{
+        "@type": "Question",
+        "name": `${companyName}の売上高や従業員数は？`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `${companyName}の従業員数は${company.employee_count ? company.employee_count.toLocaleString('ja-JP') + '名' : '非公開'}、売上高は${company.sales_amount ? formatJapaneseCurrency(company.sales_amount, 'ja') : '非公開'}です。`
+        }
+      }] : []),
+      ...(company.capital_amount || company.representative_name ? [{
+        "@type": "Question",
+        "name": `${companyName}の代表者や資本金は？`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `${companyName}の代表者は【${company.representative_name || '非公開'}】、資本金は【${company.capital_amount ? formatJapaneseCurrency(company.capital_amount, 'ja') : '非公開'}】です。`
+        }
+      }] : []),
+      {
+        "@type": "Question",
+        "name": `${companyName}の企業データや信用調査レポートを閲覧・ダウンロードするには？`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `Kigyou-list（企業リスト）にて${companyName}の最新企業データ、財務指標、役員情報、求人・補助金シグナルを無料閲覧およびCSVダウンロードいただけます。`
+        }
+      }
+    ]
+  };
+
+
   const localizedStatus = locale === 'en' 
     ? (company.status === '活動中' ? 'Active' : company.status === '閉鎖' ? 'Closed' : company.status === '解散' ? 'Dissolved' : company.status)
     : company.status;
@@ -366,6 +447,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
 
       {/* Global Standard Header */}
@@ -462,6 +547,15 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             claimedByEmail={company.claimed_by_email}
           />
         </section>
+
+        {/* High-Intent Conversion CTA Banner */}
+        <CompanyConversionBar
+          corporateNumber={company.corporate_number}
+          companyName={companyName}
+          prefectureName={prefName}
+          industryName={industryMappedName}
+          locale={locale}
+        />
 
         {/* 2-Column Split Details */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
@@ -827,7 +921,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   </div>
                 )}
 
-                {/* 3. FAX number (BLURRED) */}
+                {/* 3. FAX number */}
                 <div className="flex items-start gap-3 relative">
                   <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#1B4F8A] dark:text-blue-400 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shrink-0">
                     <Printer className="w-4 h-4" />
@@ -836,13 +930,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                     <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-0.5">
                       {t.company.fax}
                     </span>
-                    <div data-nosnippet>
-                      <UnlockCard type="inline" fallbackText={locale === 'en' ? "03-3456-7890 (Sample)" : "03-3456-7890 (サンプル)"}>
-                        <span className="font-mono text-slate-850 dark:text-slate-100 font-semibold">
-                          {company.fax_number || t.company.unregistered}
-                        </span>
-                      </UnlockCard>
-                    </div>
+                    <span className="font-mono text-slate-850 dark:text-slate-100 font-semibold text-xs">
+                      {company.fax_number || t.company.unregistered}
+                    </span>
                   </div>
                 </div>
 

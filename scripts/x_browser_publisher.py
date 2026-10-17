@@ -45,6 +45,25 @@ def post_thread_browser(tweets: List[str], image_path: Optional[str] = None, hea
         context = get_browser_context(p, headless=headless)
         page = context.pages[0] if context.pages else context.new_page()
         
+        # --- GHI NHẬN TWEET MỚI NHẤT TRƯỚC KHI ĐĂNG ---
+        print("[*] Checking current latest tweet ID on profile...")
+        page.goto("https://x.com/kigyoulist", wait_until="domcontentloaded")
+        time.sleep(3)
+        previous_top_href = None
+        try:
+            articles = page.locator('article[data-testid="tweet"]')
+            for i in range(articles.count()):
+                art = articles.nth(i)
+                if "Pinned" in art.inner_text() or "固定された" in art.inner_text():
+                    continue
+                links = art.locator('a[href*="/status/"]')
+                if links.count() > 0:
+                    previous_top_href = links.first.get_attribute("href")
+                    break
+        except Exception:
+            pass
+        print(f"[*] Previous top tweet href: {previous_top_href}")
+
         # --- BƯỚC 1: ĐĂNG TWEET ĐẦU TIÊN TẠI TRANG CHỦ ---
         print("[*] Navigating to https://x.com/home ...")
         page.goto("https://x.com/home", wait_until="domcontentloaded")
@@ -77,32 +96,41 @@ def post_thread_browser(tweets: List[str], image_path: Optional[str] = None, hea
             print("[-] Warning: Post button may still be disabled. Check x_post1_debug.png")
         post_btn.click(force=True)
         time.sleep(8)
-        print("[+] Tweet 1 posted!")
+        print("[+] Tweet 1 post clicked!")
         
-        # --- BƯỚC 2: LẤY LINK TWEET 1 ĐỂ TRẢ LỜI ---
-        print("[*] Navigating to https://x.com/kigyoulist to locate new tweet...")
-        page.goto("https://x.com/kigyoulist", wait_until="domcontentloaded")
-        time.sleep(5)
-        
+        # --- BƯỚC 2: ĐỢI VÀ LẤY LINK TWEET 1 MỚI NHẤT ---
+        print("[*] Polling https://x.com/kigyoulist for the brand new tweet...")
         tweet1_url = None
-        try:
-            articles = page.locator('article[data-testid="tweet"]')
-            count = articles.count()
-            for i in range(count):
-                art = articles.nth(i)
-                text = art.inner_text()
-                # Bỏ qua bài Pinned nếu có
-                if "Pinned" in text or "固定された" in text:
-                    continue
-                links = art.locator('a[href*="/status/"]')
-                if links.count() > 0:
-                    href = links.first.get_attribute("href")
-                    if href and "kigyoulist" in href:
-                        tweet1_url = f"https://x.com{href}" if href.startswith("/") else href
-                        print(f"[+] Found Tweet 1 URL: {tweet1_url}")
-                        break
-        except Exception as e:
-            print(f"[-] Could not find Tweet 1 link: {e}")
+        for attempt in range(8):
+            page.goto("https://x.com/kigyoulist", wait_until="domcontentloaded")
+            time.sleep(4)
+            try:
+                articles = page.locator('article[data-testid="tweet"]')
+                count = articles.count()
+                for i in range(count):
+                    art = articles.nth(i)
+                    text = art.inner_text()
+                    if "Pinned" in text or "固定された" in text:
+                        continue
+                    links = art.locator('a[href*="/status/"]')
+                    if links.count() > 0:
+                        href = links.first.get_attribute("href")
+                        if href and "kigyoulist" in href:
+                            # If it's different from the previous top tweet, it's our new tweet!
+                            if href != previous_top_href:
+                                tweet1_url = f"https://x.com{href}" if href.startswith("/") else href
+                                print(f"[+] Verified brand new Tweet 1 URL: {tweet1_url}")
+                                break
+                            elif previous_top_href is None:
+                                tweet1_url = f"https://x.com{href}" if href.startswith("/") else href
+                                print(f"[+] Found Tweet 1 URL: {tweet1_url}")
+                                break
+                if tweet1_url:
+                    break
+            except Exception as e:
+                print(f"[-] Poll attempt {attempt+1} error: {e}")
+            print(f"[*] Waiting for tweet to be indexed by X (attempt {attempt+1}/8)...")
+            time.sleep(3)
             
         if not tweet1_url:
             print("[-] Cannot proceed with replies without Tweet 1 URL.")

@@ -19,7 +19,10 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ user, quota, locale 
   const isVi = locale === "vi";
   const isJa = locale === "ja";
 
-  const isBusinessOrEnterprise = quota && (quota.plan === "business" || quota.plan === "enterprise");
+  const isEligibleForApi = Boolean(
+    (quota && (quota.plan === "pro" || quota.plan === "business" || quota.plan === "enterprise")) ||
+    (user && (user.role === "pro" || user.role === "business" || user.role === "enterprise" || user.role === "admin"))
+  );
 
   // API Key States
   const [apiKeys, setApiKeys] = useState<any[]>([]);
@@ -45,10 +48,10 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ user, quota, locale 
   }, []);
 
   useEffect(() => {
-    if (isBusinessOrEnterprise) {
+    if (isEligibleForApi) {
       fetchApiKeys();
     }
-  }, [isBusinessOrEnterprise, fetchApiKeys]);
+  }, [isEligibleForApi, fetchApiKeys]);
 
   const handleCreateApiKey = async () => {
     setGeneratingKey(true);
@@ -100,28 +103,34 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ user, quota, locale 
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Plan Warning Banner for Free/Pro */}
-      {!isBusinessOrEnterprise ? (
+      {/* Plan Warning Banner for Free */}
+      {!isEligibleForApi ? (
         <div className="bg-slate-50 dark:bg-slate-900/40 border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 shadow-2xs">
           <div className="max-w-xl">
             <div className="b2b-kicker mb-2">
               <Sparkles className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-              <span>BUSINESS & ENTERPRISE</span>
+              <span>{isVi ? "TỪ GÓI PRO TRỞ LÊN" : isJa ? "PROプラン以上" : "PRO, BUSINESS & ENTERPRISE"}</span>
             </div>
             <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white mb-1.5">
-              {isJa ? "API・AIエージェント連携（MCP / Webhook）のご利用" : "API & AI Agent Integration"}
+              {isVi 
+                ? "Tích hợp API & AI Agent (MCP / Webhook / CRM)" 
+                : isJa 
+                ? "API・AIエージェント連携（MCP / Webhook）のご利用" 
+                : "API & AI Agent Integration"}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              {isJa
-                ? "500万社の法人番号特定、特定電子メール法コンプライアンス検証、MCPサーバー連携はBUSINESSプラン以上でご利用いただけます。"
-                : "Full access to our 5M+ corporate dataset, MCP Server, Realtime Webhooks, and Semantic Search is available on BUSINESS and ENTERPRISE plans."}
+              {isVi
+                ? "500 vạn doanh nghiệp, máy chủ MCP, Webhooks thời gian thực và cấp API Key kết nối CRM/ERP được hỗ trợ từ gói PRO trở lên."
+                : isJa
+                ? "500万社の法人番号特定、特定電子メール法コンプライアンス検証、MCPサーバー連携はPROプラン以上でご利用いただけます。"
+                : "Full access to our 5M+ corporate dataset, MCP Server, Realtime Webhooks, and API keys is available on PRO, BUSINESS and ENTERPRISE plans."}
             </p>
           </div>
           <Link
             href="/pricing"
             className="b2b-btn-primary shrink-0"
           >
-            <span>{isJa ? "BUSINESSプランにアップグレード" : "Upgrade to BUSINESS"}</span>
+            <span>{isVi ? "Nâng cấp lên gói PRO" : isJa ? "PROプランにアップグレード" : "Upgrade to PRO"}</span>
           </Link>
         </div>
       ) : null}
@@ -142,7 +151,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ user, quota, locale 
               </p>
             </div>
           </div>
-          {isBusinessOrEnterprise && (
+          {isEligibleForApi && (
             <button
               onClick={handleCreateApiKey}
               disabled={generatingKey}

@@ -15,18 +15,18 @@ export async function generateMetadata({
   const isVi = locale === "vi";
 
   let title = "問い合わせフォーム送信代行サービス | 500万社DB連携の自動フォーム営業 | Kigyou-list";
-  let description = "テレアポや迷惑メールを完全回避。500万社データベースからターゲット企業を抽出し、事前法令・NGワード審査付きで問い合わせフォームへ自動アプローチ。1通16.1円〜の業界最安値水準で新規商談を獲得。";
+  let description = "テレアポや迷惑メールを完全回避。500万社データベースからターゲット企業を抽出し、事前法令・NGワード審査付きで問い合わせフォームへ自動アプローチ。1通5.9円〜（初回限定70%OFF）の業界最安値水準で新規商談を獲得。";
   let keywords = ["フォーム営業", "問い合わせフォーム代行", "フォームマーケティング", "新規開拓", "B2B営業", "営業リスト"];
   let ogLocale = "ja_JP";
 
   if (isEn) {
     title = "Automated Contact Form Marketing & Outreach in Japan | Kigyou-list";
-    description = "Bypass spam filters and gatekeepers in Japan. Filter prospects from our 5M+ company database and automate compliant B2B contact form outreach starting at 16.1 JPY per submission.";
+    description = "Bypass spam filters and gatekeepers in Japan. Filter prospects from our 5M+ company database and automate compliant B2B contact form outreach starting at just 5.9 JPY per submission (70% OFF 1st order).";
     keywords = ["form marketing japan", "b2b outreach japan", "contact form automation", "sales prospecting japan", "lead generation"];
     ogLocale = "en_US";
   } else if (isVi) {
     title = "Dịch Vụ Tự Động Gửi Form Liên Hệ Doanh Nghiệp Nhật Bản | Kigyou-list";
-    description = "Tiếp cận trực tiếp lãnh đạo doanh nghiệp Nhật Bản qua form liên hệ website. Lọc khách hàng mục tiêu từ 5 triệu doanh nghiệp, kiểm duyệt nội dung Tokushoho chuẩn pháp lý, chi phí từ 16.1 JPY/lượt gửi thành công.";
+    description = "Tiếp cận trực tiếp lãnh đạo doanh nghiệp Nhật Bản qua form liên hệ website. Lọc khách hàng mục tiêu từ 5 triệu doanh nghiệp, kiểm duyệt nội dung Tokushoho chuẩn pháp lý, chi phí chỉ từ 5.9 JPY/lượt gửi thành công (giảm 70% lần đầu).";
     keywords = ["gửi form tự động", "form marketing nhật bản", "tiếp cận b2b nhật bản", "tìm kiếm khách hàng nhật", "danh sách doanh nghiệp nhật bản"];
     ogLocale = "vi_VN";
   }
@@ -90,9 +90,9 @@ export default async function FormMarketingLayout({
     "areaServed": "JP",
     "offers": {
       "@type": "Offer",
-      "price": "16.1",
+      "price": "5.9",
       "priceCurrency": "JPY",
-      "description": "従量課金 / 送信成功1件あたり¥16.1〜"
+      "description": "従量課金 / 初回限定送信成功1件あたり¥5.9〜 (通常¥19.8〜)"
     }
   };
 

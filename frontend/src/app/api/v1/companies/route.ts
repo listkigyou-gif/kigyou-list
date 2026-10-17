@@ -17,10 +17,10 @@ export async function GET(request: Request) {
 
     const { keyInfo, plan, subscription_status } = verification;
 
-    // API usage is strictly restricted to BUSINESS or ENTERPRISE plans
-    if (plan !== "business" && plan !== "enterprise") {
+    // API usage is strictly restricted to PRO, BUSINESS, or ENTERPRISE plans
+    if (plan !== "pro" && plan !== "business" && plan !== "enterprise") {
       return NextResponse.json({
-        error: "Forbidden: API access is restricted to BUSINESS or ENTERPRISE plans."
+        error: "Forbidden: API access is restricted to PRO, BUSINESS or ENTERPRISE plans."
       }, { status: 403 });
     }
 

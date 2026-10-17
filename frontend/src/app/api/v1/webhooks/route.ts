@@ -16,9 +16,9 @@ export async function GET(request: Request) {
     }
 
     const { keyInfo, plan } = verification;
-    if (plan !== "business" && plan !== "enterprise") {
+    if (plan !== "pro" && plan !== "business" && plan !== "enterprise") {
       return NextResponse.json({
-        error: "Forbidden: Real-time Webhooks require BUSINESS or ENTERPRISE plans."
+        error: "Forbidden: Real-time Webhooks require PRO, BUSINESS or ENTERPRISE plans."
       }, { status: 403 });
     }
 
@@ -54,9 +54,9 @@ export async function POST(request: Request) {
     }
 
     const { keyInfo, plan } = verification;
-    if (plan !== "business" && plan !== "enterprise") {
+    if (plan !== "pro" && plan !== "business" && plan !== "enterprise") {
       return NextResponse.json({
-        error: "Forbidden: Real-time Webhooks require BUSINESS or ENTERPRISE plans."
+        error: "Forbidden: Real-time Webhooks require PRO, BUSINESS or ENTERPRISE plans."
       }, { status: 403 });
     }
 

@@ -8,7 +8,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const { targetEmail, plan } = await request.json();
+    const { targetEmail, plan, duration } = await request.json();
 
     if (!targetEmail || !plan) {
       return NextResponse.json({ error: "メールアドレスまたはプランが不正です。" }, { status: 400 });
@@ -25,11 +25,32 @@ export async function POST(request: Request) {
     else if (plan === "business") allowance = 10000;
     else if (plan === "enterprise") allowance = 40000;
 
+    // Calculate plan expiration date based on duration (if not free)
+    let expiresAt: string | null = null;
+    if (plan !== "free") {
+      const now = new Date();
+      if (duration === "1m" || !duration) {
+        now.setMonth(now.getMonth() + 1);
+        expiresAt = now.toISOString();
+      } else if (duration === "3m") {
+        now.setMonth(now.getMonth() + 3);
+        expiresAt = now.toISOString();
+      } else if (duration === "6m") {
+        now.setMonth(now.getMonth() + 6);
+        expiresAt = now.toISOString();
+      } else if (duration === "1y") {
+        now.setFullYear(now.getFullYear() + 1);
+        expiresAt = now.toISOString();
+      } else if (duration === "lifetime") {
+        expiresAt = null;
+      }
+    }
+
     // Fetch old plan info
     const oldQuota = await getUserQuota(targetEmail);
     const oldPlan = oldQuota ? oldQuota.plan : "unknown";
 
-    const success = await updateUserPlanQuota(targetEmail, allowance, plan);
+    const success = await updateUserPlanQuota(targetEmail, allowance, plan, expiresAt);
 
     if (success) {
       // Log admin action
@@ -41,7 +62,7 @@ export async function POST(request: Request) {
         adminEmail,
         "UPDATE_USER_PLAN",
         targetEmail,
-        { oldPlan, newPlan: plan },
+        { oldPlan, newPlan: plan, duration: duration || "1m", expiresAt },
         ipAddress,
         userAgent
       );
@@ -49,7 +70,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ 
         success: true, 
         message: `プランを${plan.toUpperCase()}に更新しました。`,
-        allowance 
+        allowance,
+        expiresAt
       });
     } else {
       return NextResponse.json({ error: "プランの更新に失敗しました。" }, { status: 400 });

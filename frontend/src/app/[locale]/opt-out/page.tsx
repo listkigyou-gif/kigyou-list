@@ -4,8 +4,10 @@ import React, { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
-import { CheckCircle2, AlertCircle, Loader2, Ban, ShieldCheck, Building2 } from "lucide-react";
+import { CheckCircle2, AlertCircle, Loader2, Ban, ShieldCheck, Building2, Sparkles, ArrowRight } from "lucide-react";
 import { useSearchParams } from "next/navigation";
+import { trackOptOutValueClick } from "@/lib/gtag";
+
 
 export default function OptOutPage({ params }: { params: Promise<{ locale: string }> }) {
   const resolvedParams = use(params);
@@ -77,7 +79,16 @@ export default function OptOutPage({ params }: { params: Promise<{ locale: strin
         throw new Error(data.error || "処理に失敗いたしました。");
       }
 
+      if (data.company_name) {
+        setCompanyName(data.company_name);
+      }
+      if (data.already_opted_out) {
+        setAlreadyOptedOut(true);
+      }
       setSuccess(true);
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     } catch (err: any) {
       setError(err.message || "通信エラーが発生いたしました。");
     } finally {
@@ -145,13 +156,80 @@ export default function OptOutPage({ params }: { params: Promise<{ locale: strin
               <p className="text-xs text-slate-400 mb-6">
                 ※システム反映までに最大24時間程度お時間をいただく場合がございます。行き違いで直近に送信が重複した際は、何卒ご容赦いただけますと幸いです。
               </p>
-              <Link
-                href={`/${locale}`}
-                className="inline-flex items-center justify-center px-6 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg transition-all"
-              >
-                Kigyou-List トップページへ
-              </Link>
+
+              {/* High-Value B2B Retention & Conversion Cards */}
+              <div className="mt-8 pt-6 border-t border-emerald-200/80 text-left">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs font-black text-slate-800 uppercase tracking-wider">
+                    {locale === "ja" ? "【無料サービス】貴社のビジネス拡大にもお役立ていただけます" : "Free B2B Growth Tools for Your Business"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-6">
+                  {/* Card 1: View / Claim Official Profile */}
+                  <Link
+                    href={corporateNumber && corporateNumber.length === 13 ? `/${locale}/company/${corporateNumber}` : `/${locale}/search?q=${encodeURIComponent(companyName || "")}`}
+                    onClick={() => trackOptOutValueClick("view_own_company")}
+                    className="p-3.5 rounded-xl bg-white border border-slate-200 hover:border-[#1B4F8A] shadow-2xs hover:shadow-xs transition-all group flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
+                        <span className="flex items-center gap-1.5 text-[#1B4F8A]">
+                          <Building2 className="w-4 h-4" />
+                          <span>自社情報の確認・公式認証</span>
+                        </span>
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        Kigyou-listに掲載されている貴社プロファイルを確認し、公式情報やPRメッセージを管理できます。
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-bold text-[#1B4F8A] mt-2 inline-flex items-center gap-1">
+                      自社プロファイルを見る →
+                    </span>
+                  </Link>
+
+                  {/* Card 2: B2B Prospecting / Free 20 Lists */}
+                  <Link
+                    href={`/${locale}/search`}
+                    onClick={() => trackOptOutValueClick("explore_sales_leads")}
+                    className="p-3.5 rounded-xl bg-white border border-slate-200 hover:border-emerald-600 shadow-2xs hover:shadow-xs transition-all group flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-800 mb-1">
+                        <span className="flex items-center gap-1.5 text-emerald-700">
+                          <Sparkles className="w-4 h-4" />
+                          <span>500万社から新規顧客を開拓</span>
+                        </span>
+                        <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-relaxed">
+                        日本全国の企業データを業種・地域で無料検索。毎月20社分の営業リストを無料CSVダウンロード可能です。
+                      </p>
+                    </div>
+                    <span className="text-[11px] font-bold text-emerald-700 mt-2 inline-flex items-center gap-1">
+                      無料検索・お試しダウンロード →
+                    </span>
+                  </Link>
+                </div>
+
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2 text-xs text-slate-500">
+                  <Link
+                    href={`/${locale}/compare`}
+                    className="text-slate-600 hover:text-[#1B4F8A] underline text-xs"
+                  >
+                    他社サービスとの比較・料金体系はこちら
+                  </Link>
+                  <Link
+                    href={`/${locale}`}
+                    className="inline-flex items-center justify-center px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold rounded-lg transition-all"
+                  >
+                    Kigyou-list トップページへ
+                  </Link>
+                </div>
+              </div>
             </div>
+
           ) : (
             <div>
               {error && (
@@ -215,6 +293,21 @@ export default function OptOutPage({ params }: { params: Promise<{ locale: strin
               <p className="text-xs text-slate-400 text-center mt-6">
                 ※お手続き完了後、以降のご案内送信は行われません。
               </p>
+
+              <div className="mt-6 pt-5 border-t border-slate-200/80 text-left">
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                  💡 <strong className="text-slate-700">自社情報の確認・公式認証をご希望の方へ:</strong><br />
+                  Kigyou-listに掲載されている貴社情報の確認・更新、またはB2B営業リストの無料お試し（毎月20社分）は
+                  <Link 
+                    href={corporateNumber && corporateNumber.length === 13 ? `/${locale}/company/${corporateNumber}` : `/${locale}/search`}
+                    onClick={() => trackOptOutValueClick("pre_submit_info_click")}
+                    className="text-[#1B4F8A] hover:underline font-bold ml-1 inline-flex items-center gap-0.5"
+                  >
+                    <span>こちらからご利用いただけます</span>
+                    <ArrowRight className="w-3 h-3 inline" />
+                  </Link>
+                </p>
+              </div>
             </div>
           )}
         </div>

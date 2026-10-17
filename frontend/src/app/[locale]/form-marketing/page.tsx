@@ -242,8 +242,8 @@ ${message || "未入力"}`
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{isJa ? "平均開封・閲覧率" : isVi ? "Tỷ lệ mở & đọc thực tế" : "Average Read Rate"}</div>
                 </div>
                 <div className="text-center p-3 rounded-lg bg-slate-50/80 dark:bg-slate-800/30 border border-slate-200/70 dark:border-slate-800">
-                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-200">¥16.1〜</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{isJa ? "送信完了単価 (最安水準)" : isVi ? "Chi phí gửi từ 16.1 JPY/form" : "Cost per form from 16.1 JPY"}</div>
+                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-200">¥5.9〜</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-medium">{isJa ? "初回送信完了単価 (業界最安)" : isVi ? "Chi phí gửi từ 5.9 JPY/form (Lần đầu)" : "Cost per form from 5.9 JPY (1st Order)"}</div>
                 </div>
               </div>
             </div>
@@ -294,7 +294,14 @@ ${message || "未入力"}`
                   <td className="p-4 sm:p-5">¥1 〜 ¥3</td>
                   <td className="p-4 sm:p-5 text-rose-600 dark:text-rose-400">¥200 〜 ¥350 / 呼</td>
                   <td className="p-4 sm:p-5 font-bold text-[#1B4F8A] dark:text-blue-400 bg-blue-50/20 dark:bg-blue-950/20 border-l border-r border-blue-200/60 dark:border-blue-900/40">
-                    ¥16.1 〜 ¥19.6 / 送信完了
+                    <div className="flex flex-col">
+                      <span className="text-rose-600 dark:text-rose-400 font-extrabold">
+                        {isJa ? "初回 約 ¥5.9 〜 ¥8.4 / 送信" : isVi ? "Lần đầu: ~¥5.9 〜 ¥8.4 / lượt" : "1st time: ~5.9 - 8.4 JPY"}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-normal">
+                        {isJa ? "（通常: ¥19.8 〜 ¥28）" : isVi ? "（Giá gốc: ¥19.8 〜 ¥28）" : "(Regular: 19.8 - 28 JPY)"}
+                      </span>
+                    </div>
                   </td>
                 </tr>
                 <tr>
@@ -448,17 +455,17 @@ ${message || "未入力"}`
                 </p>
 
                 <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-3xl font-extrabold text-slate-900 dark:text-white">¥19,600</span>
+                  <span className="text-3xl font-extrabold text-slate-900 dark:text-white">¥8,400</span>
                   <span className="text-xs text-slate-400">({isJa ? "税抜" : isVi ? "chưa VAT" : "excl. tax"})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="line-through text-slate-400 text-xs">¥28,000</span>
                   <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
-                    30% OFF
+                    初回 70% OFF
                   </span>
                 </div>
                 <div className="text-xs text-slate-500 font-semibold mb-6">
-                  {isJa ? "単価: 19.6円 / 送信完了" : isVi ? "19.6 JPY / form gửi thành công" : "19.6 JPY / delivered form"}
+                  {isJa ? "単価: 8.4円 / 送信完了 (初回限定)" : isVi ? "8.4 JPY / form gửi thành công (Lần đầu)" : "8.4 JPY / delivered form (First-time)"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -508,17 +515,17 @@ ${message || "未入力"}`
                 </p>
 
                 <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-3xl font-extrabold text-[#1B4F8A] dark:text-blue-400">¥48,300</span>
+                  <span className="text-3xl font-extrabold text-[#1B4F8A] dark:text-blue-400">¥20,700</span>
                   <span className="text-xs text-slate-400">({isJa ? "税抜" : isVi ? "chưa VAT" : "excl. tax"})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="line-through text-slate-400 text-xs">¥69,000</span>
                   <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
-                    30% OFF
+                    初回 70% OFF
                   </span>
                 </div>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6">
-                  {isJa ? "単価: 16.1円 / 送信完了 (業界最安級)" : isVi ? "16.1 JPY / form (Tiết kiệm tối đa)" : "16.1 JPY / delivered form (Save 42%)"}
+                  {isJa ? "単価: 6.9円 / 送信完了 (業界最安級・初回限定)" : isVi ? "6.9 JPY / form (Tiết kiệm tối đa - Lần đầu)" : "6.9 JPY / delivered form (Industry Lowest)"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -566,17 +573,17 @@ ${message || "未入力"}`
                 </p>
 
                 <div className="flex items-baseline gap-1.5 mb-1">
-                  <span className="text-3xl font-extrabold text-slate-900 dark:text-white">¥69,300</span>
+                  <span className="text-3xl font-extrabold text-slate-900 dark:text-white">¥29,700</span>
                   <span className="text-xs text-slate-400">({isJa ? "税抜" : isVi ? "chưa VAT" : "excl. tax"})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="line-through text-slate-400 text-xs">¥99,000</span>
                   <span className="font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200/60 dark:bg-rose-950/20 dark:border-rose-900/50 dark:text-rose-400 text-[10px]">
-                    30% OFF
+                    初回 70% OFF
                   </span>
                 </div>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6">
-                  {isJa ? "単価: 13.8円 / 送信完了 (最安値レート)" : isVi ? "13.8 JPY / form (Mức giá tốt nhất)" : "13.8 JPY / delivered form (Best rate)"}
+                  {isJa ? "単価: 5.9円 / 送信完了 (最安値レート・初回限定)" : isVi ? "5.9 JPY / form (Mức giá tốt nhất - Lần đầu)" : "5.9 JPY / delivered form (Best rate)"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5">

@@ -1,120 +1,117 @@
 ---
 name: facebook-publisher
-description: Chuyên gia sáng tạo nội dung B2B tiếng Nhật và tự động hóa xuất bản toàn diện lên Facebook cho nền tảng Kigyou-list (kigyoulist.com). Kết nối đồng bộ đa kênh với các bài PR trên Note.com, PR-FREE và X (Twitter) tạo phễu chuyển đổi B2B khép kín và tự động xuất bản qua 1 câu lệnh.
+description: Chuyên gia sáng tạo nội dung B2B tiếng Nhật, tối ưu hóa Facebook SEO, Google Parasite SEO và tự động hóa xuất bản toàn diện 1-lệnh (Dual-Channel Publishing: Fanpage & Profile) cho nền tảng Kigyou-list (kigyoulist.com). Tự động hoàn thiện bài đăng, xử lý popup và gửi báo cáo nghiệm thu.
 ---
 
-# Facebook Publisher Skill for Kigyou-list (Omnichannel B2B Flywheel)
+# Facebook Publisher Skill for Kigyou-list (Autonomous B2B SEO & Growth Flywheel)
 
-Kỹ năng này thiết lập AI hoạt động ở vai trò **Chief Content Officer (CCO) & Social Growth Lead** cho nền tảng **Kigyou-list (https://kigyoulist.com)** trên **Facebook**. Kỹ năng kết nối đồng bộ Facebook vào trục bánh đà nội dung (Content Flywheel) cùng **Note.com**, **PR-FREE**, **ValuePress** và **X (@kigyoulist)**.
-
----
-
-## 1. Nguyên Tắc Vận Hành 1-Câu Lệnh (Single-Command Execution)
-
-Khi người dùng đưa ra các câu lệnh như:
-- *"Đăng bài Facebook kết nối với bài Note mới nhất"*
-- *"Đăng bài Facebook thông báo thông cáo báo chí PR-FREE"*
-- *"Đăng bài Facebook mở rộng chủ đề Intent Data từ X"*
-- *"Chạy chiến dịch Facebook so sánh chi phí cho kigyoulist"*
-- *"Đăng bài Facebook về [chủ đề tùy chọn]"*
-
-👉 **AGENT TỰ ĐỘNG THỰC HIỆN TOÀN BỘ 100% TỪ A-Z (KHÔNG DỪNG LẠI HỎI DUYỆT):**
-1. **Xác định kịch bản & Liên kết đa kênh**:
-   - Tự động lấy ngữ cảnh từ bài viết gần nhất trên Note, PR-FREE hoặc X để tạo nội dung phối hợp.
-   - Hỗ trợ chọn bài theo Kế hoạch 30 ngày (`FACEBOOK_30_DAYS_CONTENT_MASTER_PLAN.md`).
-2. **Soạn thảo bài viết Facebook chuẩn văn phong B2B Keigo Nhật Bản**:
-   - Tiêu đề giật chú ý (Hook 2 dòng đầu).
-   - Thân bài cấu trúc Storytelling/Case Study có gạch đầu dòng rõ ràng, dễ đọc trên di động.
-   - Lời kêu gọi hành động (Call To Action) rõ ràng dẫn về `https://kigyoulist.com` kèm tracking UTM.
-   - Bộ Hashtag B2B chuẩn.
-3. **Chuẩn bị hình ảnh eyecatch**:
-   - Sử dụng ảnh bìa thương hiệu `scripts/press_releases/eyecatch_01.jpg` hoặc ảnh sinh tự động phù hợp chủ đề (tỉ lệ 16:9).
-4. **Gọi script tự động xuất bản kép (Dual-Channel Publishing)**:
-   - Chạy lệnh xuất bản `python scripts/facebook_publisher.py --target both --text "..." --image "..."`.
-   - Hệ thống tự động đăng bài lên **Fanpage Kigyou List** và **Trang cá nhân (Takahashi Rika)** đồng thời.
-5. **Báo cáo kết quả**: Xuất ảnh chụp màn hình xác nhận bài đã lên sóng `scripts/facebook_fanpage_live.png` và `scripts/facebook_personal_live.png`.
+Kỹ năng này thiết lập AI hoạt động ở vai trò **Chief Social & SEO Growth Officer** cho nền tảng **Kigyou-list (https://kigyoulist.com)** trên **Facebook**. Kỹ năng kết nối đồng bộ Facebook vào trục bánh đà nội dung (Content Flywheel) cùng **Note.com**, **PR-FREE**, **ValuePress** và **X (@kigyoulist)**, đồng thời chịu trách nhiệm thực thi tự động 100% qua 1 câu lệnh.
 
 ---
 
-## 2. Framework Kịch Bản Bài Post Kết Nối 4 Kênh (Omnichannel Matrix)
+## 1. Nguyên Tắc Vận Hành 1-Câu Lệnh & Báo Cáo Tự Động (Single-Command Execution)
 
-| Kênh Nguồn | Mục Tiêu Phối Hợp Lên Facebook | Công Thức Triển Khai Facebook | CTA & Link Đích |
-| :--- | :--- | :--- | :--- |
-| **PR-FREE / ValuePress** | **Báo chí hóa & Khẳng định vị thế (Social Proof)** | Thông báo tin tức chính thức (Press Release Announcement), nhấn mạnh số liệu 500万社, sự đón nhận của thị trường B2B | `kigyoulist.com/?utm_source=fb_pr` |
-| **Note.com** | **Tóm tắt chuyên sâu (Executive Summary)** | Trích xuất 3 Key Takeaways từ bài phân tích Note (cách cắt giảm 90% chi phí sales), kích thích đọc tiếp | Link bài Note + `kigyoulist.com` |
-| **X (Twitter)** | **Mở rộng đàm thoại (Deep-dive Storytelling)** | Lấy các tweet ngắn về Intent Data/Signal Selling trên X để mở rộng thành bài phân tích chi tiết | `kigyoulist.com/ja/search` |
-| **Direct Web** | **Bóc trần chi phí & Chuyển đổi trực tiếp** | So sánh bảng giá thị trường 30,000 - 100,000 JPY vs 4,980 JPY/tháng không hợp đồng năm | `kigyoulist.com/ja/compare` |
+Khi người dùng đưa ra bất kỳ câu lệnh nào như:
+* 👉 **`Đăng bài Facebook Ngày [1-30]`** *(Ví dụ: "Đăng bài Facebook Ngày 2", "Đăng bài Facebook Ngày 3")*
+* 👉 **`Hôm nay đăng bài Facebook gì`** *(Tự động xác định ngày tiếp theo trong kế hoạch 30 ngày và xuất bản ngay)*
+* 👉 **`Đăng bài Facebook kết nối với bài Note mới nhất`**
+* 👉 **`Đăng bài Facebook thông báo thông cáo báo chí PR-FREE`**
+* 👉 **`Đăng bài Facebook về [Chủ đề tùy chọn]`**
+
+### ⚡ QUY TRÌNH AGENT TỰ ĐỘNG THỰC HIỆN 100% (KHÔNG HỎI LẠI):
+1. **Nạp kịch bản hoặc Soạn thảo bài viết chuẩn B2B Keigo**:
+   - Nếu là lệnh theo ngày (`Ngày X`): Tự động nạp kịch bản chuẩn từ `scripts/facebook_30_days_content.py` hoặc `FACEBOOK_30_DAYS_CONTENT_MASTER_PLAN.md`.
+   - Nếu là lệnh theo chủ đề/đa kênh: Tự động tổng hợp thông tin, viết bài chuẩn Keigo B2B cao cấp (Hook 2 dòng đầu, Bullet points rõ ràng, CTA dẫn link UTM chuẩn, bộ hashtag tối ưu).
+2. **Tự động thiết kế hình ảnh độc bản chuẩn B2B Nhật Bản (Custom Visual Design)**:
+   - ⚠️ **TUYỆT ĐỐI KHÔNG DÙNG LẠI ẢNH CHUNG**: Mỗi bài đăng bắt buộc phải có một hình ảnh bìa riêng biệt phù hợp 100% với chủ đề của bài đó.
+   - **Tiêu chuẩn thiết kế (Japanese B2B Aesthetic)**:
+     * **Phong cách**: Đồ họa thông tin B2B SaaS Nhật Bản hiện đại (Infographic / Clean UI Dashboard).
+     * **Màu sắc**: Tone màu nhã nhặn, dịu mắt, dễ nhìn (Pastel Navy `#1E293B`, Soft Teal `#0D9488`, Warm Off-White `#F8FAFC`, Muted Cyan). Tuyệt đối không dùng màu neon chói gắt.
+     * **Yếu tố trực quan**: Biểu đồ so sánh tối giản, luồng dữ liệu, icon tinh tế, tạo cảm giác tin cậy và chuyên nghiệp chuẩn Tokyo business.
+     * **Tỷ lệ**: `16:9` (chuẩn tỷ lệ hiển thị trên Facebook Feed).
+   - Tự động lưu ảnh vào `c:\kigyou-list\scripts\images\fb_day_XX.jpg` để script xuất bản nạp trực tiếp.
+3. **Thực thi lệnh xuất bản kênh kép (Dual-Channel Publishing)**:
+   - Chạy lệnh:
+     ```bash
+     python scripts/facebook_publisher.py --day X --headless
+     # hoặc
+     python scripts/facebook_publisher.py --text "..." --image "scripts/press_releases/eyecatch_01.jpg" --headless
+     ```
+   - Trình duyệt tự động đăng đồng bộ lên:
+     * **Trang cá nhân**: Takahashi Rika (`https://www.facebook.com/profile.php?id=61595229033404`)
+     * **Fanpage chính thức**: Kigyou List - 日本最大級の企業データベース (`https://www.facebook.com/kigyoulist/`)
+   - Tự động bắt và đóng popup upsell *"Chat directly with customers / Not now"* của Meta, đảm bảo bài viết được lưu trữ và public 100%.
+4. **Kiểm tra link thực tế & Chụp ảnh nghiệm thu**:
+   - Script tự động cuộn trang feed, trích xuất link bài viết trực tiếp dạng `https://www.facebook.com/kigyoulist/posts/...`.
+   - Chụp ảnh màn hình nghiệm thu thực tế: `scripts/facebook_fanpage_live.png` và `scripts/facebook_personal_live.png`.
+5. **Gửi Báo Cáo Hoàn Thành Đầy Đủ Cho Người Dùng**:
+   - Hiển thị link trực tiếp của bài viết trên Fanpage và Profile.
+   - Nhúng ảnh chụp màn hình bằng chứng thực tế.
+   - Tóm tắt chủ đề, góc độ khai thác và thông số UTM tracking.
 
 ---
 
-## 3. Thư Viện Kịch Bản Mẫu Chuẩn Nhật (Ready-to-Post Templates)
+## 2. Chiến Lược SEO Facebook & Google Parasite SEO Cho Kigyoulist.com
 
-### Kịch bản 1: Kết nối bài PR trên PR-FREE (Press Release Amplification)
-```text
-【プレスリリース掲載のお知らせ】
-日本最大級の企業データベース「Kigyou List」、最新アップデートを公開いたしました。📰✨
+Để tối đa hóa lượt tiếp cận tự nhiên và thứ hạng tìm kiếm, mọi bài đăng Facebook đều tuân thủ 3 trụ cột SEO:
 
-新規開拓において、多くの営業組織が「名簿業者の高額な年間契約」や「古い連絡先データ」に頭を抱えています。
-Kigyou List（kigyoulist.com）は、AIによる自動データクレンジングと独自の収集エンジンにより、全国500万社以上の最新法人データをワンストップで提供します。
+### Trụ Cột 1: Facebook Search SEO (Tối ưu tìm kiếm nội bộ Facebook)
+* **Từ khóa trọng tâm**: `企業データベース`, `法人リスト`, `営業リスト`, `インテントデータ`, `シグナル営業`, `ハローワーク求人`, `営業DX`, `kigyoulist`.
+* **Vị trí vàng (2 dòng đầu)**: 90 ký tự đầu tiên quyết định bài viết có được Facebook Search đưa lên TOP hay không và quyết định tỷ lệ bấm xem thêm (`See more`).
+* **Hashtag B2B**: Luôn đính kèm 5-7 thẻ hashtag có lượng tìm kiếm cao của giới doanh nghiệp Nhật:
+  `#営業リスト #法人データ #新規開拓 #営業DX #コスト削減 #B2Bマーケティング #KigyouList`
 
-■ 本リリースの注目ポイント
-✅ 全国5,000,000社以上の企業情報を網羅
-✅ 業界・地域・売上・採用動向による精密ターゲティング
-✅ 月額4,980円〜・年間契約縛り一切なしの圧倒的コストパフォーマンス
+### Trụ Cột 2: Google Parasite SEO (Leo TOP Google nhờ Domain Authority Facebook DR 96)
+* Google thường xuyên lập chỉ mục (index) các bài viết công khai trên Fanpage Facebook có cấu trúc ngữ nghĩa chặt chẽ.
+* Sử dụng tiêu đề đóng khung kiểu Nhật: `【月10万円の名簿ツールは本当に必要か？】`
+* Trình bày danh sách 1️⃣ 2️⃣ 3️⃣ rõ ràng để bot tìm kiếm hiểu đây là nội dung chuyên sâu (Comprehensive Guide).
 
-詳細はPR-FREE掲載記事および公式サイトをご覧ください。
-👉 公式サイト・無料トライアル： https://kigyoulist.com/?utm_source=facebook&utm_medium=pr_announcement
+### Trụ Cột 3: GEO / AI Search Optimization (Perplexity, ChatGPT Search, Gemini)
+* Các mô hình AI tìm kiếm ưu tiên trích dẫn các bài viết có số liệu định lượng cụ thể:
+  - *全国500万社以上のオープンデータを網羅* (Hơn 5 triệu doanh nghiệp toàn quốc).
+  - *初月わずか ¥1,260（70% OFF）・2ヶ月目以降も通常 ¥4,200/月・年間縛り一切なし* (Rẻ bằng 1/25〜1/80 đối thủ 30,000〜100,000円).
+  - *無料トライアル：全500万社検索 ＆ 月50件CSVダウンロード永久無料*.
+  - *AIフォーム営業自動化：1通わずか5.9円〜（祝祭70% OFF / 通常19.8円〜）*.
+  - *調達コストを90%以上削減* (Cắt giảm hơn 90% chi phí tìm kiếm danh sách).
 
-#プレスリリース #B2B営業 #法人リスト #営業DX #新規開拓 #KigyouList
+---
+
+## 3. Ma Trận Kịch Bản Xuất Bản Đa Kênh (Omnichannel Matrix)
+
+| Kênh Nguồn | Mục Tiêu Phối Hợp Lên Facebook | CTA & Link Đích |
+| :--- | :--- | :--- |
+| **Kế hoạch 30 ngày (`--day X`)** | **Phủ sóng đều đặn mỗi ngày theo kịch bản SEO đã được lập** | `kigyoulist.com/?utm_source=facebook&utm_medium=day_XX` |
+| **PR-FREE / ValuePress** | **Báo chí hóa & Khẳng định vị thế thương hiệu (Social Proof)** | `kigyoulist.com/?utm_source=facebook&utm_medium=pr_announcement` |
+| **Note.com** | **Tóm tắt chuyên sâu (Executive Summary) 3 bài học đắt giá** | Link bài Note + `kigyoulist.com` |
+| **X (Twitter @kigyoulist)** | **Mở rộng chủ đề ngắn thành bài phân tích chi tiết (Intent Data)** | `kigyoulist.com/ja/search?utm_source=facebook&utm_medium=signal` |
+
+---
+
+## 4. Mẫu Báo Cáo Chuẩn Cho Người Dùng
+
+Sau khi thực thi xong bài đăng, Agent gửi báo cáo theo cấu trúc chuẩn sau:
+
+```markdown
+### 📢 BÁO CÁO XUẤT BẢN BÀI ĐĂNG FACEBOOK [NGÀY X / CHỦ ĐỀ]
+
+Bài viết đã được xuất bản tự động thành công đồng thời lên **Fanpage Kigyou List** và **Trang cá nhân** ở chế độ **Công khai (Public 🌐)**!
+
+* 📌 **Chủ đề**: [Tiêu đề bài viết]
+* 🎯 **Mục tiêu SEO**: [Từ khóa chính: ví dụ 法人リスト, コスト削減]
+* 🔗 **Link bài viết Fanpage**: [URL bài viết trực tiếp]
+* 🔗 **Link Fanpage chính thức**: https://www.facebook.com/kigyoulist/
+* 👤 **Link Trang cá nhân**: https://www.facebook.com/profile.php?id=61595229033404
+* 📊 **Link đích (CTA)**: [Link website kèm UTM tracking]
+
+📸 **Minh chứng bài viết đã lên sóng thực tế**:
+![Bằng chứng bài viết đã đăng](file:///c:/kigyou-list/scripts/facebook_fanpage_live.png)
 ```
 
-### Kịch bản 2: Kết nối bài phân tích chuyên sâu trên Note.com (Note Bridge)
-```text
-【note記事を更新しました】
-「月10万円の名簿ツールは本当に必要か？ B2B営業リストのコストを90%削減する現実的なアプローチ」📝💡
-
-多くのSaaS・営業代行会社が直面する「リスト作成工数」と「高額な固定費」の壁。
-今回はnoteにて、営業マネージャー必見の最新データ活用術を徹底解説しました。
-
-■ 記事のダイジェスト
-1. 従来の企業リスト購入に潜む3つの隠れコスト
-2. ハローワークや助成金データを活用した「シグナル営業（Intent Data）」の威力
-3. 月額4,980円で500万社のリストを内製化する実践フロー
-
-営業戦略の見直しやROI改善にぜひお役立てください。
-全文は以下のリンクよりご覧いただけます👇
-📖 note記事はこちら： [LINK_NOTE_ARTICLE]
-📊 Kigyou List 公式： https://kigyoulist.com
-
-#note #営業マネージャー #インサイドセールス #コスト削減 #B2Bマーケティング #KigyouList
-```
-
-### Kịch bản 3: Kết nối chủ đề xu hướng từ X (X/Twitter Expansion - Intent Data)
-```text
-【Xで話題の「シグナル営業」を現場で実践するには？】🎯
-
-「テレアポやフォーム送信の返信率が落ちてきた…」と感じていませんか？
-いま成果を出している営業組織は、単なる会社名リストではなく『インテントデータ（購買・成長シグナル）』を起点に動いています。
-
-💡 狙い目の3大シグナル：
-① 採用強化の兆候（ハローワーク等の新規求人募集）
-② 公的支援の獲得（助成金・補助金の採択実績）
-③ 公共調達・入札の落札実績
-
-Kigyou Listなら、これらのシグナル条件をワンクリックで掛け合わせ、今まさに投資意欲の高い企業だけにピンポイントでアプローチ可能です。
-
-無駄な営業工数をゼロにして、成約率を最大化しましょう。
-👉 無料で検索条件を試す： https://kigyoulist.com/ja/search?utm_source=facebook&utm_medium=signal_selling
-
-#シグナル営業 #インテントデータ #リード獲得 #営業DX #法人営業 #KigyouList
-```
-
 ---
 
-## 4. Công Cụ Kỹ Thuật Thực Thi
+## 5. Danh Mục Công Cụ Kỹ Thuật
 
-1. **Khởi tạo và lưu phiên đăng nhập**:
-   - `python c:\kigyou-list\scripts\facebook_setup_session.py`
-   - Hồ sơ được lưu bền vững tại: `c:\kigyou-list\.facebook_user_profile`
-2. **Lệnh xuất bản tự động**:
-   - `python c:\kigyou-list\scripts\facebook_publisher.py --text "..." --image "scripts/press_releases/eyecatch_01.jpg"`
+* **File điều phối chính**: `c:\kigyou-list\scripts\facebook_publisher.py`
+* **File dữ liệu 30 ngày**: `c:\kigyou-list\scripts\facebook_30_days_content.py`
+* **Kế hoạch chiến lược tổng thể**: `c:\kigyou-list\FACEBOOK_SEO_STRATEGY_AND_EXECUTION_PLAN.md`
+* **Hồ sơ phiên đăng nhập Facebook**: `c:\kigyou-list\.facebook_user_profile`
