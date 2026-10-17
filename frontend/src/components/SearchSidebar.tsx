@@ -351,8 +351,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             </label>
             <select
               value={prefCode || ""}
-              onChange={(e) => navigate({ prefecture: e.target.value || null, city: null })}
-              className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
+              onChange={(e) => navigate({ prefecture: e.target.value || null, city: null }, true)}
+              className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 transition-colors shadow-2xs cursor-pointer"
             >
               <option value="">{t.search.allPrefectures}</option>
               {prefectures.map((pref) => (
@@ -370,9 +370,9 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             </label>
             <select
               value={city || ""}
-              onChange={(e) => navigate({ city: e.target.value || null })}
+              onChange={(e) => navigate({ city: e.target.value || null }, true)}
               disabled={!prefCode}
-              className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-900 transition-colors shadow-2xs"
+              className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-900 transition-colors shadow-2xs cursor-pointer"
             >
               <option value="">{t.search.allCities}</option>
               {prefCode && cities && cities.map((c) => (
@@ -390,8 +390,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             </label>
             <select
               value={indCode || ""}
-              onChange={(e) => navigate({ industry: e.target.value || null })}
-              className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
+              onChange={(e) => navigate({ industry: e.target.value || null }, true)}
+              className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 transition-colors shadow-2xs cursor-pointer"
             >
               <option value="">{t.search.allIndustries}</option>
               {industries.map((major) => (
@@ -431,13 +431,18 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={!!hasContactForm}
-                onChange={(e) => navigate({ contact_form: e.target.checked ? "true" : null })}
+                onChange={(e) => navigate({ contact_form: e.target.checked ? "true" : null }, true)}
                 className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
               />
               <div className="flex-1 flex items-center justify-between gap-1 flex-wrap">
-                <span className="text-xs font-semibold">
-                  {locale === 'en' ? 'Contact Form' : locale === 'vi' ? 'Biểu mẫu liên hệ' : 'お問い合わせフォーム'}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs font-semibold">
+                    {locale === 'en' ? 'Contact Form' : locale === 'vi' ? 'Biểu mẫu liên hệ' : 'お問い合わせフォーム'}
+                  </span>
+                  <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium">
+                    (23.5万社)
+                  </span>
+                </div>
                 <div className="flex items-center gap-1">
                   <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-black tracking-wide">
                     FORM
@@ -451,19 +456,24 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 
             {/* Email Address with Type selector */}
             <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 flex flex-col gap-1.5">
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
-                <input
-                  type="checkbox"
-                  checked={hasEmail}
-                  onChange={(e) => navigate({ 
-                    email: e.target.checked ? "true" : null,
-                    email_type: e.target.checked ? emailType : null 
-                  })}
-                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
-                />
-                <span className="flex items-center gap-1.5">
-                  <Mail className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{t.search.emailLabel}</span>
+              <label className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={hasEmail}
+                    onChange={(e) => navigate({ 
+                      email: e.target.checked ? "true" : null,
+                      email_type: e.target.checked ? emailType : null 
+                    }, true)}
+                    className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                  />
+                  <span className="flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{t.search.emailLabel}</span>
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                  (17.6万社)
                 </span>
               </label>
 
@@ -474,8 +484,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   </span>
                   <select
                     value={emailType || ""}
-                    onChange={(e) => navigate({ email_type: e.target.value || null })}
-                    className="w-full text-[10px] font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 focus:outline-none dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700"
+                    onChange={(e) => navigate({ email_type: e.target.value || null }, true)}
+                    className="w-full text-[10px] font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 focus:outline-none dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700 cursor-pointer"
                   >
                     <option value="">{locale === 'en' ? 'All Types' : locale === 'vi' ? 'Tất cả loại' : '全種別'}</option>
                     <option value="GENERAL">{locale === 'en' ? 'General / Info' : locale === 'vi' ? 'Chung / Đại diện' : '代表・総合'}</option>
@@ -489,37 +499,52 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 
             {/* Other Channels */}
             <div className="grid grid-cols-1 gap-1.5 pt-0.5">
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
-                <input
-                  type="checkbox"
-                  checked={hasPhone}
-                  onChange={(e) => navigate({ phone: e.target.checked ? "true" : null })}
-                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
-                />
-                <Phone className="w-3.5 h-3.5 text-slate-400" />
-                <span>{t.search.phoneLabel}</span>
+              <label className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={hasPhone}
+                    onChange={(e) => navigate({ phone: e.target.checked ? "true" : null }, true)}
+                    className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                  />
+                  <Phone className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{t.search.phoneLabel}</span>
+                </div>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                  (320万社)
+                </span>
               </label>
 
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
-                <input
-                  type="checkbox"
-                  checked={hasWebsite}
-                  onChange={(e) => navigate({ website: e.target.checked ? "true" : null })}
-                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
-                />
-                <Globe className="w-3.5 h-3.5 text-slate-400" />
-                <span>{t.search.websiteLabel}</span>
+              <label className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={hasWebsite}
+                    onChange={(e) => navigate({ website: e.target.checked ? "true" : null }, true)}
+                    className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                  />
+                  <Globe className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{t.search.websiteLabel}</span>
+                </div>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                  (185万社)
+                </span>
               </label>
 
-              <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
-                <input
-                  type="checkbox"
-                  checked={hasFax}
-                  onChange={(e) => navigate({ fax: e.target.checked ? "true" : null })}
-                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
-                />
-                <Printer className="w-3.5 h-3.5 text-slate-400" />
-                <span>{t.search.faxLabel}</span>
+              <label className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={hasFax}
+                    onChange={(e) => navigate({ fax: e.target.checked ? "true" : null }, true)}
+                    className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                  />
+                  <Printer className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{t.search.faxLabel}</span>
+                </div>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                  (140万社)
+                </span>
               </label>
             </div>
           </div>
@@ -541,8 +566,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasHiring}
-                onChange={(e) => navigate({ hiring: e.target.checked ? "true" : null })}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
+                onChange={(e) => navigate({ hiring: e.target.checked ? "true" : null }, true)}
+                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
               />
               <span>{t.search.hiring}</span>
             </label>
@@ -551,8 +576,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasSubsidy}
-                onChange={(e) => navigate({ subsidy: e.target.checked ? "true" : null })}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
+                onChange={(e) => navigate({ subsidy: e.target.checked ? "true" : null }, true)}
+                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
               />
               <span>{t.search.subsidy}</span>
             </label>
@@ -561,8 +586,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasBidding}
-                onChange={(e) => navigate({ bidding: e.target.checked ? "true" : null })}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
+                onChange={(e) => navigate({ bidding: e.target.checked ? "true" : null }, true)}
+                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
               />
               <span>{t.search.bidding}</span>
             </label>
@@ -571,8 +596,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasAward}
-                onChange={(e) => navigate({ award: e.target.checked ? "true" : null })}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
+                onChange={(e) => navigate({ award: e.target.checked ? "true" : null }, true)}
+                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
               />
               <span>{t.search.award}</span>
             </label>
@@ -581,8 +606,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasCertification}
-                onChange={(e) => navigate({ certification: e.target.checked ? "true" : null })}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
+                onChange={(e) => navigate({ certification: e.target.checked ? "true" : null }, true)}
+                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
               />
               <span>{t.search.certification}</span>
             </label>
@@ -591,8 +616,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasPatent}
-                onChange={(e) => navigate({ patent: e.target.checked ? "true" : null })}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
+                onChange={(e) => navigate({ patent: e.target.checked ? "true" : null }, true)}
+                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
               />
               <span>{t.search.patent}</span>
             </label>
@@ -601,8 +626,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <input
                 type="checkbox"
                 checked={hasFinancials}
-                onChange={(e) => navigate({ financials: e.target.checked ? "true" : null })}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800"
+                onChange={(e) => navigate({ financials: e.target.checked ? "true" : null }, true)}
+                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
               />
               <span>{t.search.hasFinancials}</span>
             </label>
@@ -766,8 +791,8 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
             </label>
             <select
               value={companyStatus || ""}
-              onChange={(e) => navigate({ status: e.target.value || null })}
-              className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
+              onChange={(e) => navigate({ status: e.target.value || null }, true)}
+              className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 transition-colors shadow-2xs cursor-pointer"
             >
               <option value="">{t.search.allStatuses}</option>
               <option value="活動中">{t.search.active}</option>
@@ -991,16 +1016,26 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         </div>
       </div>
 
-      {/* Optional Sticky Apply Button */}
+      {/* Sticky Bottom Apply Button */}
       {onApplyFilters && (
-        <div className="sticky bottom-0 left-0 right-0 pt-3 mt-3 bg-white/95 dark:bg-[#161B22]/95 backdrop-blur-xs border-t border-slate-200 dark:border-slate-800 z-20">
+        <div className="sticky bottom-0 left-0 right-0 pt-3 pb-1 mt-3 bg-white/95 dark:bg-[#161B22]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 z-30 shadow-sm">
           <button
             type="button"
             onClick={onApplyFilters}
-            className="w-full py-2.5 px-4 bg-[#1B4F8A] hover:bg-[#143D6C] text-white text-xs font-bold rounded-lg shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
+            className={`w-full py-2.5 px-4 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
+              activeCount > 0
+                ? "bg-gradient-to-r from-[#1B4F8A] to-[#143D6C] hover:from-[#143D6C] hover:to-[#0F2D50] ring-2 ring-[#1B4F8A]/30 shadow-[#1B4F8A]/20"
+                : "bg-[#1B4F8A] hover:bg-[#143D6C]"
+            }`}
           >
             <Filter className="w-3.5 h-3.5" />
-            <span>{locale === 'en' ? 'Apply Filters' : locale === 'vi' ? 'Áp dụng bộ lọc' : 'この条件で検索する'}</span>
+            <span>
+              {locale === 'en' 
+                ? (activeCount > 0 ? `Apply Filters (${activeCount})` : 'Apply Filters')
+                : locale === 'vi' 
+                ? (activeCount > 0 ? `Áp dụng bộ lọc (${activeCount} điều kiện)` : 'Áp dụng bộ lọc')
+                : (activeCount > 0 ? `この条件で検索する (${activeCount}件の条件)` : 'この条件で検索する')}
+            </span>
           </button>
         </div>
       )}

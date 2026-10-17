@@ -142,7 +142,7 @@ function getPGPool(): Pool {
       max: 20,
       idleTimeoutMillis: 1000,
       connectionTimeoutMillis: 5000,
-      options: "-c statement_timeout=10000"
+      options: "-c statement_timeout=20000"
     });
   }
   return pgPool;
