@@ -204,7 +204,7 @@ export default function OptOutPage({ params }: { params: Promise<{ locale: strin
                         <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                       </div>
                       <p className="text-[11px] text-slate-500 leading-relaxed">
-                        日本全国の企業データを業種・地域で無料検索。毎月20社分の営業リストを無料CSVダウンロード可能です。
+                        日本全国の企業データを業種・地域で無料検索。毎日20社分（月間最大約600社）の営業リストを無料CSVダウンロード可能です。
                       </p>
                     </div>
                     <span className="text-[11px] font-bold text-emerald-700 mt-2 inline-flex items-center gap-1">
@@ -297,7 +297,7 @@ export default function OptOutPage({ params }: { params: Promise<{ locale: strin
               <div className="mt-6 pt-5 border-t border-slate-200/80 text-left">
                 <p className="text-xs text-slate-500 font-medium leading-relaxed">
                   💡 <strong className="text-slate-700">自社情報の確認・公式認証をご希望の方へ:</strong><br />
-                  Kigyou-listに掲載されている貴社情報の確認・更新、またはB2B営業リストの無料お試し（毎月20社分）は
+                  Kigyou-listに掲載されている貴社情報の確認・更新、またはB2B営業リストの無料お試し（毎日20社・月間最大約600社分）は
                   <Link 
                     href={corporateNumber && corporateNumber.length === 13 ? `/${locale}/company/${corporateNumber}` : `/${locale}/search`}
                     onClick={() => trackOptOutValueClick("pre_submit_info_click")}

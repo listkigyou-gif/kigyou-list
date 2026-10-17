@@ -436,7 +436,7 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
           <span>{statusMessage || d.downloadBtn}</span>
           {!isLoggedIn && (
             <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-extrabold px-1.5 py-0.5 rounded-sm">
-              {locale === 'ja' ? '毎月20件無料' : locale === 'vi' ? '20 dòng free' : '20 free/mo'}
+              {locale === 'ja' ? '毎日20件無料' : locale === 'vi' ? '20 lượt/ngày free' : '20 free/day'}
             </span>
           )}
         </button>

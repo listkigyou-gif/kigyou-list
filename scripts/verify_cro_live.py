@@ -15,7 +15,7 @@ res1 = stdout.read().decode('utf-8', errors='ignore').strip()
 print(f"    Result: '{res1}'")
 
 print("[*] Checking /ja/search on VPS localhost:3000...")
-stdin, stdout, stderr = ssh.exec_command("curl -s http://localhost:3000/ja/search | grep -o '無料会員特典' | head -n 1")
+stdin, stdout, stderr = ssh.exec_command("curl -s http://localhost:3000/ja/search | grep -o '毎日20件' | head -n 1")
 res2 = stdout.read().decode('utf-8', errors='ignore').strip()
 print(f"    Result: '{res2}'")
 

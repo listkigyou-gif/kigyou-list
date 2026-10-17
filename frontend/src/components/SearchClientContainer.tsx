@@ -1202,25 +1202,25 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
 
         {/* Free Quota & Signup Conversion Banner for Unauthenticated Users */}
         {!isLoggedIn && (
-          <div className="bg-gradient-to-r from-blue-600 via-[#1B4F8A] to-indigo-700 text-white p-3.5 sm:p-4 rounded-xl shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-blue-400/30">
+          <div className="bg-gradient-to-r from-blue-50/70 via-slate-50 to-indigo-50/50 dark:from-slate-900/80 dark:via-[#161B22] dark:to-slate-900/80 border border-blue-200/80 dark:border-slate-800 p-3.5 sm:p-4 rounded-xl shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-white/15 backdrop-blur-xs flex items-center justify-center shrink-0">
-                <Sparkles className="w-4.5 h-4.5 text-amber-300" />
+              <div className="w-8 h-8 rounded-lg bg-[#1B4F8A]/10 dark:bg-blue-900/40 border border-[#1B4F8A]/15 dark:border-blue-800/40 flex items-center justify-center shrink-0">
+                <Sparkles className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
               </div>
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[11px] font-bold uppercase bg-amber-400 text-slate-900 px-2 py-0.5 rounded-full tracking-wider">
+                  <span className="text-[10px] font-bold text-[#1B4F8A] dark:text-blue-300 bg-[#E8EFF8] dark:bg-blue-950/80 border border-[#1B4F8A]/20 dark:border-blue-800/50 px-2 py-0.5 rounded tracking-wider">
                     {locale === 'ja' ? '無料会員特典' : locale === 'vi' ? 'ĐẶC QUYỀN MIỄN PHÍ' : 'FREE TIER'}
                   </span>
-                  <p className="text-xs sm:text-sm font-bold text-white">
+                  <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                     {locale === 'ja' 
-                      ? '今すぐ無料登録で毎月20件のCSVダウンロード枠を即時プレゼント！' 
+                      ? '今すぐ無料登録で毎日20件のCSVダウンロード枠を即時プレゼント！' 
                       : locale === 'vi'
-                      ? 'Đăng ký miễn phí ngay để nhận 20 lượt tải CSV doanh nghiệp mỗi tháng!'
-                      : 'Sign up free now to get 20 free CSV company downloads every month!'}
+                      ? 'Đăng ký miễn phí ngay để nhận 20 lượt tải CSV mỗi ngày!'
+                      : 'Sign up free now to get 20 free CSV company downloads daily!'}
                   </p>
                 </div>
-                <p className="text-[11px] text-blue-100 hidden sm:block mt-0.5">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block mt-0.5">
                   {locale === 'ja'
                     ? 'クレジットカード不要・Googleアカウントで1秒ログイン可能'
                     : locale === 'vi'
@@ -1235,9 +1235,9 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                 trackSignUpIntent("search_banner");
                 setAuthModalOpen(true);
               }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#1B4F8A] hover:bg-[#153e6d] text-white text-xs font-bold shadow-2xs hover:shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0"
             >
-              <span>{locale === 'ja' ? '無料でCSV枠を受け取る' : locale === 'vi' ? 'Nhận 20 lượt miễn phí' : 'Claim Free CSV Trial'}</span>
+              <span>{locale === 'ja' ? '無料でCSV枠を受け取る' : locale === 'vi' ? 'Nhận 20 lượt tải/ngày' : 'Claim Free CSV Trial'}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
