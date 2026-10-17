@@ -1247,7 +1247,18 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400 bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 p-3.5 sm:p-4 rounded-xl shadow-2xs">
           <span>
             {totalCount > 0 ? (
-              t.search.companiesFound.replace("{count}", totalCount.toLocaleString())
+              totalCount === 2000 ? (
+                <>
+                  <strong className="font-bold text-slate-800 dark:text-white">2,000+</strong>{" "}
+                  {locale === 'ja'
+                    ? '件の企業が見つかりました（高速化のため上位2,000件を表示中）'
+                    : locale === 'vi'
+                    ? 'doanh nghiệp tìm thấy (Tối ưu tải nhanh: hiển thị top 2,000 doanh nghiệp hàng đầu)'
+                    : 'companies found (Fast search: showing top 2,000 companies)'}
+                </>
+              ) : (
+                t.search.companiesFound.replace("{count}", totalCount.toLocaleString())
+              )
             ) : (
               t.search.companiesFoundZero
             )}

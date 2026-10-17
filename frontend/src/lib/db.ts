@@ -1248,6 +1248,8 @@ export interface DatabaseStats {
   signalContactForm: number;
   signalEmail: number;
   signalWebsite: number;
+  signalPhone: number;
+  signalFax: number;
 }
 
 /**
@@ -1363,6 +1365,14 @@ export async function searchCompanies(
         if (singleFilter === 'website') {
           const stats = await getDatabaseStats();
           return stats.signalWebsite;
+        }
+        if (singleFilter === 'phone') {
+          const stats = await getDatabaseStats();
+          return stats.signalPhone;
+        }
+        if (singleFilter === 'fax') {
+          const stats = await getDatabaseStats();
+          return stats.signalFax;
         }
         if (singleFilter === 'financials') {
           const isPG = !!DATABASE_URL;
@@ -1492,6 +1502,8 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
       signalContactForm: stats['signal_contact_form'] || 235290,
       signalEmail: stats['signal_email'] || 176505,
       signalWebsite: stats['signal_website'] || 539749,
+      signalPhone: stats['signal_phone'] || 1758775,
+      signalFax: stats['signal_fax'] || 301404,
     };
     setCachedData(cacheKey, result);
     return result;
@@ -1510,6 +1522,8 @@ export async function getDatabaseStats(): Promise<DatabaseStats> {
       signalContactForm: 235290,
       signalEmail: 176505,
       signalWebsite: 539749,
+      signalPhone: 1758775,
+      signalFax: 301404,
     };
   }
 }

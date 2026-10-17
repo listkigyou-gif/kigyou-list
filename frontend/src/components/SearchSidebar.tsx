@@ -511,7 +511,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   <span>{t.search.phoneLabel}</span>
                 </div>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                  (320万社)
+                  (175.8万社)
                 </span>
               </label>
 
@@ -527,7 +527,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   <span>{t.search.websiteLabel}</span>
                 </div>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                  (185万社)
+                  (54万社)
                 </span>
               </label>
 
@@ -543,7 +543,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   <span>{t.search.faxLabel}</span>
                 </div>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                  (140万社)
+                  (30.1万社)
                 </span>
               </label>
             </div>
