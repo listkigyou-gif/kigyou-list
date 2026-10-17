@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { Building2 } from "lucide-react";
+import { LogoIcon } from "@/components/LogoIcon";
 
 interface CompanyLogoProps {
   websiteUrl?: string | null;
@@ -35,6 +36,25 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
 }) => {
   const [imgError, setImgError] = useState(false);
   const domain = extractDomain(websiteUrl);
+
+  // If this is our own domain kigyoulist.com or TQC, render official platform book logo directly
+  const isKigyouList = 
+    domain === "kigyoulist.com" || 
+    domain?.endsWith(".kigyoulist.com") ||
+    websiteUrl?.includes("kigyoulist.com") ||
+    companyName.includes("ＴＱＣ") ||
+    companyName.includes("TQC");
+
+  if (isKigyouList && (!logoUrl || !logoUrl.trim().startsWith("http"))) {
+    return (
+      <div 
+        className={`${className} rounded-xl bg-[#1B4F8A] p-2.5 flex items-center justify-center shrink-0 shadow-xs overflow-hidden transition-all duration-200 hover:shadow-sm`}
+        title={`${companyName} Logo`}
+      >
+        <LogoIcon className="w-full h-full text-white" />
+      </div>
+    );
+  }
 
   // Source selection: direct logoUrl if available, otherwise Google Favicon 128px CDN
   let imgSrc: string | null = null;

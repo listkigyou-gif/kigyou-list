@@ -112,6 +112,15 @@ export async function generateMetadata({
         'msvalidate.01': process.env.NEXT_PUBLIC_BING_SITE_VERIFICATION || '',
       },
     },
+    icons: {
+      icon: [
+        { url: "/icon.svg", type: "image/svg+xml" },
+        { url: "/favicon.ico", sizes: "any" },
+      ],
+      apple: [
+        { url: "/icon.svg" },
+      ],
+    },
   };
 }
 
