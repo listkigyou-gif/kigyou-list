@@ -15,3 +15,12 @@ Quy tắc này áp dụng tự động cho mọi tác nhân và subagent trong d
 ## 3. Chống Rác Ổ Đĩa & Tràn Bộ Nhớ (Zero Disk Churn)
 - Không lưu ảnh chụp màn hình kiểm thử tạm (`.png`) trực tiếp vào thư mục gốc hoặc `scripts/`. Các ảnh tạm thời phải được lưu vào `scratch/` hoặc tự động dọn dẹp sau khi xác nhận trạng thái.
 - Các script cào dữ liệu hoặc gửi form phải có cơ chế giới hạn số lượng mẫu lưu trữ (`max_samples <= 50`) để tránh làm phình ổ cứng.
+
+## 4. Thông Số Sản Phẩm & Gói Miễn Phí Chuẩn Xác (Product Truth & Free Tier)
+- **Gói Miễn Phí (フリープラン / Free Tier):**
+  - **Tải CSV:** Tối đa **20 CSV / ngày** (tương đương khoảng **600 CSV / tháng**).
+  - **Thời hạn:** Hoàn toàn miễn phí trọn đời (**永久無料**), không yêu cầu thẻ tín dụng.
+  - **Tra cứu:** Tìm kiếm, xem chi tiết và lọc không giới hạn trên toàn bộ 5 triệu doanh nghiệp.
+- **Gói Trả Phí (Standard / Premium):**
+  - Khuyến mãi tháng đầu: **1,260円** (giảm 70% từ 4,200円), không ràng buộc hợp đồng năm.
+- **Lưu ý bộ nhớ:** Tuyệt đối không dùng con số cũ (50 CSV/tháng). Luôn luôn dùng thông số chuẩn: **20 CSV/ngày (khoảng 600 CSV/tháng)** trong mọi nội dung PR, marketing, bài viết đa kênh.

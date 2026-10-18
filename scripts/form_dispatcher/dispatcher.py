@@ -656,6 +656,17 @@ class FormDispatcher:
             rendered_body = rendered_body.replace("{{opt_out_url}}", opt_out_url)
             rendered_body = rendered_body.replace("{opt_out_url}", opt_out_url)
 
+            # Tokushōhō Legal Safety Net: If body does not contain opt-out link, automatically append it
+            if opt_out_url not in rendered_body and "opt-out" not in rendered_body and "配信停止" not in rendered_body:
+                rendered_body += (
+                    f"\n\n--------------------------------------------------\n"
+                    f"※本メッセージは貴社のWebフォーム公開趣旨に基づきご案内をお送りしております。\n"
+                    f"※今後のご案内・ご提案がご不要な場合は誠にお手数ですが下記の解除リンクよりお手続きをお願い申し上げます。\n"
+                    f"▼配信停止（オプトアウト）はこちら：\n"
+                    f"{opt_out_url}\n"
+                    f"--------------------------------------------------"
+                )
+
             # Ensure company salutation at the top if not already present
             if comp_name not in rendered_body[:len(comp_name) + 30]:
                 custom_body = f"{comp_name} 御中\n\n{rendered_body}"

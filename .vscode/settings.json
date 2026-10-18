@@ -28,6 +28,7 @@
     ".valuepress_user_profile/**": true,
     ".x_user_profile/**": true,
     ".zenn_user_profile/**": true,
+    ".free_pressrelease_user_profile/**": true,
     ".*_user_profile/**": true,
     "scripts/.note_profile/**": true,
     "scripts/form_dispatcher/reports/**": true
@@ -58,6 +59,7 @@
     ".valuepress_user_profile/**": true,
     ".x_user_profile/**": true,
     ".zenn_user_profile/**": true,
+    ".free_pressrelease_user_profile/**": true,
     ".*_user_profile/**": true,
     "scripts/.note_profile/**": true,
     "scripts/form_dispatcher/reports/**": true,
@@ -89,6 +91,7 @@
     ".valuepress_user_profile/**": true,
     ".x_user_profile/**": true,
     ".zenn_user_profile/**": true,
+    ".free_pressrelease_user_profile/**": true,
     ".*_user_profile/**": true,
     "scripts/.note_profile/**": true,
     "scripts/form_dispatcher/reports/**": true

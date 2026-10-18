@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { 
   Send, Plus, FileText, CheckCircle2, Clock, AlertCircle, 
   Trash2, Edit3, Eye, Copy, ArrowRight, Loader2, Sparkles, 
@@ -93,6 +93,15 @@ const PREFECTURE_OPTIONS = [
   { id: "fukuoka", ja: "福岡県のみ", vi: "Chỉ Fukuoka", en: "Fukuoka Only" },
 ];
 
+// Module-level cache for instant tab transitions & zero-latency switching
+let cachedFormCampaignsData: {
+  campaigns: Campaign[];
+  templates: Template[];
+  presets: Template[];
+  credits: { balance: number; reserved?: number; total_purchased: number; total_used: number };
+  timestamp: number;
+} | null = null;
+
 export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget }: FormCampaignsTabProps = {}) {
   const { locale } = useLanguage();
   const { user, savedCompanies } = useAuth();
@@ -101,19 +110,19 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
 
   const [activeSubTab, setActiveSubTab] = useState<"campaigns" | "templates" | "transactions">("campaigns");
 
-  // Data states
-  const [campaigns, setCampaigns] = useState<Campaign[]>([]);
-  const [templates, setTemplates] = useState<Template[]>([]);
-  const [presets, setPresets] = useState<Template[]>([]);
+  // Data states initialized from cache for 0ms instant display
+  const [campaigns, setCampaigns] = useState<Campaign[]>(() => cachedFormCampaignsData?.campaigns || []);
+  const [templates, setTemplates] = useState<Template[]>(() => cachedFormCampaignsData?.templates || []);
+  const [presets, setPresets] = useState<Template[]>(() => cachedFormCampaignsData?.presets || []);
   const [transactions, setTransactions] = useState<FormCreditTransaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
-  const [formCredits, setFormCredits] = useState<{ balance: number; reserved?: number; total_purchased: number; total_used: number }>({
+  const [formCredits, setFormCredits] = useState<{ balance: number; reserved?: number; total_purchased: number; total_used: number }>(() => cachedFormCampaignsData?.credits || {
     balance: 0,
     reserved: 0,
     total_purchased: 0,
     total_used: 0
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !cachedFormCampaignsData);
 
   // Flow Guide Modal
   const [showFlowGuideModal, setShowFlowGuideModal] = useState(false);
@@ -212,6 +221,30 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
   const [tplSubject, setTplSubject] = useState("");
   const [tplBody, setTplBody] = useState("");
   const [savingTemplate, setSavingTemplate] = useState(false);
+  const tplTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const cmpTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Helper to insert variables at cursor position for Template Modal
+  const insertTemplateVariable = (variable: string) => {
+    const textarea = tplTextareaRef.current;
+    if (!textarea) {
+      setTplBody((prev) => prev + variable);
+      return;
+    }
+    const start = textarea.selectionStart ?? tplBody.length;
+    const end = textarea.selectionEnd ?? tplBody.length;
+    const text = tplBody;
+    const before = text.substring(0, start);
+    const after = text.substring(end);
+    const newText = before + variable + after;
+    setTplBody(newText);
+
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + variable.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
+  };
 
   // Campaign Modal States
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState(false);
@@ -234,9 +267,12 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
   const [targetPrefecture, setTargetPrefecture] = useState<string>("all");
   const [customCompanies, setCustomCompanies] = useState<{ id: string; name: string }[]>([]);
 
-  // Fetch data
+  // Fetch data (Cache-First + Background Revalidation)
   const fetchData = useCallback(async () => {
-    setLoading(true);
+    // Only show full loading spinner if we have NO cached data at all
+    if (!cachedFormCampaignsData) {
+      setLoading(true);
+    }
     try {
       const [resCmp, resTpl, resCredits] = await Promise.all([
         fetch("/api/user/form-campaigns"),
@@ -244,28 +280,43 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
         fetch("/api/user/form-credits")
       ]);
 
+      let loadedCampaigns = cachedFormCampaignsData?.campaigns || [];
+      let loadedTemplates = cachedFormCampaignsData?.templates || [];
+      let loadedPresets = cachedFormCampaignsData?.presets || [];
+      let loadedCredits = cachedFormCampaignsData?.credits || { balance: 0, reserved: 0, total_purchased: 0, total_used: 0 };
+
       if (resCmp.ok) {
         const data = await resCmp.json();
-        setCampaigns(data.campaigns || []);
-        if (typeof window !== "undefined") {
-          window.dispatchEvent(new Event("formCampaignsUpdated"));
-        }
+        loadedCampaigns = data.campaigns || [];
+        setCampaigns(loadedCampaigns);
       }
       if (resTpl.ok) {
         const data = await resTpl.json();
-        setTemplates(data.templates || []);
-        setPresets(data.presets || []);
+        loadedTemplates = data.templates || [];
+        loadedPresets = data.presets || [];
+        setTemplates(loadedTemplates);
+        setPresets(loadedPresets);
       }
       if (resCredits.ok) {
         const data = await resCredits.json();
         const c = data.credits || data;
-        setFormCredits({
+        loadedCredits = {
           balance: Number(c.balance || 0),
           reserved: Number(c.reserved || 0),
           total_purchased: Number(c.total_purchased || 0),
           total_used: Number(c.total_used || 0)
-        });
+        };
+        setFormCredits(loadedCredits);
       }
+
+      // Update module-level cache
+      cachedFormCampaignsData = {
+        campaigns: loadedCampaigns,
+        templates: loadedTemplates,
+        presets: loadedPresets,
+        credits: loadedCredits,
+        timestamp: Date.now()
+      };
     } catch (e) {
       console.error("Failed to fetch form campaigns data", e);
     } finally {
@@ -706,7 +757,24 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
   };
 
   const insertVariable = (variable: string) => {
-    setCmpBody((prev) => prev + variable);
+    const textarea = cmpTextareaRef.current;
+    if (!textarea) {
+      setCmpBody((prev) => prev + variable);
+      return;
+    }
+    const start = textarea.selectionStart ?? cmpBody.length;
+    const end = textarea.selectionEnd ?? cmpBody.length;
+    const text = cmpBody;
+    const before = text.substring(0, start);
+    const after = text.substring(end);
+    const newText = before + variable + after;
+    setCmpBody(newText);
+
+    setTimeout(() => {
+      textarea.focus();
+      const newPos = start + variable.length;
+      textarea.setSelectionRange(newPos, newPos);
+    }, 0);
   };
 
   const statusBadge = (status: Campaign["status"]) => {
@@ -852,42 +920,39 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
       ) : activeSubTab === "campaigns" ? (
         /* CAMPAIGNS SUB-TAB */
         <div className="space-y-6">
-          {/* Credit Wallet Card - Japanese Corporate Trust SaaS Blue Design */}
-          <div className="bg-gradient-to-br from-[#0B1A30] via-[#102A4C] to-[#1B4F8A] border border-[#1B4F8A]/40 text-white rounded-2xl p-5 sm:p-6 shadow-sm relative overflow-hidden">
-            {/* Subtle background glow */}
-            <div className="absolute -top-16 -right-16 w-48 h-48 bg-blue-500/10 rounded-full blur-2xl pointer-events-none" />
-
+          {/* Credit Wallet Card - Clean Corporate Minimalist B2B Design */}
+          <div className="bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-2xs relative overflow-hidden transition-all">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-5 relative z-10">
               <div className="space-y-2.5">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-400/20 text-amber-300 border border-amber-400/30 text-[11px] font-bold">
-                    <Coins className="w-3.5 h-3.5 text-amber-300" />
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-blue-900/30 dark:text-blue-300 border border-[#1B4F8A]/20 dark:border-blue-700/40 text-[11px] font-bold">
+                    <Coins className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
                     <span>{isJa ? "フォーム営業クレジット" : isVi ? "Ví tín dụng gửi Form" : "Outreach Credits"}</span>
                   </span>
-                  <span className="text-[11px] font-medium text-blue-200/80">
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
                     {isJa ? "有効期限なし・100件〜自由分割配信" : isVi ? "Không giới hạn thời hạn • Chia lẻ gửi nhiều đợt" : "No Expiry • Flexible Batches"}
                   </span>
                 </div>
 
                 <div className="flex items-baseline gap-3 pt-0.5 flex-wrap">
-                  <div className="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-white">
-                    {formCredits.balance.toLocaleString()}
-                    <span className="text-sm font-semibold ml-1.5 text-blue-200/80">
+                  <div className="text-3xl sm:text-4xl font-extrabold font-mono tracking-tight text-[#1B4F8A] dark:text-blue-400">
+                    {formCredits.balance.toLocaleString('ja-JP')}
+                    <span className="text-sm font-semibold ml-1.5 text-slate-500 dark:text-slate-400">
                       {isJa ? "件（利用可能残高）" : isVi ? " lượt khả dụng" : " available"}
                     </span>
                   </div>
                   {(formCredits.reserved ?? 0) > 0 && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-500/20 border border-amber-400/40 text-amber-300 text-xs font-bold">
-                      <Clock className="w-3.5 h-3.5" />
-                      <span>{isJa ? "審査中（予約枠）" : isVi ? "Đang tạm giữ duyệt" : "Reserved in review"}: <strong>{formCredits.reserved?.toLocaleString()}</strong> 件</span>
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold">
+                      <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      <span>{isJa ? "審査中（予約枠）" : isVi ? "Đang tạm giữ duyệt" : "Reserved in review"}: <strong>{formCredits.reserved?.toLocaleString('ja-JP')}</strong> 件</span>
                     </span>
                   )}
                 </div>
 
-                <div className="flex items-center gap-4 text-xs text-blue-200/70 pt-1 flex-wrap">
-                  <span>{isJa ? "累計チャージ" : isVi ? "Tổng đã nạp" : "Total Top-up"}: <strong className="text-white font-mono">{formCredits.total_purchased.toLocaleString()}</strong> 件</span>
+                <div className="flex items-center gap-3 sm:gap-4 text-xs text-slate-500 dark:text-slate-400 pt-1 flex-wrap">
+                  <span>{isJa ? "累計チャージ" : isVi ? "Tổng đã nạp" : "Total Top-up"}: <strong className="text-slate-800 dark:text-slate-200 font-mono">{formCredits.total_purchased.toLocaleString('ja-JP')}</strong> 件</span>
                   <span>•</span>
-                  <span>{isJa ? "実送信完了" : isVi ? "Đã gửi thực tế" : "Delivered"}: <strong className="text-white font-mono">{(formCredits.total_used || 0).toLocaleString()}</strong> 件</span>
+                  <span>{isJa ? "実送信完了" : isVi ? "Đã gửi thực tế" : "Delivered"}: <strong className="text-slate-800 dark:text-slate-200 font-mono">{(formCredits.total_used || 0).toLocaleString('ja-JP')}</strong> 件</span>
                   <span>•</span>
                   <button
                     type="button"
@@ -895,7 +960,7 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
                       setActiveSubTab("transactions");
                       fetchTransactions();
                     }}
-                    className="text-amber-300 hover:text-amber-200 underline underline-offset-4 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                    className="text-[#1B4F8A] hover:text-[#143D6C] dark:text-blue-400 dark:hover:text-blue-300 underline underline-offset-4 font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                   >
                     <History className="w-3 h-3" />
                     <span>{isJa ? "増減明細・履歴を見る" : isVi ? "Xem lịch sử trừ & hoàn credit" : "View transaction logs"}</span>
@@ -903,20 +968,20 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
                 </div>
               </div>
 
-              <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 shrink-0">
+              <div className="flex flex-col sm:flex-row md:flex-col gap-2 shrink-0">
                 <Link
                   href={`/${locale}/pricing?tab=form`}
-                  className="px-4 py-2.5 rounded-xl font-bold text-xs text-slate-950 bg-amber-400 hover:bg-amber-300 transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer text-center"
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-[#1B4F8A] hover:bg-[#143D6C] active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer text-center"
                 >
-                  <Coins className="w-3.5 h-3.5 text-slate-950" />
+                  <Coins className="w-3.5 h-3.5" />
                   <span>{isJa ? "クレジットをチャージ" : isVi ? "Nạp thêm Credits" : "Top Up Credits"}</span>
                 </Link>
                 <Link
                   href={`/${locale}/search`}
-                  className="px-4 py-2 rounded-xl font-semibold text-xs text-white hover:bg-white/10 border border-white/20 transition-all flex items-center justify-center gap-1 text-center"
+                  className="px-4 py-2 rounded-xl font-semibold text-xs text-slate-700 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-750 border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center gap-1 text-center cursor-pointer shadow-2xs"
                 >
                   <span>{isJa ? "企業検索から選定" : isVi ? "Tìm doanh nghiệp" : "Search Companies"}</span>
-                  <ArrowRight className="w-3 h-3 text-blue-200" />
+                  <ArrowRight className="w-3 h-3 text-slate-400" />
                 </Link>
               </div>
             </div>
@@ -964,7 +1029,7 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
                     </p>
 
                     <div className="flex items-center gap-4 text-[11px] text-slate-400 flex-wrap">
-                      <span>{isJa ? "対象件数" : isVi ? "Số lượng" : "Volume"}: <strong className="text-slate-700 dark:text-slate-200">{cmp.target_count.toLocaleString()} 件</strong></span>
+                      <span>{isJa ? "対象件数" : isVi ? "Số lượng" : "Volume"}: <strong className="text-slate-700 dark:text-slate-200">{cmp.target_count.toLocaleString('ja-JP')} 件</strong></span>
                       <span>•</span>
                       <span>{isJa ? "配信ターゲット" : isVi ? "Tệp mục tiêu" : "Target"}: {renderTargetInfo(cmp.target_filters)}</span>
                       <span>•</span>
@@ -1178,19 +1243,19 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
       ) : (
         /* TRANSACTIONS SUB-TAB */
         <div className="space-y-6">
-          {/* Overview Statement Card */}
-          <div className="bg-[#0F1E36] border border-blue-900/40 text-white rounded-xl p-5 sm:p-6 shadow-xs">
+          {/* Overview Statement Card - Clean Corporate Minimalist B2B Design */}
+          <div className="bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-2xs relative overflow-hidden transition-all">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="p-1.5 rounded-lg bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                    <History className="w-4 h-4" />
+                  <span className="p-1.5 rounded-lg bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-blue-900/30 dark:text-blue-300 border border-[#1B4F8A]/20 dark:border-blue-700/40">
+                    <History className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                   </span>
-                  <h3 className="text-sm font-bold text-white">
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                     {isJa ? "フォーム営業クレジット 増減明細・取引履歴" : isVi ? "Lịch sử biến động tín dụng gửi Form" : "Credit Transaction Statement"}
                   </h3>
                 </div>
-                <p className="text-xs text-slate-400">
+                <p className="text-xs text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
                   {isJa 
                     ? "クレジットのチャージ（購入）、申請時の仮押さえ、取下げ・却下時の返還、配信完了時の実消化の全履歴です。" 
                     : isVi 
@@ -1201,14 +1266,17 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
 
               <div className="flex items-center gap-4 shrink-0">
                 <div className="text-right">
-                  <span className="text-[11px] text-slate-400 block">{isJa ? "利用可能残高" : isVi ? "Số dư khả dụng" : "Available Balance"}</span>
-                  <span className="text-xl font-black font-mono text-amber-400">{formCredits.balance.toLocaleString()} 件</span>
+                  <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 block">{isJa ? "利用可能残高" : isVi ? "Số dư khả dụng" : "Available Balance"}</span>
+                  <div className="text-2xl sm:text-3xl font-extrabold font-mono tracking-tight text-[#1B4F8A] dark:text-blue-400">
+                    {formCredits.balance.toLocaleString('ja-JP')}
+                    <span className="text-xs font-semibold ml-1 text-slate-500 dark:text-slate-400 font-sans">件</span>
+                  </div>
                 </div>
                 <Link
                   href={`/${locale}/pricing?tab=form`}
-                  className="px-4 py-2 rounded-lg font-bold text-xs text-slate-950 bg-amber-400 hover:bg-amber-300 transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-[#1B4F8A] hover:bg-[#143D6C] active:scale-[0.98] transition-all flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
-                  <Coins className="w-3.5 h-3.5 text-slate-950" />
+                  <Coins className="w-3.5 h-3.5" />
                   <span>{isJa ? "クレジットをチャージ" : isVi ? "Nạp thêm" : "Top Up"}</span>
                 </Link>
               </div>
@@ -1317,12 +1385,12 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
                           </td>
                           <td className="py-3 px-4 text-right whitespace-nowrap font-mono font-bold">
                             <span className={isPositive ? "text-emerald-600 dark:text-emerald-400" : "text-amber-600 dark:text-amber-400"}>
-                              {isPositive ? `+${tx.amount.toLocaleString()}` : `-${tx.amount.toLocaleString()}`}
+                              {isPositive ? `+${tx.amount.toLocaleString('ja-JP')}` : `-${tx.amount.toLocaleString('ja-JP')}`}
                             </span>
                             <span className="text-[11px] text-slate-400 ml-1 font-sans">件</span>
                           </td>
                           <td className="py-3 px-4 text-right whitespace-nowrap font-mono font-semibold text-slate-700 dark:text-slate-300">
-                            {tx.balance_after.toLocaleString()}
+                            {tx.balance_after.toLocaleString('ja-JP')}
                             <span className="text-[11px] text-slate-400 ml-1 font-sans">件</span>
                           </td>
                         </tr>
@@ -1396,21 +1464,29 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
                 <div className="flex items-center gap-1.5 flex-wrap mb-2">
                   <button
                     type="button"
-                    onClick={() => setTplBody((prev) => prev + "{{company_name}}")}
-                    className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                    onClick={() => insertTemplateVariable("{{company_name}}")}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition-colors"
                   >
                     + {"{{company_name}}"} (宛先企業名)
                   </button>
                   <button
                     type="button"
-                    onClick={() => setTplBody((prev) => prev + "{{representative_name}}")}
-                    className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                    onClick={() => insertTemplateVariable("{{representative_name}}")}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition-colors"
                   >
                     + {"{{representative_name}}"} (代表者名)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => insertTemplateVariable("{{opt_out_url}}")}
+                    className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-blue-50 text-[#1B4F8A] hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800 cursor-pointer transition-colors"
+                  >
+                    + {"{{opt_out_url}}"} (配信停止・特定商取引法)
                   </button>
                 </div>
 
                 <textarea
+                  ref={tplTextareaRef}
                   rows={8}
                   required
                   value={tplBody}
@@ -1900,23 +1976,45 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <label className="block text-[11px] font-semibold text-slate-500">{isJa ? "本文 (Body) *" : isVi ? "Nội dung *" : "Body *"}</label>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1.5 flex-wrap">
                       <button
                         type="button"
                         onClick={() => insertVariable("{{company_name}}")}
-                        className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer"
+                        className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition-colors"
+                        title={isJa ? "送信先企業名に自動置換" : "Tự động chèn tên công ty"}
                       >
                         + {"{{company_name}}"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertVariable("{{representative_name}}")}
+                        className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 cursor-pointer transition-colors"
+                        title={isJa ? "代表者名に自動置換" : "Tự động chèn tên đại diện"}
+                      >
+                        + {"{{representative_name}}"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => insertVariable("{{opt_out_url}}")}
+                        className="px-2 py-0.5 rounded-md text-[10px] font-mono bg-blue-50 text-[#1B4F8A] hover:bg-blue-100 dark:bg-blue-950/40 dark:text-blue-300 border border-blue-200 dark:border-blue-800 cursor-pointer font-bold transition-colors"
+                        title={isJa ? "特定商取引法遵守の1クリック配信停止リンクを挿入" : "Chèn link Opt-out 1-click chuẩn Tokushōhō"}
+                      >
+                        + {"{{opt_out_url}}"}
                       </button>
                     </div>
                   </div>
                   <textarea
+                    ref={cmpTextareaRef}
                     rows={7}
                     required
                     value={cmpBody}
                     onChange={(e) => setCmpBody(e.target.value)}
                     className="w-full text-xs p-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] font-mono text-[11px]"
                   />
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1 flex items-center gap-1">
+                    <span className="font-semibold text-slate-500 dark:text-slate-400">※ {isJa ? "特定商取引法遵守:" : isVi ? "Tuân thủ Tokushōhō:" : "Tokushoho:"}</span>
+                    <span>{isJa ? "文末に {{opt_out_url}} を含めることで各社専用の1クリック配信停止リンクへ自動置換されます（未記載時も配信時に自動付与）。" : isVi ? "Chèn {{opt_out_url}} để tự động tạo link hủy nhận tin 1-click riêng cho từng công ty." : "Include {{opt_out_url}} for automated 1-click opt-out."}</span>
+                  </p>
                 </div>
 
                 {/* Action Buttons */}

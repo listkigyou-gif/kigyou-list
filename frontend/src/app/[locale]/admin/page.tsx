@@ -9,8 +9,8 @@ import Link from "next/link";
 import { 
   ShieldAlert, ShieldCheck, RefreshCcw, Users, MessageSquareWarning, 
   CreditCard, History, Building2, Terminal, Database, Mail, 
-  Send, Ticket, Download, LayoutDashboard, KeyRound, Loader2, Sparkles, ExternalLink,
-  Radio
+  Send, Ticket, Download, LayoutDashboard, KeyRound, Loader2, ExternalLink,
+  Radio, Activity, Search
 } from "lucide-react";
 
 // Toast Provider
@@ -143,7 +143,7 @@ function AdminContent() {
     localStorage.setItem("kigyou_admin_secret", passcode);
     setPasscodeError(null);
     setPasscodeModalOpen(false);
-    toast.success("管理者パスコードを保存しました。画面を再検証します。");
+    toast.success("管理者認証情報を更新しました。画面を再検証します。");
     // Reload active tab state
     window.location.reload();
   };
@@ -157,7 +157,7 @@ function AdminContent() {
       case "users": return "ユーザー・プラン管理";
       case "payments": return "決済・インボイス履歴";
       case "coupons": return "クーポン発行・管理";
-      case "marketing": return "Email Marketing キャンペーン";
+      case "marketing": return "営業アプローチ管理 (Email / Form DM)";
       case "exports": return "CSV出力履歴・ジョブ管理";
       case "logs": return "管理者操作ログ (Audit Logs)";
       case "apiKeys": return "B2B APIキー管理";
@@ -175,7 +175,7 @@ function AdminContent() {
       case "users": return "登録ユーザーのプラン変更、月間CSV枠や追加容量の直接調整を行います。";
       case "payments": return "Stripe経由でのプラン契約およびスポット容量購入の決済記録と領収書です。";
       case "coupons": return "プロモーション用割引クーポンの新規発行および利用実績の監視を行います。";
-      case "marketing": return "特定ターゲット層へのメール配信キャンペーンを作成・管理します。";
+      case "marketing": return "特定ターゲット企業群へのメール営業および問い合わせフォーム営業（Form DM）キャンペーンを作成・配信管理します。";
       case "exports": return "ユーザーが実行したCSVエクスポートの生成状況およびダウンロード期限を管理します。";
       case "logs": return "システム内で実行された全管理操作の監査ログ（IP、日時、詳細）です。";
       case "apiKeys": return "外部連携用APIキーのアクティブ状態および接続ログの管理を行います。";
@@ -186,16 +186,16 @@ function AdminContent() {
 
   const getTabClass = (tab: AdminTab) => {
     const isActive = activeTab === tab;
-    return `w-full py-2.5 px-3 rounded-xl flex items-center justify-between transition-all cursor-pointer text-xs font-bold ${
+    return `w-full py-2.5 px-3 rounded-lg flex items-center justify-between transition-colors cursor-pointer text-xs font-semibold ${
       isActive
         ? "bg-[#1B4F8A] text-white shadow-xs border border-[#1B4F8A]"
-        : "text-slate-600 hover:bg-slate-100/90 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/60 dark:hover:text-slate-200 border border-transparent"
+        : "text-slate-600 hover:bg-slate-100 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-200 border border-transparent"
     }`;
   };
 
   if (!mounted) {
     return (
-      <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100">
+      <div className="flex flex-col min-h-screen bg-[#F8FAFC] text-slate-900 dark:bg-[#0D1117] dark:text-slate-100">
         <Header />
         <div className="flex-grow flex items-center justify-center">
           <Loader2 className="w-8 h-8 animate-spin text-[#1B4F8A]" />
@@ -210,22 +210,23 @@ function AdminContent() {
       <div className="flex flex-col min-h-screen bg-[#F8FAFC] text-slate-900 dark:bg-[#0D1117] dark:text-slate-100">
         <Header />
         <div className="flex-grow flex flex-col items-center justify-center p-6">
-          <div className="max-w-md w-full bg-white dark:bg-[#151B22] border border-slate-200/90 dark:border-slate-800 rounded-3xl p-8 shadow-sm text-center">
-            <div className="w-14 h-14 rounded-2xl bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-[#1B4F8A]/30 dark:text-blue-300 flex items-center justify-center mx-auto mb-4 border border-[#1B4F8A]/20">
-              <ShieldAlert className="w-7 h-7" />
+          <div className="max-w-md w-full bg-white dark:bg-[#151B22] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-8 shadow-xs text-center">
+            <div className="w-12 h-12 rounded-xl bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-[#1B4F8A]/25 dark:text-blue-300 flex items-center justify-center mx-auto mb-4 border border-[#1B4F8A]/20">
+              <ShieldAlert className="w-6 h-6" />
             </div>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-bold mb-3">
-              <span>管理者セキュリティ認証</span>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium mb-3">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A]"></span>
+              <span>管理者認証セキュリティ</span>
             </div>
-            <h2 className="text-xl font-black text-slate-900 dark:text-white mb-2">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2 [font-feature-settings:'palt']">
               システム統括管理コンソール
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-              本画面は Kigyou-List の権限保有者専用ポータルです。アクセスには特権管理者権限（メールアドレス認証および管理者シークレット）が必要です。
+            <p className="text-xs text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
+              本画面は Kigyou-List 権限保有者専用ポータルです。アクセスには特権管理者権限（メールアドレス認証および管理者シークレット）が必要です。
             </p>
             <button
               onClick={() => setAuthModalOpen(true)}
-              className="w-full py-3 bg-[#1B4F8A] hover:bg-[#143D6C] text-white rounded-xl font-bold text-sm transition-all shadow-sm cursor-pointer"
+              className="w-full py-2.5 bg-[#1B4F8A] hover:bg-[#143D6C] text-white rounded-lg font-semibold text-xs transition-colors shadow-xs cursor-pointer"
             >
               管理者アカウントでログイン
             </button>
@@ -254,17 +255,17 @@ function AdminContent() {
             {/* Sidebar Header */}
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800/80">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#1B4F8A] text-white border border-[#1B4F8A]/40 flex items-center justify-center shadow-xs">
+                <div className="w-9 h-9 rounded-lg bg-[#1B4F8A] text-white border border-[#1B4F8A]/40 flex items-center justify-center shadow-xs">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-black text-sm text-slate-900 dark:text-white tracking-tight">統括管理コンソール</span>
-                  <span className="text-[10px] text-[#1B4F8A] dark:text-blue-400 font-extrabold uppercase tracking-wider">Super Administrator</span>
+                  <span className="font-bold text-sm text-slate-900 dark:text-white tracking-tight [font-feature-settings:'palt']">統括管理コンソール</span>
+                  <span className="text-[10px] text-[#1B4F8A] dark:text-blue-400 font-bold uppercase tracking-wider">Super Administrator</span>
                 </div>
               </div>
               <button
                 onClick={() => setPasscodeModalOpen(true)}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors cursor-pointer text-slate-500 hover:text-slate-800 dark:hover:text-white"
+                className="p-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer text-slate-500 hover:text-slate-800 dark:hover:text-white border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
                 title="パスコード設定"
               >
                 <KeyRound className="w-4 h-4" />
@@ -283,13 +284,13 @@ function AdminContent() {
                     <LayoutDashboard className={`w-4 h-4 shrink-0 ${activeTab === "overview" ? "text-white" : "text-slate-500"}`} />
                     <span>ダッシュボード概要</span>
                   </div>
-                  <Sparkles className={`w-3.5 h-3.5 ${activeTab === "overview" ? "text-amber-300" : "text-slate-400"}`} />
+                  <Activity className={`w-3.5 h-3.5 ${activeTab === "overview" ? "text-blue-200" : "text-slate-400"}`} />
                 </button>
               </div>
 
               {/* Group 1: Operations & Support */}
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-3 py-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
                   審査・運用 (Operations)
                 </span>
 
@@ -302,11 +303,12 @@ function AdminContent() {
                     <MessageSquareWarning className={`w-4 h-4 shrink-0 ${activeTab === "inquiries" ? "text-white" : "text-slate-500"}`} />
                     <span>非公開・修正依頼</span>
                   </div>
-                  {pendingInquiries > 0 && (
-                    <span className="bg-rose-500 text-white text-[10px] px-2 py-0.2 rounded-full font-bold animate-pulse">
-                      {pendingInquiries}
+                  {pendingInquiries > 0 ? (
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/50 dark:text-rose-300 dark:border-rose-900/60 tabular-nums">
+                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                      {pendingInquiries}件
                     </span>
-                  )}
+                  ) : null}
                 </button>
 
                 {/* Company Claims Review */}
@@ -319,11 +321,12 @@ function AdminContent() {
                     <span>企業認証審査</span>
                   </div>
                   {pendingClaims > 0 ? (
-                    <span className="text-[10px] px-2 py-0.2 rounded-full font-bold bg-emerald-500 text-white animate-pulse">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-900/60 tabular-nums">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                       {pendingClaims}件
                     </span>
                   ) : (
-                    <span className="text-[10px] px-2 py-0.2 rounded-full font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <span className="text-[11px] px-2 py-0.5 rounded-md font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                       審査
                     </span>
                   )}
@@ -339,11 +342,12 @@ function AdminContent() {
                     <span>フォーム営業審査</span>
                   </div>
                   {pendingFormCampaigns > 0 ? (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-amber-500 text-white animate-pulse">
+                    <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-900/60 tabular-nums">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
                       {pendingFormCampaigns}件
                     </span>
                   ) : (
-                    <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                    <span className="text-[11px] px-1.5 py-0.5 rounded-md font-medium bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
                       要審査
                     </span>
                   )}
@@ -359,8 +363,8 @@ function AdminContent() {
                     <span>ユーザー管理</span>
                   </div>
                   {totalUsers > 0 && (
-                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
-                      activeTab === "users" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
+                    <span className={`text-[11px] px-2 py-0.5 rounded-md font-medium tabular-nums ${
+                      activeTab === "users" ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
                     }`}>
                       {totalUsers}
                     </span>
@@ -396,14 +400,14 @@ function AdminContent() {
                   </div>
                 </button>
 
-                {/* Marketing */}
+                {/* Marketing / Outreach */}
                 <button
                   onClick={() => switchTab("marketing")}
                   className={getTabClass("marketing")}
                 >
                   <div className="flex items-center gap-2.5">
                     <Mail className={`w-4 h-4 shrink-0 ${activeTab === "marketing" ? "text-white" : "text-slate-500"}`} />
-                    <span>Email Marketing</span>
+                    <span>営業アプローチ</span>
                   </div>
                 </button>
 
@@ -526,19 +530,19 @@ function AdminContent() {
           {/* Top Title Bar */}
           <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 pb-5 border-b border-slate-200/90 dark:border-slate-800/90">
             <div>
-              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-[#1B4F8A]/30 dark:text-blue-300 text-[11px] font-bold tracking-wider uppercase mb-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A] animate-pulse"></span>
-                Kigyou-List システム統括基盤 (Executive Console)
+              <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-[#1B4F8A]/25 dark:text-blue-300 text-[11px] font-semibold tracking-wider mb-1.5 border border-[#1B4F8A]/15">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A]"></span>
+                <span className="[font-feature-settings:'palt']">Kigyou-List 管理コンソール | システム統括運用</span>
               </div>
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 mt-1">
+              <div className="flex items-center gap-2 text-xs font-medium text-slate-400 mt-1">
                 <span>管理者ポータル</span>
                 <span>/</span>
-                <span className="text-slate-800 dark:text-slate-200 font-bold">{getTabTitle(activeTab)}</span>
+                <span className="text-slate-800 dark:text-slate-200 font-semibold">{getTabTitle(activeTab)}</span>
               </div>
-              <h1 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight mt-1.5 [font-feature-settings:'palt']">
                 {getTabTitle(activeTab)}
               </h1>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 {getTabDescription(activeTab)}
               </p>
             </div>
@@ -548,7 +552,7 @@ function AdminContent() {
               <Link
                 href="/ja"
                 target="_blank"
-                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5"
+                className="px-3 py-2 rounded-lg bg-white dark:bg-[#151B22] border border-slate-200/90 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs"
                 title="別タブでサイトトップを開く"
               >
                 <ExternalLink className="w-3.5 h-3.5" />
@@ -559,7 +563,7 @@ function AdminContent() {
                   fetchBadgeCounts();
                   window.location.reload();
                 }}
-                className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-2 rounded-lg bg-white dark:bg-[#151B22] border border-slate-200/90 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer shadow-xs"
                 title="管理画面を最新化"
               >
                 <RefreshCcw className="w-3.5 h-3.5" />
@@ -567,7 +571,7 @@ function AdminContent() {
               </button>
               <button
                 onClick={() => setPasscodeModalOpen(true)}
-                className="px-3 py-2 rounded-xl bg-[#1B4F8A]/10 hover:bg-[#1B4F8A]/20 text-[#1B4F8A] dark:bg-blue-950/60 dark:text-blue-300 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-2 rounded-lg bg-[#1B4F8A]/10 hover:bg-[#1B4F8A]/20 text-[#1B4F8A] dark:bg-blue-950/60 dark:text-blue-300 text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer border border-[#1B4F8A]/20"
                 title="パスコード設定"
               >
                 <KeyRound className="w-3.5 h-3.5" />

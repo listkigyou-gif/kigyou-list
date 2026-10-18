@@ -12,7 +12,11 @@ import {
   Phone,
   Printer,
   Globe,
-  Sparkles,
+  Save,
+  AlertTriangle,
+  ExternalLink,
+  ShieldAlert,
+  UserCheck,
   ArrowRight,
   Code,
   Copy,
@@ -155,11 +159,13 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
   // Tab 3: Delisting states
   const [hideReason, setHideReason] = useState("代表者・担当者からの要請");
   const [hideMessage, setHideMessage] = useState("");
+  const [confirmUnpublish, setConfirmUnpublish] = useState(false);
   const [submittingHide, setSubmittingHide] = useState(false);
 
   // General messaging
   const [statusMsg, setStatusMsg] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [copiedCorpNum, setCopiedCorpNum] = useState(false);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -561,12 +567,12 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+      <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden" style={{ fontFeatureSettings: '"palt"' }}>
         {/* B2B Deep Navy Header */}
         <div className="bg-[#1B4F8A] p-5 sm:p-6 text-white relative">
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors"
+            className="absolute top-4 right-4 text-white/80 hover:text-white p-1.5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
             aria-label="Close"
           >
             <X className="w-5 h-5" />
@@ -579,20 +585,39 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
             <div className="min-w-0 pr-8">
               {isUserAdmin ? (
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-amber-400/20 text-amber-200 text-[10px] font-semibold border border-amber-300/30 mb-1">
-                  <Sparkles className="w-3 h-3 text-amber-300" /> {isJa ? "管理者特権モード（即時反映）" : "Chế độ Quản trị viên (Lưu trực tiếp)"}
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0"></span>
+                  <ShieldAlert className="w-3 h-3 text-amber-300" />
+                  <span>{isJa ? "管理者特権モード（即時反映）" : "Chế độ Quản trị viên (Lưu trực tiếp)"}</span>
                 </div>
               ) : (
                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-white/15 text-blue-100 text-[10px] font-semibold border border-white/20 mb-1">
-                  <Sparkles className="w-3 h-3 text-amber-300" /> {isJa ? "公式認証・情報管理" : "Quản trị chính chủ"}
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                  <ShieldCheck className="w-3 h-3 text-blue-200" />
+                  <span>{isJa ? "公式認証・情報管理" : "Quản trị chính chủ"}</span>
                 </div>
               )}
               <h2 className="text-lg sm:text-xl font-bold tracking-tight text-white">{isJa ? "公式企業管理・認証センター" : "Trung tâm Quản lý Chính chủ Doanh nghiệp"}</h2>
             </div>
           </div>
-          <p className="text-xs text-blue-100/90 mt-2 font-medium">
-            {isJa ? "対象企業: " : "Doanh nghiệp: "}<strong>{companyName}</strong> <span className="font-mono">({isJa ? "法人番号: " : "Mã số: "}{corporateNumber})</span>
-            {isUserAdmin && <span className="ml-2 font-semibold text-amber-200">{isJa ? "※管理者権限で直接編集可能" : "※Quyền Quản trị viên"}</span>}
-          </p>
+          <div className="flex flex-wrap items-center gap-2 text-xs text-blue-100/90 mt-2 font-medium">
+            <span>{isJa ? "対象企業: " : "Doanh nghiệp: "}<strong>{companyName}</strong></span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-black/20 font-mono tabular-nums text-[11px] text-blue-100">
+              <span>{isJa ? "法人番号: " : "Mã số: "}{corporateNumber}</span>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(corporateNumber);
+                  setCopiedCorpNum(true);
+                  setTimeout(() => setCopiedCorpNum(false), 2000);
+                }}
+                className="hover:text-white p-0.5 transition-colors cursor-pointer"
+                title={isJa ? "法人番号をコピー" : "Sao chép mã số"}
+              >
+                {copiedCorpNum ? <Check className="w-3 h-3 text-emerald-300" /> : <Copy className="w-3 h-3 text-blue-200" />}
+              </button>
+            </span>
+            {isUserAdmin && <span className="font-semibold text-amber-200 text-[11px]">{isJa ? "※管理者権限で直接編集可能" : "※Quyền Quản trị viên"}</span>}
+          </div>
         </div>
 
         {/* Global Alert Message */}
@@ -666,7 +691,7 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
               {/* Benefits badge */}
               <div className="pt-2 max-w-md mx-auto text-left bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/80 rounded-lg p-3.5 space-y-2 text-xs text-slate-600 dark:text-slate-400">
                 <div className="font-bold text-slate-850 dark:text-slate-200 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                  <ShieldCheck className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
                   {isJa ? "企業公式認証・PR掲載のメリット" : "Lợi ích khi xác thực và đăng PR"}
                 </div>
                 <ul className="space-y-1.5 pl-1 text-[11px] leading-relaxed">
@@ -1087,28 +1112,39 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
               {/* SUBTAB 1: BADGE & PR */}
               {activeTab === "badge_pr" && (
                 <form onSubmit={handleSavePr} className="space-y-5">
-                  <div className="bg-emerald-50/80 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-lg p-3.5 flex items-center justify-between gap-3">
+                  <div className="bg-emerald-50/70 dark:bg-emerald-950/30 border border-emerald-200/90 dark:border-emerald-800 rounded-lg p-3.5 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300 flex items-center justify-center shrink-0">
                         <CheckCircle2 className="w-5 h-5" />
                       </div>
                       <div>
-                        <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
-                          公式認証バッジ: 有効化済み
+                        <div className="text-xs font-bold text-emerald-900 dark:text-emerald-200 flex items-center gap-2">
+                          <span>公式認証バッジ: 有効化済み</span>
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-900 dark:text-emerald-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            Verified by TQC
+                          </span>
                         </div>
-                        <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
-                          貴社ページ上部に「公式認証企業」バッジが常時表示されます。
+                        <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                          貴社ページ上部に「公式認証企業」バッジとPRメッセージが常時優先表示されます。
                         </p>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      企業PR キャッチコピー
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <span>企業PR キャッチコピー</span>
+                        <span className="text-[10px] text-slate-400 font-normal">【推奨】</span>
+                      </label>
+                      <span className={`text-[11px] font-mono tabular-nums ${prTitle.length > 60 ? "text-rose-500 font-bold" : "text-slate-400"}`}>
+                        {prTitle.length} / 60文字
+                      </span>
+                    </div>
                     <input
                       type="text"
+                      maxLength={60}
                       value={prTitle}
                       onChange={(e) => setPrTitle(e.target.value)}
                       placeholder="例: 創業50年の信頼と技術力で製造DXを加速"
@@ -1117,11 +1153,18 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      公式PRメッセージ（アピール・採用・主軸サービス紹介）
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                        <span>公式PRメッセージ（アピール・採用・主軸サービス紹介）</span>
+                        <span className="text-[10px] text-[#1B4F8A] dark:text-blue-400 font-normal">【任意】</span>
+                      </label>
+                      <span className={`text-[11px] font-mono tabular-nums ${prMessage.length > 500 ? "text-rose-500 font-bold" : "text-slate-400"}`}>
+                        {prMessage.length} / 500文字
+                      </span>
+                    </div>
                     <textarea
                       rows={4}
+                      maxLength={500}
                       value={prMessage}
                       onChange={(e) => setPrMessage(e.target.value)}
                       placeholder="貴社の事業の強みや取引先候補・求職者に向けたメッセージをご自由にご入力ください。認証ページの上部に掲載されます。"
@@ -1129,8 +1172,8 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
                     />
                   </div>
 
-                  {/* Embed Snippet */}
-                  <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-lg p-3.5 space-y-2">
+                  {/* Embed Snippet + Live Preview Box */}
+                  <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-lg p-3.5 space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                         <Code className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
@@ -1143,12 +1186,30 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
                           setCopiedCode(true);
                           setTimeout(() => setCopiedCode(false), 2000);
                         }}
-                        className="text-xs text-[#1B4F8A] dark:text-blue-400 font-semibold hover:underline flex items-center gap-1"
+                        className="text-xs text-[#1B4F8A] dark:text-blue-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer"
                       >
                         {copiedCode ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                         {copiedCode ? "コピー完了" : "コードをコピー"}
                       </button>
                     </div>
+
+                    {/* Live Badge Preview Widget */}
+                    <div className="flex items-center gap-3 p-3 bg-white dark:bg-[#151B22] border border-slate-200/90 dark:border-slate-800 rounded-md">
+                      <div className="text-[10px] text-slate-400 uppercase tracking-wider shrink-0 font-medium">
+                        {isJa ? "表示プレビュー:" : "Preview:"}
+                      </div>
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-[#1B4F8A]/30 bg-blue-50/50 dark:bg-blue-950/30 text-xs shadow-2xs">
+                        <ShieldCheck className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
+                        <div className="leading-tight">
+                          <span className="block font-bold text-slate-900 dark:text-white text-[11px]">{companyName}</span>
+                          <span className="text-[9px] text-[#1B4F8A] dark:text-blue-300 font-medium">Kigyou-List 公式認証企業</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 hidden sm:inline">
+                        {isJa ? "※自社サイトのフッター等に設置いただけます" : "※Có thể đặt ở footer trang web"}
+                      </span>
+                    </div>
+
                     <pre className="text-[11px] font-mono bg-white dark:bg-slate-900 p-2.5 rounded-md border border-slate-200 dark:border-slate-700 overflow-x-auto text-slate-600 dark:text-slate-400">
                       {embedSnippet}
                     </pre>
@@ -1157,97 +1218,135 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
                   <button
                     type="submit"
                     disabled={savingPr}
-                    className="w-full py-2.5 bg-[#1B4F8A] hover:bg-[#163e6d] text-white font-semibold text-xs rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-xs"
+                    className="w-full py-2.5 bg-[#1B4F8A] hover:bg-[#143D6C] text-white font-semibold text-xs rounded-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-[0.98]"
                   >
-                    {savingPr ? <Loader2 className="w-4 h-4 animate-spin" /> : "PRメッセージを保存する"}
+                    {savingPr ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <span>{isJa ? "PRメッセージを保存する" : isVi ? "Lưu thông điệp PR" : "Save PR Message"}</span>
                   </button>
                 </form>
               )}
 
               {/* SUBTAB 2: EDIT INFO */}
               {activeTab === "edit_info" && (
-                <form onSubmit={handleSaveInfo} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {isJa ? "電話番号（代表・問い合わせ先）" : "Số điện thoại (Đại diện/Liên hệ)"}
-                        </label>
-                        <span className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-                          {isJa ? "✓ 即時更新（OTP不要）" : "✓ Cập nhật ngay"}
-                        </span>
-                      </div>
-                      <input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="03-1234-5678"
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] outline-none"
-                      />
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                        {isJa 
-                          ? "※固定電話・代表ダイヤルは認証コード不要で即座に保存・反映されます。" 
-                          : "※Số điện thoại cố định cập nhật ngay không cần mã xác thực OTP."}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        FAX番号
-                      </label>
-                      <input
-                        type="tel"
-                        value={fax}
-                        onChange={(e) => setFax(e.target.value)}
-                        placeholder="03-1234-5679"
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] outline-none"
-                      />
+                <form onSubmit={handleSaveInfo} className="space-y-5">
+                  {/* Data Integrity Notice */}
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200/90 dark:border-slate-700/80 rounded-lg flex items-start gap-2.5 text-xs text-slate-600 dark:text-slate-400">
+                    <Building className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400 shrink-0 mt-0.5" />
+                    <div className="leading-relaxed text-[11px]">
+                      {isJa 
+                        ? "更新された情報は、国税庁法人番号公表サイトおよび経済産業省gBizINFO公知データ基盤との整合性チェックを経て直ちに公式反映されます。"
+                        : isVi
+                        ? "Thông tin cập nhật sẽ được đối soát với dữ liệu NTA / gBizINFO và cập nhật chính thức ngay lập tức."
+                        : "Updates are validated against official NTA and METI gBizINFO registries for immediate publication."}
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        公式ウェブサイトURL
-                      </label>
-                      <input
-                        type="url"
-                        value={website}
-                        onChange={(e) => setWebsite(e.target.value)}
-                        placeholder="https://example.com"
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] outline-none"
-                      />
+                  {/* Section A: Contact Channels */}
+                  <div className="space-y-3.5">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white pb-1 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
+                      <Phone className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+                      <span>{isJa ? "1. 連絡先窓口・公式窓口情報" : isVi ? "1. Kênh liên hệ chính thức" : "1. Official Contact Channels"}</span>
                     </div>
-                    <div>
-                      <div className="flex items-center justify-between mb-1">
-                        <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                          {isJa ? "問い合わせ用メールアドレス" : "Email liên hệ chính thức"}
-                        </label>
-                        {isEmailChanged && (
-                          isUserAdmin ? (
-                            <span className="text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-                              {isJa ? "✓ 管理者特権: OTP不要（即時反映）" : "✓ Quản trị viên: Không cần OTP"}
-                            </span>
-                          ) : (
-                            <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
-                              {isJa ? "⚠️ 要OTP認証（なりすまし防止）" : "⚠️ Bắt buộc OTP xác thực"}
-                            </span>
-                          )
-                        )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            {isJa ? "電話番号（代表・問い合わせ先）" : "Số điện thoại đại diện"}
+                          </label>
+                          <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                            {isJa ? "即時反映 (OTP不要)" : "Cập nhật ngay"}
+                          </span>
+                        </div>
+                        <div className="relative">
+                          <Phone className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                          <input
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="03-1234-5678"
+                            className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono tabular-nums focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] outline-none"
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                          {isJa 
+                            ? "※代表ダイヤルは認証コード不要で即座に保存・反映されます。" 
+                            : "※Số điện thoại cập nhật ngay không cần OTP."}
+                        </p>
                       </div>
-                      <input
-                        type="email"
-                        value={contactEmail}
-                        onChange={(e) => setContactEmail(e.target.value)}
-                        placeholder="contact@example.com"
-                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] outline-none"
-                      />
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-                        {isUserAdmin
-                          ? (isJa ? "※管理者アカウントのため、認証コード不要で直接保存されます。" : "※Được lưu trực tiếp bởi tài khoản Quản trị viên không cần OTP.")
-                          : (isJa 
-                              ? "※メールアドレス変更時は、なりすまし・偽装防止のため新メール宛のOTP認証が必須です。" 
-                              : "※Khi đổi email, bắt buộc phải xác thực mã OTP gửi về email mới.")}
-                      </p>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          FAX番号
+                        </label>
+                        <div className="relative">
+                          <Printer className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                          <input
+                            type="tel"
+                            value={fax}
+                            onChange={(e) => setFax(e.target.value)}
+                            placeholder="03-1234-5679"
+                            className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono tabular-nums focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] outline-none"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          公式ウェブサイトURL
+                        </label>
+                        <div className="relative">
+                          <Globe className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                          <input
+                            type="url"
+                            value={website}
+                            onChange={(e) => setWebsite(e.target.value)}
+                            placeholder="https://example.com"
+                            className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                            {isJa ? "問い合わせ用メールアドレス" : "Email liên hệ chính thức"}
+                          </label>
+                          {isEmailChanged && (
+                            isUserAdmin ? (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                {isJa ? "管理者特権: OTP不要" : "Quản trị viên: Miễn OTP"}
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/40 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                                {isJa ? "要OTP認証" : "Bắt buộc OTP"}
+                              </span>
+                            )
+                          )}
+                        </div>
+                        <div className="relative">
+                          <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                          <input
+                            type="email"
+                            value={contactEmail}
+                            onChange={(e) => setContactEmail(e.target.value)}
+                            placeholder="contact@example.com"
+                            className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] outline-none"
+                          />
+                        </div>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1">
+                          {isUserAdmin
+                            ? (isJa ? "※管理者アカウントのため、認証コード不要で直接保存されます。" : "※Được lưu trực tiếp bởi tài khoản Quản trị viên.")
+                            : (isJa 
+                                ? "※メール変更時はなりすまし防止のため新メール宛のOTP認証が必須です。" 
+                                : "※Khi đổi email, bắt buộc phải xác thực mã OTP.")}
+                        </p>
+                      </div>
                     </div>
                   </div>
 
@@ -1279,7 +1378,7 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
                           type="button"
                           onClick={handleSendEmailOtp}
                           disabled={sendingEmailOtp || emailOtpCountdown > 0 || !contactEmail.includes("@")}
-                          className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs"
+                          className="px-3.5 py-2 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
                         >
                           {sendingEmailOtp ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Mail className="w-3.5 h-3.5" />}
                           <span>{emailOtpCountdown > 0 ? `${emailOtpCountdown}s` : emailOtpSent ? (isJa ? "再送信" : "Gửi lại") : (isJa ? "認証コードを送信" : "Gửi mã OTP")}</span>
@@ -1298,25 +1397,37 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
                     </div>
                   )}
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      代表者 氏名
-                    </label>
-                    <input
-                      type="text"
-                      value={representative}
-                      onChange={(e) => setRepresentative(e.target.value)}
-                      placeholder="代表取締役 田中 太郎"
-                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] outline-none"
-                    />
+                  {/* Section B: Executive Info */}
+                  <div className="space-y-3 pt-1">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white pb-1 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
+                      <UserCheck className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+                      <span>{isJa ? "2. 代表者・役員情報" : isVi ? "2. Thông tin Ban điều hành" : "2. Executive Representative"}</span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        代表者 氏名
+                      </label>
+                      <div className="relative">
+                        <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                        <input
+                          type="text"
+                          value={representative}
+                          onChange={(e) => setRepresentative(e.target.value)}
+                          placeholder="例: 代表取締役 田中 太郎"
+                          className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] outline-none"
+                        />
+                      </div>
+                    </div>
                   </div>
 
                   <button
                     type="submit"
                     disabled={savingInfo}
-                    className="w-full py-2.5 bg-[#1B4F8A] hover:bg-[#163e6d] text-white font-semibold text-xs rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-xs"
+                    className="w-full py-2.5 bg-[#1B4F8A] hover:bg-[#143D6C] text-white font-semibold text-xs rounded-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-[0.98]"
                   >
-                    {savingInfo ? <Loader2 className="w-4 h-4 animate-spin" /> : "基本情報を即時更新する"}
+                    {savingInfo ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                    <span>{isJa ? "基本情報を即時更新する" : isVi ? "Cập nhật thông tin" : "Update Official Information"}</span>
                   </button>
                 </form>
               )}
@@ -1324,19 +1435,38 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
               {/* SUBTAB 3: UNPUBLISH */}
               {activeTab === "unpublish" && (
                 <form onSubmit={handleUnpublish} className="space-y-4">
-                  <div className="p-3.5 bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 rounded-lg space-y-1.5">
+                  {/* Detailed Impact Warning Box */}
+                  <div className="p-4 bg-rose-50/80 dark:bg-rose-950/30 border border-rose-200/90 dark:border-rose-900 rounded-lg space-y-2.5">
                     <div className="flex items-center gap-2 text-rose-800 dark:text-rose-300 font-bold text-xs">
-                      <EyeOff className="w-4 h-4 text-rose-600" />
-                      <span>企業ページの非公開（掲載取り下げ）について</span>
+                      <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0" />
+                      <span>{isJa ? "企業ページの非公開（掲載取り下げ）に関する重要事項" : "Lưu ý quan trọng khi yêu cầu gỡ bỏ trang"}</span>
                     </div>
-                    <p className="text-[11px] text-rose-700 dark:text-rose-400 leading-relaxed">
-                      公知データに基づく情報ですが、当事者様からのご要望に基づき直ちに非公開処理を実行いたします。
-                    </p>
+                    <ul className="space-y-1.5 text-[11px] text-rose-700 dark:text-rose-400 leading-relaxed list-disc list-inside">
+                      <li>{isJa ? "検索エンジン（Google・Bing等）のインデックスから除外され、企業検索に表示されなくなります。" : "Trang doanh nghiệp sẽ bị gỡ bỏ khỏi kết quả tìm kiếm Google & Bing."}</li>
+                      <li>{isJa ? "公式認証バッジ・PR情報が無効化され、他社からの問い合わせ・商談窓口が閉鎖されます。" : "Mọi huy hiệu xác thực và thông điệp PR sẽ bị hủy bỏ."}</li>
+                      <li>{isJa ? "公知データ（国税庁・経済産業省gBizINFO公表情報）に基づく再掲載には再審査が必要です。" : "Yêu cầu khôi phục sau này sẽ cần xác minh lại từ đầu."}</li>
+                    </ul>
+                  </div>
+
+                  {/* Alternative Soft Solution Box */}
+                  <div className="p-3 bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/60 rounded-lg flex items-center justify-between gap-3 text-xs">
+                    <span className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
+                      {isJa 
+                        ? "※ 全体を非公開にせず、電話番号やメールアドレスのみを修正・非表示にすることも可能です。" 
+                        : "※ Bạn có thể lựa chọn chỉ ẩn số điện thoại hoặc email thay vì gỡ bỏ toàn bộ trang."}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("edit_info")}
+                      className="px-2.5 py-1 rounded bg-[#1B4F8A] hover:bg-[#143D6C] text-white text-[11px] font-semibold shrink-0 transition-colors shadow-2xs cursor-pointer"
+                    >
+                      {isJa ? "基本情報を編集" : "Chỉnh sửa thông tin"}
+                    </button>
                   </div>
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      掲載停止の主な理由
+                      掲載停止の主な理由 <span className="text-rose-500">*</span>
                     </label>
                     <select
                       value={hideReason}
@@ -1358,17 +1488,37 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
                       rows={3}
                       value={hideMessage}
                       onChange={(e) => setHideMessage(e.target.value)}
-                      placeholder="補足の事情等があればご記入ください。"
+                      placeholder={isJa ? "補足の事情やご要望があればご記入ください。" : "Nhập thêm thông tin bổ sung nếu có..."}
                       className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-rose-500 focus:border-rose-500 outline-none"
                     />
                   </div>
 
+                  {/* Two-step Legal Confirmation Checkbox */}
+                  <div className="p-3 bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-lg">
+                    <label className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300 font-medium cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={confirmUnpublish}
+                        onChange={(e) => setConfirmUnpublish(e.target.checked)}
+                        className="mt-0.5 rounded border-slate-300 text-rose-600 focus:ring-rose-500 cursor-pointer"
+                      />
+                      <span className="leading-relaxed text-[11px]">
+                        {isJa 
+                          ? "私は本企業の正当な権限者であり、掲載停止による検索エンジン等の影響および利用規約に同意した上で非公開を申請します。"
+                          : isVi
+                          ? "Tôi xác nhận là người có thẩm quyền của doanh nghiệp và đồng ý với các hệ quả gỡ bỏ trang thông tin."
+                          : "I confirm that I am authorized and accept the consequences of delisting this corporate profile."}
+                      </span>
+                    </label>
+                  </div>
+
                   <button
                     type="submit"
-                    disabled={submittingHide}
-                    className="w-full py-2.5 bg-rose-700 hover:bg-rose-800 text-white font-semibold text-xs rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2 shadow-xs"
+                    disabled={!confirmUnpublish || submittingHide}
+                    className="w-full py-2.5 bg-rose-700 hover:bg-rose-800 disabled:bg-slate-200 disabled:text-slate-400 dark:disabled:bg-slate-800 dark:disabled:text-slate-500 text-white font-semibold text-xs rounded-lg transition-all disabled:opacity-50 flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-[0.98]"
                   >
-                    {submittingHide ? <Loader2 className="w-4 h-4 animate-spin" /> : "掲載停止（非公開）を実行する"}
+                    {submittingHide ? <Loader2 className="w-4 h-4 animate-spin" /> : <AlertTriangle className="w-4 h-4" />}
+                    <span>{isJa ? "同意して掲載停止（非公開）を実行する" : isVi ? "Xác nhận gỡ bỏ trang" : "Confirm and Delist Profile"}</span>
                   </button>
                 </form>
               )}

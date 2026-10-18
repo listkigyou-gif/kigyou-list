@@ -6,6 +6,7 @@ import { deleteFileFromR2 } from './r2';
 import { isAdminEmail } from './adminAuth';
 import { loadEnvConfig } from '@next/env';
 import { getAllUserFormCredits } from './formCampaigns';
+import { searchLRUCache, SmartSearchLRUCache } from './searchCache';
 
 // Load env variables dynamically if running in standalone script scripts
 loadEnvConfig(process.cwd());
@@ -274,6 +275,18 @@ export interface Company {
   pr_message?: string | null;
   contact_form_url?: string | null;
   email_type?: string | null;
+  has_hiring?: boolean;
+  has_subsidy?: boolean;
+  has_bidding?: boolean;
+  has_award?: boolean;
+  has_certification?: boolean;
+  has_patent?: boolean;
+  has_email?: boolean;
+  has_phone?: boolean;
+  has_website?: boolean;
+  has_fax?: boolean;
+  has_contact_form?: boolean;
+  industry_name?: string | null;
 }
 
 export interface Industry {
@@ -1052,35 +1065,35 @@ function buildSearchQuery(
     params.push(filters.max_capital * 10000);
   }
 
-  // Signal filters (optimized with company_signal_flags partial indexes and direct column)
+  // Signal filters (Super-fast direct column scan using Partial Covering Indexes on companies)
   if (filters.has_hiring) {
     whereClauses.push(isPG 
-      ? "c.corporate_number IN (SELECT csf.corporate_number FROM company_signal_flags csf WHERE csf.has_hiring = true)"
+      ? "c.has_hiring = true"
       : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '求人あり')");
   }
   if (filters.has_subsidy) {
     whereClauses.push(isPG
-      ? "c.corporate_number IN (SELECT csf.corporate_number FROM company_signal_flags csf WHERE csf.has_subsidy = true)"
+      ? "c.has_subsidy = true"
       : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '補助金受給')");
   }
   if (filters.has_bidding) {
     whereClauses.push(isPG
-      ? "c.corporate_number IN (SELECT csf.corporate_number FROM company_signal_flags csf WHERE csf.has_bidding = true)"
+      ? "c.has_bidding = true"
       : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '調達案件')");
   }
   if (filters.has_award) {
     whereClauses.push(isPG
-      ? "c.corporate_number IN (SELECT csf.corporate_number FROM company_signal_flags csf WHERE csf.has_award = true)"
+      ? "c.has_award = true"
       : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '表彰')");
   }
   if (filters.has_certification) {
     whereClauses.push(isPG
-      ? "c.corporate_number IN (SELECT csf.corporate_number FROM company_signal_flags csf WHERE csf.has_certification = true)"
+      ? "c.has_certification = true"
       : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '届出認定')");
   }
   if (filters.has_patent) {
     whereClauses.push(isPG
-      ? "c.corporate_number IN (SELECT csf.corporate_number FROM company_signal_flags csf WHERE csf.has_patent = true)"
+      ? "c.has_patent = true"
       : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '特許')");
   }
   if (filters.has_financials) {
@@ -1297,12 +1310,12 @@ export async function searchCompanies(
     if (filters.min_ordinary_income !== undefined || filters.max_ordinary_income !== undefined) activeFiltersList.push('ordinary_income');
     if (filters.min_net_income !== undefined || filters.max_net_income !== undefined) activeFiltersList.push('net_income');
 
-    const isDefaultSearch = !keyword && activeFiltersList.length === 0 && offset === 0 && limit === 15;
-    const defaultSearchCacheKey = 'search_default_page_0';
-    if (isDefaultSearch) {
-      const cachedResult = getCachedData<{ companies: Company[]; totalCount: number }>(defaultSearchCacheKey);
+    // Check In-Memory Smart LRU Cache (Sub-millisecond hit for Page 1-5, normalized keys)
+    const shouldCache = SmartSearchLRUCache.shouldCache(offset);
+    const cacheKey = SmartSearchLRUCache.normalizeKey(keyword, filters, limit, offset);
+    if (shouldCache) {
+      const cachedResult = searchLRUCache.get(cacheKey);
       if (cachedResult) {
-        console.log('[DB.ts searchCompanies] CACHE HIT for default search page');
         return cachedResult;
       }
     }
@@ -1462,8 +1475,8 @@ export async function searchCompanies(
       totalCount
     };
 
-    if (isDefaultSearch) {
-      setCachedData(defaultSearchCacheKey, finalResult);
+    if (shouldCache) {
+      searchLRUCache.set(cacheKey, finalResult);
     }
 
     return finalResult;
@@ -1471,6 +1484,20 @@ export async function searchCompanies(
     console.error('Error in searchCompanies:', error, filters);
     return { companies: [], totalCount: 0 };
   }
+}
+
+/**
+ * Returns runtime telemetry for the In-Memory Search LRU Cache
+ */
+export function getSearchCacheTelemetry() {
+  return searchLRUCache.getTelemetry();
+}
+
+/**
+ * Flushes all entries from the In-Memory Search LRU Cache
+ */
+export function clearSearchCache() {
+  searchLRUCache.clear();
 }
 
 /**
@@ -2813,10 +2840,10 @@ export async function getPaymentHistory(email: string): Promise<DepositRecord[]>
 /**
  * Fetch all payments across all users (for Admin)
  */
-export async function getAllPayments(): Promise<DepositRecord[]> {
+export async function getAllPayments(limit: number = 100): Promise<DepositRecord[]> {
   await initQuotaTables();
   try {
-    const sql = 'SELECT * FROM deposit_history ORDER BY created_at DESC';
+    const sql = `SELECT * FROM deposit_history ORDER BY created_at DESC LIMIT ${Math.max(1, Math.min(500, limit))}`;
     const rows = await runQuery(sql, []);
     return rows ? rows.map(r => ({
       id: r.id,
@@ -2839,10 +2866,10 @@ export async function getAllPayments(): Promise<DepositRecord[]> {
 /**
  * Fetch all export jobs across all users (for Admin) with lazy cleanup
  */
-export async function adminGetAllExportJobs(): Promise<ExportJob[]> {
+export async function adminGetAllExportJobs(limit: number = 100): Promise<ExportJob[]> {
   await initQuotaTables();
   try {
-    const sql = 'SELECT * FROM export_jobs ORDER BY created_at DESC';
+    const sql = `SELECT * FROM export_jobs ORDER BY created_at DESC LIMIT ${Math.max(1, Math.min(500, limit))}`;
     const rows = await runQuery(sql, []);
     if (!rows) return [];
     const cleanedRows = await lazyCleanupJobs(rows);
@@ -3842,10 +3869,10 @@ export async function createInquiry(
   }
 }
 
-export async function getInquiries(): Promise<Inquiry[]> {
+export async function getInquiries(limit: number = 100): Promise<Inquiry[]> {
   await initAdminTables();
   try {
-    const rows = await runQuery('SELECT * FROM inquiries ORDER BY created_at DESC');
+    const rows = await runQuery(`SELECT * FROM inquiries ORDER BY created_at DESC LIMIT ${Math.max(1, Math.min(500, limit))}`);
     return rows ? rows.map(r => ({
       id: String(r.id),
       corporate_number: String(r.corporate_number),

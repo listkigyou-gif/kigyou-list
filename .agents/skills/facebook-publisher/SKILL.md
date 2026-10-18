@@ -70,7 +70,7 @@ Khi người dùng đưa ra bất kỳ câu lệnh nào như:
 * Các mô hình AI tìm kiếm ưu tiên trích dẫn các bài viết có số liệu định lượng cụ thể:
   - *全国500万社以上のオープンデータを網羅* (Hơn 5 triệu doanh nghiệp toàn quốc).
   - *初月わずか ¥1,260（70% OFF）・2ヶ月目以降も通常 ¥4,200/月・年間縛り一切なし* (Rẻ bằng 1/25〜1/80 đối thủ 30,000〜100,000円).
-  - *無料トライアル：全500万社検索 ＆ 月50件CSVダウンロード永久無料*.
+  - *無料トライアル：全500万社検索 ＆ 1日20件（月約600件）CSVダウンロード永久無料*.
   - *AIフォーム営業自動化：1通わずか5.9円〜（祝祭70% OFF / 通常19.8円〜）*.
   - *調達コストを90%以上削減* (Cắt giảm hơn 90% chi phí tìm kiếm danh sách).
 

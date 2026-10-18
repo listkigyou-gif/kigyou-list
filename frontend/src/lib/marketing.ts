@@ -317,62 +317,77 @@ export function renderTemplate(
     .replace(/\{\{unsubscribe_url\}\}/g, unsubscribeUrl);
 }
 
+// Persistent process-level cache for marketing stats (TTL: 15 minutes)
+const globalForMarketing = globalThis as unknown as {
+  cachedMarketingStats?: any;
+  lastMarketingStatsFetch?: number;
+};
+const MARKETING_STATS_CACHE_TTL = 15 * 60 * 1000;
+
 // 1. Get Marketing Stats
-export async function getMarketingStats() {
-  const client = await pool.connect();
+export async function getMarketingStats(forceRefresh: boolean = false) {
+  const now = Date.now();
+  if (
+    !forceRefresh &&
+    globalForMarketing.cachedMarketingStats &&
+    globalForMarketing.lastMarketingStatsFetch &&
+    now - globalForMarketing.lastMarketingStatsFetch < MARKETING_STATS_CACHE_TTL
+  ) {
+    return globalForMarketing.cachedMarketingStats;
+  }
+
   try {
-    const totalEmailRes = await client.query(`
-      SELECT count(1) AS count 
-      FROM companies 
-      WHERE email_address IS NOT NULL AND email_address != ''
-    `);
+    const [
+      totalEmailRes,
+      totalSuppressedRes,
+      totalSentRes,
+      totalCampaignsRes,
+      prefBreakdownRes,
+      recentCampaignsRes,
+      industriesRes
+    ] = await Promise.all([
+      pool.query(`
+        SELECT count(1) AS count 
+        FROM companies 
+        WHERE email_address IS NOT NULL AND email_address != ''
+      `),
+      pool.query(`SELECT count(1) AS count FROM marketing_suppressions`),
+      pool.query(`SELECT count(1) AS count FROM marketing_send_logs WHERE status = 'sent'`),
+      pool.query(`SELECT count(1) AS count FROM marketing_campaigns`),
+      pool.query(`
+        SELECT prefecture_name, count(1) AS email_count
+        FROM companies
+        WHERE email_address IS NOT NULL AND email_address != '' AND prefecture_name IS NOT NULL
+        GROUP BY prefecture_name
+        ORDER BY email_count DESC
+        LIMIT 15
+      `),
+      pool.query(`SELECT * FROM marketing_campaigns ORDER BY created_at DESC LIMIT 5`),
+      pool.query(`
+        SELECT industry_code, industry_name 
+        FROM m_industries 
+        WHERE classification_level = '大分類' 
+        ORDER BY industry_code
+      `)
+    ]);
 
-    const totalSuppressedRes = await client.query(`
-      SELECT count(1) AS count FROM marketing_suppressions
-    `);
-
-    const totalSentRes = await client.query(`
-      SELECT count(1) AS count FROM marketing_send_logs WHERE status = 'sent'
-    `);
-
-    const totalCampaignsRes = await client.query(`
-      SELECT count(1) AS count FROM marketing_campaigns
-    `);
-
-    // Top prefectures with emails
-    const prefBreakdownRes = await client.query(`
-      SELECT prefecture_name, count(1) AS email_count
-      FROM companies
-      WHERE email_address IS NOT NULL AND email_address != '' AND prefecture_name IS NOT NULL
-      GROUP BY prefecture_name
-      ORDER BY email_count DESC
-      LIMIT 15
-    `);
-
-    // Recent 5 campaigns
-    const recentCampaignsRes = await client.query(`
-      SELECT * FROM marketing_campaigns ORDER BY created_at DESC LIMIT 5
-    `);
-
-    // Major JSIC industries
-    const industriesRes = await client.query(`
-      SELECT industry_code, industry_name 
-      FROM m_industries 
-      WHERE classification_level = '大分類' 
-      ORDER BY industry_code
-    `);
-
-    return {
-      total_companies_with_email: parseInt(totalEmailRes.rows[0].count, 10),
-      total_suppressed: parseInt(totalSuppressedRes.rows[0].count, 10),
-      total_sent: parseInt(totalSentRes.rows[0].count, 10),
-      total_campaigns: parseInt(totalCampaignsRes.rows[0].count, 10),
-      top_prefectures: prefBreakdownRes.rows,
-      recent_campaigns: recentCampaignsRes.rows,
-      industries: industriesRes.rows,
+    const result = {
+      total_companies_with_email: parseInt(totalEmailRes.rows[0]?.count || '0', 10),
+      total_suppressed: parseInt(totalSuppressedRes.rows[0]?.count || '0', 10),
+      total_sent: parseInt(totalSentRes.rows[0]?.count || '0', 10),
+      total_campaigns: parseInt(totalCampaignsRes.rows[0]?.count || '0', 10),
+      top_prefectures: prefBreakdownRes.rows || [],
+      recent_campaigns: recentCampaignsRes.rows || [],
+      industries: industriesRes.rows || [],
     };
-  } finally {
-    client.release();
+
+    globalForMarketing.cachedMarketingStats = result;
+    globalForMarketing.lastMarketingStatsFetch = now;
+    return result;
+  } catch (error) {
+    console.error("Error in getMarketingStats query execution:", error);
+    if (globalForMarketing.cachedMarketingStats) return globalForMarketing.cachedMarketingStats;
+    throw error;
   }
 }
 

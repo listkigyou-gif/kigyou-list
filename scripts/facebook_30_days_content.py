@@ -162,7 +162,7 @@ Kigyou List（kigyoulist.com）は、これらの膨大な公的オープンデ�
 👉 https://kigyoulist.com/ja/search?utm_source=facebook&utm_medium=day_05
 
 #事例紹介 #SaaS営業 #売上アップ #生産性向上 #インサイドセールス #営業効率化 #KigyouList""",
-        "image": "scripts/press_releases/eyecatch_01.jpg",
+        "image": "scripts/images/fb_day05_casestudy.jpg",
         "cta": "https://kigyoulist.com/ja/search?utm_source=facebook&utm_medium=day_05"
     },
     6: {

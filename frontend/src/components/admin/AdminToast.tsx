@@ -79,13 +79,13 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         {toasts.map((t) => (
           <div
             key={t.id}
-            className={`pointer-events-auto flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/95 dark:bg-[#1C2128]/95 backdrop-blur-md border ${getBorderColor(
+            className={`pointer-events-auto flex items-center justify-between gap-3 p-3 rounded-lg bg-white dark:bg-[#1C2128] border ${getBorderColor(
               t.type
-            )} shadow-xl shadow-slate-900/5 animate-in slide-in-from-bottom-3 duration-200`}
+            )} shadow-md animate-in slide-in-from-bottom-2 duration-150`}
           >
             <div className="flex items-center gap-2.5 min-w-0">
               {getIcon(t.type)}
-              <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 break-words">
+              <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 break-words [font-feature-settings:'palt']">
                 {t.message}
               </p>
             </div>

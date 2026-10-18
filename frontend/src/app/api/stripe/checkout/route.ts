@@ -26,6 +26,7 @@ export async function POST(request: Request) {
     let allowance = 0;
     let priceName = "";
     let isSubscription = true;
+    let isFirstTimeForm = false;
 
     if (planId) {
       isSubscription = true;
@@ -78,12 +79,10 @@ export async function POST(request: Request) {
           allowance = 100000;
           priceName = "CSV 100k行ダウンロード容量 (追加パッケージ)";
           break;
-        default:
-          return NextResponse.json({ error: "Invalid packId parameter" }, { status: 400 });
       }
     } else if (formPlanId) {
       isSubscription = false;
-      const isFirstTimeForm = await isFirstTimeFormBuyer(email);
+      isFirstTimeForm = await isFirstTimeFormBuyer(email);
       let discountedPrice = 0;
 
       switch (formPlanId) {

@@ -357,7 +357,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <option value="">{t.search.allPrefectures}</option>
               {prefectures.map((pref) => (
                 <option key={pref.code} value={pref.code}>
-                  {(t.prefectures as Record<string, string>)?.[pref.name] || pref.name} ({pref.count.toLocaleString()}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
+                  {(t.prefectures as Record<string, string>)?.[pref.name] || pref.name} ({pref.count.toLocaleString('ja-JP')}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
                 </option>
               ))}
             </select>
@@ -377,7 +377,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               <option value="">{t.search.allCities}</option>
               {prefCode && cities && cities.map((c) => (
                 <option key={c.cityName} value={c.cityName}>
-                  {c.cityName} ({c.count.toLocaleString()}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
+                  {c.cityName} ({c.count.toLocaleString('ja-JP')}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
                 </option>
               ))}
             </select>
@@ -397,11 +397,11 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
               {industries.map((major) => (
                 <React.Fragment key={major.code}>
                   <option value={major.code} className="font-semibold text-slate-900 dark:text-white">
-                    {major.code} {(t.majorIndustries as Record<string, string>)?.[major.code] || major.name} ({locale === 'en' ? 'Total' : locale === 'vi' ? 'Tổng cộng' : '計'} {major.totalCount.toLocaleString()}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
+                    {major.code} {(t.majorIndustries as Record<string, string>)?.[major.code] || major.name} ({locale === 'en' ? 'Total' : locale === 'vi' ? 'Tổng cộng' : '計'} {major.totalCount.toLocaleString('ja-JP')}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
                   </option>
                   {major.children.map((medium) => (
                     <option key={medium.code} value={medium.code} className="text-slate-700 dark:text-slate-300">
-                      {"\u00A0\u00A0"}{medium.code} {getIndustryName(medium.name, locale)} ({medium.count.toLocaleString()}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
+                      {"\u00A0\u00A0"}{medium.code} {getIndustryName(medium.name, locale)} ({medium.count.toLocaleString('ja-JP')}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
                     </option>
                   ))}
                 </React.Fragment>
@@ -440,7 +440,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                     {locale === 'en' ? 'Contact Form' : locale === 'vi' ? 'Biểu mẫu liên hệ' : 'お問い合わせフォーム'}
                   </span>
                   <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium">
-                    (23.5万社)
+                    ({(235000).toLocaleString('ja-JP')}{locale === 'en' ? ' co.' : locale === 'vi' ? ' DN' : '社'})
                   </span>
                 </div>
                 <div className="flex items-center gap-1">
@@ -473,7 +473,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   </span>
                 </div>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                  (17.6万社)
+                  ({(176000).toLocaleString('ja-JP')}{locale === 'en' ? ' co.' : locale === 'vi' ? ' DN' : '社'})
                 </span>
               </label>
 
@@ -511,7 +511,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   <span>{t.search.phoneLabel}</span>
                 </div>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                  (175.8万社)
+                  ({(1758000).toLocaleString('ja-JP')}{locale === 'en' ? ' co.' : locale === 'vi' ? ' DN' : '社'})
                 </span>
               </label>
 
@@ -527,7 +527,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   <span>{t.search.websiteLabel}</span>
                 </div>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                  (54万社)
+                  ({(540000).toLocaleString('ja-JP')}{locale === 'en' ? ' co.' : locale === 'vi' ? ' DN' : '社'})
                 </span>
               </label>
 
@@ -543,7 +543,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   <span>{t.search.faxLabel}</span>
                 </div>
                 <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                  (30.1万社)
+                  ({(301000).toLocaleString('ja-JP')}{locale === 'en' ? ' co.' : locale === 'vi' ? ' DN' : '社'})
                 </span>
               </label>
             </div>
@@ -645,10 +645,21 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 
           {/* Capital */}
           <div>
-            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-              {t.search.capital}
-            </label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                {t.search.capital}
+              </label>
+              {minCap && (
+                <button
+                  type="button"
+                  onClick={() => navigate({ min_capital: null, max_capital: null })}
+                  className="text-[10px] text-slate-400 hover:text-red-500 transition-colors"
+                >
+                  {t.search.clear}
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
               <input
                 key={`minCap_${minCap ?? ''}`}
                 type="number"
@@ -688,14 +699,56 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
               />
             </div>
+            {/* Quick Presets for Capital */}
+            <div className="flex flex-wrap gap-1">
+              {[
+                { label: locale === 'ja' ? '1,000万+' : '10M+', value: 1000 },
+                { label: locale === 'ja' ? '5,000万+' : '50M+', value: 5000 },
+                { label: locale === 'ja' ? '1億+' : '100M+', value: 10000 },
+                { label: locale === 'ja' ? '10億+' : '1B+', value: 100000 },
+              ].map((preset) => {
+                const isActive = minCap === preset.value && !maxCap;
+                return (
+                  <button
+                    key={preset.value}
+                    type="button"
+                    onClick={() => {
+                      if (isActive) {
+                        navigate({ min_capital: null, max_capital: null });
+                      } else {
+                        navigate({ min_capital: String(preset.value), max_capital: null });
+                      }
+                    }}
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-[#1B4F8A] text-white shadow-2xs"
+                        : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-750"
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Employees */}
           <div>
-            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-              {t.search.employees}
-            </label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                {t.search.employees}
+              </label>
+              {minEmp && (
+                <button
+                  type="button"
+                  onClick={() => navigate({ min_employees: null, max_employees: null })}
+                  className="text-[10px] text-slate-400 hover:text-red-500 transition-colors"
+                >
+                  {t.search.clear}
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
               <input
                 key={`minEmp_${minEmp ?? ''}`}
                 type="number"
@@ -735,14 +788,57 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
               />
             </div>
+            {/* Quick Presets for Employees */}
+            <div className="flex flex-wrap gap-1">
+              {[
+                { label: locale === 'ja' ? '10人+' : '10+', value: 10 },
+                { label: locale === 'ja' ? '30人+' : '30+', value: 30 },
+                { label: locale === 'ja' ? '50人+' : '50+', value: 50 },
+                { label: locale === 'ja' ? '100人+' : '100+', value: 100 },
+                { label: locale === 'ja' ? '300人+' : '300+', value: 300 },
+              ].map((preset) => {
+                const isActive = minEmp === preset.value && !maxEmp;
+                return (
+                  <button
+                    key={preset.value}
+                    type="button"
+                    onClick={() => {
+                      if (isActive) {
+                        navigate({ min_employees: null, max_employees: null });
+                      } else {
+                        navigate({ min_employees: String(preset.value), max_employees: null });
+                      }
+                    }}
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-[#1B4F8A] text-white shadow-2xs"
+                        : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-750"
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Establishment Year */}
           <div>
-            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-              {t.search.establishmentYear}
-            </label>
-            <div className="grid grid-cols-2 gap-1.5">
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400">
+                {t.search.establishmentYear}
+              </label>
+              {minEstYear && (
+                <button
+                  type="button"
+                  onClick={() => navigate({ min_establishment_year: null, max_establishment_year: null })}
+                  className="text-[10px] text-slate-400 hover:text-red-500 transition-colors"
+                >
+                  {t.search.clear}
+                </button>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
               <input
                 key={`minEstYear_${minEstYear ?? ''}`}
                 type="number"
@@ -781,6 +877,37 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 }}
                 className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
               />
+            </div>
+            {/* Quick Presets for Establishment Year */}
+            <div className="flex flex-wrap gap-1">
+              {[
+                { label: locale === 'ja' ? '2020年以降' : '2020+', value: 2020 },
+                { label: locale === 'ja' ? '2015年以降' : '2015+', value: 2015 },
+                { label: locale === 'ja' ? '2010年以降' : '2010+', value: 2010 },
+                { label: locale === 'ja' ? '2000年以降' : '2000+', value: 2000 },
+              ].map((preset) => {
+                const isActive = minEstYear === preset.value && !maxEstYear;
+                return (
+                  <button
+                    key={preset.value}
+                    type="button"
+                    onClick={() => {
+                      if (isActive) {
+                        navigate({ min_establishment_year: null, max_establishment_year: null });
+                      } else {
+                        navigate({ min_establishment_year: String(preset.value), max_establishment_year: null });
+                      }
+                    }}
+                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-[#1B4F8A] text-white shadow-2xs"
+                        : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-750"
+                    }`}
+                  >
+                    {preset.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -1021,7 +1148,12 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         <div className="sticky bottom-0 left-0 right-0 pt-3 pb-1 mt-3 bg-white/95 dark:bg-[#161B22]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 z-30 shadow-sm">
           <button
             type="button"
-            onClick={onApplyFilters}
+            onClick={() => {
+              onApplyFilters();
+              if (onCloseMobile) {
+                onCloseMobile();
+              }
+            }}
             className={`w-full py-2.5 px-4 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
               activeCount > 0
                 ? "bg-gradient-to-r from-[#1B4F8A] to-[#143D6C] hover:from-[#143D6C] hover:to-[#0F2D50] ring-2 ring-[#1B4F8A]/30 shadow-[#1B4F8A]/20"
@@ -1042,3 +1174,4 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
     </aside>
   );
 };
+

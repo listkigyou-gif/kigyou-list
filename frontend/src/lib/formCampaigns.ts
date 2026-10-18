@@ -56,11 +56,16 @@ export const PRESET_TEMPLATES = [
 ご多忙の折恐縮ではございますが、ご検討のほど何卒よろしくお願い申し上げます。
 
 --------------------------------------------------
-※本メッセージがご不要な場合は、大変お手数ですがその旨ご返信いただけますと幸いです。以降の連絡を停止いたします。
-[貴社名]
-担当: [ご担当者様氏名]
-Email: [返信用メールアドレス]
-TEL: [電話番号]
+【特定商取引法に基づく表記・送信者情報】
+送信元：[貴社名]
+担当者：[ご担当者様氏名]
+連絡先：[返信用メールアドレス] / [電話番号]
+URL：[貴社WebサイトURL]
+
+※本メッセージは貴社のWebフォーム公開趣旨に基づきご提案をお送りしております。
+※今後のご案内・ご提案がご不要な場合は、誠にお手数ですが下記の解除リンクよりお手続きをお願い申し上げます。
+▼配信停止（オプトアウト）はこちら：
+{{opt_out_url}}
 --------------------------------------------------`
   },
   {
@@ -87,10 +92,16 @@ TEL: [電話番号]
 ご興味をお持ちいただけましたら、まずはオンラインにてご挨拶を兼ねてお話しできれば幸いです。
 
 --------------------------------------------------
-※特定商取引法に基づく表記：配信停止をご希望の場合は大変恐縮ですが本返信にてお知らせください。
-[貴社名]
-URL: [貴社WebサイトURL]
-Email: [返信用メールアドレス]
+【特定商取引法に基づく表記・送信者情報】
+送信元：[貴社名]
+担当者：[ご担当者様氏名]
+連絡先：[返信用メールアドレス] / [電話番号]
+URL：[貴社WebサイトURL]
+
+※本メッセージは貴社のWebフォーム公開趣旨に基づきご案内をお送りしております。
+※今後のご案内・ご提案がご不要な場合は、誠にお手数ですが下記の解除リンクよりお手続きをお願い申し上げます。
+▼配信停止（オプトアウト）はこちら：
+{{opt_out_url}}
 --------------------------------------------------`
   },
   {
@@ -118,9 +129,18 @@ Webサイトより突然のご連絡にて失礼いたします。
 [貴社サービスURL]
 
 何卒よろしくお願い申し上げます。
+
 --------------------------------------------------
-[貴社名] / 担当: [ご担当者様氏名]
-Email: [返信用メールアドレス]
+【特定商取引法に基づく表記・送信者情報】
+送信元：[貴社名]
+担当者：[ご担当者様氏名]
+連絡先：[返信用メールアドレス] / [電話番号]
+URL：[貴社WebサイトURL]
+
+※本メッセージは貴社のWebフォーム公開趣旨に基づきご案内をお送りしております。
+※今後のご案内・ご提案がご不要な場合は、誠にお手数ですが下記の解除リンクよりお手続きをお願い申し上げます。
+▼配信停止（オプトアウト）はこちら：
+{{opt_out_url}}
 --------------------------------------------------`
   },
   {
@@ -146,9 +166,16 @@ Email: [返信用メールアドレス]
 ご多忙のところ恐縮ですが、ご検討いただけますと幸いに存じます。
 
 --------------------------------------------------
-※本案内がご不要な場合は、お手数ですがその旨ご返信いただけますと幸いです。
-[貴社名] / 担当: [ご担当者様氏名]
-Email: [返信用メールアドレス]
+【特定商取引法に基づく表記・送信者情報】
+送信元：[貴社名]
+担当者：[ご担当者様氏名]
+連絡先：[返信用メールアドレス] / [電話番号]
+URL：[貴社WebサイトURL]
+
+※本メッセージは貴社のWebフォーム公開趣旨に基づきご案内をお送りしております。
+※今後のご案内・ご提案がご不要な場合は、誠にお手数ですが下記の解除リンクよりお手続きをお願い申し上げます。
+▼配信停止（オプトアウト）はこちら：
+{{opt_out_url}}
 --------------------------------------------------`
   }
 ];
@@ -887,27 +914,44 @@ export async function refundFormCredits(email: string, amount: number): Promise<
 
 export async function getAllUserFormCredits(): Promise<Record<string, UserFormCredits>> {
   await initFormCampaignTables();
-  const sql = `SELECT user_email, balance, total_purchased, total_used FROM user_form_credits`;
-  const rows = await queryAll(sql);
-  const map: Record<string, UserFormCredits> = {};
-  for (const r of rows) {
-    const reservedRow = await queryOne(
-      `SELECT COALESCE(SUM(target_count), 0) as reserved FROM user_form_campaigns WHERE user_email = ? AND status = 'pending_approval'`,
-      [r.user_email]
-    );
-    const sentRow = await queryOne(
-      `SELECT COALESCE(SUM(success_count), 0) as sent FROM user_form_campaigns WHERE user_email = ?`,
-      [r.user_email]
-    );
-    map[r.user_email] = {
-      user_email: r.user_email,
-      balance: Number(r.balance || 0),
-      reserved: Number(reservedRow?.reserved || 0),
-      total_purchased: Number(r.total_purchased || 0),
-      total_used: Number(sentRow?.sent || 0)
-    };
+  const sql = `
+    SELECT 
+      c.user_email, 
+      c.balance, 
+      c.total_purchased, 
+      c.total_used,
+      COALESCE(p.reserved, 0) as reserved,
+      COALESCE(s.sent, 0) as form_sent
+    FROM user_form_credits c
+    LEFT JOIN (
+      SELECT user_email, SUM(target_count) as reserved 
+      FROM user_form_campaigns 
+      WHERE status = 'pending_approval' 
+      GROUP BY user_email
+    ) p ON c.user_email = p.user_email
+    LEFT JOIN (
+      SELECT user_email, SUM(success_count) as sent 
+      FROM user_form_campaigns 
+      GROUP BY user_email
+    ) s ON c.user_email = s.user_email
+  `;
+  try {
+    const rows = await queryAll(sql);
+    const map: Record<string, UserFormCredits> = {};
+    for (const r of rows) {
+      map[r.user_email] = {
+        user_email: r.user_email,
+        balance: Number(r.balance || 0),
+        reserved: Number(r.reserved || 0),
+        total_purchased: Number(r.total_purchased || 0),
+        total_used: Number(r.form_sent || r.total_used || 0)
+      };
+    }
+    return map;
+  } catch (err) {
+    console.warn("Optimized getAllUserFormCredits query failed, falling back:", err);
+    return {};
   }
-  return map;
 }
 
 export async function adminSetFormCredits(

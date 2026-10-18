@@ -372,62 +372,77 @@ URL：https://kigyoulist.com
   }
 ];
 
+// Persistent process-level cache for internal form marketing stats (TTL: 15 minutes)
+const globalForFormMarketing = globalThis as unknown as {
+  cachedInternalFormStats?: any;
+  lastInternalFormStatsFetch?: number;
+};
+const FORM_STATS_CACHE_TTL = 15 * 60 * 1000;
+
 // 1. Get Stats for Admin Dashboard
-export async function getInternalFormMarketingStats() {
-  const client = await pool.connect();
+export async function getInternalFormMarketingStats(forceRefresh: boolean = false) {
+  const now = Date.now();
+  if (
+    !forceRefresh &&
+    globalForFormMarketing.cachedInternalFormStats &&
+    globalForFormMarketing.lastInternalFormStatsFetch &&
+    now - globalForFormMarketing.lastInternalFormStatsFetch < FORM_STATS_CACHE_TTL
+  ) {
+    return globalForFormMarketing.cachedInternalFormStats;
+  }
+
   try {
-    const totalFormsRes = await client.query(`
-      SELECT count(1) AS count 
-      FROM companies 
-      WHERE contact_form_url IS NOT NULL AND contact_form_url != ''
-    `);
+    const [
+      totalFormsRes,
+      totalSentRes,
+      totalSkippedRes,
+      totalCampaignsRes,
+      prefBreakdownRes,
+      recentCampaignsRes,
+      industriesRes
+    ] = await Promise.all([
+      pool.query(`
+        SELECT count(1) AS count 
+        FROM companies 
+        WHERE contact_form_url IS NOT NULL AND contact_form_url != ''
+      `),
+      pool.query(`SELECT count(1) AS count FROM internal_form_send_logs WHERE status = 'SUCCESS_SENT'`),
+      pool.query(`SELECT count(1) AS count FROM internal_form_send_logs WHERE status LIKE 'SKIPPED%' OR status LIKE 'BLOCKED%'`),
+      pool.query(`SELECT count(1) AS count FROM internal_form_campaigns`),
+      pool.query(`
+        SELECT prefecture_name, count(1) AS form_count
+        FROM companies
+        WHERE contact_form_url IS NOT NULL AND contact_form_url != '' AND prefecture_name IS NOT NULL
+        GROUP BY prefecture_name
+        ORDER BY form_count DESC
+        LIMIT 15
+      `),
+      pool.query(`SELECT * FROM internal_form_campaigns ORDER BY created_at DESC LIMIT 5`),
+      pool.query(`
+        SELECT industry_code, industry_name 
+        FROM m_industries 
+        WHERE classification_level = '大分類' 
+        ORDER BY industry_code
+      `)
+    ]);
 
-    const totalSentRes = await client.query(`
-      SELECT count(1) AS count FROM internal_form_send_logs WHERE status = 'SUCCESS_SENT'
-    `);
-
-    const totalSkippedRes = await client.query(`
-      SELECT count(1) AS count FROM internal_form_send_logs WHERE status LIKE 'SKIPPED%' OR status LIKE 'BLOCKED%'
-    `);
-
-    const totalCampaignsRes = await client.query(`
-      SELECT count(1) AS count FROM internal_form_campaigns
-    `);
-
-    // Top prefectures with verified contact forms
-    const prefBreakdownRes = await client.query(`
-      SELECT prefecture_name, count(1) AS form_count
-      FROM companies
-      WHERE contact_form_url IS NOT NULL AND contact_form_url != '' AND prefecture_name IS NOT NULL
-      GROUP BY prefecture_name
-      ORDER BY form_count DESC
-      LIMIT 15
-    `);
-
-    // Recent 5 campaigns
-    const recentCampaignsRes = await client.query(`
-      SELECT * FROM internal_form_campaigns ORDER BY created_at DESC LIMIT 5
-    `);
-
-    // Major JSIC industries
-    const industriesRes = await client.query(`
-      SELECT industry_code, industry_name 
-      FROM m_industries 
-      WHERE classification_level = '大分類' 
-      ORDER BY industry_code
-    `);
-
-    return {
-      total_companies_with_form: parseInt(totalFormsRes.rows[0].count, 10),
-      total_sent: parseInt(totalSentRes.rows[0].count, 10),
-      total_skipped: parseInt(totalSkippedRes.rows[0].count, 10),
-      total_campaigns: parseInt(totalCampaignsRes.rows[0].count, 10),
-      top_prefectures: prefBreakdownRes.rows,
-      recent_campaigns: recentCampaignsRes.rows,
-      industries: industriesRes.rows,
+    const result = {
+      total_companies_with_form: parseInt(totalFormsRes.rows[0]?.count || '0', 10),
+      total_sent: parseInt(totalSentRes.rows[0]?.count || '0', 10),
+      total_skipped: parseInt(totalSkippedRes.rows[0]?.count || '0', 10),
+      total_campaigns: parseInt(totalCampaignsRes.rows[0]?.count || '0', 10),
+      top_prefectures: prefBreakdownRes.rows || [],
+      recent_campaigns: recentCampaignsRes.rows || [],
+      industries: industriesRes.rows || [],
     };
-  } finally {
-    client.release();
+
+    globalForFormMarketing.cachedInternalFormStats = result;
+    globalForFormMarketing.lastInternalFormStatsFetch = now;
+    return result;
+  } catch (error) {
+    console.error("Error in getInternalFormMarketingStats query execution:", error);
+    if (globalForFormMarketing.cachedInternalFormStats) return globalForFormMarketing.cachedInternalFormStats;
+    throw error;
   }
 }
 
@@ -436,7 +451,11 @@ function buildFormAudienceWhere(filters: FormTargetFilters) {
   const conditions: string[] = [
     `c.contact_form_url IS NOT NULL`,
     `c.contact_form_url != ''`,
-    `c.contact_form_url LIKE 'http%'`
+    `c.contact_form_url LIKE 'http%'`,
+    `NOT EXISTS (
+      SELECT 1 FROM form_marketing_opt_outs opt
+      WHERE opt.corporate_number = c.corporate_number
+    )`
   ];
   const params: any[] = [];
   let paramIdx = 1;

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { 
   Building2, Search, MapPin, X, Phone, Globe, Clock,
   ChevronLeft, ChevronRight, SlidersHorizontal, Lock, ExternalLink, MessageSquare, Send, Mail,
-  Sparkles, ArrowRight
+  Sparkles, ArrowRight, RotateCcw, Filter, Zap, Award, FileCheck2, FileSpreadsheet, CheckCircle2, TrendingUp, Users, Printer
 } from "lucide-react";
 import { formatShortDate } from "@/lib/dateUtils";
 import { SearchSidebar } from "@/components/SearchSidebar";
@@ -291,6 +291,9 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   const resultsTopRef = useRef<HTMLDivElement>(null);
   const searchCacheRef = useRef<Map<string, { companies: Company[]; totalCount: number; cities?: any[] }>>(new Map());
   const prefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const activeAbortControllerRef = useRef<AbortController | null>(null);
+  const filterDebounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pendingUpdatesRef = useRef<Record<string, any>>({});
 
   const limit = 15;
   const totalPages = Math.ceil(totalCount / limit);
@@ -513,10 +516,17 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       return;
     }
 
+    // Abort previous in-flight request if user triggered a new search/filter
+    if (activeAbortControllerRef.current) {
+      activeAbortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    activeAbortControllerRef.current = controller;
+
     setIsLoading(true);
 
     try {
-      const res = await fetch(`/api/search?${cacheKey}`);
+      const res = await fetch(`/api/search?${cacheKey}`, { signal: controller.signal });
       if (!res.ok) throw new Error("Search failed");
       const data = await res.json();
       
@@ -585,10 +595,16 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
 
       // Prefetch next page in background
       prefetchNextPage(apiParams, newPage, data.totalCount);
-    } catch (e) {
+    } catch (e: any) {
+      if (e?.name === 'AbortError') {
+        // Request cancelled by newer search action, ignore
+        return;
+      }
       console.error(e);
     } finally {
-      setIsLoading(false);
+      if (activeAbortControllerRef.current === controller) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -752,7 +768,25 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       if (updates.min_net_income !== undefined) overrides.minNetIncome = updates.min_net_income ? parseFloat(updates.min_net_income) : undefined;
       if (updates.max_net_income !== undefined) overrides.maxNetIncome = updates.max_net_income ? parseFloat(updates.max_net_income) : undefined;
 
-      executeSearch(overrides);
+      // Smart Batching: Clear actions (like reset all) run immediately; toggle actions debounce for 200ms
+      const isBatchClear = Object.keys(updates).length > 5;
+      pendingUpdatesRef.current = { ...pendingUpdatesRef.current, ...overrides };
+
+      if (filterDebounceTimeoutRef.current) {
+        clearTimeout(filterDebounceTimeoutRef.current);
+      }
+
+      if (isBatchClear) {
+        const toRun = { ...pendingUpdatesRef.current };
+        pendingUpdatesRef.current = {};
+        executeSearch(toRun);
+      } else {
+        filterDebounceTimeoutRef.current = setTimeout(() => {
+          const toRun = { ...pendingUpdatesRef.current };
+          pendingUpdatesRef.current = {};
+          executeSearch(toRun);
+        }, 200);
+      }
     }
   };
 
@@ -784,9 +818,9 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       return t.search.employeesRange.replace('{min}', String(minEmp)).replace('{max}', String(maxEmp));
     }
     if (minEmp !== undefined) {
-      return `${minEmp.toLocaleString()}${t.search.minEmployeesSuffix || '名以上'}`;
+      return `${minEmp.toLocaleString('ja-JP')}${t.search.minEmployeesSuffix || '名以上'}`;
     }
-    return `${maxEmp ? maxEmp.toLocaleString() : ''}${t.search.maxEmployeesSuffix || '名以下'}`;
+    return `${maxEmp ? maxEmp.toLocaleString('ja-JP') : ''}${t.search.maxEmployeesSuffix || '名以下'}`;
   };
 
   const getCapitalChipText = () => {
@@ -796,9 +830,9 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       return t.search.capitalRange.replace('{min}', String(displayMin)).replace('{max}', String(displayMax));
     }
     if (displayMin !== undefined) {
-      return `${displayMin.toLocaleString()}${t.search.minCapitalSuffix || '万円以上'}`;
+      return `${displayMin.toLocaleString('ja-JP')}${t.search.minCapitalSuffix || '万円以上'}`;
     }
-    return `${displayMax ? displayMax.toLocaleString() : ''}${t.search.maxCapitalSuffix || '万円以下'}`;
+    return `${displayMax ? displayMax.toLocaleString('ja-JP') : ''}${t.search.maxCapitalSuffix || '万円以下'}`;
   };
 
   const getSalesChipText = (min: number | undefined, max: number | undefined, rangeKey: string, minSuffixKey: string, maxSuffixKey: string) => {
@@ -812,9 +846,9 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       return tRange.replace('{min}', String(displayMin)).replace('{max}', String(displayMax));
     }
     if (displayMin !== undefined) {
-      return `${displayMin.toLocaleString()}${tMinSuffix}`;
+      return `${displayMin.toLocaleString('ja-JP')}${tMinSuffix}`;
     }
-    return `${displayMax ? displayMax.toLocaleString() : ''}${tMaxSuffix}`;
+    return `${displayMax ? displayMax.toLocaleString('ja-JP') : ''}${tMaxSuffix}`;
   };
 
   const getEstYearChipText = () => {
@@ -973,232 +1007,285 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               </button>
             </form>
           </div>
-
-          {/* Active Filters Summary */}
-          <div className="flex flex-wrap items-center gap-1.5 text-xs">
-            {keyword && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.keywordLabel}: {keyword}
-                <button type="button" onClick={() => handleFilterChange({ keyword: "" }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {prefCode && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.areaLabel}: {(() => {
-                  const prefName = prefectures.find(p => p.code === prefCode)?.name || prefCode;
-                  return (t.prefectures as Record<string, string>)?.[prefName] || prefName;
-                })()}
-                <button type="button" onClick={() => handleFilterChange({ prefecture: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {city && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.cityLabel}: {city}
-                <button type="button" onClick={() => handleFilterChange({ city: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {indCode && (() => {
-              let selectedIndustryName = indCode;
-              for (const major of industries) {
-                if (major.code === indCode) {
-                  selectedIndustryName = major.name;
-                  break;
-                }
-                const child = major.children.find((c: any) => c.code === indCode);
-                if (child) {
-                  selectedIndustryName = child.name;
-                  break;
-                }
-              }
-              const displayIndustryName = (t.majorIndustries as Record<string, string>)?.[indCode] || selectedIndustryName;
-              return (
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                  {t.search.industryLabel}: {displayIndustryName}
-                  <button type="button" onClick={() => handleFilterChange({ industry: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-                </span>
-              );
-            })()}
-            {(minEmp !== undefined || maxEmp !== undefined) && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.employees}: {getEmployeesChipText()}
-                <button type="button" onClick={() => handleFilterChange({ min_employees: null, max_employees: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {(minCap !== undefined || maxCap !== undefined) && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.capital}: {getCapitalChipText()}
-                <button type="button" onClick={() => handleFilterChange({ min_capital: null, max_capital: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {hasHiring && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.hiring}
-                <button type="button" onClick={() => handleFilterChange({ hiring: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {hasSubsidy && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.subsidy}
-                <button type="button" onClick={() => handleFilterChange({ subsidy: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {hasBidding && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.bidding}
-                <button type="button" onClick={() => handleFilterChange({ bidding: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {(minEstYear !== undefined || maxEstYear !== undefined) && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.establishmentYear}: {getEstYearChipText()}
-                <button type="button" onClick={() => handleFilterChange({ min_establishment_year: null, max_establishment_year: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {hasAward && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.award}
-                <button type="button" onClick={() => handleFilterChange({ award: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {hasCertification && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.certification}
-                <button type="button" onClick={() => handleFilterChange({ certification: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {hasPatent && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.patent}
-                <button type="button" onClick={() => handleFilterChange({ patent: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {hasFinancials && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.hasFinancials}
-                <button type="button" onClick={() => handleFilterChange({ financials: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {(minSales !== undefined || maxSales !== undefined) && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.sales}: {getSalesChipText(minSales, maxSales, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}
-                <button type="button" onClick={() => handleFilterChange({ min_sales: null, max_sales: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-
-            {(minOpIncome !== undefined || maxOpIncome !== undefined) && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.operatingIncome}: {getSalesChipText(minOpIncome, maxOpIncome, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}
-                <button type="button" onClick={() => handleFilterChange({ min_operating_income: null, max_operating_income: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {(minOrdIncome !== undefined || maxOrdIncome !== undefined) && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.ordinaryIncome}: {getSalesChipText(minOrdIncome, maxOrdIncome, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}
-                <button type="button" onClick={() => handleFilterChange({ min_ordinary_income: null, max_ordinary_income: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {(minNetIncome !== undefined || maxNetIncome !== undefined) && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.netIncome}: {getSalesChipText(minNetIncome, maxNetIncome, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}
-                <button type="button" onClick={() => handleFilterChange({ min_net_income: null, max_net_income: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {hasEmail && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.emailLabel}
-                <button type="button" onClick={() => handleFilterChange({ email: false, email_type: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {hasPhone && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.phoneLabel}
-                <button type="button" onClick={() => handleFilterChange({ phone: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {hasWebsite && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.websiteLabel}
-                <button type="button" onClick={() => handleFilterChange({ website: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {hasFax && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.faxLabel}
-                <button type="button" onClick={() => handleFilterChange({ fax: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {hasContactForm && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-950 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-800 text-xs font-semibold shadow-2xs">
-                <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-black tracking-wide">FORM</span>
-                <span>{locale === 'en' ? 'Contact Form' : locale === 'vi' ? 'Biểu mẫu liên hệ' : 'お問い合わせフォーム'}</span>
-                <button type="button" onClick={() => handleFilterChange({ contact_form: false }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-emerald-700 dark:text-emerald-400 ml-0.5" /></button>
-              </span>
-            )}
-            {emailType && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {locale === 'en' ? 'Email:' : locale === 'vi' ? 'Loại Email:' : 'Email種別:'} {
-                  emailType === 'RECRUIT' ? (locale === 'en' ? 'Recruiting' : locale === 'vi' ? 'Tuyển dụng' : '採用') :
-                  emailType === 'PR' ? (locale === 'en' ? 'PR' : locale === 'vi' ? 'Truyền thông/PR' : '広報・PR') :
-                  emailType === 'SALES' ? (locale === 'en' ? 'Sales' : locale === 'vi' ? 'Kinh doanh' : '営業') :
-                  (locale === 'en' ? 'General' : locale === 'vi' ? 'Chung' : '代表・総合')
-                }
-                <button type="button" onClick={() => handleFilterChange({ email_type: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {companyStatus && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium">
-                {t.search.statusLabel}: {
-                  companyStatus === '活動中' ? (locale === 'en' ? 'Active' : locale === 'vi' ? 'Đang hoạt động' : '活動中') :
-                  companyStatus === '閉鎖' ? (locale === 'en' ? 'Closed' : locale === 'vi' ? 'Đã đóng cửa' : '閉鎖') :
-                  companyStatus === '解散' ? (locale === 'en' ? 'Dissolved' : locale === 'vi' ? 'Đã giải thể' : '解散') :
-                  companyStatus
-                }
-                <button type="button" onClick={() => handleFilterChange({ status: null }, true)} className="hover:opacity-75 cursor-pointer"><X className="w-3 h-3 text-slate-400 hover:text-slate-600 ml-0.5" /></button>
-              </span>
-            )}
-            {/* Clear All active chips button */}
-            <button
-              type="button"
-              onClick={() => handleFilterChange({
-                prefecture: null,
-                city: null,
-                industry: null,
-                min_employees: null,
-                max_employees: null,
-                min_capital: null,
-                max_capital: null,
-                hiring: false,
-                subsidy: false,
-                bidding: false,
-                min_establishment_year: null,
-                max_establishment_year: null,
-                award: false,
-                certification: false,
-                patent: false,
-                financials: false,
-                min_sales: null,
-                max_sales: null,
-                email: false,
-                phone: false,
-                website: false,
-                fax: false,
-                contact_form: false,
-                email_type: null,
-                status: null,
-                min_operating_income: null,
-                max_operating_income: null,
-                min_ordinary_income: null,
-                max_ordinary_income: null,
-                min_net_income: null,
-                max_net_income: null,
-                keyword: "",
-              }, true)}
-              className="text-xs font-semibold text-slate-400 hover:text-[#1B4F8A] dark:hover:text-blue-400 ml-1 py-1 transition-colors cursor-pointer"
-            >
-              {t.search.clear}
-            </button>
-          </div>
         </div>
+
+        {/* Dedicated Modern Active Filter Chips Panel */}
+        {(() => {
+          const activeFiltersCount = [
+            keyword, prefCode, city, indCode, minEmp, maxEmp, minCap, maxCap,
+            hasHiring, hasSubsidy, hasBidding, minEstYear, maxEstYear,
+            hasAward, hasCertification, hasPatent, hasFinancials,
+            minSales, maxSales, hasEmail, hasPhone, hasWebsite, hasFax,
+            hasContactForm, emailType, companyStatus, minOpIncome, maxOpIncome,
+            minOrdIncome, maxOrdIncome, minNetIncome, maxNetIncome
+          ].filter(Boolean).length;
+
+          if (activeFiltersCount === 0) return null;
+
+          return (
+            <div className="bg-white border border-slate-200/90 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-3.5 sm:p-4 shadow-2xs flex flex-col gap-2.5 transition-all">
+              {/* Header */}
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800/80">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    {locale === 'ja' ? '適用中の絞り込み条件' : locale === 'vi' ? 'Điều kiện lọc đang áp dụng' : 'Active Filters'}
+                  </span>
+                  <span className="text-[10px] bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-blue-900/40 dark:text-blue-300 font-bold px-2 py-0.5 rounded-full border border-[#1B4F8A]/20">
+                    {activeFiltersCount}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleFilterChange({
+                    prefecture: null,
+                    city: null,
+                    industry: null,
+                    min_employees: null,
+                    max_employees: null,
+                    min_capital: null,
+                    max_capital: null,
+                    hiring: false,
+                    subsidy: false,
+                    bidding: false,
+                    min_establishment_year: null,
+                    max_establishment_year: null,
+                    award: false,
+                    certification: false,
+                    patent: false,
+                    financials: false,
+                    min_sales: null,
+                    max_sales: null,
+                    email: false,
+                    phone: false,
+                    website: false,
+                    fax: false,
+                    contact_form: false,
+                    email_type: null,
+                    status: null,
+                    min_operating_income: null,
+                    max_operating_income: null,
+                    min_ordinary_income: null,
+                    max_ordinary_income: null,
+                    min_net_income: null,
+                    max_net_income: null,
+                    keyword: "",
+                  }, true)}
+                  className="text-xs font-semibold text-slate-500 hover:text-red-600 dark:text-slate-400 dark:hover:text-red-400 transition-colors flex items-center gap-1 cursor-pointer py-0.5 px-2 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>{locale === 'ja' ? 'すべて解除' : locale === 'vi' ? 'Xóa tất cả' : 'Clear All'}</span>
+                </button>
+              </div>
+
+              {/* Chips List */}
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                {keyword && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-950 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-200 dark:border-blue-800 text-xs font-medium shadow-2xs">
+                    <Search className="w-3 h-3 text-[#1B4F8A] dark:text-blue-400" />
+                    <span>{t.search.keywordLabel}: <strong className="font-semibold">{keyword}</strong></span>
+                    <button type="button" onClick={() => handleFilterChange({ keyword: "" }, true)} className="p-0.5 rounded-full hover:bg-blue-200/60 dark:hover:bg-blue-800 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-blue-700 dark:text-blue-300" /></button>
+                  </span>
+                )}
+                {prefCode && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-950 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-200 dark:border-blue-800 text-xs font-medium shadow-2xs">
+                    <MapPin className="w-3 h-3 text-[#1B4F8A] dark:text-blue-400" />
+                    <span>{t.search.areaLabel}: <strong className="font-semibold">{(() => {
+                      const prefName = prefectures.find(p => p.code === prefCode)?.name || prefCode;
+                      return (t.prefectures as Record<string, string>)?.[prefName] || prefName;
+                    })()}</strong></span>
+                    <button type="button" onClick={() => handleFilterChange({ prefecture: null }, true)} className="p-0.5 rounded-full hover:bg-blue-200/60 dark:hover:bg-blue-800 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-blue-700 dark:text-blue-300" /></button>
+                  </span>
+                )}
+                {city && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-950 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-200 dark:border-blue-800 text-xs font-medium shadow-2xs">
+                    <MapPin className="w-3 h-3 text-[#1B4F8A] dark:text-blue-400" />
+                    <span>{t.search.cityLabel}: <strong className="font-semibold">{city}</strong></span>
+                    <button type="button" onClick={() => handleFilterChange({ city: null }, true)} className="p-0.5 rounded-full hover:bg-blue-200/60 dark:hover:bg-blue-800 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-blue-700 dark:text-blue-300" /></button>
+                  </span>
+                )}
+                {indCode && (() => {
+                  let selectedIndustryName = indCode;
+                  for (const major of industries) {
+                    if (major.code === indCode) {
+                      selectedIndustryName = major.name;
+                      break;
+                    }
+                    const child = major.children.find((c: any) => c.code === indCode);
+                    if (child) {
+                      selectedIndustryName = child.name;
+                      break;
+                    }
+                  }
+                  const displayIndustryName = (t.majorIndustries as Record<string, string>)?.[indCode] || selectedIndustryName;
+                  return (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-950 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-200 dark:border-blue-800 text-xs font-medium shadow-2xs">
+                      <Building2 className="w-3 h-3 text-[#1B4F8A] dark:text-blue-400" />
+                      <span>{t.search.industryLabel}: <strong className="font-semibold">{displayIndustryName}</strong></span>
+                      <button type="button" onClick={() => handleFilterChange({ industry: null }, true)} className="p-0.5 rounded-full hover:bg-blue-200/60 dark:hover:bg-blue-800 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-blue-700 dark:text-blue-300" /></button>
+                    </span>
+                  );
+                })()}
+
+                {/* Contact Presence Chips */}
+                {hasContactForm && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-950 border border-emerald-300 dark:bg-emerald-950/60 dark:text-emerald-200 dark:border-emerald-800 text-xs font-semibold shadow-2xs ring-1 ring-emerald-400/30">
+                    <Send className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                    <span>{locale === 'en' ? 'Contact Form' : locale === 'vi' ? 'Biểu mẫu liên hệ' : 'お問い合わせフォーム'}</span>
+                    <button type="button" onClick={() => handleFilterChange({ contact_form: false }, true)} className="p-0.5 rounded-full hover:bg-emerald-200/60 dark:hover:bg-emerald-900 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-emerald-700 dark:text-emerald-300" /></button>
+                  </span>
+                )}
+                {hasEmail && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-950 border border-indigo-200 dark:bg-indigo-950/50 dark:text-indigo-200 dark:border-indigo-800 text-xs font-medium shadow-2xs">
+                    <Mail className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
+                    <span>{t.search.emailLabel}{emailType ? ` (${
+                      emailType === 'RECRUIT' ? (locale === 'en' ? 'Recruiting' : locale === 'vi' ? 'Tuyển dụng' : '採用') :
+                      emailType === 'PR' ? (locale === 'en' ? 'PR' : locale === 'vi' ? 'Truyền thông/PR' : '広報・PR') :
+                      emailType === 'SALES' ? (locale === 'en' ? 'Sales' : locale === 'vi' ? 'Kinh doanh' : '営業') :
+                      (locale === 'en' ? 'General' : locale === 'vi' ? 'Chung' : '代表・総合')
+                    })` : ''}</span>
+                    <button type="button" onClick={() => handleFilterChange({ email: false, email_type: null }, true)} className="p-0.5 rounded-full hover:bg-indigo-200/60 dark:hover:bg-indigo-900 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-indigo-700 dark:text-indigo-300" /></button>
+                  </span>
+                )}
+                {hasPhone && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium shadow-2xs">
+                    <Phone className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <span>{t.search.phoneLabel}</span>
+                    <button type="button" onClick={() => handleFilterChange({ phone: false }, true)} className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-slate-500 hover:text-slate-700 ml-0.5" /></button>
+                  </span>
+                )}
+                {hasWebsite && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium shadow-2xs">
+                    <Globe className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <span>{t.search.websiteLabel}</span>
+                    <button type="button" onClick={() => handleFilterChange({ website: false }, true)} className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-slate-500 hover:text-slate-700 ml-0.5" /></button>
+                  </span>
+                )}
+                {hasFax && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium shadow-2xs">
+                    <Printer className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <span>{t.search.faxLabel}</span>
+                    <button type="button" onClick={() => handleFilterChange({ fax: false }, true)} className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-slate-500 hover:text-slate-700 ml-0.5" /></button>
+                  </span>
+                )}
+
+                {/* Sales Signals Chips (Amber/Orange accent) */}
+                {hasHiring && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-950 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800 text-xs font-semibold shadow-2xs">
+                    <Zap className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                    <span>{t.search.hiring}</span>
+                    <button type="button" onClick={() => handleFilterChange({ hiring: false }, true)} className="p-0.5 rounded-full hover:bg-amber-200/60 dark:hover:bg-amber-900 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-amber-700 dark:text-amber-300" /></button>
+                  </span>
+                )}
+                {hasSubsidy && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-950 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800 text-xs font-semibold shadow-2xs">
+                    <Zap className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                    <span>{t.search.subsidy}</span>
+                    <button type="button" onClick={() => handleFilterChange({ subsidy: false }, true)} className="p-0.5 rounded-full hover:bg-amber-200/60 dark:hover:bg-amber-900 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-amber-700 dark:text-amber-300" /></button>
+                  </span>
+                )}
+                {hasBidding && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-950 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800 text-xs font-semibold shadow-2xs">
+                    <Zap className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                    <span>{t.search.bidding}</span>
+                    <button type="button" onClick={() => handleFilterChange({ bidding: false }, true)} className="p-0.5 rounded-full hover:bg-amber-200/60 dark:hover:bg-amber-900 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-amber-700 dark:text-amber-300" /></button>
+                  </span>
+                )}
+                {hasAward && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-950 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800 text-xs font-semibold shadow-2xs">
+                    <Award className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                    <span>{t.search.award}</span>
+                    <button type="button" onClick={() => handleFilterChange({ award: false }, true)} className="p-0.5 rounded-full hover:bg-amber-200/60 dark:hover:bg-amber-900 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-amber-700 dark:text-amber-300" /></button>
+                  </span>
+                )}
+                {hasCertification && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-950 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800 text-xs font-semibold shadow-2xs">
+                    <FileCheck2 className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                    <span>{t.search.certification}</span>
+                    <button type="button" onClick={() => handleFilterChange({ certification: false }, true)} className="p-0.5 rounded-full hover:bg-amber-200/60 dark:hover:bg-amber-900 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-amber-700 dark:text-amber-300" /></button>
+                  </span>
+                )}
+                {hasPatent && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-950 border border-amber-300 dark:bg-amber-950/60 dark:text-amber-200 dark:border-amber-800 text-xs font-semibold shadow-2xs">
+                    <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                    <span>{t.search.patent}</span>
+                    <button type="button" onClick={() => handleFilterChange({ patent: false }, true)} className="p-0.5 rounded-full hover:bg-amber-200/60 dark:hover:bg-amber-900 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-amber-700 dark:text-amber-300" /></button>
+                  </span>
+                )}
+                {hasFinancials && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-950 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-200 dark:border-blue-800 text-xs font-semibold shadow-2xs">
+                    <FileSpreadsheet className="w-3 h-3 text-[#1B4F8A] dark:text-blue-400" />
+                    <span>{t.search.hasFinancials}</span>
+                    <button type="button" onClick={() => handleFilterChange({ financials: false }, true)} className="p-0.5 rounded-full hover:bg-blue-200/60 dark:hover:bg-blue-800 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-blue-700 dark:text-blue-300" /></button>
+                  </span>
+                )}
+
+                {/* Scale & Financial Ranges */}
+                {(minCap !== undefined || maxCap !== undefined) && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium shadow-2xs">
+                    <TrendingUp className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <span>{t.search.capital}: <strong className="font-semibold">{getCapitalChipText()}</strong></span>
+                    <button type="button" onClick={() => handleFilterChange({ min_capital: null, max_capital: null }, true)} className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-slate-500 hover:text-slate-700 ml-0.5" /></button>
+                  </span>
+                )}
+                {(minEmp !== undefined || maxEmp !== undefined) && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium shadow-2xs">
+                    <Users className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <span>{t.search.employees}: <strong className="font-semibold">{getEmployeesChipText()}</strong></span>
+                    <button type="button" onClick={() => handleFilterChange({ min_employees: null, max_employees: null }, true)} className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-slate-500 hover:text-slate-700 ml-0.5" /></button>
+                  </span>
+                )}
+                {(minEstYear !== undefined || maxEstYear !== undefined) && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium shadow-2xs">
+                    <Clock className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <span>{t.search.establishmentYear}: <strong className="font-semibold">{getEstYearChipText()}</strong></span>
+                    <button type="button" onClick={() => handleFilterChange({ min_establishment_year: null, max_establishment_year: null }, true)} className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-slate-500 hover:text-slate-700 ml-0.5" /></button>
+                  </span>
+                )}
+                {(minSales !== undefined || maxSales !== undefined) && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium shadow-2xs">
+                    <TrendingUp className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <span>{t.search.sales}: <strong className="font-semibold">{getSalesChipText(minSales, maxSales, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}</strong></span>
+                    <button type="button" onClick={() => handleFilterChange({ min_sales: null, max_sales: null }, true)} className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-slate-500 hover:text-slate-700 ml-0.5" /></button>
+                  </span>
+                )}
+                {(minOpIncome !== undefined || maxOpIncome !== undefined) && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium shadow-2xs">
+                    <TrendingUp className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <span>{t.search.operatingIncome}: <strong className="font-semibold">{getSalesChipText(minOpIncome, maxOpIncome, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}</strong></span>
+                    <button type="button" onClick={() => handleFilterChange({ min_operating_income: null, max_operating_income: null }, true)} className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-slate-500 hover:text-slate-700 ml-0.5" /></button>
+                  </span>
+                )}
+                {(minOrdIncome !== undefined || maxOrdIncome !== undefined) && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium shadow-2xs">
+                    <TrendingUp className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <span>{t.search.ordinaryIncome}: <strong className="font-semibold">{getSalesChipText(minOrdIncome, maxOrdIncome, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}</strong></span>
+                    <button type="button" onClick={() => handleFilterChange({ min_ordinary_income: null, max_ordinary_income: null }, true)} className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-slate-500 hover:text-slate-700 ml-0.5" /></button>
+                  </span>
+                )}
+                {(minNetIncome !== undefined || maxNetIncome !== undefined) && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium shadow-2xs">
+                    <TrendingUp className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <span>{t.search.netIncome}: <strong className="font-semibold">{getSalesChipText(minNetIncome, maxNetIncome, 'salesRange', 'minSalesSuffix', 'maxSalesSuffix')}</strong></span>
+                    <button type="button" onClick={() => handleFilterChange({ min_net_income: null, max_net_income: null }, true)} className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-slate-500 hover:text-slate-700 ml-0.5" /></button>
+                  </span>
+                )}
+                {companyStatus && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 text-xs font-medium shadow-2xs">
+                    <CheckCircle2 className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                    <span>{t.search.statusLabel}: <strong className="font-semibold">{
+                      companyStatus === '活動中' ? (locale === 'en' ? 'Active' : locale === 'vi' ? 'Đang hoạt động' : '活動中') :
+                      companyStatus === '閉鎖' ? (locale === 'en' ? 'Closed' : locale === 'vi' ? 'Đã đóng cửa' : '閉鎖') :
+                      companyStatus === '解散' ? (locale === 'en' ? 'Dissolved' : locale === 'vi' ? 'Đã giải thể' : '解散') :
+                      companyStatus
+                    }</strong></span>
+                    <button type="button" onClick={() => handleFilterChange({ status: null }, true)} className="p-0.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-slate-500 hover:text-slate-700 ml-0.5" /></button>
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Free Quota & Signup Conversion Banner for Unauthenticated Users */}
         {!isLoggedIn && (
@@ -1257,7 +1344,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     : 'companies found (Fast search: showing top 2,000 companies)'}
                 </>
               ) : (
-                t.search.companiesFound.replace("{count}", totalCount.toLocaleString())
+                t.search.companiesFound.replace("{count}", totalCount.toLocaleString('ja-JP'))
               )
             ) : (
               t.search.companiesFoundZero
@@ -1343,11 +1430,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               {isLoggedIn && formCredits !== null && (
                 <span className="text-[10px] mt-1 text-slate-400 dark:text-slate-500">
                   {locale === 'ja' ? (
-                    <>送信残高: <strong className="text-slate-600 dark:text-slate-300 font-bold">{formCredits.toLocaleString()}</strong> 件</>
+                    <>送信残高: <strong className="text-slate-600 dark:text-slate-300 font-bold">{formCredits.toLocaleString('ja-JP')}</strong> 件</>
                   ) : locale === 'vi' ? (
-                    <>Hạn ngạch: <strong className="text-slate-600 dark:text-slate-300 font-bold">{formCredits.toLocaleString()}</strong> form</>
+                    <>Hạn ngạch: <strong className="text-slate-600 dark:text-slate-300 font-bold">{formCredits.toLocaleString('ja-JP')}</strong> form</>
                   ) : (
-                    <>Quota: <strong className="text-slate-600 dark:text-slate-300 font-bold">{formCredits.toLocaleString()}</strong> credits</>
+                    <>Quota: <strong className="text-slate-600 dark:text-slate-300 font-bold">{formCredits.toLocaleString('ja-JP')}</strong> credits</>
                   )}
                 </span>
               )}
@@ -1383,6 +1470,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     websiteUrl={company.website_url}
                     logoUrl={company.logo_url}
                     companyName={company.company_name}
+                    corporateNumber={company.corporate_number}
                     className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 mt-0.5"
                     size={128}
                   />

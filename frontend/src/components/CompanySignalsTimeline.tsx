@@ -123,6 +123,8 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
         const Icon = meta.IconComponent;
         const isPatent = type === '特許';
         const totalCount = signalTotals[type] || list.length;
+        const latestSignal = list.find(s => s.signal_date);
+        const latestDate = latestSignal?.signal_date;
 
         return (
           <div 
@@ -132,24 +134,33 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
             {/* Group Header (Accordion Toggle) */}
             <button
               onClick={() => toggleGroup(type)}
-              className="w-full px-4 py-3 flex items-center justify-between gap-3 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-900/10 dark:hover:bg-slate-850/30 transition-colors focus:outline-none"
+              className="w-full px-4 py-3 flex items-center justify-between gap-3 bg-slate-50/50 hover:bg-slate-50 dark:bg-slate-900/10 dark:hover:bg-slate-850/30 transition-colors focus:outline-none cursor-pointer"
               aria-expanded={isExpanded}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 min-w-0">
                 <div className={`w-8 h-8 rounded-lg ${meta.iconColor} flex items-center justify-center shrink-0`}>
                   <Icon className="w-4 h-4" />
                 </div>
-                <div className="text-left">
-                  <h3 className="font-bold text-slate-850 dark:text-white text-sm leading-tight">
+                <div className="text-left min-w-0">
+                  <h3 className="font-bold text-slate-850 dark:text-white text-sm leading-tight truncate">
                     {meta.title}
                   </h3>
-                  <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500">
+                  <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 font-mono tabular-nums">
                     {t.company.registeredCount.replace("{count}", totalCount.toLocaleString())}
                   </span>
                 </div>
               </div>
-              <div className={`text-slate-400 dark:text-slate-500 transition-transform duration-300 ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
-                <ChevronDown className="w-5 h-5" />
+
+              <div className="flex items-center gap-2 shrink-0">
+                {latestDate && (
+                  <span className="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium font-mono tabular-nums bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200/80 dark:border-slate-700/80">
+                    <Calendar className="w-3 h-3 text-slate-400" />
+                    <span>{locale === 'en' ? `Latest: ${latestDate}` : locale === 'vi' ? `Mới nhất: ${latestDate}` : `最新: ${latestDate}`}</span>
+                  </span>
+                )}
+                <div className={`text-slate-400 dark:text-slate-500 transition-transform duration-200 ${isExpanded ? 'rotate-180' : 'rotate-0'}`}>
+                  <ChevronDown className="w-4 h-4" />
+                </div>
               </div>
             </button>
 

@@ -335,10 +335,11 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
   const [addingSuppression, setAddingSuppression] = useState(false);
 
   // Fetch initial stats & templates
-  const fetchStats = useCallback(async () => {
+  const fetchStats = useCallback(async (forceRefresh: boolean = false) => {
     setLoadingStats(true);
     try {
-      const res = await fetch("/api/admin/marketing/stats", {
+      const url = forceRefresh ? "/api/admin/marketing/stats?refresh=1" : "/api/admin/marketing/stats";
+      const res = await fetch(url, {
         headers: getAdminHeaders(),
       });
       const data = await res.json();
@@ -644,32 +645,32 @@ export function MarketingTab({ adminEmail, getAdminHeaders }: MarketingTabProps)
         <div className="flex items-center gap-2">
           <button
             onClick={() => setMarketingChannel("email")}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+            className={`px-4 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
               marketingChannel === "email"
-                ? "bg-white dark:bg-[#1C2128] text-blue-600 dark:text-blue-400 shadow-sm border border-slate-200 dark:border-slate-700"
+                ? "bg-white dark:bg-[#1C2128] text-[#1B4F8A] dark:text-blue-400 shadow-sm border border-slate-200 dark:border-slate-700"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             <Mail className="w-4 h-4" />
-            <span>{isJa ? "📧 メール営業配信（Cold Email）" : "📧 Email Marketing"}</span>
+            <span>{isJa ? "メール営業配信（Cold Email）" : "Email Marketing (Cold Email)"}</span>
           </button>
 
           <button
             onClick={() => setMarketingChannel("form")}
-            className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all ${
+            className={`px-4 py-2.5 rounded-lg text-xs font-semibold flex items-center gap-2 transition-all ${
               marketingChannel === "form"
-                ? "bg-white dark:bg-[#1C2128] text-indigo-600 dark:text-indigo-400 shadow-sm border border-slate-200 dark:border-slate-700"
+                ? "bg-white dark:bg-[#1C2128] text-[#1B4F8A] dark:text-blue-400 shadow-sm border border-slate-200 dark:border-slate-700"
                 : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
             }`}
           >
             <Send className="w-4 h-4" />
-            <span>{isJa ? "📝 問い合わせフォーム営業（Form DM）" : "📝 Form DM Marketing"}</span>
+            <span>{isJa ? "問い合わせフォーム営業（Form DM）" : "Form DM Marketing"}</span>
           </button>
         </div>
 
         <div className="flex items-center gap-2 px-3 text-[11px] text-slate-500 font-medium">
-          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-          <span>{isJa ? "アウトバウンド自動化チャネル" : "Kênh tiếp thị tự động kép"}</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+          <span>{isJa ? "アウトバウンド自動化チャネル" : "Kênh tiếp thị tự động"}</span>
         </div>
       </div>
 

@@ -47,11 +47,16 @@ function formatVietnameseDate(dateStr: string | null): string {
   return dateStr;
 }
 
-function formatJapaneseCurrency(amount: number | string | null, locale: string): string {
+function formatJapaneseCurrency(amount: number | string | null, locale: string, isCapital: boolean = false): string {
   if (amount === null || amount === undefined || amount === "") return "";
-  const num = typeof amount === "string" ? parseFloat(amount) : amount;
+  let num = typeof amount === "string" ? parseFloat(amount) : amount;
   if (isNaN(num)) return "";
   
+  // Normalize ingested data error where certain records were multiplied by 100,000 (e.g. 796兆円 instead of 79.6億円)
+  if (num > 10_000_000_000_000 && isCapital) {
+    num = num / 100_000;
+  }
+
   if (locale === 'en') {
     if (num >= 1_000_000_000_000) return `¥${(num / 1_000_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}T JPY`;
     if (num >= 1_000_000_000) return `¥${(num / 1_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}B JPY`;
@@ -243,6 +248,13 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
   const majorIndustries = companyIndustries.filter(ind => ind.classification_level === '大分類');
 
+  // Resolve latest financial metrics for Quick KPI Ribbon
+  const latestFinancial = financials && financials.length > 0 
+    ? [...financials].sort((a, b) => b.fiscal_year.localeCompare(a.fiscal_year))[0] 
+    : null;
+  const latestRevenue = latestFinancial?.revenue || latestFinancial?.sales_amount || company.sales_amount;
+  const latestOrdinaryIncome = latestFinancial?.ordinary_income;
+
   // 3. Fetch related companies in parallel with above (no data dependency yet resolved)
   // NOTE: We start this fetch immediately after resolving the industry code from companyIndustries
   const { sameIndustry, nearby } = await getRelatedCompanies(
@@ -325,7 +337,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         ...(company.capital_amount ? [{
           "@type": "PropertyValue",
           "name": "資本金 (Capital Amount)",
-          "value": formatJapaneseCurrency(company.capital_amount, 'ja')
+          "value": formatJapaneseCurrency(company.capital_amount, 'ja', true)
         }] : [])
       ]
     } : {}),
@@ -418,7 +430,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         "name": `${companyName}の代表者や資本金は？`,
         "acceptedAnswer": {
           "@type": "Answer",
-          "text": `${companyName}の代表者は【${company.representative_name || '非公開'}】、資本金は【${company.capital_amount ? formatJapaneseCurrency(company.capital_amount, 'ja') : '非公開'}】です。`
+          "text": `${companyName}の代表者は【${company.representative_name || '非公開'}】、資本金は【${company.capital_amount ? formatJapaneseCurrency(company.capital_amount, 'ja', true) : '非公開'}】です。`
         }
       }] : []),
       {
@@ -475,77 +487,124 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         </nav>
 
         {/* Company Title Banner (Enterprise Trust Card) */}
-        <section className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-5">
-          <div className="flex flex-row gap-4 sm:gap-5 items-start min-w-0">
-            {/* Crisp Corporate Badge with Dynamic Logo & Fallback */}
-            <CompanyLogo
-              websiteUrl={company.website_url}
-              logoUrl={company.logo_url}
-              companyName={companyName}
-            />
-            
-            <div className="flex flex-col gap-2 min-w-0">
-              {/* Trust Badges Row */}
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md border ${
-                  company.status === '閉鎖' || company.status === '解散'
-                    ? 'text-rose-700 bg-rose-50 dark:bg-rose-950/30 dark:text-rose-400 border-rose-200 dark:border-rose-900/40'
-                    : 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/40'
-                }`}>
-                  {localizedStatus}
-                </span>
-
-                {company.is_claimed && (
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
-                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                    {locale === 'en' ? 'Verified Business' : locale === 'vi' ? 'Chính chủ đã xác minh' : '公式認証企業'}
+        <section className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs flex flex-col gap-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="flex flex-row gap-4 sm:gap-5 items-start min-w-0">
+              {/* Crisp Corporate Badge with Dynamic Logo & Fallback */}
+              <CompanyLogo
+                websiteUrl={company.website_url}
+                logoUrl={company.logo_url}
+                companyName={companyName}
+                corporateNumber={company.corporate_number}
+              />
+              
+              <div className="flex flex-col gap-2 min-w-0">
+                {/* Trust Badges Row */}
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 py-0.5 rounded-md border ${
+                    company.status === '閉鎖' || company.status === '解散'
+                      ? 'text-rose-700 bg-rose-50 dark:bg-rose-950/30 dark:text-rose-400 border-rose-200 dark:border-rose-900/40'
+                      : 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/40'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                      company.status === '閉鎖' || company.status === '解散'
+                        ? 'bg-rose-500'
+                        : 'bg-emerald-500'
+                    }`} />
+                    {localizedStatus}
                   </span>
-                )}
 
-                {majorIndustries.map((ind, idx) => (
-                  <Link 
-                    key={idx}
-                    href={`/${locale}/industry/${ind.industry_code}/location/${company.prefecture_code}`}
-                    className="text-[11px] font-medium text-slate-700 hover:text-[#1B4F8A] bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 transition-colors"
-                  >
-                    {ind.industry_code}.{(t.majorIndustries as Record<string, string>)?.[ind.industry_code] || ind.industry_name}
-                  </Link>
-                ))}
+                  {company.is_claimed && (
+                    <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      {locale === 'en' ? 'Verified Business' : locale === 'vi' ? 'Chính chủ đã xác minh' : '公式認証企業'}
+                    </span>
+                  )}
 
-                <span className="inline-flex items-center text-[11px] font-medium text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 font-mono">
-                  {t.company.corporateNumber.replace('{number}', company.corporate_number)}
-                </span>
-                
-                {/* Data freshness trust badge */}
-                <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 font-mono">
-                  <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
-                  {locale === 'en' ? 'Updated' : locale === 'vi' ? 'Cập nhật' : '更新'}: {formatShortDate(company.updated_at)}
-                </span>
-              </div>
+                  {majorIndustries.map((ind, idx) => (
+                    <Link 
+                      key={idx}
+                      href={`/${locale}/industry/${ind.industry_code}/location/${company.prefecture_code}`}
+                      className="text-[11px] font-medium text-slate-700 hover:text-[#1B4F8A] bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 transition-colors"
+                    >
+                      {ind.industry_code}.{(t.majorIndustries as Record<string, string>)?.[ind.industry_code] || ind.industry_name}
+                    </Link>
+                  ))}
 
-              {/* Main Heading H1 */}
-              <div>
-                <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-slate-900 dark:text-white tracking-tight break-words">
-                  {companyName}
-                </h1>
+                  <span className="inline-flex items-center text-[11px] font-medium text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 font-mono tabular-nums">
+                    {t.company.corporateNumber.replace('{number}', company.corporate_number)}
+                  </span>
+                  
+                  {/* Data freshness trust badge */}
+                  <span className="inline-flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700 font-mono tabular-nums">
+                    <Clock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                    {locale === 'en' ? 'Updated' : locale === 'vi' ? 'Cập nhật' : '更新'}: {formatShortDate(company.updated_at)}
+                  </span>
+                </div>
+
+                {/* Main Heading H1 with 1-click copy */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-2xl sm:text-3xl font-bold leading-tight text-slate-900 dark:text-white tracking-tight break-words">
+                    {companyName}
+                  </h1>
+                  <CopyTextButton text={companyName} label={locale === 'en' ? 'Copy name' : locale === 'vi' ? 'Sao chép tên' : '社名をコピー'} />
+                </div>
               </div>
             </div>
+
+            <CompanyActions 
+              corporateNumber={company.corporate_number} 
+              companyName={companyName} 
+              websiteUrl={company.website_url} 
+              phone={company.phone_number}
+              email=""
+              fax={company.fax_number}
+              representativeName={company.representative_name}
+              prTitle={company.pr_title}
+              prMessage={company.pr_message}
+              isClaimed={Boolean(company.is_claimed)}
+              claimedAt={company.claimed_at}
+              claimedByEmail={company.claimed_by_email}
+            />
           </div>
 
-          <CompanyActions 
-            corporateNumber={company.corporate_number} 
-            companyName={companyName} 
-            websiteUrl={company.website_url} 
-            phone={company.phone_number}
-            email=""
-            fax={company.fax_number}
-            representativeName={company.representative_name}
-            prTitle={company.pr_title}
-            prMessage={company.pr_message}
-            isClaimed={Boolean(company.is_claimed)}
-            claimedAt={company.claimed_at}
-            claimedByEmail={company.claimed_by_email}
-          />
+          {/* Quick B2B KPI Ribbon (4 Golden Metrics) */}
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+            <div className="flex flex-col">
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                {locale === 'en' ? 'Latest Revenue' : locale === 'vi' ? 'Doanh thu gần nhất' : '最新売上高'}
+                {latestFinancial?.fiscal_year ? ` (${latestFinancial.fiscal_year}期)` : ''}
+              </span>
+              <span className="text-base sm:text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-white">
+                {formatJapaneseCurrency(latestRevenue, locale) || t.company.unregistered}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                {locale === 'en' ? 'Ordinary Profit' : locale === 'vi' ? 'Lợi nhuận thường niên' : '経常利益'}
+                {latestFinancial?.fiscal_year ? ` (${latestFinancial.fiscal_year}期)` : ''}
+              </span>
+              <span className="text-base sm:text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-white">
+                {latestOrdinaryIncome ? formatJapaneseCurrency(latestOrdinaryIncome, locale) : '—'}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                {locale === 'en' ? 'Employees' : locale === 'vi' ? 'Quy mô nhân sự' : '従業員数'}
+              </span>
+              <span className="text-base sm:text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-white">
+                {company.employee_count ? (locale === 'en' ? `${company.employee_count.toLocaleString()} employees` : locale === 'vi' ? `${company.employee_count.toLocaleString()} nhân sự` : `${company.employee_count.toLocaleString('ja-JP')}名`) : t.company.unregistered}
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                {locale === 'en' ? 'Capital Amount' : locale === 'vi' ? 'Vốn điều lệ' : '資本金'}
+              </span>
+              <span className="text-base sm:text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-white">
+                {formatJapaneseCurrency(company.capital_amount, locale, true) || t.company.unregistered}
+              </span>
+            </div>
+          </div>
         </section>
 
         {/* High-Intent Conversion CTA Banner */}
@@ -575,15 +634,6 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   <CopyTextButton text={company.corporate_number} />
                 </div>
               </div>
-
-              {/* Official Verified Company PR Message / CTA to Claim & Publish */}
-              <CompanyPRSection
-                corporateNumber={company.corporate_number}
-                isClaimed={Boolean(company.is_claimed)}
-                prTitle={company.pr_title}
-                prMessage={company.pr_message}
-                locale={locale}
-              />
 
               {/* Dynamic Answer-First Entity Overview block for AI Extractors & Google Search Snippets */}
               <div 
@@ -660,7 +710,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 <div className="pb-3 border-b border-slate-100 dark:border-slate-800/80 col-span-1">
                   <span className="text-slate-500 dark:text-slate-400 text-xs font-medium block mb-1">{t.company.capital}</span>
                   <strong className="text-sm font-bold font-mono text-slate-850 dark:text-slate-200">
-                    {company.capital_amount ? formatJapaneseCurrency(company.capital_amount, locale) : t.company.unregistered}
+                    {company.capital_amount ? formatJapaneseCurrency(company.capital_amount, locale, true) : t.company.unregistered}
                   </strong>
                 </div>
 
@@ -711,6 +761,17 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   </div>
                 </div>
               </div>
+
+              {/* Official Verified Company PR Message / CTA to Claim & Publish */}
+              <div className="mt-5 pt-4 border-t border-slate-100 dark:border-slate-800">
+                <CompanyPRSection
+                  corporateNumber={company.corporate_number}
+                  isClaimed={Boolean(company.is_claimed)}
+                  prTitle={company.pr_title}
+                  prMessage={company.pr_message}
+                  locale={locale}
+                />
+              </div>
             </section>
 
             {/* 2. Financial Chart Section */}
@@ -743,7 +804,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
           </div>
 
           {/* RIGHT 1 COLUMN: Contact Details & Internal Links */}
-          <div className="flex flex-col gap-5 lg:gap-6">
+          <div className="flex flex-col gap-5 lg:gap-6 lg:sticky lg:top-20 self-start">
             
             {/* Contact Details Panel */}
             <section id="contact" className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs">
@@ -1010,12 +1071,13 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 {sameIndustry.length > 0 ? (
                   <div className="w-full">
                     {/* Column header */}
-                    <div className="grid grid-cols-[1fr_auto_auto] gap-x-2 px-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                    <div className="grid grid-cols-[auto_1fr_auto_auto] gap-x-2 px-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-[10px] font-medium uppercase tracking-wider text-slate-400 items-center">
+                      <span className="w-4 text-center">#</span>
                       <span>{locale === 'en' ? 'Company' : locale === 'vi' ? 'Công ty' : '企業名'}</span>
                       <span className="text-right w-16 sm:w-20">{locale === 'en' ? 'Revenue' : locale === 'vi' ? 'Doanh thu' : '売上高'}</span>
                       <span className="text-right w-16 sm:w-20">{locale === 'en' ? 'Ord. Profit' : locale === 'vi' ? 'Lợi nhuận' : '経常利益'}</span>
                     </div>
-                    {sameIndustry.map(item => {
+                    {sameIndustry.map((item, idx) => {
                       const name = locale === 'en' && item.company_name_en ? item.company_name_en : item.company_name;
                       const sales = item.sales_amount;
                       const salesStr = sales
@@ -1049,15 +1111,18 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                         <Link
                           key={item.corporate_number}
                           href={`/${locale}/company/${item.corporate_number}`}
-                          className="grid grid-cols-[1fr_auto_auto] gap-x-2 px-2 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/40 group transition-colors items-center"
+                          className="grid grid-cols-[auto_1fr_auto_auto] gap-x-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/40 group transition-colors items-center"
                         >
+                          <span className="w-4 h-4 rounded text-[10px] font-bold font-mono tabular-nums flex items-center justify-center shrink-0 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 group-hover:bg-[#1B4F8A] group-hover:text-white transition-colors">
+                            {idx + 1}
+                          </span>
                           <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary dark:group-hover:text-secondary truncate min-w-0" title={name}>
                             {name}
                           </span>
-                          <span className="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right w-16 sm:w-20">
+                          <span className="text-xs font-mono tabular-nums font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right w-16 sm:w-20">
                             {salesStr}
                           </span>
-                          <span className="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right w-16 sm:w-20">
+                          <span className="text-xs font-mono tabular-nums font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right w-16 sm:w-20">
                             {ordIncStr}
                           </span>
                         </Link>
@@ -1078,12 +1143,13 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 {nearby.length > 0 ? (
                   <div className="w-full">
                     {/* Column header */}
-                    <div className="grid grid-cols-[1fr_auto_auto] gap-x-2 px-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                    <div className="grid grid-cols-[auto_1fr_auto_auto] gap-x-2 px-2 pb-2 mb-1 border-b border-slate-100 dark:border-slate-800 text-[10px] font-medium uppercase tracking-wider text-slate-400 items-center">
+                      <span className="w-4 text-center">#</span>
                       <span>{locale === 'en' ? 'Company' : locale === 'vi' ? 'Công ty' : '企業名'}</span>
                       <span className="text-right w-16 sm:w-20">{locale === 'en' ? 'Revenue' : locale === 'vi' ? 'Doanh thu' : '売上高'}</span>
                       <span className="text-right w-16 sm:w-20">{locale === 'en' ? 'Ord. Profit' : locale === 'vi' ? 'Lợi nhuận' : '経常利益'}</span>
                     </div>
-                    {nearby.map(item => {
+                    {nearby.map((item, idx) => {
                       const name = locale === 'en' && item.company_name_en ? item.company_name_en : item.company_name;
                       const sales = item.sales_amount;
                       const salesStr = sales
@@ -1117,15 +1183,18 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                         <Link
                           key={item.corporate_number}
                           href={`/${locale}/company/${item.corporate_number}`}
-                          className="grid grid-cols-[1fr_auto_auto] gap-x-2 px-2 py-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/40 group transition-colors items-center"
+                          className="grid grid-cols-[auto_1fr_auto_auto] gap-x-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/40 group transition-colors items-center"
                         >
+                          <span className="w-4 h-4 rounded text-[10px] font-bold font-mono tabular-nums flex items-center justify-center shrink-0 bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 group-hover:bg-[#1B4F8A] group-hover:text-white transition-colors">
+                            {idx + 1}
+                          </span>
                           <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 group-hover:text-primary dark:group-hover:text-secondary truncate min-w-0" title={name}>
                             {name}
                           </span>
-                          <span className="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right w-16 sm:w-20">
+                          <span className="text-xs font-mono tabular-nums font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right w-16 sm:w-20">
                             {salesStr}
                           </span>
-                          <span className="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right w-16 sm:w-20">
+                          <span className="text-xs font-mono tabular-nums font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap text-right w-16 sm:w-20">
                             {ordIncStr}
                           </span>
                         </Link>

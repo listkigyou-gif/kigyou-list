@@ -779,14 +779,30 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {shareholders.map((sh, idx) => (
-                  <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                    <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">{sh.name}</td>
-                    <td className="px-4 py-2.5 text-right font-semibold text-emerald-700 dark:text-emerald-400 font-mono">
-                      {sh.ratio !== null ? `${sh.ratio}%` : '-'}
-                    </td>
-                  </tr>
-                ))}
+                {shareholders.map((sh, idx) => {
+                  const ratioNum = sh.ratio !== null ? (Number(sh.ratio) <= 1 && Number(sh.ratio) > 0 ? Number(sh.ratio) * 100 : Number(sh.ratio)) : null;
+                  const ratioDisplay = ratioNum !== null ? `${ratioNum.toFixed(2)}%` : '-';
+                  return (
+                    <tr key={idx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                      <td className="px-4 py-2.5 font-medium text-slate-800 dark:text-slate-200">{sh.name}</td>
+                      <td className="px-4 py-2.5 text-right font-mono tabular-nums">
+                        <div className="inline-flex items-center justify-end gap-2.5">
+                          {ratioNum !== null && (
+                            <div className="hidden sm:block w-16 bg-slate-150 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                              <div 
+                                className="bg-[#1B4F8A] dark:bg-blue-500 h-1.5 rounded-full" 
+                                style={{ width: `${Math.min(100, Math.max(3, ratioNum))}%` }}
+                              />
+                            </div>
+                          )}
+                          <span className="font-semibold text-emerald-700 dark:text-emerald-400 min-w-[52px]">
+                            {ratioDisplay}
+                          </span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

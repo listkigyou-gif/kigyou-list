@@ -149,14 +149,15 @@ def fetch_target_companies_pg(filters: Dict[str, Any], limit: int = 50, campaign
         )""")
         params.append(campaign_id)
 
-    # Multi-tenant opt-out exclusion
+    # Multi-tenant & Global opt-out exclusion
+    # Exclude if target company is opted-out for this user OR globally opted-out (admin / NULL / 'global')
     user_scope = str(user_id) if user_id else "admin"
     conditions.append("""NOT EXISTS (
         SELECT 1 FROM form_marketing_opt_outs opt
         WHERE opt.corporate_number = c.corporate_number
-          AND (opt.user_id = %s OR (opt.user_id IS NULL AND %s = 'admin'))
+          AND (opt.user_id = %s OR opt.user_id = 'admin' OR opt.user_id IS NULL OR opt.user_id = 'global')
     )""")
-    params.extend([user_scope, user_scope])
+    params.append(user_scope)
 
     where_clause = " AND ".join(conditions)
     query = f"""

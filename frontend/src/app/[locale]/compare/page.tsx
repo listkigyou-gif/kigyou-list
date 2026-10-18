@@ -410,7 +410,7 @@ export default async function ComparePage({ params }: PageProps) {
                   </th>
                   <td className="p-4 sm:p-5 font-bold text-slate-900 dark:text-white bg-blue-50/30 dark:bg-blue-950/20 border-x border-blue-200 dark:border-blue-900/60">
                     <span className="text-emerald-700 dark:text-emerald-400">
-                      即時登録・全500万社検索 & 月50件CSV無料
+                      {isJa ? "即時登録・全500万社検索 & 毎日20件CSV無料（認証で50件/日）" : isVi ? "Đăng ký ngay・Tìm 5 triệu cty & 20 dòng CSV/ngày (xác thực 50 dòng)" : "Instant sign-up, 5M search & 20 free CSV/day (50/day if verified)"}
                     </span>
                   </td>
                   <td className="p-4 sm:p-5 text-slate-600 dark:text-slate-400">

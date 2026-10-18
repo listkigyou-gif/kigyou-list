@@ -41,6 +41,7 @@ frontend/scratch*
 .valuepress_user_profile/
 .x_user_profile/
 .zenn_user_profile/
+.free_pressrelease_user_profile/
 zenn_*.json
 *_auth_state.json
 *_cookies.json

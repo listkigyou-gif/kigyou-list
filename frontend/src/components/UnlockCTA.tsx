@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
-import { Sparkles, Unlock } from "lucide-react";
+import { ArrowRight, Unlock } from "lucide-react";
 import Link from "next/link";
 
 export const UnlockCTA: React.FC = () => {
@@ -51,7 +51,7 @@ export const UnlockCTA: React.FC = () => {
         href={`/${locale}/pricing`}
         className="inline-flex items-center justify-center gap-1.5 w-full py-2 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-semibold rounded-lg shadow-xs transition-colors duration-150 active:scale-[0.99]"
       >
-        <Sparkles className="w-3.5 h-3.5" />
+        <ArrowRight className="w-3.5 h-3.5" />
         {t.auth.unlockCTAUpgradeBtn}
       </Link>
     </div>

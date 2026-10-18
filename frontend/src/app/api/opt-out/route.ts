@@ -41,7 +41,8 @@ export async function GET(req: NextRequest) {
     // 2. Check if already opted out
     const optRes = await client.query(
       `SELECT id, created_at FROM form_marketing_opt_outs 
-       WHERE corporate_number = $1::varchar AND (user_id = $2::varchar OR (user_id IS NULL AND $2::varchar = 'admin'))
+       WHERE corporate_number = $1::varchar 
+         AND (user_id = $2::varchar OR user_id = 'admin' OR user_id IS NULL OR user_id = 'global')
        LIMIT 1`,
       [corporateNumber, userId]
     );
@@ -90,7 +91,8 @@ export async function POST(req: NextRequest) {
       // 2. Check if already opted out
       const existingCheck = await client.query(
         `SELECT id FROM form_marketing_opt_outs 
-         WHERE corporate_number = $1::varchar AND (user_id = $2::varchar OR (user_id IS NULL AND $2::varchar = 'admin'))
+         WHERE corporate_number = $1::varchar 
+           AND (user_id = $2::varchar OR user_id = 'admin' OR user_id IS NULL OR user_id = 'global')
          LIMIT 1`,
         [corporateNumber, userId]
       );

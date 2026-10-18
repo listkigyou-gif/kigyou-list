@@ -8,7 +8,10 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
     }
 
-    const stats = await getInternalFormMarketingStats();
+    const { searchParams } = new URL(request.url);
+    const forceRefresh = searchParams.get('refresh') === '1';
+
+    const stats = await getInternalFormMarketingStats(forceRefresh);
     return NextResponse.json({
       success: true,
       stats,

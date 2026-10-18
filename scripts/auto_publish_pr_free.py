@@ -18,6 +18,8 @@ PR_FREE_FORM_URL = "https://pr-free.jp/prform/"
 DEFAULT_EYECATCH = os.path.abspath(os.path.join(os.path.dirname(__file__), "press_releases", "eyecatch_01.jpg"))
 SCREENSHOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "press_releases"))
 
+ARTIFACT_DIR = r"C:\Users\admin\.gemini\antigravity-ide\brain\db0586ad-178e-41f6-a13d-23c6bba11fd1"
+
 def publish_pr_free(
     team_name: str,
     contact_name: str,
@@ -29,7 +31,8 @@ def publish_pr_free(
     subtitle: str,
     body: str,
     image_path: str = None,
-    dry_run: bool = False
+    dry_run: bool = False,
+    prefix: str = "pr_free"
 ):
     """
     Quy trình tự động hóa xuất bản thông cáo báo chí miễn phí trên PR-FREE (pr-free.jp).
@@ -104,8 +107,11 @@ def publish_pr_free(
             time.sleep(2)
 
         # Chụp ảnh màn hình bước 1 đã điền xong
-        step1_screen = os.path.join(SCREENSHOT_DIR, "pr_free_step1_filled.png")
+        step1_screen = os.path.join(SCREENSHOT_DIR, f"{prefix}_step1_filled.png")
         page.screenshot(path=step1_screen, full_page=True)
+        if os.path.exists(ARTIFACT_DIR):
+            import shutil
+            shutil.copy2(step1_screen, os.path.join(ARTIFACT_DIR, f"{prefix}_step1_filled.png"))
         print(f"📸 Đã lưu ảnh màn hình bước 1: {step1_screen}")
 
         # 2. Bấm nút xác nhận Bước 1 -> Bước 2
@@ -121,12 +127,15 @@ def publish_pr_free(
         error_elements = page.locator('.wpcf7-not-valid-tip').all()
         if error_elements:
             errors = [el.inner_text() for el in error_elements]
-            err_screen = os.path.join(SCREENSHOT_DIR, "pr_free_validation_error.png")
+            err_screen = os.path.join(SCREENSHOT_DIR, f"{prefix}_validation_error.png")
             page.screenshot(path=err_screen, full_page=True)
             raise RuntimeError(f"Lỗi kiểm tra tính hợp lệ trên form: {errors}. Xem ảnh: {err_screen}")
 
-        step2_screen = os.path.join(SCREENSHOT_DIR, "pr_free_step2_preview.png")
+        step2_screen = os.path.join(SCREENSHOT_DIR, f"{prefix}_step2_preview.png")
         page.screenshot(path=step2_screen, full_page=True)
+        if os.path.exists(ARTIFACT_DIR):
+            import shutil
+            shutil.copy2(step2_screen, os.path.join(ARTIFACT_DIR, f"{prefix}_step2_preview.png"))
         print(f"📸 Đã chuyển sang Bước 2 (Xem trước nội dung). Ảnh: {step2_screen}")
 
         if dry_run:
@@ -148,8 +157,11 @@ def publish_pr_free(
         except Exception:
             pass
 
-        final_screen = os.path.join(SCREENSHOT_DIR, "pr_free_success.png")
+        final_screen = os.path.join(SCREENSHOT_DIR, f"{prefix}_success.png")
         page.screenshot(path=final_screen, full_page=True)
+        if os.path.exists(ARTIFACT_DIR):
+            import shutil
+            shutil.copy2(final_screen, os.path.join(ARTIFACT_DIR, f"{prefix}_success.png"))
         print(f"📸 Đã lưu ảnh màn hình kết quả: {final_screen}")
 
         response_text = page.locator('.wpcf7-response-output').inner_text() if page.locator('.wpcf7-response-output').count() > 0 else ""
@@ -164,6 +176,7 @@ def main():
     parser = argparse.ArgumentParser(description="Tự động hóa xuất bản thông cáo báo chí PR-FREE (pr-free.jp)")
     parser.add_argument("--json", type=str, default="scripts/press_releases/release_pr_free_01.json", help="Đường dẫn file JSON chứa nội dung bài đăng")
     parser.add_argument("--dry-run", action="store_true", help="Chạy kiểm tra form mà không gửi thực tế")
+    parser.add_argument("--prefix", type=str, default="pr_free", help="Tiền tố tên file ảnh chụp màn hình")
     args = parser.parse_args()
 
     json_path = os.path.abspath(args.json)
@@ -185,7 +198,8 @@ def main():
         subtitle=data.get("subtitle", ""),
         body=data.get("body", ""),
         image_path=data.get("image_path", DEFAULT_EYECATCH),
-        dry_run=args.dry_run
+        dry_run=args.dry_run,
+        prefix=args.prefix
     )
 
 if __name__ == "__main__":

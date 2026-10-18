@@ -118,10 +118,10 @@ export default async function Home({ params }: PageParams) {
         "acceptedAnswer": {
           "@type": "Answer",
           "text": isJa
-            ? "無料登録を行うだけで、全国500万社の基本情報（社名、所在地、業種、法人番号）の検索および月50件までのCSVダウンロードが可能です。連絡先フィルター（フォーム・メール）や大量CSV出力、フォーム自動営業をご利用いただく場合はProプラン以上をご利用ください。"
+            ? "無料登録を行うだけで、全国500万社の基本情報（社名、所在地、業種、法人番号）の検索および毎日20件（月最大600件、企業認証で1日50件/月1,500件）までのCSVダウンロードが可能です。連絡先フィルター（フォーム・メール）や大量CSV出力、フォーム自動営業をご利用いただく場合はProプラン以上をご利用ください。"
             : isVi
-            ? "Đăng ký miễn phí có thể tìm kiếm dữ liệu cơ bản của 5 triệu cty và xuất 50 dòng CSV/tháng. Để dùng bộ lọc kênh liên lạc và gửi Form tự động, bạn có thể nâng cấp Pro bất kỳ lúc nào."
-            : "Free accounts can search all 5M companies and export up to 50 rows per month. Upgrade to PRO to unlock contact filters and form outreach."
+            ? "Đăng ký miễn phí có thể tìm kiếm dữ liệu cơ bản của 5 triệu cty và xuất CSV 20 dòng mỗi ngày (tối đa 600 dòng/tháng, định danh doanh nghiệp mở rộng 50 dòng/ngày tức 1.500 dòng/tháng). Để dùng bộ lọc kênh liên lạc và gửi Form tự động, bạn có thể nâng cấp Pro bất kỳ lúc nào."
+            : "Free accounts can search all 5M companies and export 20 CSV rows per day (up to 600/month, 50/day or 1,500/month for verified businesses). Upgrade to PRO to unlock contact filters and form outreach."
         }
       },
       {
@@ -359,7 +359,7 @@ export default async function Home({ params }: PageParams) {
                 </div>
                 <div>
                   <span className="text-3xl sm:text-4xl font-extrabold text-[#1B4F8A] font-mono tracking-tight dark:text-blue-400">
-                    {(stats.totalCompanies).toLocaleString()}+
+                    {(stats.totalCompanies).toLocaleString('ja-JP')}+
                   </span>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
                     {isJa ? "国税庁・法務省連携の最新法人番号データベース" : isVi ? "Cơ quan Thuế & Bộ Tư pháp Nhật Bản" : "Official NTA & MOJ registered businesses"}
@@ -395,7 +395,7 @@ export default async function Home({ params }: PageParams) {
                 </div>
                 <div>
                   <span className="text-3xl sm:text-4xl font-extrabold text-amber-600 dark:text-amber-400 font-mono tracking-tight">
-                    {(stats.signalPatent).toLocaleString()}+
+                    {(stats.signalPatent).toLocaleString('ja-JP')}+
                   </span>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
                     {isJa ? "特許・求人・助成金・公共入札の購買意欲を可視化" : isVi ? "Tuyển dụng, trợ cấp, đấu thầu, bằng sáng chế" : "Patents, hiring, grants, and public bids"}
@@ -833,7 +833,7 @@ print(leads[0]["ai_sales_hook"])`}
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>{isJa ? "CSV出力 50件 / 月" : isVi ? "Xuất CSV: 50 dòng/tháng" : "50 CSV rows / month"}</span>
+                      <span>{isJa ? "毎日 20件 CSV出力（企業認証で50件/日）" : isVi ? "Xuất CSV: 20 dòng/ngày (xác thực: 50 dòng/ngày)" : "20 CSV rows / day (50/day if verified)"}</span>
                     </li>
                     <li className="flex items-center gap-2 text-slate-400">
                       <span className="w-4 text-center">—</span>
@@ -1033,10 +1033,10 @@ print(leads[0]["ai_sales_hook"])`}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-6">
                   {isJa
-                    ? "無料登録を行うだけで、全国500万社の基本情報（社名、所在地、業種、法人番号）の検索および月50件までのCSVダウンロードが可能です。連絡先フィルター（フォーム・メール）や大量CSV出力、フォーム自動営業をご利用いただく場合はProプラン以上をご利用ください。"
+                    ? "無料登録を行うだけで、全国500万社の基本情報（社名、所在地、業種、法人番号）の検索および毎日20件（月最大600件、企業認証で1日50件/月1,500件）までのCSVダウンロードが可能です。連絡先フィルター（フォーム・メール）や大量CSV出力、フォーム自動営業をご利用いただく場合はProプラン以上をご利用ください。"
                     : isVi
-                    ? "Đăng ký miễn phí có thể tìm kiếm dữ liệu cơ bản của 5 triệu cty và xuất 50 dòng CSV/tháng. Để dùng bộ lọc kênh liên lạc và gửi Form tự động, bạn có thể nâng cấp Pro bất kỳ lúc nào."
-                    : "Free accounts can search all 5M companies and export up to 50 rows per month. Upgrade to PRO to unlock contact filters and form outreach."}
+                    ? "Đăng ký miễn phí có thể tìm kiếm dữ liệu cơ bản của 5 triệu cty và xuất CSV 20 dòng mỗi ngày (tối đa 600 dòng/tháng, định danh doanh nghiệp mở rộng 50 dòng/ngày tức 1.500 dòng/tháng). Để dùng bộ lọc kênh liên lạc và gửi Form tự động, bạn có thể nâng cấp Pro bất kỳ lúc nào."
+                    : "Free accounts can search all 5M companies and export 20 CSV rows per day (up to 600/month, 50/day or 1,500/month for verified businesses). Upgrade to PRO to unlock contact filters and form outreach."}
                 </p>
               </div>
 

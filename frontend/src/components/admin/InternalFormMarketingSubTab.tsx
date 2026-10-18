@@ -114,10 +114,11 @@ export function InternalFormMarketingSubTab({
   const [loadingLogs, setLoadingLogs] = useState(false);
 
   // Fetch initial stats & presets
-  const fetchStats = useCallback(async () => {
+  const fetchStats = useCallback(async (forceRefresh: boolean = false) => {
     setLoadingStats(true);
     try {
-      const res = await fetch("/api/admin/internal-form-marketing/stats", {
+      const url = forceRefresh ? "/api/admin/internal-form-marketing/stats?refresh=1" : "/api/admin/internal-form-marketing/stats";
+      const res = await fetch(url, {
         headers: getAdminHeaders(),
       });
       const data = await res.json();

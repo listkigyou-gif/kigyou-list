@@ -8,6 +8,7 @@ interface CompanyLogoProps {
   websiteUrl?: string | null;
   logoUrl?: string | null;
   companyName: string;
+  corporateNumber?: string | null;
   className?: string;
   size?: number;
 }
@@ -31,21 +32,29 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
   websiteUrl,
   logoUrl,
   companyName,
+  corporateNumber,
   className = "w-12 h-12 sm:w-14 sm:h-14",
   size = 128
 }) => {
   const [imgError, setImgError] = useState(false);
   const domain = extractDomain(websiteUrl);
 
-  // If this is our own domain kigyoulist.com or TQC, render official platform book logo directly
-  const isKigyouList = 
+  // Kigyou-list.com is owned by ＴＱＣ株式会社 (Corporate Number: 4013301048678).
+  // Only this exact company or kigyoulist.com domain should show the official platform book logo.
+  const cleanName = (companyName || "").replace(/[\s\u3000]/g, "");
+  const isExactTqc = 
+    cleanName === "ＴＱＣ株式会社" || 
+    cleanName === "TQC株式会社" || 
+    corporateNumber === "4013301048678";
+
+  const isKigyouListDomain = 
     domain === "kigyoulist.com" || 
     domain?.endsWith(".kigyoulist.com") ||
-    websiteUrl?.includes("kigyoulist.com") ||
-    companyName.includes("ＴＱＣ") ||
-    companyName.includes("TQC");
+    websiteUrl?.includes("kigyoulist.com");
 
-  if (isKigyouList && (!logoUrl || !logoUrl.trim().startsWith("http"))) {
+  const isPlatformOwner = isExactTqc || isKigyouListDomain;
+
+  if (isPlatformOwner && (!logoUrl || !logoUrl.trim().startsWith("http"))) {
     return (
       <div 
         className={`${className} rounded-xl bg-[#1B4F8A] p-2.5 flex items-center justify-center shrink-0 shadow-xs overflow-hidden transition-all duration-200 hover:shadow-sm`}

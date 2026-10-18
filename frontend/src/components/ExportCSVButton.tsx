@@ -452,36 +452,36 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
 
       {/* CONFIRM MODAL (Popup Confirmation Dialog before export) */}
       {showConfirmModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 shadow-2xl max-w-sm w-full relative animate-in zoom-in-95 duration-250">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200/90 dark:bg-[#151B22] dark:border-slate-800 rounded-2xl p-6 shadow-xl max-w-md w-full relative animate-in zoom-in-95 duration-150">
             <button 
               onClick={() => setShowConfirmModal(false)}
-              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl"
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="text-center">
-              <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-[#162720] border border-emerald-200/50 dark:border-emerald-900/50 flex items-center justify-center mx-auto mb-4">
-                <Download className="w-6 h-6 text-emerald-500" />
+              <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/60 flex items-center justify-center mx-auto mb-3.5">
+                <Download className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
               </div>
 
-              <h4 className="font-extrabold text-slate-900 dark:text-white text-base mb-2">
+              <h4 className="font-bold text-slate-900 dark:text-white text-base sm:text-lg mb-2 [font-feature-settings:'palt']">
                 {d.confirmTitle}
               </h4>
               
               <p 
-                className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed"
+                className="text-xs text-slate-600 dark:text-slate-350 mb-4 leading-relaxed [font-feature-settings:'palt']"
                 dangerouslySetInnerHTML={{ __html: d.confirmDesc.replace(/{count}/g, totalCount.toLocaleString()) }}
               />
 
               {/* DFY Form Outreach Cross-Sell Notice */}
-              <div className="mb-5 p-3 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/70 dark:border-indigo-850/60 text-left">
-                <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300 font-bold text-[11px] mb-1">
-                  <Send className="w-3 h-3 text-indigo-500" />
+              <div className="mb-5 p-3.5 rounded-xl bg-slate-50/80 dark:bg-[#0D1117] border border-slate-200/90 dark:border-slate-800 text-left">
+                <div className="flex items-center gap-1.5 text-[#1B4F8A] dark:text-blue-400 font-semibold text-xs mb-1">
+                  <Send className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
                   <span>{locale === 'ja' ? '手動送信の手間をゼロにする代行プラン' : locale === 'vi' ? 'Dịch vụ gửi form trọn gói (Không cần tự gõ)' : 'Done-For-You Outreach Service available'}</span>
                 </div>
-                <p className="text-[10px] text-slate-600 dark:text-slate-400 leading-relaxed mb-2">
+                <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-2 [font-feature-settings:'palt']">
                   {locale === 'ja'
                     ? 'CSVをダウンロードして自社で入力する代わりに、専任チームがこの企業群へ代行送信することも可能です。'
                     : locale === 'vi'
@@ -491,24 +491,27 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                 <Link
                   href={`/${locale}/form-marketing`}
                   onClick={() => setShowConfirmModal(false)}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1B4F8A] dark:text-blue-400 hover:underline"
                 >
                   <span>{locale === 'ja' ? 'フォーム自動営業の詳細・料金を見る →' : locale === 'vi' ? 'Xem chi tiết dịch vụ gửi Form tự động →' : 'View Automated Form DM Details →'}</span>
                 </Link>
               </div>
 
-              <div className="flex gap-3">
+              <div className="flex gap-2.5">
                 <button
+                  type="button"
                   onClick={() => setShowConfirmModal(false)}
-                  className="flex-1 px-4 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200/50 dark:text-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700/80 dark:border-slate-700 rounded-xl transition-all"
+                  className="flex-1 h-10 px-4 text-xs sm:text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 dark:text-slate-300 dark:bg-[#151B22] dark:border-slate-700 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer"
                 >
                   {d.cancel}
                 </button>
                 <button
+                  type="button"
                   onClick={executeExport}
-                  className="flex-1 px-4 py-2.5 text-xs font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 rounded-xl shadow-md shadow-emerald-500/10 active:scale-[0.98] transition-all"
+                  className="flex-1 h-10 px-4 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-lg shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5"
                 >
-                  {d.execute}
+                  <Download className="w-4 h-4" />
+                  <span>{d.execute}</span>
                 </button>
               </div>
             </div>
@@ -518,31 +521,31 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
 
       {/* PREMIUM BUY MODAL (Interactive Stripe purchase dialog) */}
       {showBuyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-3xl p-6 shadow-2xl max-w-md w-full relative animate-in zoom-in-95 duration-250">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white border border-slate-200/90 dark:bg-[#151B22] dark:border-slate-800 rounded-2xl p-6 shadow-xl max-w-md w-full relative animate-in zoom-in-95 duration-150">
             <button 
               onClick={() => setShowBuyModal(false)}
-              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-xl"
+              className="absolute top-4 right-4 p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
             {/* Premium Package Options */}
             {/* Automated Form Outreach Alternative */}
-            <div className="mb-4 p-3 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 border border-indigo-200/80 dark:border-indigo-850 text-left flex items-center justify-between gap-3">
+            <div className="mb-4 p-3 rounded-xl bg-slate-50/80 dark:bg-[#0D1117] border border-slate-200/90 dark:border-slate-800 text-left flex items-center justify-between gap-3">
               <div>
-                <div className="flex items-center gap-1.5 text-indigo-700 dark:text-indigo-300 font-bold text-xs">
-                  <Send className="w-3.5 h-3.5 text-indigo-500" />
+                <div className="flex items-center gap-1.5 text-[#1B4F8A] dark:text-blue-400 font-semibold text-xs">
+                  <Send className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
                   <span>{locale === 'ja' ? 'リスト購入不要！フォーム自動営業（セルフ配信）' : locale === 'vi' ? 'Không cần mua data! Tự động gửi Form tiếp cận' : 'No data purchase needed! Automated Form Outreach'}</span>
                 </div>
                 <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                  {locale === 'ja' ? '絞り込んだターゲット企業へ完全自動で配信。1件13.8円〜' : locale === 'vi' ? 'Tự động tiếp cận danh sách đã lọc, chỉ từ 13.8 JPY/form' : 'Automated outreach to filtered lists from 13.8 JPY/form'}
+                  {locale === 'ja' ? '絞り込んだターゲット企業へ完全自動で配信。1通5.9円〜' : locale === 'vi' ? 'Tự động tiếp cận danh sách đã lọc, chỉ từ 5.9 JPY/form' : 'Automated outreach to filtered lists from 5.9 JPY/form'}
                 </p>
               </div>
               <Link
                 href={`/${locale}/form-marketing`}
                 onClick={() => setShowBuyModal(false)}
-                className="shrink-0 px-3 py-1.5 text-[11px] font-bold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl transition-all shadow-xs"
+                className="shrink-0 px-3 py-1.5 text-[11px] font-semibold text-white bg-[#1B4F8A] hover:bg-[#143D6C] rounded-lg transition-colors shadow-2xs"
               >
                 {locale === 'ja' ? '自動配信プラン' : locale === 'vi' ? 'Gói gửi tự động' : 'View Plan'}
               </Link>
@@ -551,7 +554,7 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
               <div className="flex flex-col gap-3.5 mb-6">
                 
                 {/* Terms agreement checkbox */}
-                <div className="flex items-start gap-2 bg-slate-50 dark:bg-slate-800/10 p-3 rounded-2xl border border-slate-100 dark:border-slate-850">
+                <div className="flex items-start gap-2 bg-slate-50/80 dark:bg-[#0D1117] p-3 rounded-xl border border-slate-200/80 dark:border-slate-800">
                   <input
                     type="checkbox"
                     id="agree-buy-terms"
@@ -568,24 +571,24 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                 </div>
                 
                 {/* Option 1: 10k Pack */}
-                <div className="border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all bg-slate-50/50 dark:bg-slate-800/10">
+                <div className="border border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl p-3.5 flex items-center justify-between gap-4 transition-colors bg-white dark:bg-[#151B22]">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center shrink-0">
-                      <Coins className="w-4.5 h-4.5 text-emerald-500" />
+                      <Coins className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div>
-                      <h5 className="font-extrabold text-xs text-slate-850 dark:text-slate-200">
+                      <h5 className="font-bold text-xs text-slate-900 dark:text-slate-150">
                         {d.packs["10k"].title}
                       </h5>
                       <p className="text-[10px] text-slate-400 mt-0.5">{d.packs["10k"].desc}</p>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="font-black text-slate-900 dark:text-white text-sm">{d.packs["10k"].price}</div>
+                    <div className="font-bold tabular-nums text-slate-900 dark:text-white text-sm">{d.packs["10k"].price}</div>
                     <button
                       onClick={() => handlePurchasePack("10k")}
                       disabled={!!stripeLoading || !agreeBuyTerms}
-                      className="mt-1.5 px-3 py-1 font-bold text-[10px] text-emerald-600 bg-white border border-slate-200 hover:border-emerald-300 rounded-lg transition-all flex items-center gap-1 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="mt-1.5 px-3 py-1 font-semibold text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 rounded-lg transition-colors flex items-center gap-1 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {stripeLoading === "10k" ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -600,28 +603,28 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                 </div>
  
                 {/* Option 2: 50k Pack (RECOMMENDED BEST VALUE) */}
-                <div className="border-2 border-emerald-500/80 dark:border-emerald-600/80 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all bg-emerald-500/[0.03] dark:bg-emerald-500/[0.02] relative shadow-md shadow-emerald-500/5">
-                  <div className="absolute -top-2.5 right-4 px-2 py-0.5 rounded-full bg-emerald-500 text-[8px] font-black text-white uppercase tracking-wider shadow">
+                <div className="border-2 border-emerald-600/80 dark:border-emerald-500/80 rounded-xl p-3.5 flex items-center justify-between gap-4 transition-colors bg-emerald-50/20 dark:bg-emerald-950/10 relative shadow-2xs">
+                  <div className="absolute -top-2.5 right-4 px-2 py-0.5 rounded-md bg-emerald-600 text-[9px] font-bold text-white uppercase tracking-wider shadow-2xs">
                     {d.packs["50k"].badge}
                   </div>
                   
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
-                      <Coins className="w-4.5 h-4.5 text-emerald-500" />
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100/60 dark:bg-emerald-900/40 flex items-center justify-center shrink-0">
+                      <Coins className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />
                     </div>
                     <div>
-                      <h5 className="font-extrabold text-xs text-slate-850 dark:text-slate-200 flex items-center gap-1.5">
+                      <h5 className="font-bold text-xs text-slate-900 dark:text-slate-150 flex items-center gap-1.5">
                         {d.packs["50k"].title}
                       </h5>
-                      <p className="text-[10px] text-emerald-650 dark:text-emerald-450 font-semibold mt-0.5">{d.packs["50k"].desc}</p>
+                      <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium mt-0.5">{d.packs["50k"].desc}</p>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="font-black text-slate-900 dark:text-white text-sm">{d.packs["50k"].price}</div>
+                    <div className="font-bold tabular-nums text-slate-900 dark:text-white text-sm">{d.packs["50k"].price}</div>
                     <button
                       onClick={() => handlePurchasePack("50k")}
                       disabled={!!stripeLoading || !agreeBuyTerms}
-                      className="mt-1.5 px-3 py-1 font-black text-[10px] text-white bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 rounded-lg shadow-sm transition-all flex items-center gap-1 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="mt-1.5 px-3 py-1 font-semibold text-[10px] text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs transition-colors flex items-center gap-1 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {stripeLoading === "50k" ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -636,24 +639,24 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
                 </div>
  
                 {/* Option 3: 100k Pack */}
-                <div className="border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-2xl p-4 flex items-center justify-between gap-4 transition-all bg-slate-50/50 dark:bg-slate-800/10">
+                <div className="border border-slate-200/90 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-xl p-3.5 flex items-center justify-between gap-4 transition-colors bg-white dark:bg-[#151B22]">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/20 flex items-center justify-center shrink-0">
-                      <Coins className="w-4.5 h-4.5 text-emerald-500" />
+                      <Coins className="w-4 h-4 text-emerald-600" />
                     </div>
                     <div>
-                      <h5 className="font-extrabold text-xs text-slate-850 dark:text-slate-200">
+                      <h5 className="font-bold text-xs text-slate-900 dark:text-slate-150">
                         {d.packs["100k"].title}
                       </h5>
                       <p className="text-[10px] text-slate-400 mt-0.5">{d.packs["100k"].desc}</p>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="font-black text-slate-900 dark:text-white text-sm">{d.packs["100k"].price}</div>
+                    <div className="font-bold tabular-nums text-slate-900 dark:text-white text-sm">{d.packs["100k"].price}</div>
                     <button
                       onClick={() => handlePurchasePack("100k")}
                       disabled={!!stripeLoading || !agreeBuyTerms}
-                      className="mt-1.5 px-3 py-1 font-bold text-[10px] text-emerald-650 bg-white border border-slate-200 hover:border-emerald-300 rounded-lg transition-all flex items-center gap-1 active:scale-[0.97] disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="mt-1.5 px-3 py-1 font-semibold text-[10px] text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 hover:bg-emerald-100 rounded-lg transition-colors flex items-center gap-1 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                     >
                       {stripeLoading === "100k" ? (
                         <Loader2 className="w-3 h-3 animate-spin" />
@@ -670,7 +673,7 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
               </div>
 
             {/* Footer secure notification */}
-            <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 dark:text-slate-500 bg-slate-50 dark:bg-slate-850 py-3 rounded-2xl">
+            <div className="flex items-center justify-center gap-2 text-[10px] text-slate-400 dark:text-slate-500 bg-slate-50/80 dark:bg-[#0D1117] py-2.5 rounded-xl border border-slate-200/80 dark:border-slate-800">
               <CreditCard className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <span>{d.secureNotice}</span>
             </div>

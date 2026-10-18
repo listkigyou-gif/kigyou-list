@@ -30,13 +30,13 @@ Không chia lẻ kênh, mỗi ngày Agent sẽ lấy **1 Chủ Đề Cốt Lõi 
 | **1. Blog & Content Pillar** | **Note.com** | Bài phân tích chuyên sâu B2B, case study tối ưu chi phí, hướng dẫn thực chiến. |
 | **2. Kỹ Thuật & Data Tech** | **Qiita** | Bài viết kỹ thuật data, pipeline cào dữ liệu, chuẩn hóa 500万社, Python script. |
 | **3. Cộng Đồng Tech & Dev** | **Zenn** | Góc nhìn kiến trúc hệ thống, data engineering, chia sẻ tech stack. |
-| **4. Báo Chí & PR Miễn Phí** | **PR-FREE** | Thông cáo báo chí (Press Release) chuẩn văn phong thông tấn báo chí Nhật. |
+| **4. Báo Chí & PR Miễn Phí** | **Free-PressRelease, Zero-Press, Tsunagugu, PR-FREE, PRESSNOW** | Thông cáo báo chí (Press Release) chuẩn văn phong thông tấn báo chí Nhật. |
 | **5. Mạng Xã Hội X** | **X (@kigyoulist)** | Chuỗi Tweet (Thread) giật tít thu hút + Tweet reply chèn link điều hướng. |
 | **6. Facebook Doanh Nghiệp** | **Facebook Fanpage** | Bản tin chính thức (Official News), hình ảnh chuyên nghiệp, link website. |
 | **7. Facebook Cá Nhân** | **Facebook Profile** | Storytelling của Founder, góc nhìn thực tế P2P, link dưới comment đầu tiên. |
 
 *(Quy tắc ngoại lệ: **ValuePress** được bảo lưu hạn mức 1 lần/tháng vào ngày có thông cáo báo chí quan trọng nhất trong tháng).*
-*(Tạm thời bỏ qua **Yahoo! Chiebukuro** và **LinkedIn** cho đến khi có tài khoản).*
+*(Tạm thời bỏ qua **LinkedIn** cho đến khi kích hoạt lại).*
 
 ---
 
