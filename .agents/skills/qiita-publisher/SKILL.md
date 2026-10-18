@@ -80,8 +80,8 @@ Mỗi bài viết phải tuân thủ cấu trúc 6 phần:
 | **05** | Kiến trúc vượt Cloudflare Turnstile & Tối ưu HTTP Connection Pool quy mô lớn | Python, httpx, Playwright, Stealth | [Đã xuất bản](https://qiita.com/listkigyou/items/b5715e7153054e01f1c8) |
 | **06** | Tìm kiếm tiếng Nhật siêu tốc: Xử lý Kana, phân tích hình thái từ (MeCab) | PostgreSQL, Full-Text Search, pg_trgm | [Đã xuất bản](https://qiita.com/listkigyou/items/d3179d0d541e9d307d84) |
 | **07** | Vector Search cho B2B: Tìm kiếm đối tác & công ty tương đồng qua Embeddings | pgvector, Python, Sentence-Transformers | [Đã xuất bản](https://qiita.com/listkigyou/items/ba9632b558c7d965741b) |
-| **08** | Hệ thống tự động đồng bộ Delta gBizINFO & Quốc thuế NTA hàng tuần | Python, Bash, Cron, Systemd, Logging | Bài tiếp theo |
-| **09** | Xây dựng API tra cứu doanh nghiệp tốc độ cao < 50ms | FastAPI, Redis Caching, PostgreSQL | Dự kiến |
+| **08** | Hệ thống tự động đồng bộ Delta gBizINFO & Quốc thuế NTA hàng tuần | Python, Bash, Cron, Systemd, Logging | [Đã xuất bản](https://qiita.com/listkigyou/items/9f3943b5786be5ccf1b8) |
+| **09** | Xây dựng API tra cứu doanh nghiệp tốc độ cao < 50ms | FastAPI, Redis Caching, PostgreSQL | Bài tiếp theo |
 | **10** | Clean Data & Loại bỏ Email rác / Phát hiện anti-spam form doanh nghiệp | Python, Regex NLP, Domain Verification | Dự kiến |
 
 ---

@@ -141,6 +141,17 @@ def publish_article_7(is_private=False):
     tags = ['PostgreSQL', 'pgvector', 'Python', '機械学習', 'アーキテクチャ']
     return post_article(title, body, tags, is_private=is_private)
 
+def publish_article_8(is_private=False):
+    article_path = os.path.join(os.path.dirname(__file__), 'articles', 'article_08.md')
+    if not os.path.exists(article_path):
+        article_path = r'C:\kigyou-list\scripts\articles\article_08.md'
+    with open(article_path, 'r', encoding='utf-8') as f:
+        body = f.read()
+    
+    title = '【Python/PostgreSQL】500万社データを無停止で最新化する：国税庁・経産省gBizINFOの週次差分同期（Delta ETL）アーキテクチャの実装'
+    tags = ['Python', 'PostgreSQL', 'ETL', 'データ分析', 'アーキテクチャ']
+    return post_article(title, body, tags, is_private=is_private)
+
 def publish_chaos_map_2026(is_private=False):
     article_path = os.path.join(os.path.dirname(__file__), 'articles', 'article_chaos_map_2026.md')
     if not os.path.exists(article_path):
@@ -169,6 +180,7 @@ if __name__ == '__main__':
     parser.add_argument('--publish-05', action='store_true', help='Publish Article 05')
     parser.add_argument('--publish-06', action='store_true', help='Publish Article 06')
     parser.add_argument('--publish-07', action='store_true', help='Publish Article 07')
+    parser.add_argument('--publish-08', action='store_true', help='Publish Article 08')
     parser.add_argument('--publish-chaos-map', action='store_true', help='Publish B2B SaaS Chaos Map 2026 Article')
     parser.add_argument('--delete', type=str, help='Delete article by Item ID')
     parser.add_argument('--file', type=str, help='Path to markdown article file to publish')
@@ -208,6 +220,9 @@ if __name__ == '__main__':
 
     if args.publish_07:
         publish_article_7(is_private=args.private)
+
+    if args.publish_08:
+        publish_article_8(is_private=args.private)
 
     if args.publish_chaos_map:
         publish_chaos_map_2026(is_private=args.private)
