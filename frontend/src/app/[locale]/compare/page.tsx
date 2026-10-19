@@ -82,6 +82,7 @@ export default async function ComparePage({ params }: PageProps) {
   const isEn = locale === "en";
   const isVi = locale === "vi";
   const isJa = !isEn && !isVi;
+  const currentYear = new Date().getFullYear();
 
   const faqs = isVi ? [
     {

@@ -1,0 +1,60 @@
+{
+  "prefectures": [
+    {
+      "code": "13",
+      "name": "東京都",
+      "name_en": "Tokyo",
+      "construction": {
+        "source_name": "東京都都市整備局",
+        "url": "https://www.toshiseibi.metro.tokyo.lg.jp/documents/d/toshiseibi/meibo_kyokajunr0808_2-xlsx",
+        "format": "xlsx",
+        "frequency": "monthly"
+      },
+      "real_estate": {
+        "source_name": "東京都住宅政策本部",
+        "format": "portal",
+        "portal_url": "https://takken.metro.tokyo.lg.jp/"
+      }
+    },
+    {
+      "code": "14",
+      "name": "神奈川県",
+      "name_en": "Kanagawa",
+      "construction": {
+        "source_name": "神奈川県県土整備局",
+        "format": "xlsx",
+        "frequency": "monthly"
+      }
+    },
+    {
+      "code": "27",
+      "name": "大阪府",
+      "name_en": "Osaka",
+      "construction": {
+        "source_name": "大阪府都市整備部",
+        "format": "xlsx",
+        "frequency": "monthly"
+      }
+    },
+    {
+      "code": "23",
+      "name": "愛知県",
+      "name_en": "Aichi",
+      "construction": {
+        "source_name": "愛知県都市・交通局",
+        "format": "xlsx",
+        "frequency": "monthly"
+      }
+    },
+    {
+      "code": "11",
+      "name": "埼玉県",
+      "name_en": "Saitama",
+      "construction": {
+        "source_name": "埼玉県都市整備部",
+        "format": "xlsx",
+        "frequency": "monthly"
+      }
+    }
+  ]
+}

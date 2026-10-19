@@ -1,0 +1,237 @@
+[
+  {
+    "name": "北海道",
+    "file_no": "28114",
+    "size": "11MB"
+  },
+  {
+    "name": "青森県",
+    "file_no": "28118",
+    "size": "2MB"
+  },
+  {
+    "name": "岩手県",
+    "file_no": "28121",
+    "size": "2MB"
+  },
+  {
+    "name": "宮城県",
+    "file_no": "28124",
+    "size": "4MB"
+  },
+  {
+    "name": "秋田県",
+    "file_no": "28127",
+    "size": "2MB"
+  },
+  {
+    "name": "山形県",
+    "file_no": "28130",
+    "size": "2MB"
+  },
+  {
+    "name": "福島県",
+    "file_no": "28133",
+    "size": "4MB"
+  },
+  {
+    "name": "茨城県",
+    "file_no": "28136",
+    "size": "5MB"
+  },
+  {
+    "name": "栃木県",
+    "file_no": "28139",
+    "size": "4MB"
+  },
+  {
+    "name": "群馬県",
+    "file_no": "28142",
+    "size": "4MB"
+  },
+  {
+    "name": "埼玉県",
+    "file_no": "28145",
+    "size": "12MB"
+  },
+  {
+    "name": "千葉県",
+    "file_no": "28149",
+    "size": "11MB"
+  },
+  {
+    "name": "東京都",
+    "file_no": "28154",
+    "size": "36MB"
+  },
+  {
+    "name": "神奈川県",
+    "file_no": "28166",
+    "size": "17MB"
+  },
+  {
+    "name": "新潟県",
+    "file_no": "28171",
+    "size": "4MB"
+  },
+  {
+    "name": "富山県",
+    "file_no": "28174",
+    "size": "2MB"
+  },
+  {
+    "name": "石川県",
+    "file_no": "28177",
+    "size": "2MB"
+  },
+  {
+    "name": "福井県",
+    "file_no": "28180",
+    "size": "2MB"
+  },
+  {
+    "name": "山梨県",
+    "file_no": "28183",
+    "size": "2MB"
+  },
+  {
+    "name": "長野県",
+    "file_no": "28186",
+    "size": "4MB"
+  },
+  {
+    "name": "岐阜県",
+    "file_no": "28189",
+    "size": "4MB"
+  },
+  {
+    "name": "静岡県",
+    "file_no": "28192",
+    "size": "6MB"
+  },
+  {
+    "name": "愛知県",
+    "file_no": "28195",
+    "size": "14MB"
+  },
+  {
+    "name": "三重県",
+    "file_no": "28199",
+    "size": "3MB"
+  },
+  {
+    "name": "滋賀県",
+    "file_no": "28202",
+    "size": "2MB"
+  },
+  {
+    "name": "京都府",
+    "file_no": "28205",
+    "size": "6MB"
+  },
+  {
+    "name": "大阪府",
+    "file_no": "28208",
+    "size": "22MB"
+  },
+  {
+    "name": "兵庫県",
+    "file_no": "28213",
+    "size": "10MB"
+  },
+  {
+    "name": "奈良県",
+    "file_no": "28217",
+    "size": "2MB"
+  },
+  {
+    "name": "和歌山県",
+    "file_no": "28220",
+    "size": "2MB"
+  },
+  {
+    "name": "鳥取県",
+    "file_no": "28223",
+    "size": "875KB"
+  },
+  {
+    "name": "島根県",
+    "file_no": "28226",
+    "size": "1012KB"
+  },
+  {
+    "name": "岡山県",
+    "file_no": "28229",
+    "size": "4MB"
+  },
+  {
+    "name": "広島県",
+    "file_no": "28232",
+    "size": "5MB"
+  },
+  {
+    "name": "山口県",
+    "file_no": "28235",
+    "size": "2MB"
+  },
+  {
+    "name": "徳島県",
+    "file_no": "28238",
+    "size": "2MB"
+  },
+  {
+    "name": "香川県",
+    "file_no": "28241",
+    "size": "2MB"
+  },
+  {
+    "name": "愛媛県",
+    "file_no": "28244",
+    "size": "3MB"
+  },
+  {
+    "name": "高知県",
+    "file_no": "28247",
+    "size": "2MB"
+  },
+  {
+    "name": "福岡県",
+    "file_no": "28250",
+    "size": "10MB"
+  },
+  {
+    "name": "佐賀県",
+    "file_no": "28254",
+    "size": "2MB"
+  },
+  {
+    "name": "長崎県",
+    "file_no": "28257",
+    "size": "2MB"
+  },
+  {
+    "name": "熊本県",
+    "file_no": "28260",
+    "size": "4MB"
+  },
+  {
+    "name": "大分県",
+    "file_no": "28263",
+    "size": "3MB"
+  },
+  {
+    "name": "宮崎県",
+    "file_no": "28266",
+    "size": "2MB"
+  },
+  {
+    "name": "鹿児島県",
+    "file_no": "28269",
+    "size": "3MB"
+  },
+  {
+    "name": "沖縄県",
+    "file_no": "28272",
+    "size": "3MB"
+  }
+]

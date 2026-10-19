@@ -3,13 +3,14 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { 
   Building2, MapPin, Phone, Globe, Mail, Printer, Calendar, 
-  Briefcase, FileText, ChevronRight, BarChart3, Clock, Share2, ExternalLink, ShieldCheck, MessageSquare, Lock, ArrowRight, HelpCircle, Search, Newspaper, CheckCircle2
+  Briefcase, FileText, ChevronRight, BarChart3, Clock, Share2, ExternalLink, ShieldCheck, MessageSquare, Lock, ArrowRight, HelpCircle, Search, Newspaper, CheckCircle2, History
 } from 'lucide-react';
 import { formatShortDate, toISOStringLocal } from '@/lib/dateUtils';
 import { 
   getCompanyByNumber, getCompanyFinancials, 
   getCompanySignals, getRelatedCompanies, getCompanyIndustries 
 } from '@/lib/db';
+import { getCompanyLegalHistory } from '@/lib/ntaHistory';
 import { Header } from '@/components/Header';
 import { ObfuscatedPhone } from '@/components/ObfuscatedPhone';
 import { CompanyActions } from '@/components/CompanyActions';
@@ -18,6 +19,7 @@ import { UnlockCTA } from '@/components/UnlockCTA';
 import { Footer } from '@/components/Footer';
 import { CompanyFinancials } from '@/components/CompanyFinancials';
 import { CompanySignalsTimeline } from '@/components/CompanySignalsTimeline';
+import { CompanyLegalHistoryTimeline } from '@/components/company/CompanyLegalHistoryTimeline';
 import { CopyTextButton } from '@/components/CopyTextButton';
 import { getTranslations } from '@/lib/i18n';
 import { CompanyLogo } from '@/components/CompanyLogo';
@@ -236,6 +238,8 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   if (!company) {
     return notFound();
   }
+
+  const legalHistory = await getCompanyLegalHistory(company);
 
   const t = getTranslations(locale);
 
@@ -630,6 +634,13 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             <FileText className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
             <span>{t.company.navOverview || "基本情報"}</span>
           </a>
+          <a 
+            href="#history" 
+            className="px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#1B4F8A] dark:hover:text-blue-300 transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+          >
+            <History className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+            <span>{t.company.navHistory || "主な変更履歴"}</span>
+          </a>
           {financials && financials.length > 0 && (
             <a 
               href="#financials" 
@@ -796,6 +807,27 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   </div>
                 </div>
 
+                <div className="pb-3 border-b border-slate-100 dark:border-slate-800/80 col-span-1 md:col-span-2">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-slate-500 dark:text-slate-400 text-xs font-medium">
+                      {locale === 'en' ? 'Qualified Invoice Issuer Number' : locale === 'vi' ? 'Mã số Doanh nghiệp phát hành Hóa đơn hợp lệ (Invoice)' : '適格請求書発行事業者登録番号（インボイス）'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/80">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                      {locale === 'en' ? 'NTA Registered' : locale === 'vi' ? 'Cơ quan Thuế chứng nhận' : '国税庁登録済'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <strong className="text-sm font-bold font-mono text-slate-900 dark:text-white tracking-wider tabular-nums">
+                      T{company.corporate_number}
+                    </strong>
+                    <CopyTextButton text={`T${company.corporate_number}`} label={locale === 'en' ? 'Copy T-Number' : locale === 'vi' ? 'Sao chép mã T' : '登録番号をコピー'} />
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      {locale === 'en' ? 'Consumption Tax Act Registered Entity' : locale === 'vi' ? 'Doanh nghiệp đăng ký hợp lệ theo Luật Thuế tiêu dùng Nhật Bản' : '消費税法第57条の2に基づく公表登録済事業者'}
+                    </span>
+                  </div>
+                </div>
+
                 <div className="col-span-1 md:col-span-2 pt-1">
                   <span className="text-slate-500 dark:text-slate-400 text-xs font-medium block mb-1.5">{t.company.tags}</span>
                   <div className="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto scrollbar-thin">
@@ -845,6 +877,22 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 />
               </div>
             </section>
+
+            {/* 1.5. Legal Registry History Section (国税庁 法人番号・インボイスWeb-API公表データ) */}
+            <CompanyLegalHistoryTimeline
+              corporateNumber={company.corporate_number}
+              companyName={companyName}
+              events={legalHistory}
+              locale={locale}
+              translations={{
+                title: t.company.legalHistoryTitle,
+                desc: t.company.legalHistoryDesc,
+                officialBadge: t.company.legalHistoryOfficialBadge,
+                emptyText: t.company.legalHistoryEmpty,
+                viewNtaOfficial: t.company.viewNtaOfficialRegistry,
+                viewNtaInvoice: t.company.viewNtaInvoiceRegistry,
+              }}
+            />
 
             {/* 2. Financial Chart Section */}
             {financials && financials.length > 0 && (
