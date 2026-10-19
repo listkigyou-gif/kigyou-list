@@ -42,11 +42,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const isEn = locale === 'en';
   const isVi = locale === 'vi';
 
+  const currentYear = new Date().getFullYear();
   const pageTitle = isVi
-    ? `Danh sách công ty ${industryMappedName} tại ${prefName} (Mới nhất 2026) | Kigyou-list`
+    ? `Danh sách công ty ${industryMappedName} tại ${prefName} (Mới nhất ${currentYear}) | Kigyou-list`
     : isEn
-    ? `${prefName} ${industryMappedName} Companies (2026 List) | Kigyou-list`
-    : `${prefName}の${industryMappedName}企業一覧（2026年最新） | Kigyou-list`;
+    ? `${prefName} ${industryMappedName} Companies (${currentYear} List) | Kigyou-list`
+    : `${prefName}の${industryMappedName}企業一覧（${currentYear}年最新） | Kigyou-list`;
 
   const pageDesc = isVi
     ? `Duyệt danh bạ các doanh nghiệp hoạt động trong lĩnh vực ${industryMappedName} tại ${prefName}, Nhật Bản. Chi tiết thông tin liên hệ, mã số thuế, số điện thoại, quy mô nhân sự, vốn điều lệ và các tín hiệu tuyển dụng.`

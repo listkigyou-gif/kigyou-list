@@ -1933,6 +1933,12 @@ async function initQuotaTables(): Promise<void> {
         await client.query(`ALTER TABLE user_api_keys ADD COLUMN revoked_reason TEXT;`);
       } catch {}
       try {
+        await client.query(`ALTER TABLE user_api_keys ADD COLUMN revoked_at TIMESTAMP;`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE user_api_keys ADD COLUMN revoked_by VARCHAR(50);`);
+      } catch {}
+      try {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON user_api_keys(api_key_hash);`);
       } catch {}
       try {
@@ -2104,6 +2110,12 @@ async function initQuotaTables(): Promise<void> {
       `);
       try {
         db.exec(`ALTER TABLE user_api_keys ADD COLUMN revoked_reason TEXT;`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE user_api_keys ADD COLUMN revoked_at TEXT;`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE user_api_keys ADD COLUMN revoked_by TEXT;`);
       } catch {}
       try {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON user_api_keys(api_key_hash);`);
@@ -4562,21 +4574,26 @@ export interface UserApiKey {
   user_email: string;
   api_key_hash: string;
   api_key_preview: string;
-  status: 'active' | 'revoked';
+  status: 'active' | 'revoked' | 'suspended';
   created_at: string;
   last_used_at: string | null;
   last_ip: string | null;
   last_user_agent: string | null;
+  revoked_at?: string | null;
+  revoked_by?: string | null;
   revoked_reason?: string | null;
 }
 
 /**
  * Gets all API keys for a specific user email.
+ * If activeOnly is true, only returns currently active keys (hides soft-deleted ones from user dashboard).
  */
-export async function getUserApiKeys(email: string): Promise<UserApiKey[]> {
+export async function getUserApiKeys(email: string, activeOnly: boolean = true): Promise<UserApiKey[]> {
   await initQuotaTables();
   try {
-    const sql = "SELECT * FROM user_api_keys WHERE user_email = ? ORDER BY created_at DESC";
+    const sql = activeOnly
+      ? "SELECT * FROM user_api_keys WHERE LOWER(user_email) = LOWER(?) AND status = 'active' ORDER BY created_at DESC"
+      : "SELECT * FROM user_api_keys WHERE LOWER(user_email) = LOWER(?) ORDER BY created_at DESC";
     const rows = await runQuery(sql, [email]);
     if (!rows) return [];
     return rows.map((r: any) => ({
@@ -4589,6 +4606,8 @@ export async function getUserApiKeys(email: string): Promise<UserApiKey[]> {
       last_used_at: r.last_used_at ? String(r.last_used_at) : null,
       last_ip: r.last_ip || null,
       last_user_agent: r.last_user_agent || null,
+      revoked_at: r.revoked_at ? String(r.revoked_at) : null,
+      revoked_by: r.revoked_by || null,
       revoked_reason: r.revoked_reason || null
     }));
   } catch (error) {
@@ -4631,7 +4650,10 @@ export async function createUserApiKey(email: string): Promise<{ rawKey: string;
       created_at: new Date().toISOString(),
       last_used_at: null,
       last_ip: null,
-      last_user_agent: null
+      last_user_agent: null,
+      revoked_at: null,
+      revoked_by: null,
+      revoked_reason: null
     };
 
     return { rawKey, keyInfo };
@@ -4642,12 +4664,44 @@ export async function createUserApiKey(email: string): Promise<{ rawKey: string;
 }
 
 /**
- * Revokes a user's API Key.
+ * Revokes a user's API Key (Soft Delete with Audit Trail).
+ * Preserves the record for compliance and debugging, but immediately denies API access.
  */
-export async function revokeUserApiKey(email: string, keyId: string): Promise<boolean> {
+export async function revokeUserApiKey(
+  email: string,
+  keyId: string,
+  revokedBy: 'user' | 'admin' = 'user',
+  reason?: string
+): Promise<boolean> {
   await initQuotaTables();
   try {
-    const sql = "UPDATE user_api_keys SET status = 'revoked' WHERE id = ? AND user_email = ?";
+    const sql = `
+      UPDATE user_api_keys 
+      SET status = 'revoked', revoked_at = CURRENT_TIMESTAMP, revoked_by = ?, revoked_reason = ? 
+      WHERE id = ? AND LOWER(user_email) = LOWER(?)
+    `;
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      const res = await pool.query(convertSqlForPG(sql), [revokedBy, reason || null, keyId, email]);
+      return (res.rowCount ?? 0) > 0;
+    } else {
+      const db = getSQLiteDB();
+      const info = db.prepare(sql).run(revokedBy, reason || null, keyId, email);
+      return info.changes > 0;
+    }
+  } catch (error) {
+    console.error(`Error in revokeUserApiKey(${keyId}):`, error);
+    return false;
+  }
+}
+
+/**
+ * Permanently deletes a user's API Key (Hard Delete).
+ */
+export async function deleteUserApiKey(email: string, keyId: string): Promise<boolean> {
+  await initQuotaTables();
+  try {
+    const sql = "DELETE FROM user_api_keys WHERE id = ? AND LOWER(user_email) = LOWER(?)";
     if (DATABASE_URL) {
       const pool = getPGPool();
       const res = await pool.query(convertSqlForPG(sql), [keyId, email]);
@@ -4658,7 +4712,29 @@ export async function revokeUserApiKey(email: string, keyId: string): Promise<bo
       return info.changes > 0;
     }
   } catch (error) {
-    console.error(`Error in revokeUserApiKey(${keyId}):`, error);
+    console.error(`Error in deleteUserApiKey(${keyId}):`, error);
+    return false;
+  }
+}
+
+/**
+ * Admin: Permanently hard-deletes an API key from the entire system.
+ */
+export async function adminHardDeleteApiKey(keyId: string): Promise<boolean> {
+  await initQuotaTables();
+  try {
+    const sql = "DELETE FROM user_api_keys WHERE id = ?";
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      const res = await pool.query(convertSqlForPG(sql), [keyId]);
+      return (res.rowCount ?? 0) > 0;
+    } else {
+      const db = getSQLiteDB();
+      const info = db.prepare(sql).run(keyId);
+      return info.changes > 0;
+    }
+  } catch (error) {
+    console.error(`Error in adminHardDeleteApiKey(${keyId}):`, error);
     return false;
   }
 }
@@ -4694,7 +4770,10 @@ export async function verifyApiKey(rawKey: string): Promise<{ keyInfo: UserApiKe
         created_at: String(row.created_at),
         last_used_at: row.last_used_at ? String(row.last_used_at) : null,
         last_ip: row.last_ip || null,
-        last_user_agent: row.last_user_agent || null
+        last_user_agent: row.last_user_agent || null,
+        revoked_at: row.revoked_at ? String(row.revoked_at) : null,
+        revoked_by: row.revoked_by || null,
+        revoked_reason: row.revoked_reason || null
       },
       plan: isOwnerOrAdmin ? 'enterprise' : (row.plan || 'free'),
       subscription_status: isOwnerOrAdmin ? 'active' : (row.subscription_status || 'inactive')
@@ -4728,7 +4807,7 @@ export async function updateApiKeyUsage(keyId: string, ip: string, ua: string): 
 }
 
 /**
- * Admin: Get all API Keys in the system.
+ * Admin: Get all API Keys in the system with audit details and subscription plan.
  */
 export async function getAllApiKeysAdmin(): Promise<(UserApiKey & { plan: string })[]> {
   await initQuotaTables();
@@ -4736,7 +4815,7 @@ export async function getAllApiKeysAdmin(): Promise<(UserApiKey & { plan: string
     const sql = `
       SELECT k.*, q.plan
       FROM user_api_keys k
-      JOIN user_export_quotas q ON k.user_email = q.user_email
+      LEFT JOIN user_export_quotas q ON LOWER(k.user_email) = LOWER(q.user_email)
       ORDER BY k.created_at DESC
     `;
     const rows = await runQuery(sql);
@@ -4751,8 +4830,10 @@ export async function getAllApiKeysAdmin(): Promise<(UserApiKey & { plan: string
       last_used_at: r.last_used_at ? String(r.last_used_at) : null,
       last_ip: r.last_ip || null,
       last_user_agent: r.last_user_agent || null,
-      plan: r.plan || 'free',
-      revoked_reason: r.revoked_reason || null
+      revoked_at: r.revoked_at ? String(r.revoked_at) : null,
+      revoked_by: r.revoked_by || null,
+      revoked_reason: r.revoked_reason || null,
+      plan: r.plan || 'free'
     }));
   } catch (error) {
     console.error('Error in getAllApiKeysAdmin:', error);
@@ -4761,12 +4842,24 @@ export async function getAllApiKeysAdmin(): Promise<(UserApiKey & { plan: string
 }
 
 /**
- * Admin: Update API key status (revoke or activate).
+ * Admin: Update API key status (revoke, suspend, or activate).
  */
-export async function adminUpdateApiKeyStatus(keyId: string, status: 'active' | 'revoked', reason?: string): Promise<boolean> {
+export async function adminUpdateApiKeyStatus(
+  keyId: string, 
+  status: 'active' | 'revoked' | 'suspended', 
+  reason?: string
+): Promise<boolean> {
   await initQuotaTables();
   try {
-    const sql = "UPDATE user_api_keys SET status = ?, revoked_reason = ? WHERE id = ?";
+    const isRevokeOrSuspend = status !== 'active';
+    const sql = `
+      UPDATE user_api_keys 
+      SET status = ?, 
+          revoked_reason = ?,
+          revoked_at = ${isRevokeOrSuspend ? 'CURRENT_TIMESTAMP' : 'NULL'},
+          revoked_by = ${isRevokeOrSuspend ? "'admin'" : 'NULL'}
+      WHERE id = ?
+    `;
     if (DATABASE_URL) {
       const pool = getPGPool();
       const res = await pool.query(convertSqlForPG(sql), [status, reason || null, keyId]);

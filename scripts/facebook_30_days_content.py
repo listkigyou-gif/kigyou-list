@@ -38,7 +38,7 @@ B2B営業リストの「高額な年間契約」に終止符を打つ現実解 �
 👉 主要ツール徹底比較表： https://kigyoulist.com/ja/compare?utm_source=facebook&utm_medium=day_01
 
 #営業リスト #B2B営業 #コスト削減 #法人データベース #営業DX #新規開拓 #インサイドセールス #KigyouList""",
-        "image": "scripts/press_releases/eyecatch_01.jpg",
+        "image": "scripts/images/fb_day_01.jpg",
         "cta": "https://kigyoulist.com/ja/compare?utm_source=facebook&utm_medium=day_01"
     },
     2: {

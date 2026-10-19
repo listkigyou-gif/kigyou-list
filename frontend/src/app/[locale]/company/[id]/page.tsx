@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { 
   Building2, MapPin, Phone, Globe, Mail, Printer, Calendar, 
-  Briefcase, FileText, ChevronRight, BarChart3, Clock, Share2, ExternalLink, ShieldCheck, MessageSquare, Lock
+  Briefcase, FileText, ChevronRight, BarChart3, Clock, Share2, ExternalLink, ShieldCheck, MessageSquare, Lock, ArrowRight, HelpCircle, Search, Newspaper, CheckCircle2
 } from 'lucide-react';
 import { formatShortDate, toISOStringLocal } from '@/lib/dateUtils';
 import { 
@@ -129,10 +129,11 @@ function generateDynamicSummary(
     const employeePart = company.employee_count ? `従業員数:${company.employee_count.toLocaleString('ja-JP')}名。` : "";
     const repPart = company.representative_name ? `代表者:${company.representative_name}。` : "";
     
+    const currentYear = new Date().getFullYear();
     if (isOnPage) {
       return `${companyName}${kanaPart}は、${addressPart}法人番号:${company.corporate_number}の法人です。${datePart}${phonePart}${salesPart}${employeePart}${repPart}`;
     }
-    return `【2026年最新】${companyName}${kanaPart}の企業データ・信用調査。${addressPart}法人番号:${company.corporate_number}。${salesPart}${employeePart}${phonePart}${repPart}電話番号、FAX、メール、役員、財務諸表を無料掲載中。`;
+    return `【${currentYear}年最新】${companyName}${kanaPart}の企業データ・信用調査。${addressPart}法人番号:${company.corporate_number}。${salesPart}${employeePart}${phonePart}${repPart}電話番号、FAX、メール、役員、財務諸表を無料掲載中。`;
   }
 }
 
@@ -168,11 +169,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const summary = generateDynamicSummary(company, locale, industryName, company.prefecture_name);
 
   const prefPart = company.prefecture_name ? `（${company.prefecture_name}）` : '';
+  const currentYear = new Date().getFullYear();
   const pageTitle = locale === 'en'
-    ? `${companyName}${prefPart ? ` ${prefPart}` : ''} - 2026 Financials, Revenue, Employees, Corporate Profile | Kigyou-list`
+    ? `${companyName}${prefPart ? ` ${prefPart}` : ''} - ${currentYear} Overview, Corporate Number, Financials, Revenue & Phone | Kigyou-list`
     : locale === 'vi'
-    ? `【2026】${companyName}${prefPart ? ` ${prefPart}` : ''} - Doanh thu, nhân sự, số điện thoại, thông tin pháp nhân | Kigyou-list`
-    : `【2026年最新】${companyName}${prefPart}の売上高・従業員数・評判・電話番号 | Kigyou-list`;
+    ? `【${currentYear}】${companyName}${prefPart ? ` ${prefPart}` : ''} - Mã số thuế, doanh thu, nhân sự, số điện thoại & hồ sơ pháp nhân | Kigyou-list`
+    : `【${currentYear}年最新】${companyName}${prefPart}の会社概要・法人番号・売上高・評判・電話番号 | Kigyou-list`;
 
 
   const ogLocale = locale === 'en' ? 'en_US' : locale === 'vi' ? 'vi_VN' : 'ja_JP';
@@ -616,6 +618,64 @@ export default async function CompanyDetailPage({ params }: PageProps) {
           locale={locale}
         />
 
+        {/* Quick Section Anchor Jump-Links (Enables Google Sitelinks / Jump-to Search Results) */}
+        <nav 
+          aria-label="Page Sections" 
+          className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2 shadow-2xs overflow-x-auto scrollbar-none flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300"
+        >
+          <a 
+            href="#basic-info" 
+            className="px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#1B4F8A] dark:hover:text-blue-300 transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+          >
+            <FileText className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+            <span>{t.company.navOverview || "基本情報"}</span>
+          </a>
+          {financials && financials.length > 0 && (
+            <a 
+              href="#financials" 
+              className="px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#1B4F8A] dark:hover:text-blue-300 transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+            >
+              <BarChart3 className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+              <span>{t.company.navFinancials || "決算推移"}</span>
+            </a>
+          )}
+          <a 
+            href="#signals" 
+            className="px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#1B4F8A] dark:hover:text-blue-300 transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+          >
+            <Calendar className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+            <span>{t.company.navSignals || "営業シグナル"}</span>
+          </a>
+          <a 
+            href="#reputation" 
+            className="px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#1B4F8A] dark:hover:text-blue-300 transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+          >
+            <Search className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+            <span>{t.company.navReputation || "評判・ニュース"}</span>
+          </a>
+          <a 
+            href="#faq" 
+            className="px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#1B4F8A] dark:hover:text-blue-300 transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+          >
+            <HelpCircle className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+            <span>{t.company.navFaq || "FAQ"}</span>
+          </a>
+          <a 
+            href="#competitors" 
+            className="px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#1B4F8A] dark:hover:text-blue-300 transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+          >
+            <Briefcase className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+            <span>{t.company.navRelated || "同業他社"}</span>
+          </a>
+          <a 
+            href="#contact" 
+            className="px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#1B4F8A] dark:hover:text-blue-300 transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+          >
+            <Phone className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+            <span>{t.company.contactInfo || "連絡先"}</span>
+          </a>
+        </nav>
+
         {/* 2-Column Split Details */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 lg:gap-6">
           
@@ -623,7 +683,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
           <div className="lg:col-span-2 flex flex-col gap-5 lg:gap-6">
             
             {/* 1. Basic Info Section */}
-            <section className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs">
+            <section id="basic-info" className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs scroll-mt-20">
               <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-150 dark:border-slate-800">
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
                   <FileText className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
@@ -679,11 +739,21 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                       <CopyTextButton text={company.full_address} label="住所をコピー" />
                     )}
                   </div>
-                  <div className="flex items-start gap-2">
+                  <div className="flex items-start gap-2 flex-wrap">
                     {company.postal_code && (
                       <span className="text-xs font-mono font-medium text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded border border-slate-200/60 dark:border-slate-700/60 shrink-0">
                         〒{company.postal_code}
                       </span>
+                    )}
+                    {company.prefecture_code && (
+                      <Link 
+                        href={`/${locale}/area/${company.prefecture_code}`}
+                        className="text-xs font-semibold text-[#1B4F8A] hover:underline bg-[#1B4F8A]/5 hover:bg-[#1B4F8A]/10 dark:text-blue-400 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 px-2 py-0.5 rounded border border-[#1B4F8A]/20 dark:border-blue-800/40 shrink-0 transition-colors inline-flex items-center gap-1"
+                        title={locale === 'en' ? `Browse companies in ${prefName}` : locale === 'vi' ? `Xem danh sách doanh nghiệp tại ${prefName}` : `${prefName}の企業一覧を見る`}
+                      >
+                        <MapPin className="w-3 h-3 shrink-0" />
+                        <span>{prefName}</span>
+                      </Link>
                     )}
                     <span className="text-sm font-semibold text-slate-850 dark:text-slate-200">
                       {company.full_address || t.company.unregistered}
@@ -733,12 +803,14 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                       const mediumInds = companyIndustries.filter(ind => ind.classification_level === '中分類');
                       if (mediumInds.length > 0) {
                         return mediumInds.map((ind, idx) => (
-                          <span 
+                          <Link 
                             key={idx} 
-                            className="text-xs font-medium px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border border-slate-200/80 dark:border-slate-700/70 transition-colors hover:bg-slate-200/70 dark:hover:bg-slate-750"
+                            href={`/${locale}/industry/${ind.industry_code}/location/${company.prefecture_code || '13'}`}
+                            className="text-xs font-medium px-2.5 py-1 rounded-md bg-slate-100 text-slate-700 hover:text-[#1B4F8A] hover:bg-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-blue-300 dark:hover:bg-slate-700/80 border border-slate-200/80 dark:border-slate-700/70 transition-colors inline-flex items-center gap-1"
+                            title={locale === 'en' ? `Browse ${getIndustryName(ind.industry_name, locale)} companies` : locale === 'vi' ? `Xem danh sách công ty ${getIndustryName(ind.industry_name, locale)}` : `${getIndustryName(ind.industry_name, locale)}の企業一覧を見る`}
                           >
-                            {ind.industry_code}.{getIndustryName(ind.industry_name, locale)}
-                          </span>
+                            <span>{ind.industry_code}.{getIndustryName(ind.industry_name, locale)}</span>
+                          </Link>
                         ));
                       }
 
@@ -776,7 +848,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
             {/* 2. Financial Chart Section */}
             {financials && financials.length > 0 && (
-              <section className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs">
+              <section id="financials" className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs scroll-mt-20">
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white pb-3.5 mb-4 border-b border-slate-150 dark:border-slate-800 flex items-center gap-2">
                   <BarChart3 className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                   {t.company.financialTrend}
@@ -787,7 +859,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             )}
 
             {/* 3. Intent Signals Section */}
-            <section className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs">
+            <section id="signals" className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs scroll-mt-20">
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white pb-3.5 mb-4 border-b border-slate-150 dark:border-slate-800 flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                 {t.company.signalTimeline}
@@ -800,6 +872,196 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   {t.company.noSignals}
                 </div>
               )}
+            </section>
+
+            {/* 4. External Reputation, Compliance & Media Verification Section */}
+            <section id="reputation" className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs scroll-mt-20">
+              <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-150 dark:border-slate-800">
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Search className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
+                  {t.company.reputationCheckTitle || "企業評判・コンプライアンス・公式ニュースを調べる"}
+                </h2>
+                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 font-mono">
+                  Cross-Verification
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+                {t.company.reputationCheckDesc || "主要ポータル・公的情報源で企業の風評、プレスリリース、口コミをワンクリックで検索できます。"}
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* 1. PR TIMES Press Releases */}
+                <a
+                  href={`https://prtimes.jp/main/html/searchrlp/company_id/keywords/${encodeURIComponent(companyName)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-md bg-[#1B4F8A]/10 dark:bg-blue-950/60 flex items-center justify-center shrink-0">
+                      <Newspaper className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-slate-850 dark:text-slate-200 block truncate group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300">
+                        {t.company.searchPrTimes || "PR TIMES (公式プレスリリース)"}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block truncate">prtimes.jp</span>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300 shrink-0 ml-2" />
+                </a>
+
+                {/* 2. OpenWork Employee Reviews */}
+                <a
+                  href={`https://www.openwork.jp/company_list?field=&pref=&src_str=${encodeURIComponent(companyName)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-md bg-emerald-500/10 dark:bg-emerald-950/60 flex items-center justify-center shrink-0">
+                      <Briefcase className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-slate-850 dark:text-slate-200 block truncate group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300">
+                        {t.company.searchOpenWork || "OpenWork (社員クチコミ)"}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block truncate">openwork.jp</span>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300 shrink-0 ml-2" />
+                </a>
+
+                {/* 3. Tenshoku Kaigi */}
+                <a
+                  href={`https://jobtalk.jp/companies?keyword=${encodeURIComponent(companyName)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-md bg-blue-500/10 dark:bg-blue-950/60 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-slate-850 dark:text-slate-200 block truncate group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300">
+                        {t.company.searchTenshoku || "転職会議 (年収・評判)"}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block truncate">jobtalk.jp</span>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300 shrink-0 ml-2" />
+                </a>
+
+                {/* 4. jpnumber phone search */}
+                {company.phone_number ? (
+                  <a
+                    href={`https://www.jpnumber.com/numbersearch.do?number=${encodeURIComponent(company.phone_number.replace(/\D/g, ''))}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-md bg-amber-500/10 dark:bg-amber-950/60 flex items-center justify-center shrink-0">
+                        <Phone className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-slate-850 dark:text-slate-200 block truncate group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300">
+                          {t.company.searchJpnumber || "jpnumber (電話番号検索)"}
+                        </span>
+                        <span className="text-[10px] text-slate-400 block truncate font-mono">{company.phone_number}</span>
+                      </div>
+                    </div>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300 shrink-0 ml-2" />
+                  </a>
+                ) : (
+                  <a
+                    href={`https://www.google.co.jp/search?q=${encodeURIComponent(`${companyName} 評判 口コミ`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="w-7 h-7 rounded-md bg-indigo-500/10 dark:bg-indigo-950/60 flex items-center justify-center shrink-0">
+                        <Search className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                      </div>
+                      <div className="min-w-0">
+                        <span className="text-xs font-bold text-slate-850 dark:text-slate-200 block truncate group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300">
+                          Google検索 ({companyName} 評判)
+                        </span>
+                        <span className="text-[10px] text-slate-400 block truncate">google.co.jp</span>
+                      </div>
+                    </div>
+                    <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300 shrink-0 ml-2" />
+                  </a>
+                )}
+
+                {/* 5. Google Maps Physical Location */}
+                <a
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${companyName} ${company.full_address || company.prefecture_name || ''}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-md bg-rose-500/10 dark:bg-rose-950/60 flex items-center justify-center shrink-0">
+                      <MapPin className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-slate-850 dark:text-slate-200 block truncate group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300">
+                        {t.company.searchGoogleMaps || "Googleマップ (現地確認)"}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block truncate">maps.google.com</span>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300 shrink-0 ml-2" />
+                </a>
+
+                {/* 6. Google News */}
+                <a
+                  href={`https://news.google.com/search?q=${encodeURIComponent(companyName)}&hl=ja&gl=JP&ceid=JP:ja`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
+                >
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-7 h-7 rounded-md bg-sky-500/10 dark:bg-sky-950/60 flex items-center justify-center shrink-0">
+                      <Globe className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-xs font-bold text-slate-850 dark:text-slate-200 block truncate group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300">
+                        {t.company.searchGoogleNews || "Googleニュース"}
+                      </span>
+                      <span className="text-[10px] text-slate-400 block truncate">news.google.com</span>
+                    </div>
+                  </div>
+                  <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-300 shrink-0 ml-2" />
+                </a>
+              </div>
+            </section>
+
+            {/* 5. Frequently Asked Questions (FAQ) Section - Matches Google FAQ Schema */}
+            <section id="faq" className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs scroll-mt-20">
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white pb-3.5 mb-4 border-b border-slate-150 dark:border-slate-800 flex items-center gap-2">
+                <HelpCircle className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
+                {t.company.faqTitle || "よくあるご質問 (FAQ)"}
+              </h2>
+
+              <div className="flex flex-col divide-y divide-slate-100 dark:divide-slate-800/80">
+                {faqSchema.mainEntity.map((item, idx) => (
+                  <div key={idx} className="py-3.5 first:pt-0 last:pb-0">
+                    <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 flex items-start gap-2 mb-1.5">
+                      <span className="w-4 h-4 rounded text-[10px] font-bold font-mono flex items-center justify-center shrink-0 bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-blue-950/60 dark:text-blue-300 mt-0.5">
+                        Q
+                      </span>
+                      <span className="flex-1 leading-snug">{item.name}</span>
+                    </h3>
+                    <p className="text-xs sm:text-sm leading-relaxed text-slate-600 dark:text-slate-300 pl-6">
+                      {item.acceptedAnswer.text}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </section>
           </div>
 
@@ -1060,7 +1322,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             </section>
 
             {/* SEO internal linking matrix (Related & Nearby Companies) */}
-            <section className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs flex flex-col gap-6">
+            <section id="competitors" className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs flex flex-col gap-6 scroll-mt-20">
 
               {/* Same Industry Links (同業他社) */}
               <div>
@@ -1132,6 +1394,16 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 ) : (
                   <span className="text-xs text-slate-400">{t.company.noRelatedSameIndustry}</span>
                 )}
+                {/* Hub Link to full industry/location category page */}
+                <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
+                  <Link 
+                    href={categoryPath}
+                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1B4F8A] dark:text-blue-400 hover:text-[#143D6C] dark:hover:text-blue-300 transition-colors group"
+                  >
+                    <span>{t.company.viewMoreSameIndustry || "この業界・地域の企業一覧をもっと見る"}</span>
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                  </Link>
+                </div>
               </div>
 
               {/* Nearby Prefecture Links (近隣企業) */}
@@ -1204,12 +1476,84 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 ) : (
                   <span className="text-xs text-slate-400">{t.company.noRelatedNearby}</span>
                 )}
+                {/* Hub Link to full prefecture area page */}
+                {company.prefecture_code && (
+                  <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/80">
+                    <Link 
+                      href={`/${locale}/area/${company.prefecture_code}`}
+                      className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#1B4F8A] dark:text-blue-400 hover:text-[#143D6C] dark:hover:text-blue-300 transition-colors group"
+                    >
+                      <span>{(t.company.viewMoreNearby || "{pref}の企業一覧をもっと見る").replace('{pref}', prefName)}</span>
+                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
+                    </Link>
+                  </div>
+                )}
               </div>
             </section>
 
 
           </div>
         </div>
+
+        {/* Spider-Web Cross Linking: Related Categories & Regional Hubs */}
+        <section className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs flex flex-col gap-3.5">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-150 dark:border-slate-800">
+            <h2 className="text-xs sm:text-sm font-bold uppercase tracking-wider text-slate-800 dark:text-slate-100 flex items-center gap-2">
+              <Briefcase className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
+              {t.company.relatedCategories || "関連カテゴリ・業界一覧"}
+            </h2>
+            <Link 
+              href={`/${locale}/directory`} 
+              className="text-xs font-semibold text-[#1B4F8A] dark:text-blue-400 hover:underline inline-flex items-center gap-1"
+            >
+              <span>{t.footer.directory}</span>
+              <ArrowRight className="w-3 h-3" />
+            </Link>
+          </div>
+
+          <div className="flex flex-wrap gap-2 pt-1">
+            {/* Primary Category Link */}
+            {categoryPath && (
+              <Link
+                href={categoryPath}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[#1B4F8A]/5 hover:bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-blue-950/40 dark:hover:bg-blue-900/40 dark:text-blue-300 border border-[#1B4F8A]/20 dark:border-blue-800/40 transition-colors inline-flex items-center gap-1.5"
+              >
+                <Building2 className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+                <span>{categoryName}</span>
+              </Link>
+            )}
+
+            {/* Regional Prefecture Hub Link */}
+            {company.prefecture_code && (
+              <Link
+                href={`/${locale}/area/${company.prefecture_code}`}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors inline-flex items-center gap-1.5"
+              >
+                <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                <span>{locale === 'en' ? `All ${prefName} Companies` : locale === 'vi' ? `Tất cả doanh nghiệp tại ${prefName}` : `${prefName}の全企業一覧`}</span>
+              </Link>
+            )}
+
+            {/* Major Industry Hubs in this prefecture */}
+            {majorIndustries.map((ind, idx) => (
+              <Link
+                key={idx}
+                href={`/${locale}/industry/${ind.industry_code}/location/${company.prefecture_code || '13'}`}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors"
+              >
+                {prefName} × {ind.industry_name}
+              </Link>
+            ))}
+
+            {/* Global Directory Link */}
+            <Link
+              href={`/${locale}/directory`}
+              className="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200/80 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors"
+            >
+              {locale === 'en' ? 'Japan 47 Prefectures Directory' : locale === 'vi' ? 'Danh bạ 47 tỉnh thành Nhật Bản' : '全国47都道府県・全業界インデックス'}
+            </Link>
+          </div>
+        </section>
       </main>
       <Footer />
     </div>

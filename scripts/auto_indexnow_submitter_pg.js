@@ -143,37 +143,65 @@ async function run() {
       return;
     }
 
-    const urls = targets.map(corp => `${BASE_URL}/ja/company/${corp}`);
+    const CHUNK_SIZE = 10000;
+    const chunks = [];
+    for (let i = 0; i < targets.length; i += CHUNK_SIZE) {
+      chunks.push(targets.slice(i, i + CHUNK_SIZE));
+    }
+    console.log(`[*] Chia ${targets.length.toLocaleString()} URLs thành ${chunks.length} gói nộp (tối đa ${CHUNK_SIZE.toLocaleString()} URLs/gói theo chuẩn IndexNow)...`);
 
     if (dryRun) {
-      console.log(`[*] Chạy thử (Dry Run): Tìm thấy ${urls.length} URLs hợp lệ chưa nộp:`);
-      urls.slice(0, 5).forEach(u => console.log('  -', u));
+      console.log(`[*] Chạy thử (Dry Run): Tìm thấy ${targets.length} URLs hợp lệ chưa nộp:`);
+      targets.slice(0, 5).forEach(corp => console.log('  -', `${BASE_URL}/ja/company/${corp}`));
       return;
     }
 
-    // Submit to IndexNow API
-    const res = await submitToIndexNow(urls);
-    console.log(`[*] Phản hồi từ Microsoft IndexNow API: HTTP ${res.status} ${res.statusText}`);
+    let totalSaved = 0;
 
-    if (res.status === 200 || res.status === 202) {
-      // Save batch to PostgreSQL
-      await client.query('BEGIN');
-      const insertQuery = `
-        INSERT INTO indexnow_submissions (corporate_number, url, submitted_at, batch_id, response_code, priority_level)
-        VALUES ($1, $2, NOW(), $3, $4, 1)
-        ON CONFLICT (corporate_number) DO NOTHING
-      `;
-      for (const corp of targets) {
-        await client.query(insertQuery, [corp, `${BASE_URL}/ja/company/${corp}`, batchId, res.status]);
+    for (let idx = 0; idx < chunks.length; idx++) {
+      const chunkTargets = chunks[idx];
+      const chunkUrls = chunkTargets.map(corp => `${BASE_URL}/ja/company/${corp}`);
+      console.log(`[*] [Gói ${idx + 1}/${chunks.length}] Đang nộp ${chunkUrls.length.toLocaleString()} URLs lên IndexNow...`);
+
+      const res = await submitToIndexNow(chunkUrls);
+      console.log(`    ↳ Phản hồi IndexNow: HTTP ${res.status} ${res.statusText}`);
+
+      if (res.status === 200 || res.status === 202) {
+        // Fast batch insert into PostgreSQL (in sub-batches of 1000)
+        await client.query('BEGIN');
+        const DB_SUB_BATCH = 1000;
+        for (let j = 0; j < chunkTargets.length; j += DB_SUB_BATCH) {
+          const sub = chunkTargets.slice(j, j + DB_SUB_BATCH);
+          const values = [];
+          const params = [batchId, res.status];
+          sub.forEach((corp) => {
+            const pIdx = params.length + 1;
+            params.push(corp, `${BASE_URL}/ja/company/${corp}`);
+            values.push(`($${pIdx}, $${pIdx + 1}, NOW(), $1, $2, 1)`);
+          });
+          const insertSql = `
+            INSERT INTO indexnow_submissions (corporate_number, url, submitted_at, batch_id, response_code, priority_level)
+            VALUES ${values.join(', ')}
+            ON CONFLICT (corporate_number) DO NOTHING
+          `;
+          await client.query(insertSql, params);
+        }
+        await client.query('COMMIT');
+        totalSaved += chunkTargets.length;
+        console.log(`    ↳ [OK] Đã lưu thành công ${chunkTargets.length.toLocaleString()} URLs vào PostgreSQL.`);
+
+        // Nghỉ 2 giây giữa các gói để tránh dồn dập
+        if (idx < chunks.length - 1) {
+          await new Promise(r => setTimeout(r, 2000));
+        }
+      } else {
+        console.error(`[ERROR] IndexNow API từ chối gói ${idx + 1} với mã lỗi: HTTP ${res.status}`);
+        process.exit(1);
       }
-      await client.query('COMMIT');
-
-      const stats = await getStats(client);
-      console.log(`[SUCCESS] Đã lưu ${urls.length} URLs vào database. Tổng số đã nộp: ${stats.total_submitted.toLocaleString()} (${stats.coverage_percent}%).`);
-    } else {
-      console.error(`[ERROR] IndexNow API trả về mã lỗi: ${res.status}`);
-      process.exit(1);
     }
+
+    const stats = await getStats(client);
+    console.log(`\n[HOÀN TẤT XUẤT SẮC] Đã nộp và lưu ${totalSaved.toLocaleString()} URLs. Tổng số đã nộp toàn sàn: ${stats.total_submitted.toLocaleString()} (${stats.coverage_percent}%).`);
   } catch (err) {
     console.error('[FATAL ERROR]:', err);
     process.exit(1);

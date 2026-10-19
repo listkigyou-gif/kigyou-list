@@ -144,9 +144,9 @@ export async function GET(request: Request) {
       if (comp.has_bidding) triggers.push("官公庁・公共調達の入札実績あり (信頼性・公共案件)");
       if (comp.has_patent) triggers.push("特許・知財保有企業 (高付加価値・独自技術)");
 
-      const loc = comp.prefecture_name || comp.prefecture || "国内";
+      const loc = comp.prefecture_name || "国内";
       const ind = comp.industry_name || "貴社業界";
-      const name = comp.company_name || comp.name;
+      const name = comp.company_name;
 
       let icebreaker = `突然のご連絡にて大変恐れ入ります。${name}様の${ind}における先進的なお取り組みと、`;
       if (comp.has_hiring) {
@@ -170,7 +170,7 @@ export async function GET(request: Request) {
           triggers,
           icebreaker_ja: icebreaker,
           recommended_pitch_angle: pitch,
-          agent_action_hint: comp.has_email ? "email_direct" : (comp.website ? "inquiry_form_submission" : "phone_cold_call")
+          agent_action_hint: comp.has_email ? "email_direct" : (comp.website_url ? "inquiry_form_submission" : "phone_cold_call")
         }
       };
     });

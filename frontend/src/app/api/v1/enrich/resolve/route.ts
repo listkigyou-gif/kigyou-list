@@ -248,7 +248,8 @@ export async function GET(request: Request) {
     }
 
     const currentQuota = await getUserQuota(keyInfo.user_email);
-    const quotaRemaining = currentQuota.remaining.toString();
+    const totalRemaining = Math.max(0, (currentQuota.monthly_base_allowance - currentQuota.monthly_base_used) + currentQuota.purchased_add_on_balance);
+    const quotaRemaining = totalRemaining.toString();
 
     // Update API Key usage details
     const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";

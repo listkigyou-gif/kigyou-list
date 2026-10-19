@@ -71,15 +71,35 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ user, quota, locale 
     }
   };
 
-  const handleRevokeApiKey = async (keyId: string) => {
-    if (!confirm(isJa ? "このAPIキーを無効化しますか？外部連携が停止します。" : "Revoke this API Key?")) return;
+  const [revokingId, setRevokingId] = useState<string | null>(null);
+
+  const handleDeleteApiKey = async (keyId: string) => {
+    const confirmMsg = isJa 
+      ? "このAPIキーを無効化し、完全に削除しますか？\n外部システムとの連携が直ちに停止し、この操作は取り消せません。"
+      : isVi 
+      ? "Bạn có chắc muốn vô hiệu hóa và xóa vĩnh viễn API Key này?\nCác liên kết hệ thống bên ngoài sẽ dừng ngay lập tức và không thể hoàn tác."
+      : "Revoke and permanently delete this API Key?\nExternal integrations will stop immediately and this cannot be undone.";
+
+    if (!confirm(confirmMsg)) return;
+
+    setRevokingId(keyId);
     try {
-      const res = await fetch(`/api/user/apikeys?id=${keyId}`, { method: "DELETE" });
+      const res = await fetch(`/api/user/apikeys?id=${encodeURIComponent(keyId)}&action=delete`, { 
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ keyId, action: "delete" })
+      });
+      const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        fetchApiKeys();
+        await fetchApiKeys();
+      } else {
+        alert(data.error || (isJa ? "APIキーの削除に失敗しました。" : isVi ? "Xóa API Key thất bại." : "Failed to delete API key"));
       }
     } catch (e) {
-      alert("Error revoking key");
+      console.error("Error deleting key", e);
+      alert(isJa ? "通信エラーが発生しました。" : isVi ? "Lỗi kết nối khi xóa API key." : "Error deleting key");
+    } finally {
+      setRevokingId(null);
     }
   };
 
@@ -95,7 +115,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ user, quota, locale 
       "command": "python",
       "args": ["c:/kigyou-list/scripts/mcp/kigyoulist_mcp_server.py"],
       "env": {
-        "KIGYOU_API_KEY": "${apiKeys[0]?.api_key_preview ? 'kigyou_live_...' : 'YOUR_API_KEY'}"
+        "KIGYOU_API_KEY": "${apiKeys?.[0]?.api_key_preview ? 'kigyou_live_...' : 'YOUR_API_KEY'}"
       }
     }
   }
@@ -236,14 +256,19 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ user, quota, locale 
                       {k.last_used_at ? parseUTCDate(k.last_used_at).toLocaleDateString() : "Unused"}
                     </td>
                     <td className="px-4 py-3 text-right">
-                      {k.status === "active" && (
-                        <button
-                          onClick={() => handleRevokeApiKey(k.id)}
-                          className="px-2.5 py-1 text-[10px] font-bold text-rose-600 border border-rose-200 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
-                        >
-                          Revoke
-                        </button>
-                      )}
+                      <button
+                        onClick={() => handleDeleteApiKey(k.id)}
+                        disabled={revokingId === k.id}
+                        className="px-2.5 py-1 text-[10px] font-bold text-rose-600 border border-rose-200 hover:bg-rose-50 dark:hover:bg-rose-950/40 dark:border-rose-900/60 rounded-lg transition-colors cursor-pointer inline-flex items-center gap-1.5 disabled:opacity-50"
+                        title={isJa ? "APIキーを無効化して完全に削除" : isVi ? "Thu hồi và xóa vĩnh viễn" : "Revoke and permanently delete"}
+                      >
+                        {revokingId === k.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="w-3 h-3" />
+                        )}
+                        <span>{isJa ? "削除" : isVi ? "Xóa" : "Revoke & Delete"}</span>
+                      </button>
                     </td>
                   </tr>
                 ))}

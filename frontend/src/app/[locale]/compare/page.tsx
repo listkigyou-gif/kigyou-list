@@ -20,11 +20,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const isEn = locale === "en";
   const isVi = locale === "vi";
 
+  const currentYear = new Date().getFullYear();
   const title = isVi
-    ? "So Sánh Nền Tảng Dữ Liệu Doanh Nghiệp & Danh Sách B2B Nhật Bản 2026 | Kigyou-list"
+    ? `So Sánh Nền Tảng Dữ Liệu Doanh Nghiệp & Danh Sách B2B Nhật Bản ${currentYear} | Kigyou-list`
     : isEn
-    ? "Top Japanese Corporate Database & B2B Sales List Comparison 2026 | Kigyou-list"
-    : "【2026年最新】日本の企業データベース・営業リスト比較：Kigyou-listが選ばれる理由と料金・件数徹底比較 | Kigyou-list";
+    ? `Top Japanese Corporate Database & B2B Sales List Comparison ${currentYear} | Kigyou-list`
+    : `【${currentYear}年最新】日本の企業データベース・営業リスト比較：Kigyou-listが選ばれる理由と料金・件数徹底比較 | Kigyou-list`;
 
   const description = isVi
     ? "Bảng so sánh chi tiết giữa Kigyou-list và các nền tảng danh bạ doanh nghiệp truyền thống tại Nhật Bản. 5 triệu doanh nghiệp, chi phí tháng đầu chỉ từ 1,260 JPY (giảm 70% / giá gốc 4,200 JPY), tích hợp gửi Form tự động từ 5.9 JPY/lần."
@@ -225,7 +226,7 @@ export default async function ComparePage({ params }: PageProps) {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 text-[#1B4F8A] dark:text-blue-400 text-xs font-bold tracking-wide">
             <Scale className="w-3.5 h-3.5" />
             <span>
-              {isJa ? "【2026年最新】日本のB2Bデータベース徹底比較" : isEn ? "2026 Japan B2B Corporate Database Benchmark" : "Bảng So Sánh Nền Tảng Dữ Liệu Doanh Nghiệp B2B Nhật Bản 2026"}
+              {isJa ? `【${currentYear}年最新】日本のB2Bデータベース徹底比較` : isEn ? `${currentYear} Japan B2B Corporate Database Benchmark` : `Bảng So Sánh Nền Tảng Dữ Liệu Doanh Nghiệp B2B Nhật Bản ${currentYear}`}
             </span>
           </div>
 
@@ -271,7 +272,7 @@ export default async function ComparePage({ params }: PageProps) {
               <span>{isJa ? "主要企業データベース 項目別徹底比較表" : isEn ? "Feature & Pricing Benchmark Matrix" : "Bảng So Sánh Chi Tiết Theo Tiêu Chí"}</span>
             </h2>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              {isJa ? "※ 2026年現在の各社公開情報に基づく比較です。" : isEn ? "※ Based on publicly available market data as of 2026." : "※ Dựa trên thông tin công bố thị trường năm 2026."}
+              {isJa ? `※ ${currentYear}年現在の各社公開情報に基づく比較です。` : isEn ? `※ Based on publicly available market data as of ${currentYear}.` : `※ Dựa trên thông tin công bố thị trường năm ${currentYear}.`}
             </p>
           </div>
 

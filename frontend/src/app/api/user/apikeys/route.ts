@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { getUserApiKeys, createUserApiKey, revokeUserApiKey, getUserQuota } from "@/lib/db";
+import { getUserApiKeys, createUserApiKey, revokeUserApiKey, deleteUserApiKey, getUserQuota } from "@/lib/db";
 import { isAdminEmail } from "@/lib/adminAuth";
 
 /**
  * GET: Retrieve list of API keys for the current authenticated user.
+ * Only returns active keys so the user dashboard stays clean.
  */
 export async function GET(request: Request) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: Request) {
     }
 
     const email = session.user.email;
-    const apiKeys = await getUserApiKeys(email);
+    const apiKeys = await getUserApiKeys(email, true);
 
     return NextResponse.json({
       success: true,
@@ -75,7 +76,10 @@ export async function POST(request: Request) {
 }
 
 /**
- * DELETE: Revoke a specific API key for the current user.
+ * DELETE: Revoke or permanently delete a specific API key for the current user.
+ * Supports:
+ * - Query param: ?id=xxx or ?keyId=xxx [&action=revoke|delete]
+ * - JSON body: { keyId: 'xxx', action: 'revoke'|'delete' }
  */
 export async function DELETE(request: Request) {
   try {
@@ -85,20 +89,52 @@ export async function DELETE(request: Request) {
     }
 
     const email = session.user.email;
-    const { keyId } = await request.json();
+    const url = new URL(request.url);
+    let keyId = url.searchParams.get("id") || url.searchParams.get("keyId");
+    let action = url.searchParams.get("action") || "revoke";
+
+    // Try reading JSON body if available
+    try {
+      const body = await request.json();
+      if (body) {
+        if (body.keyId || body.id) {
+          keyId = body.keyId || body.id;
+        }
+        if (body.action) {
+          action = body.action;
+        }
+      }
+    } catch {
+      // Body is empty or not JSON, which is normal for standard DELETE requests with query parameters
+    }
 
     if (!keyId) {
       return NextResponse.json({ error: "APIキーIDが必要です。" }, { status: 400 });
     }
 
-    const success = await revokeUserApiKey(email, keyId);
-    if (success) {
-      return NextResponse.json({
-        success: true,
-        message: "APIキーを無効化しました。"
-      });
+    if (action === "hard_delete") {
+      const success = await deleteUserApiKey(email, keyId);
+      if (success) {
+        return NextResponse.json({
+          success: true,
+          message: "APIキーを完全に削除しました。"
+        });
+      } else {
+        return NextResponse.json({ error: "APIキーの削除に失敗したか、権限がありません。" }, { status: 400 });
+      }
     } else {
-      return NextResponse.json({ error: "APIキーの無効化に失敗したか, 権限がありません。" }, { status: 400 });
+      // Default: Soft Delete with Audit Trail ('user' revoked)
+      // Completely hidden from user dashboard because GET filters activeOnly=true,
+      // but safely preserved in Admin B2B API Key Management for dispute resolution and compliance.
+      const success = await revokeUserApiKey(email, keyId, "user", "ユーザー自身による削除 (Dashboard)");
+      if (success) {
+        return NextResponse.json({
+          success: true,
+          message: "APIキーを無効化し削除しました。"
+        });
+      } else {
+        return NextResponse.json({ error: "APIキーの削除に失敗したか、権限がありません。" }, { status: 400 });
+      }
     }
   } catch (error) {
     console.error("Error in DELETE /api/user/apikeys:", error);

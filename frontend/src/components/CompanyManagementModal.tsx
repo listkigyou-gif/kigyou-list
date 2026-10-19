@@ -29,6 +29,7 @@ import {
   Upload,
   FileText,
   Image as ImageIcon,
+  Sparkles,
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useSearchParams } from "next/navigation";

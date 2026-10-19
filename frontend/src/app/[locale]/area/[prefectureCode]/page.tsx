@@ -37,11 +37,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const isEn = locale === 'en';
   const isVi = locale === 'vi';
 
+  const currentYear = new Date().getFullYear();
   const pageTitle = isVi
-    ? `Danh sách công ty tại ${prefName} (Cập nhật 2026) | Kigyou-list`
+    ? `Danh sách công ty tại ${prefName} (Cập nhật ${currentYear}) | Kigyou-list`
     : isEn
-    ? `${prefName} Company Directory & Business Database (2026) | Kigyou-list`
-    : `${prefName}の企業一覧・営業リストデータベース（2026年最新） | Kigyou-list`;
+    ? `${prefName} Company Directory & Business Database (${currentYear}) | Kigyou-list`
+    : `${prefName}の企業一覧・営業リストデータベース（${currentYear}年最新） | Kigyou-list`;
 
   const pageDesc = isVi
     ? `Cơ sở dữ liệu toàn diện các doanh nghiệp đang hoạt động tại ${prefName}, Nhật Bản. Tra cứu thông tin liên hệ, mã số thuế pháp nhân, vốn điều lệ, quy mô nhân sự và tín hiệu mua hàng B2B.`

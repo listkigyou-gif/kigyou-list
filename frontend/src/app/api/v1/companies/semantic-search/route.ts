@@ -170,6 +170,7 @@ export async function POST(request: Request) {
     await updateApiKeyUsage(keyInfo.id, ip, ua);
 
     const updatedQuota = await getUserQuota(keyInfo.user_email);
+    const totalRemaining = Math.max(0, (updatedQuota.monthly_base_allowance - updatedQuota.monthly_base_used) + updatedQuota.purchased_add_on_balance);
 
     return NextResponse.json({
       success: true,
@@ -180,7 +181,7 @@ export async function POST(request: Request) {
       companies: rankedCompanies
     }, {
       headers: {
-        "X-Quota-Remaining": updatedQuota.remaining.toString()
+        "X-Quota-Remaining": totalRemaining.toString()
       }
     });
 

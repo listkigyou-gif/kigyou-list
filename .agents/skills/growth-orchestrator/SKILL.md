@@ -35,12 +35,29 @@ Không chia lẻ kênh, mỗi ngày Agent sẽ lấy **1 Chủ Đề Cốt Lõi 
 | **6. Facebook Doanh Nghiệp** | **Facebook Fanpage** | Bản tin chính thức (Official News), hình ảnh chuyên nghiệp, link website. |
 | **7. Facebook Cá Nhân** | **Facebook Profile** | Storytelling của Founder, góc nhìn thực tế P2P, link dưới comment đầu tiên. |
 
-*(Quy tắc ngoại lệ: **ValuePress** được bảo lưu hạn mức 1 lần/tháng vào ngày có thông cáo báo chí quan trọng nhất trong tháng).*
-*(Tạm thời bỏ qua **LinkedIn** cho đến khi kích hoạt lại).*
+*(Quy tắc ngoại lệ: **ValuePress** bắt buộc giãn cách tối thiểu 30 ngày/bài. Bài trước đăng ngày 11/10/2026, do đó **TẠM KHÓA ĐẾN SAU 13/11/2026**).*
+*(Tạm thời bỏ qua **LinkedIn** cho đến khi kích hoạt lại. Đã loại trừ vĩnh viễn Yahoo! Chiebukuro).*
 
 ---
 
-## 3. Tiêu Chuẩn Sinh Ảnh AI Phong Cách B2B Nhật Bản (Japanese B2B Aesthetic)
+## 3. Bảng Kiểm Soát Hạn Ngạch & Tần Suất Cổng Báo Chí (PR Quota Governance)
+
+⚠️ **QUY TẮC CỨNG VỀ BÁO CHÍ (TUYỆT ĐỐI KHÔNG QUÊN):**
+
+| Cổng Báo Chí | Hạn Ngạch Gói Miễn Phí | Quy Tắc Giãn Cách & Điều Kiện | Trạng Thái & Xử Lý Của Agent |
+| :--- | :--- | :--- | :--- |
+| **ValuePress** | **1 bài / 30 ngày** / pháp nhân | Bài trước nộp 11/10/2026. Nếu nộp sớm hơn 30 ngày sẽ bị từ chối hoặc ép trả 30,000¥. | ⛔ **TẠM KHÓA ĐẾN 13/11/2026**. Tuyệt đối không đề xuất trong tháng 10. |
+| **PR-FREE** | Miễn phí 100% | Giãn cách an toàn **4 - 5 ngày/bài**. Tránh gửi dồn dập bị gắn cờ spam. | 🟢 Đã nộp Ngày 1 (19/10). Lần tiếp theo: từ **24/10** (Ngày 6). |
+| **PRESSNOW** | Miễn phí 100% | Tần suất tối ưu: **1 bài / tuần**. Duyệt nhanh trong 24h. | 🟢 Sẵn sàng cho **Ngày 2 (20/10)**. |
+| **Zero-Press** | Miễn phí (phủ 20 tòa soạn) | Tần suất tối ưu: **1 bài / 7 - 10 ngày**. | 🟢 Sẵn sàng cho **Ngày 3 (21/10)**. |
+| **ツナググ (Tsunagugu)** | Miễn phí 100% | Tần suất tối ưu: **1 bài / tuần**. | 🟢 Sẵn sàng cho **Ngày 4 (22/10)**. |
+| **FREE PRESS RELEASE** | Miễn phí 100% | Tần suất tối ưu: **1 bài / tuần**. | 🟢 Sẵn sàng cho **Ngày 5 (23/10)**. |
+
+> 🚫 **Nguyên tắc chống phạt trùng lặp (Anti-Duplicate Content):** Tuyệt đối không đăng nội dung y hệt nhau lên nhiều cổng báo chí trong cùng 1 ngày. Mỗi ngày chỉ kích hoạt **đúng 1 cổng báo chí PR** với tiêu đề và góc nhìn độc bản!
+
+---
+
+## 4. Tiêu Chuẩn Sinh Ảnh AI Phong Cách B2B Nhật Bản (Japanese B2B Aesthetic)
 
 Mỗi ngày, Agent **BẮT BUỘC** gọi tool `generate_image` để tạo ảnh eyecatch dùng chung cho toàn bộ hệ sinh thái các bài đăng.
 
@@ -51,17 +68,29 @@ Mỗi ngày, Agent **BẮT BUỘC** gọi tool `generate_image` để tạo ản
 
 ---
 
-## 4. Quy Trình Vận Hành Khi Nhận Lệnh "Hôm Nay Cần Làm Gì?"
+## 5. Nguyên Tắc Phân Quyền Agent Con Chuyên Biệt (Specialized Subagents Execution)
 
-1. **Xác định Chủ đề ngày**: Chọn góc nhìn đánh trúng nỗi đau B2B (Data cũ, giá đắt, thiếu tín hiệu tuyển dụng, form sales,...).
-2. **Sinh ảnh Eyecatch B2B**: Gọi `generate_image` tạo ảnh 16:9 chất lượng cao.
-3. **Soạn thảo trọn bộ 7 kênh**:
-   - Note.com (Bài dài)
-   - Qiita (Bài kỹ thuật)
-   - Zenn (Bài dev/data)
-   - PR-FREE (Bài PR)
-   - X (Tweet + Reply)
-   - Facebook Fanpage (Tin công ty)
-   - Facebook Cá nhân (Founder story)
-4. **Trình bày rõ ràng & Sẵn sàng 1-Click xuất bản**:
-   - Khi người dùng gõ *"Đăng luôn"*, Agent tuần tự kích hoạt các script xuất bản tương ứng.
+Để bài viết đạt độ chín, sâu sắc và không bị lỗi lẫn lộn văn phong:
+- Agent Chỉ Huy **KHÔNG viết gộp chung** nội dung các kênh trong 1 câu trả lời.
+- Agent Chỉ Huy chịu trách nhiệm: chốt **1 Chủ Đề Lõi (Core Theme)** + sinh **Ảnh bìa 16:9**.
+- Sau đó giao đề bài cho từng **Agent Con chuyên trách**:
+  - `note-publisher`: Viết bài dài, bảng so sánh định lượng ROI, FAQ kích hoạt AI SEO.
+  - `facebook-publisher`: Tối ưu 90 ký tự hook, văn phong Keigo B2B, đăng đồng thời Fanpage + Profile Takahashi Rika.
+  - `x-publisher`: Cắt gọt chuẩn 140 ký tự tiếng Nhật, chia chuỗi Thread, chèn link ở First Reply chống bóp reach.
+  - `qiita-publisher` & `zenn-publisher`: Thể văn kỹ sư `だ・である`, kiến trúc PostgreSQL/Playwright, không viết bài quảng cáo bán hàng.
+  - PR Publishers (`auto_publish_pr_free.py`, `auto_publish_pressnow.py`,...): Văn phong thông cáo báo chí chính thống, củng cố thực thể TQC株式会社.
+
+---
+
+## 6. Quy Trình Vận Hành Khi Nhận Lệnh
+
+1. **Khi nhận lệnh "Hôm nay cần làm gì?" / "Hôm nay đăng gì?":**
+   - Xác định ngày trong chu kỳ (Ngày 1 đến Ngày 7).
+   - Kiểm tra bảng hạn mức PR (chọn đúng cổng PR khả dụng, bỏ qua ValuePress nếu chưa đủ 30 ngày).
+   - Gọi `generate_image` tạo ảnh 16:9 chất lượng cao.
+   - Trình bày tóm tắt kế hoạch ngày cho người dùng.
+2. **Khi nhận lệnh "Đăng luôn" / "Xác nhận xuất bản":**
+   - Tuần tự kích hoạt các script xuất bản tương ứng của từng kênh.
+   - Thu thập link bài viết trực tiếp & ảnh chụp màn hình nghiệm thu thực tế.
+   - Báo cáo kết quả tổng kết 1-chạm cho người dùng.
+
