@@ -30,6 +30,8 @@ import {
   FileText,
   Image as ImageIcon,
   Sparkles,
+  TrendingUp,
+  Briefcase,
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { useSearchParams } from "next/navigation";
@@ -46,8 +48,23 @@ interface CompanyManagementModalProps {
   initialEmail?: string | null;
   initialFax?: string | null;
   initialRepresentative?: string | null;
+  initialRepresentativePosition?: string | null;
   initialPrTitle?: string | null;
   initialPrMessage?: string | null;
+  initialContactFormUrl?: string | null;
+  initialRecruitUrl?: string | null;
+  initialKana?: string | null;
+  initialEn?: string | null;
+  initialPostalCode?: string | null;
+  initialAddress?: string | null;
+  initialCapital?: number | string | null;
+  initialEmployees?: number | string | null;
+  initialSales?: number | string | null;
+  initialFiscalMonth?: string | null;
+  initialDescription?: string | null;
+  initialMainClients?: string | null;
+  initialMainBanks?: string | null;
+  initialSnsLinks?: string | null;
   isClaimed?: boolean;
   claimedByEmail?: string | null;
   onSuccess?: () => void;
@@ -63,8 +80,23 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
   initialEmail = "",
   initialFax = "",
   initialRepresentative = "",
+  initialRepresentativePosition = "",
   initialPrTitle = "",
   initialPrMessage = "",
+  initialContactFormUrl = "",
+  initialRecruitUrl = "",
+  initialKana = "",
+  initialEn = "",
+  initialPostalCode = "",
+  initialAddress = "",
+  initialCapital = "",
+  initialEmployees = "",
+  initialSales = "",
+  initialFiscalMonth = "",
+  initialDescription = "",
+  initialMainClients = "",
+  initialMainBanks = "",
+  initialSnsLinks = "",
   isClaimed = false,
   claimedByEmail = null,
   onSuccess,
@@ -142,12 +174,34 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
   const [prMessage, setPrMessage] = useState(initialPrMessage || "");
   const [savingPr, setSavingPr] = useState(false);
 
-  // Tab 2: Edit Info states
+  // Tab 2: Edit Info states (Expanded B2B fields)
   const [phone, setPhone] = useState(initialPhone || "");
   const [website, setWebsite] = useState(initialWebsite || "");
   const [contactEmail, setContactEmail] = useState(initialEmail || "");
   const [fax, setFax] = useState(initialFax || "");
+  const [contactFormUrl, setContactFormUrl] = useState(initialContactFormUrl || "");
+  const [recruitUrl, setRecruitUrl] = useState(initialRecruitUrl || "");
+  const [branchPhone, setBranchPhone] = useState("");
+
+  const [nameKana, setNameKana] = useState(initialKana || "");
+  const [nameEn, setNameEn] = useState(initialEn || "");
+  const [postalCode, setPostalCode] = useState(initialPostalCode || "");
+  const [address, setAddress] = useState(initialAddress || "");
+
+  const [representativePosition, setRepresentativePosition] = useState(initialRepresentativePosition || "");
   const [representative, setRepresentative] = useState(initialRepresentative || "");
+  const [establishmentDate, setEstablishmentDate] = useState("");
+
+  const [capitalAmount, setCapitalAmount] = useState(initialCapital ? String(initialCapital) : "");
+  const [employeeCount, setEmployeeCount] = useState(initialEmployees ? String(initialEmployees) : "");
+  const [salesAmount, setSalesAmount] = useState(initialSales ? String(initialSales) : "");
+  const [fiscalMonth, setFiscalMonth] = useState(initialFiscalMonth || "");
+
+  const [description, setDescription] = useState(initialDescription || "");
+  const [mainClients, setMainClients] = useState(initialMainClients || "");
+  const [mainBanks, setMainBanks] = useState(initialMainBanks || "");
+  const [snsLinks, setSnsLinks] = useState(initialSnsLinks || "");
+
   const [verifyWebsite, setVerifyWebsite] = useState(initialWebsite || "");
   const [savingInfo, setSavingInfo] = useState(false);
 
@@ -499,7 +553,26 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
           website_url: website.trim(),
           email_address: contactEmail.trim(),
           fax_number: fax.trim(),
+          contact_form_url: contactFormUrl.trim(),
+          recruit_url: recruitUrl.trim(),
+          branch_phone_numbers: branchPhone.trim(),
+          company_name_kana: nameKana.trim(),
+          company_name_en: nameEn.trim(),
+          postal_code: postalCode.trim(),
+          street_address: address.trim(),
+          full_address: address.trim(),
+          representative_position: representativePosition.trim(),
           representative_name: representative.trim(),
+          establishment_date: establishmentDate.trim(),
+          capital_amount: capitalAmount.trim(),
+          employee_count: employeeCount.trim(),
+          sales_amount: salesAmount.trim(),
+          fiscal_month: fiscalMonth.trim(),
+          jigyo_shumoku: description.trim(),
+          business_summary: description.trim(),
+          main_clients: mainClients.trim(),
+          main_banks: mainBanks.trim(),
+          sns_links: snsLinks.trim(),
           pr_title: prTitle.trim(),
           pr_message: prMessage.trim(),
           verify_website_url: verifyWebsite.trim() || website.trim() || "https://kigyoulist.com",
@@ -1398,25 +1471,233 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
                     </div>
                   )}
 
-                  {/* Section B: Executive Info */}
-                  <div className="space-y-3 pt-1">
-                    <div className="text-xs font-bold text-slate-900 dark:text-white pb-1 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
-                      <UserCheck className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-                      <span>{isJa ? "2. 代表者・役員情報" : isVi ? "2. Thông tin Ban điều hành" : "2. Executive Representative"}</span>
-                    </div>
-
+                  {/* Section A2: Contact Form & Recruitment */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
                     <div>
                       <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                        代表者 氏名
+                        お問い合わせフォームURL
                       </label>
-                      <div className="relative">
-                        <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                      <input
+                        type="url"
+                        value={contactFormUrl}
+                        onChange={(e) => setContactFormUrl(e.target.value)}
+                        placeholder="https://example.co.jp/contact"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                        採用・求人ページURL
+                      </label>
+                      <input
+                        type="url"
+                        value={recruitUrl}
+                        onChange={(e) => setRecruitUrl(e.target.value)}
+                        placeholder="https://example.co.jp/recruit"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Section B: Executive & Location Info */}
+                  <div className="space-y-3 pt-2">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white pb-1 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
+                      <UserCheck className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+                      <span>{isJa ? "2. 代表者・所在地・基本情報" : isVi ? "2. Ban điều hành & Trụ sở" : "2. Executive & Location"}</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          代表者 役職
+                        </label>
                         <input
                           type="text"
-                          value={representative}
-                          onChange={(e) => setRepresentative(e.target.value)}
-                          placeholder="例: 代表取締役 田中 太郎"
-                          className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] outline-none"
+                          value={representativePosition}
+                          onChange={(e) => setRepresentativePosition(e.target.value)}
+                          placeholder="例: 代表取締役社長"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          代表者 氏名
+                        </label>
+                        <div className="relative">
+                          <User className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                          <input
+                            type="text"
+                            value={representative}
+                            onChange={(e) => setRepresentative(e.target.value)}
+                            placeholder="例: 田中 太郎"
+                            className="w-full pl-9 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          会社名（フリガナ）
+                        </label>
+                        <input
+                          type="text"
+                          value={nameKana}
+                          onChange={(e) => setNameKana(e.target.value)}
+                          placeholder="例: カブシキガイシャティーキューシー"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          英語社名表記
+                        </label>
+                        <input
+                          type="text"
+                          value={nameEn}
+                          onChange={(e) => setNameEn(e.target.value)}
+                          placeholder="例: TQC Inc."
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                        />
+                      </div>
+
+                      <div className="sm:col-span-2">
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          実働オフィス所在地（ビル名・フロア階数）
+                        </label>
+                        <input
+                          type="text"
+                          value={address}
+                          onChange={(e) => setAddress(e.target.value)}
+                          placeholder="例: 東京都千代田区大手町1-2-3 ○○ビル 8F"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section C: Scale & Financials */}
+                  <div className="space-y-3 pt-2">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white pb-1 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
+                      <TrendingUp className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+                      <span>{isJa ? "3. 企業規模・決算期情報" : isVi ? "3. Quy mô & Quyết toán tài chính" : "3. Scale & Financials"}</span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          資本金（円）
+                        </label>
+                        <input
+                          type="text"
+                          value={capitalAmount}
+                          onChange={(e) => setCapitalAmount(e.target.value)}
+                          placeholder="例: 10000000"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono tabular-nums focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          従業員数（名）
+                        </label>
+                        <input
+                          type="text"
+                          value={employeeCount}
+                          onChange={(e) => setEmployeeCount(e.target.value)}
+                          placeholder="例: 50"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono tabular-nums focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          最新売上高（円）
+                        </label>
+                        <input
+                          type="text"
+                          value={salesAmount}
+                          onChange={(e) => setSalesAmount(e.target.value)}
+                          placeholder="例: 500000000"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono tabular-nums focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          決算期（決算月）
+                        </label>
+                        <input
+                          type="text"
+                          value={fiscalMonth}
+                          onChange={(e) => setFiscalMonth(e.target.value)}
+                          placeholder="例: 3月決算"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section D: Business, Partners & SNS */}
+                  <div className="space-y-3 pt-2">
+                    <div className="text-xs font-bold text-slate-900 dark:text-white pb-1 border-b border-slate-100 dark:border-slate-800 flex items-center gap-1.5">
+                      <Briefcase className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+                      <span>{isJa ? "4. 事業内容・主要取引先・取引銀行・公式SNS" : isVi ? "4. Ngành nghề, Đối tác & Mạng xã hội SNS" : "4. Business & Network"}</span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          事業内容・主要サービス
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          placeholder="事業内容や主軸サービスの概要"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs leading-relaxed focus:ring-1 focus:ring-[#1B4F8A] outline-none resize-none"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            主要取引先
+                          </label>
+                          <input
+                            type="text"
+                            value={mainClients}
+                            onChange={(e) => setMainClients(e.target.value)}
+                            placeholder="例: トヨタ自動車、ソニーグループ"
+                            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                            主要取引銀行
+                          </label>
+                          <input
+                            type="text"
+                            value={mainBanks}
+                            onChange={(e) => setMainBanks(e.target.value)}
+                            placeholder="例: 三菱UFJ銀行、三井住友銀行"
+                            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs focus:ring-1 focus:ring-[#1B4F8A] outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                          公式SNSリンク (X/Twitter, LinkedIn, note, Wantedly等)
+                        </label>
+                        <input
+                          type="text"
+                          value={snsLinks}
+                          onChange={(e) => setSnsLinks(e.target.value)}
+                          placeholder="例: https://x.com/company, https://note.com/company"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-xs font-mono focus:ring-1 focus:ring-[#1B4F8A] outline-none"
                         />
                       </div>
                     </div>

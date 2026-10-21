@@ -6,6 +6,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Plus, Check, ShieldCheck, CheckCircle2, Printer } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { CompanyManagementModal } from "./CompanyManagementModal";
+import { CompanyCorrectionModal } from "./CompanyCorrectionModal";
 import { isAdminEmail } from "@/lib/adminAuth";
 
 interface CompanyActionsProps {
@@ -16,6 +17,21 @@ interface CompanyActionsProps {
   email?: string | null;
   fax?: string | null;
   representativeName?: string | null;
+  representativePosition?: string | null;
+  companyNameKana?: string | null;
+  companyNameEn?: string | null;
+  postalCode?: string | null;
+  fullAddress?: string | null;
+  capitalAmount?: number | string | null;
+  employeeCount?: number | string | null;
+  salesAmount?: number | string | null;
+  fiscalMonth?: string | null;
+  contactFormUrl?: string | null;
+  recruitUrl?: string | null;
+  jigyoShumoku?: string | null;
+  mainClients?: string | null;
+  mainBanks?: string | null;
+  snsLinks?: string | null;
   prTitle?: string | null;
   prMessage?: string | null;
   isClaimed?: boolean;
@@ -31,6 +47,21 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
   email = "",
   fax = "",
   representativeName = "",
+  representativePosition = "",
+  companyNameKana = "",
+  companyNameEn = "",
+  postalCode = "",
+  fullAddress = "",
+  capitalAmount = "",
+  employeeCount = "",
+  salesAmount = "",
+  fiscalMonth = "",
+  contactFormUrl = "",
+  recruitUrl = "",
+  jigyoShumoku = "",
+  mainClients = "",
+  mainBanks = "",
+  snsLinks = "",
   prTitle = "",
   prMessage = "",
   isClaimed = false,
@@ -46,6 +77,7 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
   const isUserAdmin = Boolean(user?.email && isAdminEmail(user.email));
   const [mounted, setMounted] = useState(false);
   const [manageModalOpen, setManageModalOpen] = useState(false);
+  const [correctionModalOpen, setCorrectionModalOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -54,10 +86,20 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
     if (claimParam === "1" || claimParam === "true") {
       setManageModalOpen(true);
     }
+    const editParam = searchParams.get("edit") || searchParams.get("correction");
+    if (editParam === "1" || editParam === "true") {
+      setCorrectionModalOpen(true);
+    }
 
     const handleOpenModal = () => setManageModalOpen(true);
+    const handleOpenCorrection = () => setCorrectionModalOpen(true);
+
     window.addEventListener("open-company-claim-modal", handleOpenModal);
-    return () => window.removeEventListener("open-company-claim-modal", handleOpenModal);
+    window.addEventListener("open-company-correction-modal", handleOpenCorrection);
+    return () => {
+      window.removeEventListener("open-company-claim-modal", handleOpenModal);
+      window.removeEventListener("open-company-correction-modal", handleOpenCorrection);
+    };
   }, [searchParams]);
 
   if (!mounted) {
@@ -171,6 +213,34 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
         onSuccess={() => {
           setTimeout(() => window.location.reload(), 1500);
         }}
+      />
+
+      {/* Community / Employee Correction & Addition Modal */}
+      <CompanyCorrectionModal
+        isOpen={correctionModalOpen}
+        onClose={() => setCorrectionModalOpen(false)}
+        corporateNumber={corporateNumber}
+        companyName={companyName}
+        initialWebsiteUrl={websiteUrl}
+        initialPhone={phone}
+        initialFax={fax}
+        initialEmail={email}
+        initialRepresentative={representativeName}
+        initialRepresentativePosition={representativePosition}
+        initialKana={companyNameKana}
+        initialEn={companyNameEn}
+        initialPostalCode={postalCode}
+        initialAddress={fullAddress}
+        initialCapital={capitalAmount}
+        initialEmployees={employeeCount}
+        initialSales={salesAmount}
+        initialFiscalMonth={fiscalMonth}
+        initialContactFormUrl={contactFormUrl}
+        initialRecruitUrl={recruitUrl}
+        initialDescription={jigyoShumoku}
+        initialMainClients={mainClients}
+        initialMainBanks={mainBanks}
+        initialSnsLinks={snsLinks}
       />
     </>
   );

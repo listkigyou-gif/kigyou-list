@@ -358,6 +358,22 @@ export async function POST(request: Request) {
         }
       }
 
+      if (activeUpdates.contact_form_url) {
+        let testUrl = activeUpdates.contact_form_url;
+        if (!/^https?:\/\//i.test(testUrl)) {
+          testUrl = `https://${testUrl}`;
+          activeUpdates.contact_form_url = testUrl;
+        }
+      }
+
+      if (activeUpdates.recruit_url) {
+        let testUrl = activeUpdates.recruit_url;
+        if (!/^https?:\/\//i.test(testUrl)) {
+          testUrl = `https://${testUrl}`;
+          activeUpdates.recruit_url = testUrl;
+        }
+      }
+
       if (activeUpdates.email_address) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(activeUpdates.email_address)) {
           return NextResponse.json({

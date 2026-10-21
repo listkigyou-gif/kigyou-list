@@ -274,6 +274,39 @@ function mapDbRowToLegalEvent(row: any): LegalHistoryEvent {
 }
 
 /**
+ * Deduplicate events occurring on the same date:
+ * If a specific event (e.g. address_change, name_change, establishment, dissolution)
+ * coexists with a generic status_check, prioritize the specific detailed event.
+ */
+function deduplicateLegalEvents(events: LegalHistoryEvent[]): LegalHistoryEvent[] {
+  if (!events || events.length <= 1) return events;
+  
+  const byDate = new Map<string, LegalHistoryEvent[]>();
+  for (const evt of events) {
+    const d = evt.rawDate || evt.date;
+    if (!byDate.has(d)) {
+      byDate.set(d, []);
+    }
+    byDate.get(d)!.push(evt);
+  }
+
+  const result: LegalHistoryEvent[] = [];
+  for (const list of byDate.values()) {
+    if (list.length === 1) {
+      result.push(list[0]);
+    } else {
+      const hasSpecific = list.some(e => e.eventType !== 'status_check');
+      if (hasSpecific) {
+        result.push(...list.filter(e => e.eventType !== 'status_check'));
+      } else {
+        result.push(list[0]);
+      }
+    }
+  }
+  return result;
+}
+
+/**
  * Fetch legal history from PostgreSQL / SQLite company_legal_histories table
  */
 async function fetchLegalHistoryFromDB(corpNum: string): Promise<LegalHistoryEvent[] | null> {
@@ -283,7 +316,8 @@ async function fetchLegalHistoryFromDB(corpNum: string): Promise<LegalHistoryEve
       [corpNum]
     );
     if (rows && rows.length > 0) {
-      return rows.map(mapDbRowToLegalEvent);
+      const mapped = rows.map(mapDbRowToLegalEvent);
+      return deduplicateLegalEvents(mapped);
     }
     return null;
   } catch (err) {
