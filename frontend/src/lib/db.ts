@@ -274,6 +274,10 @@ export interface Company {
   pr_title?: string | null;
   pr_message?: string | null;
   contact_form_url?: string | null;
+  recruit_url?: string | null;
+  fiscal_month?: string | null;
+  main_clients?: string | null;
+  main_banks?: string | null;
   email_type?: string | null;
   has_hiring?: boolean;
   has_subsidy?: boolean;
@@ -329,6 +333,26 @@ export interface CompanyFinancial {
   shareholders_json: string | null;
   source_type: string;
 }
+
+export interface CompanyLicense {
+  id: number;
+  corporate_number: string;
+  license_type: string;        // '建設業許可', '労働者派遣事業', '有料職業紹介事業'
+  license_category: string | null; // '知事免許', '厚生労働大臣許可' 等
+  license_number: string;      // '東京都知事許可 第000005号', '派13-300001' 等
+  issuing_authority: string;   // '東京都', '厚生労働省' 等
+  prefecture_code: string;     // '13', '27' 等
+  representative_name: string | null;
+  office_phone: string | null;
+  office_fax: string | null;
+  registered_address: string | null;
+  issue_date: string | null;
+  valid_until: string | null;
+  license_status: string;      // '有効'
+  specialties_json: string | null;
+  source_url: string | null;
+}
+
 
 export interface SearchFilters {
   prefecture_code?: string;
@@ -419,6 +443,10 @@ function mapCompanyRow(row: any): Company {
     sns_links: row.sns_links || null,
     logo_url: row.logo_url || null,
     contact_form_url: row.contact_form_url || null,
+    recruit_url: row.recruit_url || null,
+    fiscal_month: row.fiscal_month || null,
+    main_clients: row.main_clients || null,
+    main_banks: row.main_banks || null,
     email_type: row.email_type || null,
     is_claimed: Boolean(row.is_claimed),
     claimed_at: row.claimed_at ? String(row.claimed_at) : null,
@@ -564,6 +592,47 @@ export async function getCompanySignals(corpNum: string): Promise<BusinessSignal
     return [];
   }
 }
+
+/**
+ * Fetch official administrative licenses and qualifications for a company.
+ * Covers construction licenses (MLIT), worker dispatching licenses (MHLW), and fee-charging employment placement licenses (MHLW).
+ */
+export async function getCompanyLicenses(corpNum: string): Promise<CompanyLicense[]> {
+  const cacheKey = `company_licenses_${corpNum}`;
+  const cached = getCachedData<CompanyLicense[]>(cacheKey);
+  if (cached !== null) return cached;
+  try {
+    const rows = await runQuery(
+      'SELECT * FROM company_licenses WHERE corporate_number = ? ORDER BY id ASC',
+      [corpNum]
+    );
+    const result: CompanyLicense[] = rows.map((r: any) => ({
+      id: Number(r.id),
+      corporate_number: r.corporate_number,
+      license_type: r.license_type,
+      license_category: r.license_category || null,
+      license_number: r.license_number,
+      issuing_authority: r.issuing_authority,
+      prefecture_code: r.prefecture_code,
+      representative_name: r.representative_name || null,
+      office_phone: r.office_phone || null,
+      office_fax: r.office_fax || null,
+      registered_address: r.registered_address || null,
+      issue_date: r.issue_date || null,
+      valid_until: r.valid_until || null,
+      license_status: r.license_status || '有効',
+      specialties_json: r.specialties_json || null,
+      source_url: r.source_url || null,
+    }));
+    // Cache for 10 minutes
+    cacheMap.set(cacheKey, { data: result, expiry: Date.now() + 10 * 60 * 1000 });
+    return result;
+  } catch (error) {
+    console.error(`Error in getCompanyLicenses(${corpNum}):`, error);
+    return [];
+  }
+}
+
 
 
 /**
@@ -4033,9 +4102,27 @@ export const ALLOWED_EDIT_FIELDS = [
   'email_address', 
   'fax_number', 
   'representative_name', 
+  'representative_position',
   'jigyo_shumoku',
+  'business_summary',
   'pr_title',
-  'pr_message'
+  'pr_message',
+  'company_name_kana',
+  'company_name_en',
+  'postal_code',
+  'street_address',
+  'full_address',
+  'establishment_date',
+  'capital_amount',
+  'employee_count',
+  'sales_amount',
+  'contact_form_url',
+  'recruit_url',
+  'branch_phone_numbers',
+  'fiscal_month',
+  'main_clients',
+  'main_banks',
+  'sns_links'
 ];
 
 export async function updateCompanyField(corporate_number: string, field_name: string, new_value: string): Promise<boolean> {
@@ -4043,16 +4130,35 @@ export async function updateCompanyField(corporate_number: string, field_name: s
     throw new Error(`Field ${field_name} is not allowed to be edited.`);
   }
   try {
+    let valToSave: any = new_value;
+    if (['capital_amount', 'employee_count', 'sales_amount'].includes(field_name)) {
+      const cleanNum = String(new_value).replace(/[^0-9]/g, '');
+      valToSave = cleanNum ? parseInt(cleanNum, 10) : null;
+    }
+
     if (DATABASE_URL) {
       const pool = getPGPool();
       await pool.query(
         `UPDATE companies SET ${field_name} = $1, updated_at = CURRENT_TIMESTAMP WHERE corporate_number = $2`,
-        [new_value, corporate_number]
+        [valToSave, corporate_number]
       );
+
+      // Sync boolean flags if applicable
+      if (field_name === 'contact_form_url' && valToSave) {
+        await pool.query(`UPDATE companies SET has_contact_form = true WHERE corporate_number = $1`, [corporate_number]);
+      } else if (field_name === 'email_address' && valToSave) {
+        await pool.query(`UPDATE companies SET has_email = true WHERE corporate_number = $1`, [corporate_number]);
+      } else if (field_name === 'phone_number' && valToSave) {
+        await pool.query(`UPDATE companies SET has_phone = true WHERE corporate_number = $1`, [corporate_number]);
+      } else if (field_name === 'website_url' && valToSave) {
+        await pool.query(`UPDATE companies SET has_website = true WHERE corporate_number = $1`, [corporate_number]);
+      } else if (field_name === 'fax_number' && valToSave) {
+        await pool.query(`UPDATE companies SET has_fax = true WHERE corporate_number = $1`, [corporate_number]);
+      }
     } else {
       const db = getSQLiteDB();
       db.prepare(`UPDATE companies SET ${field_name} = ?, updated_at = CURRENT_TIMESTAMP WHERE corporate_number = ?`)
-        .run(new_value, corporate_number);
+        .run(valToSave, corporate_number);
     }
     invalidateCompanyCache(corporate_number);
     return true;

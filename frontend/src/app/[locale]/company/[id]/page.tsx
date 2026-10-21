@@ -3,24 +3,28 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { 
   Building2, MapPin, Phone, Globe, Mail, Printer, Calendar, 
-  Briefcase, FileText, ChevronRight, BarChart3, Clock, Share2, ExternalLink, ShieldCheck, MessageSquare, Lock, ArrowRight, HelpCircle, Search, Newspaper, CheckCircle2, History
+  Briefcase, FileText, ChevronRight, BarChart3, Clock, Share2, ExternalLink, ShieldCheck, MessageSquare, Lock, ArrowRight, HelpCircle, Search, Newspaper, CheckCircle2, History, Award
 } from 'lucide-react';
 import { formatShortDate, toISOStringLocal } from '@/lib/dateUtils';
 import { 
   getCompanyByNumber, getCompanyFinancials, 
-  getCompanySignals, getRelatedCompanies, getCompanyIndustries 
+  getCompanySignals, getRelatedCompanies, getCompanyIndustries,
+  getCompanyLicenses
 } from '@/lib/db';
 import { getCompanyLegalHistory } from '@/lib/ntaHistory';
 import { Header } from '@/components/Header';
 import { ObfuscatedPhone } from '@/components/ObfuscatedPhone';
 import { CompanyActions } from '@/components/CompanyActions';
 import { CompanyPRSection } from '@/components/CompanyPRSection';
+import { CompanyCorrectionBar } from '@/components/CompanyCorrectionBar';
 import { UnlockCTA } from '@/components/UnlockCTA';
 import { Footer } from '@/components/Footer';
 import { CompanyFinancials } from '@/components/CompanyFinancials';
 import { CompanySignalsTimeline } from '@/components/CompanySignalsTimeline';
 import { CompanyLegalHistoryTimeline } from '@/components/company/CompanyLegalHistoryTimeline';
+import { CompanyLicensesSection } from '@/components/company/CompanyLicensesSection';
 import { CopyTextButton } from '@/components/CopyTextButton';
+
 import { getTranslations } from '@/lib/i18n';
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { translatePosition, formatEnglishDate, getPrefectureName, getIndustryName } from '@/lib/locale-mapping';
@@ -227,13 +231,15 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     return notFound();
   }
 
-  // 1. Fetch Company details, financials, signals, and industry details in parallel
-  const [company, financials, signals, companyIndustries] = await Promise.all([
+  // 1. Fetch Company details, financials, signals, industry details, and official licenses in parallel
+  const [company, financials, signals, companyIndustries, licenses] = await Promise.all([
     getCompanyByNumber(companyId),
     getCompanyFinancials(companyId),
     getCompanySignals(companyId),
-    getCompanyIndustries(companyId)
+    getCompanyIndustries(companyId),
+    getCompanyLicenses(companyId)
   ]);
+
 
   if (!company) {
     return notFound();
@@ -566,6 +572,21 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               email=""
               fax={company.fax_number}
               representativeName={company.representative_name}
+              representativePosition={company.representative_position}
+              companyNameKana={company.company_name_kana}
+              companyNameEn={company.company_name_en}
+              postalCode={company.postal_code}
+              fullAddress={company.full_address || company.street_address}
+              capitalAmount={company.capital_amount}
+              employeeCount={company.employee_count}
+              salesAmount={company.sales_amount}
+              fiscalMonth={company.fiscal_month}
+              contactFormUrl={company.contact_form_url}
+              recruitUrl={company.recruit_url}
+              jigyoShumoku={company.jigyo_shumoku}
+              mainClients={company.main_clients}
+              mainBanks={company.main_banks}
+              snsLinks={company.sns_links}
               prTitle={company.pr_title}
               prMessage={company.pr_message}
               isClaimed={Boolean(company.is_claimed)}
@@ -641,6 +662,16 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             <History className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
             <span>{t.company.navHistory || "主な変更履歴"}</span>
           </a>
+          {licenses && licenses.length > 0 && (
+            <a 
+              href="#licenses" 
+              className="px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#1B4F8A] dark:hover:text-blue-300 transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+            >
+              <Award className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+              <span>{locale === 'en' ? 'Licenses' : locale === 'vi' ? 'Giấy phép' : '保有許認可'}</span>
+            </a>
+          )}
+
           {financials && financials.length > 0 && (
             <a 
               href="#financials" 
@@ -828,6 +859,39 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   </div>
                 </div>
 
+                {company.fiscal_month && (
+                  <div className="pb-3 border-b border-slate-100 dark:border-slate-800/80 col-span-1">
+                    <span className="text-slate-500 dark:text-slate-400 text-xs font-medium block mb-1">
+                      {locale === 'en' ? 'Fiscal Year-End' : locale === 'vi' ? 'Tháng quyết toán' : '決算期'}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-850 dark:text-slate-200">
+                      {company.fiscal_month}
+                    </span>
+                  </div>
+                )}
+
+                {company.main_clients && (
+                  <div className="pb-3 border-b border-slate-100 dark:border-slate-800/80 col-span-1 md:col-span-2">
+                    <span className="text-slate-500 dark:text-slate-400 text-xs font-medium block mb-1">
+                      {locale === 'en' ? 'Major Clients' : locale === 'vi' ? 'Khách hàng / Đối tác chính' : '主要取引先'}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-850 dark:text-slate-200">
+                      {company.main_clients}
+                    </span>
+                  </div>
+                )}
+
+                {company.main_banks && (
+                  <div className="pb-3 border-b border-slate-100 dark:border-slate-800/80 col-span-1 md:col-span-2">
+                    <span className="text-slate-500 dark:text-slate-400 text-xs font-medium block mb-1">
+                      {locale === 'en' ? 'Main Banks' : locale === 'vi' ? 'Ngân hàng giao dịch chính' : '主要取引銀行'}
+                    </span>
+                    <span className="text-sm font-semibold text-slate-850 dark:text-slate-200">
+                      {company.main_banks}
+                    </span>
+                  </div>
+                )}
+
                 <div className="col-span-1 md:col-span-2 pt-1">
                   <span className="text-slate-500 dark:text-slate-400 text-xs font-medium block mb-1.5">{t.company.tags}</span>
                   <div className="flex flex-wrap gap-1.5 max-h-[140px] overflow-y-auto scrollbar-thin">
@@ -876,6 +940,12 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   locale={locale}
                 />
               </div>
+
+              {/* Company Correction & Enrichment Action Bar */}
+              <CompanyCorrectionBar
+                corporateNumber={company.corporate_number}
+                companyName={companyName}
+              />
             </section>
 
             {/* 1.5. Legal Registry History Section (国税庁 法人番号・インボイスWeb-API公表データ) */}
@@ -894,7 +964,18 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               }}
             />
 
+            {/* 1.6. Corporate Official Licenses & Certifications (建設業・労働者派遣・有料職業紹介等の官公庁許認可) */}
+            <div id="licenses" className="scroll-mt-20">
+              <CompanyLicensesSection
+                corporateNumber={company.corporate_number}
+                companyName={companyName}
+                licenses={licenses}
+                locale={locale}
+              />
+            </div>
+
             {/* 2. Financial Chart Section */}
+
             {financials && financials.length > 0 && (
               <section id="financials" className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs scroll-mt-20">
                 <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white pb-3.5 mb-4 border-b border-slate-150 dark:border-slate-800 flex items-center gap-2">
@@ -1358,6 +1439,29 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                             : '• フォーム営業代行対応（URLはCSV出力で提供）'}
                         </span>
                       </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* 6. Recruitment Page URL */}
+                {company.recruit_url && (
+                  <div className="flex items-start gap-3 relative">
+                    <div className="w-9 h-9 rounded-lg bg-slate-100 dark:bg-slate-800 text-[#1B4F8A] dark:text-blue-400 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shrink-0">
+                      <Briefcase className="w-4 h-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block mb-0.5">
+                        {locale === 'en' ? 'Recruitment / Careers' : locale === 'vi' ? 'Trang tuyển dụng' : '採用情報・求人ページ'}
+                      </span>
+                      <a 
+                        href={company.recruit_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[#1B4F8A] hover:underline font-medium break-all dark:text-blue-400 inline-flex items-center gap-1 text-xs sm:text-sm"
+                      >
+                        <span>{locale === 'en' ? 'Career Page' : locale === 'vi' ? 'Xem trang tuyển dụng' : '公式採用ページを見る'}</span>
+                        <ExternalLink className="w-3.5 h-3.5 shrink-0 opacity-60" />
+                      </a>
                     </div>
                   </div>
                 )}

@@ -63,6 +63,12 @@ CREATE TABLE companies (
     business_summary TEXT NULL,
     jigyo_shumoku TEXT NULL, -- 事業種目
     branch_phone_numbers TEXT NULL, -- 支店電話番号
+    contact_form_url TEXT NULL, -- お問い合わせフォームURL
+    recruit_url TEXT NULL, -- 採用ページURL
+    fiscal_month VARCHAR(50) NULL, -- 決算期（例: 3月決算）
+    main_clients TEXT NULL, -- 主要取引先
+    main_banks TEXT NULL, -- 主要取引銀行
+    sns_links TEXT NULL, -- 公式SNS (JSON)
     yahoo_last_crawled_at TIMESTAMP NULL, -- Yahoo最終検索日 (Chu kỳ 2 năm)
     website_last_crawled_at TIMESTAMP NULL, -- 公式ウェブサイト最終収集日 (Chu kỳ 2 năm)
     website_crawl_status VARCHAR(50) NULL, -- 公式ウェブサイト収集ステータス
@@ -139,9 +145,50 @@ COMMENT ON COLUMN business_signals.details IS 'シグナルの詳細データ（
 COMMENT ON COLUMN business_signals.created_at IS 'システム登録日時';
 
 
+-- 5. Bảng Giấy phép & Chứng nhận kinh doanh (行政許認可・資格情報テーブル - Gold Layer)
+CREATE TABLE IF NOT EXISTS company_licenses (
+    id SERIAL PRIMARY KEY,
+    corporate_number VARCHAR(13) NOT NULL,
+    license_type VARCHAR(100) NOT NULL,
+    license_category VARCHAR(100) NULL,
+    license_number VARCHAR(150) NOT NULL,
+    issuing_authority VARCHAR(100) NOT NULL,
+    prefecture_code VARCHAR(2) NOT NULL,
+    representative_name VARCHAR(150) NULL,
+    office_phone VARCHAR(50) NULL,
+    office_fax VARCHAR(50) NULL,
+    registered_address TEXT NULL,
+    issue_date VARCHAR(20) NULL,
+    valid_until VARCHAR(20) NULL,
+    license_status VARCHAR(50) DEFAULT '有効',
+    specialties_json TEXT NULL,
+    source_url TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_company_licenses_corp_num ON company_licenses(corporate_number);
+CREATE INDEX IF NOT EXISTS idx_company_licenses_type ON company_licenses(license_type);
+CREATE INDEX IF NOT EXISTS idx_company_licenses_pref ON company_licenses(prefecture_code);
+CREATE INDEX IF NOT EXISTS idx_company_licenses_lic_num ON company_licenses(license_number);
+
+COMMENT ON TABLE company_licenses IS '企業が保有する行政許認可および登録資格情報（建設業、人材派遣、有料職業紹介等）';
+COMMENT ON COLUMN company_licenses.corporate_number IS '法人番号（13桁）';
+COMMENT ON COLUMN company_licenses.license_type IS '許認可種別（建設業許可、労働者派遣事業、有料職業紹介事業等）';
+COMMENT ON COLUMN company_licenses.license_category IS '区分（知事免許、大臣許可等）';
+COMMENT ON COLUMN company_licenses.license_number IS '許認可番号・登録番号';
+COMMENT ON COLUMN company_licenses.issuing_authority IS '管轄自治体・行政機関名';
+COMMENT ON COLUMN company_licenses.prefecture_code IS '都道府県コード（JIS X 0401）';
+COMMENT ON COLUMN company_licenses.representative_name IS '専任・代表者氏名';
+COMMENT ON COLUMN company_licenses.office_phone IS '事業所・届出電話番号';
+COMMENT ON COLUMN company_licenses.registered_address IS '届出住所・所在地';
+COMMENT ON COLUMN company_licenses.specialties_json IS '業種・業態別詳細データ（29業種区分、派遣マージン率等）';
+
+
 -- =============================================================================
 -- II. BRONZE LAYER (Lớp Dữ liệu Thô - Nơi hứng dữ liệu từ các Crawler và API)
 -- =============================================================================
+
 
 -- Note: Không cần bảng raw_gbiz vì file CSV 5 triệu dòng của G-Biz sẽ được script Python 
 -- đọc trực tiếp (Stream) từ file vật lý, làm sạch trong bộ nhớ (In-memory ETL) và ghi thẳng 
