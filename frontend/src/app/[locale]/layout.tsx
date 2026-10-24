@@ -149,7 +149,6 @@ export default async function LocalizedLayout({
     sameAs: [
       "https://x.com/kigyoulist",
       "https://note.com/kigyoulist",
-      "https://www.linkedin.com/in/userkigyoulist",
       "https://www.facebook.com/kigyoulist",
       "https://qiita.com/listkigyou",
       "https://zenn.dev/kigyoulist",

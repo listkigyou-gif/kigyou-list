@@ -3,7 +3,7 @@ import { getSitemapCompaniesCount } from '@/lib/db';
 
 export const revalidate = 86400; // Cache index for 24 hours
 
-const SITEMAP_LIMIT = 50000;
+const SITEMAP_LIMIT = 10000;
 const baseUrl = 'https://kigyoulist.com';
 
 export async function GET() {

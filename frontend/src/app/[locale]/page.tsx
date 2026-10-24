@@ -74,14 +74,13 @@ export default async function Home({ params }: PageParams) {
     "logo": "https://kigyoulist.com/icon.svg",
     "address": {
       "@type": "PostalAddress",
-      "addressLocality": "千代田区",
+      "addressLocality": "豊島区",
       "addressRegion": "東京都",
       "addressCountry": "JP"
     },
     "sameAs": [
       "https://x.com/kigyoulist",
       "https://note.com/kigyoulist",
-      "https://www.linkedin.com/in/userkigyoulist",
       "https://qiita.com/listkigyou",
       "https://zenn.dev/kigyoulist"
     ]
