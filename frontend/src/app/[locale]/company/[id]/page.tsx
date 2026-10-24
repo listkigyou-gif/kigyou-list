@@ -408,37 +408,38 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     let defaultTitleJa = e.title_ja || '企業公表事項';
     let defaultDetailsJa = e.description_ja || '';
 
-    if (e.event_category === 'representative_change') {
+    const cat = e.event_category as string;
+    if (cat === 'representative' || cat === 'representative_change') {
       eventType = 'representative_change';
       eventBadgeJa = '代表者変更';
       eventBadgeEn = 'Representative Change';
       eventBadgeVi = 'Đổi người đại diện';
       defaultTitleJa = e.title_ja || '代表取締役・執行役員の異動';
-    } else if (e.event_category === 'invoice' || e.event_category === 'invoice_cancel') {
+    } else if (cat === 'invoice' || cat === 'invoice_cancel') {
       eventType = 'invoice_change';
       eventBadgeJa = 'インボイス変動';
       eventBadgeEn = 'Invoice Status Change';
       eventBadgeVi = 'Biến động Invoice';
       defaultTitleJa = e.title_ja || '適格請求書発行事業者登録・ステータス変動';
-    } else if (e.event_category === 'merger') {
+    } else if (cat === 'merger') {
       eventType = 'merger';
       eventBadgeJa = '合併・商号変更';
       eventBadgeEn = 'Merger & Name Change';
       eventBadgeVi = 'Sáp nhập & Đổi tên';
       defaultTitleJa = e.title_ja || '合併または商号（会社名）の変更';
-    } else if (e.event_category === 'bankruptcies') {
+    } else if (cat === 'bankruptcies') {
       eventType = 'bankruptcy';
       eventBadgeJa = '倒産・閉鎖';
       eventBadgeEn = 'Bankruptcy / Dissolution';
       eventBadgeVi = 'Phá sản & Giải thể';
       defaultTitleJa = e.title_ja || '法的整理・破産・特別清算手続';
-    } else if (e.event_category === 'relocation') {
+    } else if (cat === 'relocation') {
       eventType = 'relocation';
       eventBadgeJa = '本店移転';
       eventBadgeEn = 'Headquarters Relocation';
       eventBadgeVi = 'Dời trụ sở chính';
       defaultTitleJa = e.title_ja || '本店所在地・管轄法務局の移転';
-    } else if (e.event_category === 'new_establishment') {
+    } else if (cat === 'new_establishment') {
       eventType = 'establishment';
       eventBadgeJa = '新設法人';
       eventBadgeEn = 'New Incorporation';
@@ -493,8 +494,8 @@ export default async function CompanyDetailPage({ params }: PageProps) {
       const d = e.event_date ? (e.event_date.includes('T') ? e.event_date.split('T')[0] : e.event_date) : '';
       return !d || d >= ninetyDaysIso;
     })
-    .map(e => ({
-      id: `hub-hiring-${e.id}`,
+    .map((e, idx) => ({
+      id: typeof e.id === 'number' ? e.id : (parseInt(String(e.id), 10) || (900000000 + idx)),
       corporate_number: e.corporate_number,
       signal_type: '求人あり',
       signal_title: e.title_ja,
