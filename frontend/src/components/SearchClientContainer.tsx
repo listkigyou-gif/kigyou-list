@@ -24,29 +24,33 @@ function formatJapaneseCurrency(amount: number | string | null | undefined, loca
   const num = typeof amount === "string" ? parseFloat(amount) : amount;
   if (isNaN(num)) return "";
   
+  const isNeg = num < 0;
+  const abs = Math.abs(num);
+  const sign = isNeg ? "-" : "";
+
   if (locale === 'en') {
-    if (num >= 1_000_000_000_000) return `¥${(num / 1_000_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}T JPY`;
-    if (num >= 1_000_000_000) return `¥${(num / 1_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}B JPY`;
-    if (num >= 1_000_000) return `¥${(num / 1_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}M JPY`;
-    return `¥${num.toLocaleString('en-US')} JPY`;
+    if (abs >= 1_000_000_000_000) return `${sign}¥${(abs / 1_000_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}T JPY`;
+    if (abs >= 1_000_000_000) return `${sign}¥${(abs / 1_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}B JPY`;
+    if (abs >= 1_000_000) return `${sign}¥${(abs / 1_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}M JPY`;
+    return `${sign}¥${abs.toLocaleString('en-US')} JPY`;
   }
   if (locale === 'vi') {
-    if (num >= 1_000_000_000_000) return `${(num / 1_000_000_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} nghìn tỷ JPY`;
-    if (num >= 100_000_000) return `${(num / 100_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} trăm triệu JPY`;
-    if (num >= 10_000) return `${(num / 10_000).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} vạn JPY`;
-    return `¥${num.toLocaleString('vi-VN')} JPY`;
+    if (abs >= 1_000_000_000_000) return `${sign}${(abs / 1_000_000_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} nghìn tỷ JPY`;
+    if (abs >= 100_000_000) return `${sign}${(abs / 100_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} trăm triệu JPY`;
+    if (abs >= 10_000) return `${sign}${(abs / 10_000).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} vạn JPY`;
+    return `${sign}¥${abs.toLocaleString('vi-VN')} JPY`;
   }
   // Japanese
-  if (num >= 1_000_000_000_000) {
-    return `${(num / 1_000_000_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}兆円`;
+  if (abs >= 1_000_000_000_000) {
+    return `${sign}${(abs / 1_000_000_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}兆円`;
   }
-  if (num >= 100_000_000) {
-    return `${(num / 100_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}億円`;
+  if (abs >= 100_000_000) {
+    return `${sign}${(abs / 100_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}億円`;
   }
-  if (num >= 10_000) {
-    return `${(num / 10_000).toLocaleString('ja-JP', { maximumFractionDigits: 0 })}万円`;
+  if (abs >= 10_000) {
+    return `${sign}${(abs / 10_000).toLocaleString('ja-JP', { maximumFractionDigits: 0 })}万円`;
   }
-  return `¥${num.toLocaleString('ja-JP')}`;
+  return `${sign}¥${abs.toLocaleString('ja-JP')}`;
 }
 
 interface Company {

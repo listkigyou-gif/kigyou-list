@@ -54,7 +54,7 @@ function formatVietnameseDate(dateStr: string | null): string {
   return dateStr;
 }
 
-function formatJapaneseCurrency(amount: number | string | null, locale: string, isCapital: boolean = false): string {
+function formatJapaneseCurrency(amount: number | string | null | undefined, locale: string, isCapital: boolean = false): string {
   if (amount === null || amount === undefined || amount === "") return "";
   let num = typeof amount === "string" ? parseFloat(amount) : amount;
   if (isNaN(num)) return "";
@@ -64,29 +64,54 @@ function formatJapaneseCurrency(amount: number | string | null, locale: string, 
     num = num / 100_000;
   }
 
+  const isNeg = num < 0;
+  const abs = Math.abs(num);
+  const sign = isNeg ? "-" : "";
+
   if (locale === 'en') {
-    if (num >= 1_000_000_000_000) return `¥${(num / 1_000_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}T JPY`;
-    if (num >= 1_000_000_000) return `¥${(num / 1_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}B JPY`;
-    if (num >= 1_000_000) return `¥${(num / 1_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}M JPY`;
-    return `¥${num.toLocaleString('en-US')} JPY`;
+    if (abs >= 1_000_000_000_000) return `${sign}¥${(abs / 1_000_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}T JPY`;
+    if (abs >= 1_000_000_000) return `${sign}¥${(abs / 1_000_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}B JPY`;
+    if (abs >= 1_000_000) return `${sign}¥${(abs / 1_000_000).toLocaleString('en-US', { maximumFractionDigits: 1 })}M JPY`;
+    return `${sign}¥${abs.toLocaleString('en-US')} JPY`;
   }
   if (locale === 'vi') {
-    if (num >= 1_000_000_000_000) return `${(num / 1_000_000_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} nghìn tỷ JPY`;
-    if (num >= 100_000_000) return `${(num / 100_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} trăm triệu JPY`;
-    if (num >= 10_000) return `${(num / 10_000).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} vạn JPY`;
-    return `¥${num.toLocaleString('vi-VN')} JPY`;
+    if (abs >= 1_000_000_000_000) return `${sign}${(abs / 1_000_000_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} nghìn tỷ JPY`;
+    if (abs >= 100_000_000) return `${sign}${(abs / 100_000_000).toLocaleString('vi-VN', { maximumFractionDigits: 1 })} trăm triệu JPY`;
+    if (abs >= 10_000) return `${sign}${(abs / 10_000).toLocaleString('vi-VN', { maximumFractionDigits: 0 })} vạn JPY`;
+    return `${sign}¥${abs.toLocaleString('vi-VN')} JPY`;
   }
   // Japanese
-  if (num >= 1_000_000_000_000) {
-    return `${(num / 1_000_000_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}兆円`;
+  if (abs >= 1_000_000_000_000) {
+    return `${sign}${(abs / 1_000_000_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}兆円`;
   }
-  if (num >= 100_000_000) {
-    return `${(num / 100_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}億円`;
+  if (abs >= 100_000_000) {
+    return `${sign}${(abs / 100_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}億円`;
   }
-  if (num >= 10_000) {
-    return `${(num / 10_000).toLocaleString('ja-JP', { maximumFractionDigits: 0 })}万円`;
+  if (abs >= 10_000) {
+    return `${sign}${(abs / 10_000).toLocaleString('ja-JP', { maximumFractionDigits: 0 })}万円`;
   }
-  return `¥${num.toLocaleString('ja-JP')}`;
+  return `${sign}¥${abs.toLocaleString('ja-JP')}`;
+}
+
+function formatCompactCurrency(val: number | null | undefined, locale: string): string {
+  if (val === null || val === undefined || val === 0) return '—';
+  const isNeg = val < 0;
+  const abs = Math.abs(val);
+  const sign = isNeg ? '-' : '';
+
+  if (locale === 'en') {
+    if (abs >= 1_000_000_000_000) return `${sign}¥${(abs / 1_000_000_000_000).toFixed(1)}T`;
+    if (abs >= 1_000_000_000) return `${sign}¥${(abs / 1_000_000_000).toFixed(1)}B`;
+    return `${sign}¥${(abs / 1_000_000).toFixed(0)}M`;
+  }
+  // JA & VI compact table representation
+  if (abs >= 1_000_000_000_000) {
+    return `${sign}${(abs / 1_000_000_000_000).toFixed(1)}兆円`;
+  }
+  if (abs >= 100_000_000) {
+    return `${sign}${(abs / 100_000_000).toFixed(0)}億円`;
+  }
+  return `${sign}${(abs / 10_000).toFixed(0)}万円`;
 }
 
 function cleanDisplayUrl(url: string): string {
@@ -193,13 +218,14 @@ function generateDynamicSummary(
   } else {
     // Japanese locale (ja) - High intent B2B corporate narrative
     const kanaPart = company.company_name_kana ? `（${company.company_name_kana}）` : "";
-    const marketLabel = company.listing_market && company.listing_market !== '非上場'
-      ? `${company.listing_market}`
-      : isListed ? '上場企業' : '';
+    const rawMarket = company.listing_market && company.listing_market !== '非上場' ? company.listing_market : '';
+    const marketFormatted = rawMarket
+      ? (rawMarket.includes('上場') ? rawMarket : `${rawMarket}上場`)
+      : (isListed ? '上場企業' : '');
 
     let scaleLabel = '企業';
-    if (isListed) {
-      scaleLabel = '大手上場企業';
+    if (isListed || marketFormatted) {
+      scaleLabel = '大手企業';
     } else if ((empCount && empCount >= 300) || (capAmount && capAmount >= 300_000_000)) {
       scaleLabel = '大企業';
     } else if ((empCount && empCount >= 50) || (capAmount && capAmount >= 50_000_000)) {
@@ -213,29 +239,28 @@ function generateDynamicSummary(
     if (isOnPage) {
       let sent1 = `${companyName}${kanaPart}（法人番号: ${company.corporate_number}）は、`;
       if (fullAddress) {
-        sent1 += `${fullAddress}に本社を置く`;
+        sent1 += `${fullAddress}に本社を置く、`;
       }
-      if (marketLabel) {
-        sent1 += `${marketLabel}の`;
-      }
-      if (industryLabel) {
+      if (marketFormatted && industryLabel) {
+        sent1 += `${marketFormatted}・${industryLabel}分野の${scaleLabel}です。`;
+      } else if (marketFormatted) {
+        sent1 += `${marketFormatted}の${scaleLabel}です。`;
+      } else if (industryLabel) {
         sent1 += `${industryLabel}分野の${scaleLabel}です。`;
       } else {
         sent1 += `${scaleLabel}です。`;
       }
 
-      let sent2Parts: string[] = [];
-      if (repClean) {
-        if (repPos) {
-          sent2Parts.push(`代表者は${repPos}の${repClean}氏`);
-        } else {
-          sent2Parts.push(`代表者は${repClean}氏`);
-        }
+      let sent2 = '';
+      if (repClean && company.establishment_date) {
+        const repText = repPos ? `${repPos}の${repClean}氏` : `${repClean}氏`;
+        sent2 = `代表者は${repText}が務め、${formatJapaneseDate(company.establishment_date)}に国税庁より法人番号が指定されています。`;
+      } else if (repClean) {
+        const repText = repPos ? `${repPos}の${repClean}氏` : `${repClean}氏`;
+        sent2 = `代表者は${repText}が務めています。`;
+      } else if (company.establishment_date) {
+        sent2 = `${formatJapaneseDate(company.establishment_date)}に国税庁より法人番号が指定されています。`;
       }
-      if (company.establishment_date) {
-        sent2Parts.push(`${formatJapaneseDate(company.establishment_date)}に法人番号が指定`);
-      }
-      const sent2 = sent2Parts.length > 0 ? `${sent2Parts.join('、')}。` : '';
 
       const kpis: string[] = [];
       if (company.sales_amount) {
@@ -1822,34 +1847,8 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                     </div>
                     {sameIndustry.map((item, idx) => {
                       const name = locale === 'en' && item.company_name_en ? item.company_name_en : item.company_name;
-                      const sales = item.sales_amount;
-                      const salesStr = sales
-                        ? locale === 'en'
-                          ? sales >= 1_000_000_000_000 ? `¥${(sales / 1_000_000_000_000).toFixed(1)}T`
-                            : sales >= 1_000_000_000 ? `¥${(sales / 1_000_000_000).toFixed(1)}B`
-                            : `¥${(sales / 1_000_000).toFixed(0)}M`
-                          : locale === 'vi'
-                          ? sales >= 1_000_000_000_000 ? `${(sales / 1_000_000_000_000).toFixed(1)}兆円`
-                            : sales >= 100_000_000 ? `${(sales / 100_000_000).toFixed(0)}億円`
-                            : `${(sales / 10_000).toFixed(0)}万円`
-                          : sales >= 1_000_000_000_000 ? `${(sales / 1_000_000_000_000).toFixed(1)}兆円`
-                            : sales >= 100_000_000 ? `${(sales / 100_000_000).toFixed(0)}億円`
-                            : `${(sales / 10_000).toFixed(0)}万円`
-                        : '—';
-                      const ordInc = item.ordinary_income;
-                      const ordIncStr = ordInc
-                        ? locale === 'en'
-                          ? ordInc >= 1_000_000_000_000 ? `¥${(ordInc / 1_000_000_000_000).toFixed(1)}T`
-                            : ordInc >= 1_000_000_000 ? `¥${(ordInc / 1_000_000_000).toFixed(1)}B`
-                            : `¥${(ordInc / 1_000_000).toFixed(0)}M`
-                          : locale === 'vi'
-                          ? ordInc >= 1_000_000_000_000 ? `${(ordInc / 1_000_000_000_000).toFixed(1)}兆円`
-                            : ordInc >= 100_000_000 ? `${(ordInc / 100_000_000).toFixed(0)}億円`
-                            : `${(ordInc / 10_000).toFixed(0)}万円`
-                          : ordInc >= 1_000_000_000_000 ? `${(ordInc / 1_000_000_000_000).toFixed(1)}兆円`
-                            : ordInc >= 100_000_000 ? `${(ordInc / 100_000_000).toFixed(0)}億円`
-                            : `${(ordInc / 10_000).toFixed(0)}万円`
-                        : '—';
+                      const salesStr = formatCompactCurrency(item.sales_amount, locale);
+                      const ordIncStr = formatCompactCurrency(item.ordinary_income, locale);
                       return (
                         <Link
                           key={item.corporate_number}
@@ -1913,34 +1912,8 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                     </div>
                     {nearby.map((item, idx) => {
                       const name = locale === 'en' && item.company_name_en ? item.company_name_en : item.company_name;
-                      const sales = item.sales_amount;
-                      const salesStr = sales
-                        ? locale === 'en'
-                          ? sales >= 1_000_000_000_000 ? `¥${(sales / 1_000_000_000_000).toFixed(1)}T`
-                            : sales >= 1_000_000_000 ? `¥${(sales / 1_000_000_000).toFixed(1)}B`
-                            : `¥${(sales / 1_000_000).toFixed(0)}M`
-                          : locale === 'vi'
-                          ? sales >= 1_000_000_000_000 ? `${(sales / 1_000_000_000_000).toFixed(1)}兆円`
-                            : sales >= 100_000_000 ? `${(sales / 100_000_000).toFixed(0)}億円`
-                            : `${(sales / 10_000).toFixed(0)}万円`
-                          : sales >= 1_000_000_000_000 ? `${(sales / 1_000_000_000_000).toFixed(1)}兆円`
-                            : sales >= 100_000_000 ? `${(sales / 100_000_000).toFixed(0)}億円`
-                            : `${(sales / 10_000).toFixed(0)}万円`
-                        : '—';
-                      const ordInc = item.ordinary_income;
-                      const ordIncStr = ordInc
-                        ? locale === 'en'
-                          ? ordInc >= 1_000_000_000_000 ? `¥${(ordInc / 1_000_000_000_000).toFixed(1)}T`
-                            : ordInc >= 1_000_000_000 ? `¥${(ordInc / 1_000_000_000).toFixed(1)}B`
-                            : `¥${(ordInc / 1_000_000).toFixed(0)}M`
-                          : locale === 'vi'
-                          ? ordInc >= 1_000_000_000_000 ? `${(ordInc / 1_000_000_000_000).toFixed(1)}兆円`
-                            : ordInc >= 100_000_000 ? `${(ordInc / 100_000_000).toFixed(0)}億円`
-                            : `${(ordInc / 10_000).toFixed(0)}万円`
-                          : ordInc >= 1_000_000_000_000 ? `${(ordInc / 1_000_000_000_000).toFixed(1)}兆円`
-                            : ordInc >= 100_000_000 ? `${(ordInc / 100_000_000).toFixed(0)}億円`
-                            : `${(ordInc / 10_000).toFixed(0)}万円`
-                        : '—';
+                      const salesStr = formatCompactCurrency(item.sales_amount, locale);
+                      const ordIncStr = formatCompactCurrency(item.ordinary_income, locale);
                       return (
                         <Link
                           key={item.corporate_number}
