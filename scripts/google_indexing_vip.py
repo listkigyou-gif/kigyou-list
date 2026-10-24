@@ -115,7 +115,7 @@ class GoogleIndexingClient:
         actual_limit = min(limit, available_quota)
         cur = conn.cursor()
         
-        # Ưu tiên Tier 0: Doanh nghiệp có báo cáo tài chính EDINET chưa từng gửi Google
+        # Ưu tiên Tier 0: Doanh nghiệp có báo cáo tài chính EDINET chưa từng gửi Google (xếp theo quy mô Doanh thu & Nhân sự lớn nhất)
         query_vip = """
         SELECT f.corporate_number, c.company_name
         FROM company_financials f
@@ -123,6 +123,7 @@ class GoogleIndexingClient:
         LEFT JOIN google_indexing_submissions sub ON f.corporate_number = sub.corporate_number
         WHERE sub.corporate_number IS NULL
         GROUP BY f.corporate_number
+        ORDER BY COALESCE(c.sales_amount, 0) DESC, COALESCE(c.employee_count, 0) DESC
         LIMIT ?
         """
         rows = cur.execute(query_vip, (actual_limit,)).fetchall()
