@@ -391,26 +391,26 @@ https://kigyoulist.com/contact
         "2,000 CSV downloads per month",
         "Corporate Watchlist priority real-time alerts",
         "Bulk Invoice verification report CSV download",
-        "API integration (Key issuance & CRM/ERP syncing)",
-        "Email address disclosure",
-        "ABM Kanban CRM board",
-        "Filter by email/phone availability"
+        "Corporate email export via CSV download",
+        "Unlimited MyList bookmarking & lead storage",
+        "Right to purchase non-expiring rollover quota packs",
+        "API integration (Key issuance & CRM/ERP syncing)"
       ] : isVi ? [
         "Tải xuống 2.000 dòng CSV mỗi tháng",
         "Cảnh báo biến động đối tác ưu tiên thời gian thực",
         "Xuất báo cáo đối soát hóa đơn Invoice ra CSV",
-        "Tích hợp API (Cấp khóa API & đồng bộ CRM/ERP)",
-        "Mở khóa địa chỉ email doanh nghiệp",
-        "Bảng quản lý phễu CRM Kanban ABM",
-        "Lọc theo sự tồn tại của email/số điện thoại"
+        "Xuất địa chỉ email doanh nghiệp khi tải file CSV",
+        "Lưu trữ không giới hạn danh sách MyList",
+        "Quyền mua các gói bổ sung không hết hạn (Add-on)",
+        "Tích hợp API (Cấp khóa API & đồng bộ CRM/ERP)"
       ] : [
         "毎月 2,000 件の CSV ダウンロード枠",
         "企業監視リスト 優先リアルタイム通知・アラート",
         "インボイス一括照会 結果CSVレポート出力",
-        "API連携 (API Key 発行・外部CRM/ERP連携)",
-        "メールアドレスの開示",
-        "ABM かんばん営業管理 CRM ボード",
-        "連絡先情報（電話・メール）の有無での絞り込み"
+        "CSVダウンロード時の企業メールアドレス出力",
+        "マイリスト無制限保存（お気に入り・商談対象管理）",
+        "無期限引き継ぎ追加容量パックの購入権",
+        "API連携 (API Key 発行・外部CRM/ERP連携)"
       ]
     },
     {
@@ -1038,15 +1038,15 @@ https://kigyoulist.com/contact
                   <td className="py-3 px-3 text-center text-emerald-600 font-bold">●</td>
                 </tr>
                 <tr className="hover:bg-slate-50/40 dark:hover:bg-[#12161E]">
-                  <td className="py-3 px-4 font-medium">{isEn ? "Corporate Email Address Disclosure" : isVi ? "Mở khóa địa chỉ email doanh nghiệp" : "企業の開示メールアドレス閲覧"}</td>
+                  <td className="py-3 px-4 font-medium">{isEn ? "Corporate Email Export via CSV Download" : isVi ? "Xuất địa chỉ email doanh nghiệp khi tải file CSV" : "CSVダウンロード時の企業メールアドレス出力"}</td>
                   <td className="py-3 px-3 text-center text-slate-300 dark:text-slate-600"><Minus className="w-3.5 h-3.5 mx-auto" /></td>
                   <td className="py-3 px-3 text-center text-emerald-600 font-bold">●</td>
                   <td className="py-3 px-3 text-center text-emerald-600 font-bold bg-blue-50/30 dark:bg-blue-950/10 border-x border-blue-200/60 dark:border-blue-900/40">●</td>
                   <td className="py-3 px-3 text-center text-emerald-600 font-bold">●</td>
                 </tr>
                 <tr className="hover:bg-slate-50/40 dark:hover:bg-[#12161E]">
-                  <td className="py-3 px-4 font-medium">{isEn ? "Filter by Contact Availability (Email / Phone)" : isVi ? "Lọc theo sự tồn tại của Email / Số điện thoại" : "連絡先（メール・電話）有無での絞り込み検索"}</td>
-                  <td className="py-3 px-3 text-center text-slate-300 dark:text-slate-600"><Minus className="w-3.5 h-3.5 mx-auto" /></td>
+                  <td className="py-3 px-4 font-medium">{isEn ? "Filter by Contact Availability (Email / Phone / Web)" : isVi ? "Lọc theo sự tồn tại của Email / Số điện thoại / Web" : "連絡先（メール・電話・HP）有無での絞り込み検索"}</td>
+                  <td className="py-3 px-3 text-center text-emerald-600 font-bold">●</td>
                   <td className="py-3 px-3 text-center text-emerald-600 font-bold">●</td>
                   <td className="py-3 px-3 text-center text-emerald-600 font-bold bg-blue-50/30 dark:bg-blue-950/10 border-x border-blue-200/60 dark:border-blue-900/40">●</td>
                   <td className="py-3 px-3 text-center text-emerald-600 font-bold">●</td>
@@ -1091,11 +1091,11 @@ https://kigyoulist.com/contact
                   </td>
                 </tr>
                 <tr className="hover:bg-slate-50/40 dark:hover:bg-[#12161E]">
-                  <td className="py-3 px-4 font-medium">{isEn ? "ABM Kanban CRM Pipeline Management" : isVi ? "Bảng quản lý quy trình ABM Kanban" : "ABM かんばん営業管理ボード"}</td>
-                  <td className="py-3 px-3 text-center text-slate-500 font-medium">簡易版</td>
-                  <td className="py-3 px-3 text-center text-emerald-600 font-bold">● (無制限)</td>
-                  <td className="py-3 px-3 text-center text-emerald-600 font-bold bg-blue-50/30 dark:bg-blue-950/10 border-x border-blue-200/60 dark:border-blue-900/40">● (無制限)</td>
-                  <td className="py-3 px-3 text-center text-emerald-600 font-bold">● (無制限)</td>
+                  <td className="py-3 px-4 font-medium">{isEn ? "Corporate Watchlist & Real-time Alerts" : isVi ? "Giám sát doanh nghiệp & Cảnh báo biến động thời gian thực" : "企業監視リスト・重要変動検知アラート"}</td>
+                  <td className="py-3 px-3 text-center font-bold text-slate-700 dark:text-slate-300 tabular-nums">100社 (無料見守り)</td>
+                  <td className="py-3 px-3 text-center text-emerald-600 font-bold">1,000社 (優先通知)</td>
+                  <td className="py-3 px-3 text-center text-emerald-600 font-bold bg-blue-50/30 dark:bg-blue-950/10 border-x border-blue-200/60 dark:border-blue-900/40">5,000社 (即時通知)</td>
+                  <td className="py-3 px-3 text-center text-emerald-600 font-bold">無制限 (専任監視)</td>
                 </tr>
                 <tr className="hover:bg-slate-50/40 dark:hover:bg-[#12161E]">
                   <td className="py-3 px-4 font-medium">{isEn ? "MyList Bookmark Storage Capacity" : isVi ? "Dung lượng lưu trữ MyList" : "マイリスト保存企業枠"}</td>
@@ -1107,7 +1107,7 @@ https://kigyoulist.com/contact
                 <tr className="hover:bg-slate-50/40 dark:hover:bg-[#12161E]">
                   <td className="py-3 px-4 font-medium">{isEn ? "REST API Access (API Key, CRM/ERP Integration)" : isVi ? "Tích hợp REST API (Cấp API Key, kết nối CRM/ERP)" : "REST API連携（API Key 発行・外部CRM/ERP自動同期）"}</td>
                   <td className="py-3 px-3 text-center text-slate-300 dark:text-slate-600"><Minus className="w-3.5 h-3.5 mx-auto" /></td>
-                  <td className="py-3 px-3 text-center text-slate-300 dark:text-slate-600"><Minus className="w-3.5 h-3.5 mx-auto" /></td>
+                  <td className="py-3 px-3 text-center text-emerald-600 font-bold">●</td>
                   <td className="py-3 px-3 text-center text-emerald-600 font-bold bg-blue-50/30 dark:bg-blue-950/10 border-x border-blue-200/60 dark:border-blue-900/40">●</td>
                   <td className="py-3 px-3 text-center text-emerald-600 font-bold">●</td>
                 </tr>
