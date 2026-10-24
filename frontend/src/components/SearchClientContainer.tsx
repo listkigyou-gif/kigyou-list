@@ -1483,12 +1483,22 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                           </span>
                         )}
 
-                        {/* Primary Industry ONLY (Max 1 to avoid tag explosion) */}
-                        {company.industries?.filter(ind => ind.classification_level === '大分類').slice(0, 1).map((ind, idx) => (
-                          <span key={idx} className="text-[11px] font-medium text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.2 rounded border border-slate-200 dark:border-slate-700 truncate max-w-[200px]">
-                            {(t.majorIndustries as Record<string, string>)?.[ind.industry_code] || ind.industry_name}
-                          </span>
-                        ))}
+                        {/* Major Industry Tags: Display all major industries with code prefix & link to industry hub */}
+                        {company.industries?.filter(ind => ind.classification_level === '大分類').map((ind, idx) => {
+                          const rawName = (t.majorIndustries as Record<string, string>)?.[ind.industry_code] || ind.industry_name;
+                          const indName = rawName.replace('，', '・');
+                          const prefCode = company.prefecture_code || '13';
+                          return (
+                            <Link 
+                              key={idx} 
+                              href={`/${locale}/industry/${ind.industry_code}/location/${prefCode}`}
+                              className="text-[11px] font-medium text-slate-700 hover:text-[#1B4F8A] bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white px-2 py-0.2 rounded border border-slate-200 dark:border-slate-700 transition-colors shrink-0"
+                              title={`${ind.industry_code}.${indName}`}
+                            >
+                              {ind.industry_code}.{indName}
+                            </Link>
+                          );
+                        })}
                       </div>
 
                       {/* Right Meta: Updated Date & Corporate Number */}

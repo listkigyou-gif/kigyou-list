@@ -99,6 +99,17 @@ function cleanDisplayUrl(url: string): string {
   }
 }
 
+function cleanRepresentativeName(rawName: string | null): string {
+  if (!rawName) return '';
+  const trimmed = rawName.replace(/[\s\u00A0\u3000]+/g, ' ').trim();
+  // In Japanese registries, names often have arbitrary spaces between each kanji (e.g. 亀 澤  宏 規)
+  // If it's a Japanese name (Kanji / Kana / spaces), remove internal spacing for natural Japanese representation
+  if (/^[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF\s]+$/.test(trimmed)) {
+    return trimmed.replace(/\s+/g, '');
+  }
+  return trimmed;
+}
+
 function generateDynamicSummary(
   company: any,
   locale: string,
@@ -107,50 +118,154 @@ function generateDynamicSummary(
   isOnPage: boolean = false
 ): string {
   const companyName = locale === 'en' && company.company_name_en ? company.company_name_en : company.company_name;
-  
-  // Format address: prefer full_address, fallback to combining components
   const fullAddress = company.full_address || 
     `${company.prefecture_name || ''}${company.city_name || ''}${company.street_address || ''}`;
+  const repClean = cleanRepresentativeName(company.representative_name);
+  const repPos = company.representative_position ? cleanRepresentativeName(company.representative_position) : '';
+  const invoiceNumber = `T${company.corporate_number}`;
+
+  const isListed = Boolean(company.is_listed || (company.listing_market && company.listing_market !== '非上場'));
+  const empCount = typeof company.employee_count === 'number' ? company.employee_count : null;
+  const capAmount = typeof company.capital_amount === 'number' ? company.capital_amount : null;
 
   if (locale === 'en') {
-    const isYearOnly = /^\d{4}$/.test(company.establishment_date || "");
-    const datePrep = isYearOnly ? " in " : " on ";
-    const datePart = company.establishment_date ? ` Registered${datePrep}${formatEnglishDate(company.establishment_date)},` : "";
-    const addressPart = fullAddress ? ` located at ${fullAddress}` : "";
-    const phonePart = company.phone_number ? ` Contact phone: ${company.phone_number}.` : "";
-    const salesPart = company.sales_amount ? ` Revenue: ${formatJapaneseCurrency(company.sales_amount, 'en')}.` : "";
-    const employeePart = company.employee_count ? ` Employees: ${company.employee_count.toLocaleString('en-US')}.` : "";
+    const scaleLabel = isListed ? 'major listed enterprise' : (empCount && empCount >= 300) ? 'large corporation' : (empCount && empCount >= 50) ? 'mid-sized company' : 'corporation';
+    const industryLabel = industryName ? ` operating in the ${industryName} sector` : '';
+
     if (isOnPage) {
-      return `${companyName} is a corporation${addressPart} with corporate/tax ID ${company.corporate_number}.${datePart}${phonePart}${salesPart}${employeePart}`;
+      let s1 = `${companyName} (Corporate ID: ${company.corporate_number}) is a ${scaleLabel}${industryLabel}${fullAddress ? ` headquartered in ${fullAddress}` : ''}.`;
+      let s2 = '';
+      if (repClean) s2 += `Led by ${repPos || 'Representative'} ${repClean}. `;
+      if (company.establishment_date) s2 += `Officially registered in Japan on ${formatEnglishDate(company.establishment_date)}. `;
+
+      const kpisEn: string[] = [];
+      if (company.sales_amount) kpisEn.push(`annual revenue: ${formatJapaneseCurrency(company.sales_amount, 'en')}`);
+      if (company.ordinary_income) kpisEn.push(`ordinary profit: ${formatJapaneseCurrency(company.ordinary_income, 'en')}`);
+      if (company.employee_count) kpisEn.push(`workforce: ${company.employee_count.toLocaleString('en-US')} employees`);
+      if (company.capital_amount) kpisEn.push(`capital: ${formatJapaneseCurrency(company.capital_amount, 'en', true)}`);
+      const s3 = kpisEn.length > 0 ? `Latest operational metrics report ${kpisEn.join(', ')}. ` : '';
+
+      const s4 = `Fully registered under Japan's National Tax Agency Qualified Invoice System (Invoice No: ${invoiceNumber}). Official contact (${company.phone_number || 'verified listing'}), corporate governance, and multi-year financial statements are openly accessible on Kigyou-list.`;
+
+      return `${s1} ${s2}${s3}${s4}`.replace(/\s+/g, ' ').trim();
     }
-    return `${companyName} is a corporation${addressPart} with corporate/tax ID ${company.corporate_number}.${datePart}${phonePart}${salesPart}${employeePart} This page displays the latest contact details (phone, FAX, email), financial profile, and corporate index history.`;
-  } else if (locale === 'vi') {
-    const isYearOnly = /^\d{4}$/.test(company.establishment_date || "");
-    const datePrefix = isYearOnly ? " vào năm " : " ngày ";
-    const datePart = company.establishment_date ? ` được thành lập${datePrefix}${formatVietnameseDate(company.establishment_date)},` : "";
-    const addressPart = fullAddress ? ` tọa lạc tại địa chỉ ${fullAddress}` : "";
-    const phonePart = company.phone_number ? ` Số điện thoại liên hệ: ${company.phone_number}.` : "";
-    const salesPart = company.sales_amount ? ` Doanh thu: ${formatJapaneseCurrency(company.sales_amount, 'vi')}.` : "";
-    const employeePart = company.employee_count ? ` Quy mô: ${company.employee_count.toLocaleString('vi-VN')} nhân viên.` : "";
-    if (isOnPage) {
-      return `${companyName} là doanh nghiệp${addressPart}, có mã số thuế/pháp nhân là ${company.corporate_number}. Doanh nghiệp${datePart}${phonePart}${salesPart}${employeePart}`;
-    }
-    return `${companyName} là doanh nghiệp${addressPart}, có mã số thuế/pháp nhân là ${company.corporate_number}. Doanh nghiệp${datePart}${phonePart}${salesPart}${employeePart} Cập nhật đầy đủ thông tin liên hệ (điện thoại, FAX, email) và biểu đồ tài chính mới nhất.`;
-  } else {
-    // Japanese locale (ja) - Mirroring high-intent search queries
-    const kanaPart = company.company_name_kana ? `（${company.company_name_kana}）` : "";
-    const addressPart = fullAddress ? `${fullAddress}に所在する` : "";
-    const datePart = company.establishment_date ? `${formatJapaneseDate(company.establishment_date)}に法人番号が指定され、` : "";
-    const phonePart = company.phone_number ? `電話番号:${company.phone_number}。` : "";
-    const salesPart = company.sales_amount ? `売上高:${formatJapaneseCurrency(company.sales_amount, 'ja')}。` : "";
-    const employeePart = company.employee_count ? `従業員数:${company.employee_count.toLocaleString('ja-JP')}名。` : "";
-    const repPart = company.representative_name ? `代表者:${company.representative_name}。` : "";
-    
+
     const currentYear = new Date().getFullYear();
+    const metaKpisEn: string[] = [];
+    if (company.sales_amount) metaKpisEn.push(`Revenue: ${formatJapaneseCurrency(company.sales_amount, 'en')}`);
+    if (company.employee_count) metaKpisEn.push(`Employees: ${company.employee_count.toLocaleString('en-US')}`);
+    if (company.phone_number) metaKpisEn.push(`Phone: ${company.phone_number}`);
+    const kpiStrEn = metaKpisEn.length > 0 ? `. ${metaKpisEn.join(', ')}` : '';
+
+    return `${companyName} (${prefectureName || 'Japan'}) - ${currentYear} Corporate Profile, Tax ID: ${company.corporate_number}, Invoice: ${invoiceNumber}${kpiStrEn}. Verified executive records & B2B intelligence on Kigyou-list.`;
+
+  } else if (locale === 'vi') {
+    const scaleLabel = isListed ? 'tập đoàn lớn niêm yết' : (empCount && empCount >= 300) ? 'doanh nghiệp quy mô lớn' : (empCount && empCount >= 50) ? 'doanh nghiệp quy mô vừa' : 'doanh nghiệp vừa và nhỏ';
+    const industryLabel = industryName ? ` hoạt động trong lĩnh vực ${industryName}` : '';
+
     if (isOnPage) {
-      return `${companyName}${kanaPart}は、${addressPart}法人番号:${company.corporate_number}の法人です。${datePart}${phonePart}${salesPart}${employeePart}${repPart}`;
+      let s1 = `${companyName} (Mã số pháp nhân: ${company.corporate_number}) là ${scaleLabel}${industryLabel}${fullAddress ? ` có trụ sở chính tại ${fullAddress}` : ''}.`;
+      let s2 = '';
+      if (repClean) s2 += `Người đại diện là ${repPos || 'Đại diện pháp luật'} ${repClean}. `;
+      if (company.establishment_date) s2 += `Được chỉ định mã số thuế tại Nhật Bản vào ngày ${formatVietnameseDate(company.establishment_date)}. `;
+
+      const kpisVi: string[] = [];
+      if (company.sales_amount) kpisVi.push(`doanh thu: ${formatJapaneseCurrency(company.sales_amount, 'vi')}`);
+      if (company.ordinary_income) kpisVi.push(`lợi nhuận thường niên: ${formatJapaneseCurrency(company.ordinary_income, 'vi')}`);
+      if (company.employee_count) kpisVi.push(`quy mô: ${company.employee_count.toLocaleString('vi-VN')} nhân sự`);
+      if (company.capital_amount) kpisVi.push(`vốn điều lệ: ${formatJapaneseCurrency(company.capital_amount, 'vi', true)}`);
+      const s3 = kpisVi.length > 0 ? `Các chỉ số tài chính gần nhất ghi nhận ${kpisVi.join(', ')}. ` : '';
+
+      const s4 = `Doanh nghiệp đã đăng ký chứng nhận Hóa đơn hợp lệ theo Luật Invoice Quốc thuế Nhật Bản (Mã Invoice: ${invoiceNumber}). Số điện thoại liên hệ (${company.phone_number || 'đã xác minh'}), hồ sơ pháp lý và lịch sử tài chính được công khai miễn phí trên Kigyou-list.`;
+
+      return `${s1} ${s2}${s3}${s4}`.replace(/\s+/g, ' ').trim();
     }
-    return `【${currentYear}年最新】${companyName}${kanaPart}の企業データ・信用調査。${addressPart}法人番号:${company.corporate_number}。${salesPart}${employeePart}${phonePart}${repPart}電話番号、FAX、メール、役員、財務諸表を無料掲載中。`;
+
+    const currentYear = new Date().getFullYear();
+    const metaKpisVi: string[] = [];
+    if (company.sales_amount) metaKpisVi.push(`Doanh thu: ${formatJapaneseCurrency(company.sales_amount, 'vi')}`);
+    if (company.employee_count) metaKpisVi.push(`Nhân sự: ${company.employee_count.toLocaleString('vi-VN')}`);
+    if (company.phone_number) metaKpisVi.push(`SĐT: ${company.phone_number}`);
+    const kpiStrVi = metaKpisVi.length > 0 ? `. ${metaKpisVi.join(', ')}` : '';
+
+    return `【${currentYear}】${companyName} (${prefectureName || 'Nhật Bản'}) - Hồ sơ doanh nghiệp, mã pháp nhân ${company.corporate_number}, Invoice: ${invoiceNumber}${kpiStrVi}. Tra cứu báo cáo tài chính & dữ liệu đối tác tại Kigyou-list.`;
+
+  } else {
+    // Japanese locale (ja) - High intent B2B corporate narrative
+    const kanaPart = company.company_name_kana ? `（${company.company_name_kana}）` : "";
+    const marketLabel = company.listing_market && company.listing_market !== '非上場'
+      ? `${company.listing_market}`
+      : isListed ? '上場企業' : '';
+
+    let scaleLabel = '企業';
+    if (isListed) {
+      scaleLabel = '大手上場企業';
+    } else if ((empCount && empCount >= 300) || (capAmount && capAmount >= 300_000_000)) {
+      scaleLabel = '大企業';
+    } else if ((empCount && empCount >= 50) || (capAmount && capAmount >= 50_000_000)) {
+      scaleLabel = '中堅企業';
+    } else if (empCount || capAmount) {
+      scaleLabel = '中小企業';
+    }
+
+    const industryLabel = industryName || company.jigyo_shumoku || '';
+
+    if (isOnPage) {
+      let sent1 = `${companyName}${kanaPart}（法人番号: ${company.corporate_number}）は、`;
+      if (fullAddress) {
+        sent1 += `${fullAddress}に本社を置く`;
+      }
+      if (marketLabel) {
+        sent1 += `${marketLabel}の`;
+      }
+      if (industryLabel) {
+        sent1 += `${industryLabel}分野の${scaleLabel}です。`;
+      } else {
+        sent1 += `${scaleLabel}です。`;
+      }
+
+      let sent2Parts: string[] = [];
+      if (repClean) {
+        if (repPos) {
+          sent2Parts.push(`代表者は${repPos}の${repClean}氏`);
+        } else {
+          sent2Parts.push(`代表者は${repClean}氏`);
+        }
+      }
+      if (company.establishment_date) {
+        sent2Parts.push(`${formatJapaneseDate(company.establishment_date)}に法人番号が指定`);
+      }
+      const sent2 = sent2Parts.length > 0 ? `${sent2Parts.join('、')}。` : '';
+
+      const kpis: string[] = [];
+      if (company.sales_amount) {
+        kpis.push(`売上高: ${formatJapaneseCurrency(company.sales_amount, 'ja')}`);
+      }
+      if (company.ordinary_income) {
+        kpis.push(`経常利益: ${formatJapaneseCurrency(company.ordinary_income, 'ja')}`);
+      }
+      if (company.employee_count) {
+        kpis.push(`従業員数: ${company.employee_count.toLocaleString('ja-JP')}名`);
+      }
+      if (company.capital_amount) {
+        kpis.push(`資本金: ${formatJapaneseCurrency(company.capital_amount, 'ja', true)}`);
+      }
+      const sent3 = kpis.length > 0 ? `最新の公開データとして、${kpis.join('、')}を計上しています。` : '';
+
+      const sent4 = `国税庁公表の適格請求書発行事業者（インボイス制度登録番号: ${invoiceNumber}）として登録済み。${company.phone_number ? `代表電話番号（${company.phone_number}）` : '公式連絡窓口'}${company.fax_number ? `やFAX（${company.fax_number}）` : ''}、決算推移、営業シグナルデータをKigyou-listにて無料公開中。`;
+
+      return `${sent1} ${sent2} ${sent3} ${sent4}`.replace(/[\s\u3000]+/g, ' ').trim();
+    }
+
+    const currentYear = new Date().getFullYear();
+    const metaKpis: string[] = [];
+    if (company.sales_amount) metaKpis.push(`売上:${formatJapaneseCurrency(company.sales_amount, 'ja')}`);
+    if (company.employee_count) metaKpis.push(`従業員:${company.employee_count.toLocaleString('ja-JP')}名`);
+    if (company.phone_number) metaKpis.push(`TEL:${company.phone_number}`);
+    if (repClean) metaKpis.push(`代表:${repClean}`);
+    const kpiText = metaKpis.length > 0 ? `。${metaKpis.join('、')}` : '';
+
+    return `【${currentYear}年最新】${companyName}${kanaPart}（${prefectureName || '日本'}）の企業概要・信用調査。法人番号:${company.corporate_number}・インボイス:${invoiceNumber}${kpiText}。財務諸表・役員・連絡先を無料掲載中。`;
   }
 }
 
@@ -545,54 +660,143 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     ]
   };
 
-  // 6. Generate FAQ Schema for Google & Bing Rich Snippets
+  // 6. Generate FAQ Schema for Google & Bing Rich Snippets (Synchronized with visible UI)
+  const repCleanFaq = cleanRepresentativeName(company.representative_name);
+  const repPosFaq = company.representative_position 
+    ? cleanRepresentativeName(company.representative_position) 
+    : (locale === 'en' ? 'Representative' : locale === 'vi' ? 'Đại diện' : '代表者');
+  const invoiceNumberFaq = `T${company.corporate_number}`;
+  const isListedFaq = Boolean(company.is_listed || (company.listing_market && company.listing_market !== '非上場'));
+
+  const faqItems: { question: string; answer: string }[] = [];
+
+  if (locale === 'en') {
+    faqItems.push({
+      question: `What is the official phone number and contact information for ${companyName}?`,
+      answer: company.phone_number
+        ? `The official representative phone number for ${companyName} is ${company.phone_number}${company.fax_number ? ` (FAX: ${company.fax_number})` : ''}. Head office is located at ${company.full_address || 'Japan'}. Verified contact channels and executive directories are accessible on Kigyou-list.`
+        : `${companyName} is registered at ${company.full_address || 'Japan'}. Verified contact channels and representative directories are accessible on Kigyou-list.`
+    });
+    faqItems.push({
+      question: `What is the Japan Corporate Number and Invoice Registration ID for ${companyName}?`,
+      answer: `${companyName}'s official 13-digit National Tax Agency Corporate Number is ${company.corporate_number}. It is officially registered as a Qualified Invoice Issuer under Japan's consumption tax invoice system with registration ID ${invoiceNumberFaq}.`
+    });
+    faqItems.push({
+      question: `Where is ${companyName} headquartered?`,
+      answer: `${companyName} is officially registered and headquartered at ${company.postal_code ? 'Postal Code ' + company.postal_code + ', ' : ''}${company.full_address || company.street_address || 'Japan'}. Complete regional jurisdiction and legal relocation history are verified via Japan's National Tax Agency.`
+    });
+    if (company.sales_amount || company.employee_count || company.ordinary_income) {
+      faqItems.push({
+        question: `What are the annual revenue, profit, and employee count of ${companyName}?`,
+        answer: `${companyName} currently employs ${company.employee_count ? company.employee_count.toLocaleString('en-US') + ' personnel' : 'undisclosed count'}. Most recently reported annual revenue stands at ${company.sales_amount ? formatJapaneseCurrency(company.sales_amount, 'en') : 'undisclosed'}${company.ordinary_income ? ` with an ordinary income of ${formatJapaneseCurrency(company.ordinary_income, 'en')}` : ''}.${company.fiscal_month ? ` Fiscal year ends in ${company.fiscal_month}.` : ''}`
+      });
+    }
+    if (repCleanFaq || company.capital_amount) {
+      faqItems.push({
+        question: `Who is the representative of ${companyName} and what is its capital?`,
+        answer: `The official representative of ${companyName} is ${repPosFaq} ${repCleanFaq || 'undisclosed'}, with a registered capital of ${company.capital_amount ? formatJapaneseCurrency(company.capital_amount, 'en', true) : 'undisclosed'}.${isListedFaq ? ` The company is publicly traded on the ${company.listing_market || 'stock exchange'}.` : ' It is privately held.'}`
+      });
+    }
+    if (licenses && licenses.length > 0) {
+      faqItems.push({
+        question: `What government licenses and permits does ${companyName} hold?`,
+        answer: `${companyName} holds authorized government licenses including ${licenses.map((l: any) => l.license_name).slice(0, 3).join(', ')} registered with Japanese ministerial authorities.`
+      });
+    }
+    faqItems.push({
+      question: `How can I download corporate intelligence and CSV reports for ${companyName}?`,
+      answer: `On Kigyou-list, users can review verified financial metrics, legal registry history, corporate signals (hiring, subsidies, trademarks), and export standardized CSV datasets for B2B intelligence.`
+    });
+
+  } else if (locale === 'vi') {
+    faqItems.push({
+      question: `Số điện thoại và thông tin liên hệ chính thức của ${companyName} là gì?`,
+      answer: company.phone_number
+        ? `Số điện thoại đại diện chính thức của ${companyName} là ${company.phone_number}${company.fax_number ? ` (FAX: ${company.fax_number})` : ''}. Địa chỉ trụ sở chính đặt tại ${company.full_address || 'Nhật Bản'}. Thông tin liên hệ và ban điều hành được cập nhật trên Kigyou-list.`
+        : `${companyName} có trụ sở đăng ký tại ${company.full_address || 'Nhật Bản'}. Thông tin các kênh liên lạc chính thức được tra cứu tại Kigyou-list.`
+    });
+    faqItems.push({
+      question: `Mã số thuế/pháp nhân và mã chứng nhận Invoice của ${companyName} là gì?`,
+      answer: `Mã số pháp nhân 13 số do Quốc thuế Nhật Bản (NTA) cấp cho ${companyName} là ${company.corporate_number}. Doanh nghiệp đã được công nhận là cơ sở phát hành hóa đơn hợp lệ (Invoice System) với mã số đăng ký là ${invoiceNumberFaq}.`
+    });
+    faqItems.push({
+      question: `Trụ sở chính của ${companyName} đặt tại đâu?`,
+      answer: `Trụ sở chính của ${companyName} tọa lạc tại địa chỉ ${company.postal_code ? 'Mã bưu điện ' + company.postal_code + ', ' : ''}${company.full_address || company.street_address || 'Nhật Bản'}. Lịch sử thay đổi địa chỉ pháp lý được đồng bộ trực tiếp từ cổng thông tin NTA.`
+    });
+    if (company.sales_amount || company.employee_count || company.ordinary_income) {
+      faqItems.push({
+        question: `Quy mô nhân sự và doanh thu của ${companyName} là bao nhiêu?`,
+        answer: `${companyName} hiện có ${company.employee_count ? company.employee_count.toLocaleString('vi-VN') + ' nhân sự' : 'chưa công bố'}. Doanh thu kỳ gần nhất đạt ${company.sales_amount ? formatJapaneseCurrency(company.sales_amount, 'vi') : 'chưa công bố'}${company.ordinary_income ? `, lợi nhuận thường niên là ${formatJapaneseCurrency(company.ordinary_income, 'vi')}` : ''}.${company.fiscal_month ? ` Kỳ kế toán chốt vào tháng ${company.fiscal_month}.` : ''}`
+      });
+    }
+    if (repCleanFaq || company.capital_amount) {
+      faqItems.push({
+        question: `Người đại diện pháp luật và vốn điều lệ của ${companyName} là ai?`,
+        answer: `Người đại diện pháp luật của ${companyName} là ${repPosFaq} ${repCleanFaq || 'chưa công bố'}, vốn điều lệ đăng ký là ${company.capital_amount ? formatJapaneseCurrency(company.capital_amount, 'vi', true) : 'chưa công bố'}.${isListedFaq ? ` Doanh nghiệp niêm yết trên thị trường ${company.listing_market || 'chứng khoán'}.` : ' Doanh nghiệp chưa niêm yết.'}`
+      });
+    }
+    if (licenses && licenses.length > 0) {
+      faqItems.push({
+        question: `Các giấy phép kinh doanh và chứng chỉ của ${companyName} gồm những gì?`,
+        answer: `${companyName} đã được cấp các giấy phép chuyên ngành chính thức bao gồm ${licenses.map((l: any) => l.license_name).slice(0, 3).join(', ')} từ các bộ ngành Nhật Bản.`
+      });
+    }
+    faqItems.push({
+      question: `Làm thế nào để tải dữ liệu doanh nghiệp và báo cáo của ${companyName}?`,
+      answer: `Trên nền tảng Kigyou-list, người dùng có thể tra cứu miễn phí hồ sơ tài chính, lịch sử thay đổi pháp nhân, tín hiệu kinh doanh và trích xuất danh sách CSV phục vụ kết nối B2B.`
+    });
+
+  } else {
+    // Japanese locale (ja) - High intent B2B keywords
+    faqItems.push({
+      question: `${companyName}の電話番号や問い合わせ先・連絡方法は？`,
+      answer: company.phone_number
+        ? `${companyName}の代表電話番号は【${company.phone_number}】${company.fax_number ? `、FAX番号は【${company.fax_number}】` : ''}です。本社所在地は【${company.full_address || '日本国内'}】です。最新の連絡窓口や役員情報はKigyou-listで常時更新されています。`
+        : `${companyName}の本社所在地は【${company.full_address || '日本国内'}】です。最新の連絡先や登記情報はKigyou-listで確認できます。`
+    });
+    faqItems.push({
+      question: `${companyName}の法人番号および適格請求書（インボイス制度）の登録状況は？`,
+      answer: `${companyName}の国税庁指定法人番号は【${company.corporate_number}】です。また、2023年10月施行のインボイス制度における適格請求書発行事業者登録番号は【${invoiceNumberFaq}】として公表・登録されています。`
+    });
+    faqItems.push({
+      question: `${companyName}の本店所在地・本社住所はどこですか？`,
+      answer: `${companyName}の本店登記住所は【${company.postal_code ? '〒' + company.postal_code + ' ' : ''}${company.full_address || company.street_address || '日本国内'}】です。管轄の法務局に登記されており、Kigyou-listではGoogleマップや過去の本店移転履歴も照会可能です。`
+    });
+    if (company.sales_amount || company.employee_count || company.ordinary_income) {
+      faqItems.push({
+        question: `${companyName}の売上高・業績・従業員数はどれくらいですか？`,
+        answer: `${companyName}の最新の公表従業員数は【${company.employee_count ? company.employee_count.toLocaleString('ja-JP') + '名' : '非公開'}】、売上高は【${company.sales_amount ? formatJapaneseCurrency(company.sales_amount, 'ja') : '非公開'}】${company.ordinary_income ? `、経常利益は【${formatJapaneseCurrency(company.ordinary_income, 'ja')}】` : ''}です。${company.fiscal_month ? `決算期は毎年【${company.fiscal_month}】となります。` : ''}`
+      });
+    }
+    if (repCleanFaq || company.capital_amount) {
+      faqItems.push({
+        question: `${companyName}の代表取締役・社長や資本金は？`,
+        answer: `${companyName}の代表者は【${repPosFaq ? repPosFaq + ' ' : ''}${repCleanFaq || '非公開'}】氏、資本金は【${company.capital_amount ? formatJapaneseCurrency(company.capital_amount, 'ja', true) : '非公開'}】です。${isListedFaq ? `株式市場においては【${company.listing_market || '上場'}】企業として位置づけられています。` : '非上場企業です。'}`
+      });
+    }
+    if (licenses && licenses.length > 0) {
+      faqItems.push({
+        question: `${companyName}の保有許認可や主な事業内容は？`,
+        answer: `${companyName}は【${industryName || company.jigyo_shumoku || '各事業'}】を展開しており、公的許認可として【${licenses.map((l: any) => l.license_name).slice(0, 3).join('、')}】等の公的許認可・届出実績を有しています。`
+      });
+    }
+    faqItems.push({
+      question: `${companyName}の企業信用調査レポートや営業リストデータを取得するには？`,
+      answer: `B2B企業データベース「Kigyou-list（企業リスト）」にて、${companyName}の最新企業データ、財務諸表推移、役員・株主構成、営業シグナル（求人・補助金・商標等）を無料閲覧およびCSVダウンロードいただけます。`
+    });
+  }
+
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": `${companyName}の電話番号や問い合わせ先は？`,
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": company.phone_number 
-            ? `${companyName}の代表電話番号は【${company.phone_number}】です。` 
-            : `${companyName}の所在地は【${company.full_address || '日本国内'}】です。最新の連絡先や役員情報はKigyou-listで確認できます。`
-        }
-      },
-      {
-        "@type": "Question",
-        "name": `${companyName}の法人番号や所在地は？`,
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": `${companyName}の国税庁指定法人番号は【${company.corporate_number}】、所在地は【${company.full_address || '日本国内'}】です。`
-        }
-      },
-      ...(company.sales_amount || company.employee_count ? [{
-        "@type": "Question",
-        "name": `${companyName}の売上高や従業員数は？`,
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": `${companyName}の従業員数は${company.employee_count ? company.employee_count.toLocaleString('ja-JP') + '名' : '非公開'}、売上高は${company.sales_amount ? formatJapaneseCurrency(company.sales_amount, 'ja') : '非公開'}です。`
-        }
-      }] : []),
-      ...(company.capital_amount || company.representative_name ? [{
-        "@type": "Question",
-        "name": `${companyName}の代表者や資本金は？`,
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": `${companyName}の代表者は【${company.representative_name || '非公開'}】、資本金は【${company.capital_amount ? formatJapaneseCurrency(company.capital_amount, 'ja', true) : '非公開'}】です。`
-        }
-      }] : []),
-      {
-        "@type": "Question",
-        "name": `${companyName}の企業データや信用調査レポートを閲覧・ダウンロードするには？`,
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": `Kigyou-list（企業リスト）にて${companyName}の最新企業データ、財務指標、役員情報、求人・補助金シグナルを無料閲覧およびCSVダウンロードいただけます。`
-        }
+    "mainEntity": faqItems.map(item => ({
+      "@type": "Question",
+      "name": item.question,
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": item.answer
       }
-    ]
+    }))
   };
 
 
@@ -871,13 +1075,19 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
               {/* Dynamic Answer-First Entity Overview block for AI Extractors & Google Search Snippets */}
               <div 
-                className="mb-5 pb-4 border-b border-slate-100 dark:border-slate-800/80"
+                className="mb-5 p-3.5 sm:p-4 rounded-xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/30"
                 itemScope 
                 itemType="https://schema.org/Corporation"
               >
+                <div className="flex items-center gap-1.5 mb-2 text-xs font-bold text-[#1B4F8A] dark:text-blue-400">
+                  <FileText className="w-3.5 h-3.5 shrink-0" />
+                  <span>
+                    {locale === 'en' ? 'Corporate Profile Briefing' : locale === 'vi' ? 'Tóm tắt hồ sơ doanh nghiệp' : '企業サマリー・事業概要'}
+                  </span>
+                </div>
                 <meta itemProp="name" content={companyName} />
                 <meta itemProp="taxID" content={company.corporate_number} />
-                <p className="text-sm leading-relaxed text-slate-700 dark:text-slate-300" itemProp="description">
+                <p className="text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300" itemProp="description">
                   {onPageSummary}
                 </p>
               </div>
@@ -1544,7 +1754,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                     <HelpCircle className="w-4 h-4" />
                   </div>
                   <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
-                    {t.company.faqTitle || "よくあるご質問"}
+                    {t.company.faqTitle || (locale === 'en' ? 'Frequently Asked Questions' : locale === 'vi' ? 'Câu hỏi thường gặp' : 'よくあるご質問（FAQ）')}
                   </h2>
                 </div>
                 <span className="text-xs font-mono text-slate-500 dark:text-slate-400 tabular-nums">
