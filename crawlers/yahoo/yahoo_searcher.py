@@ -63,6 +63,7 @@ def parse_args():
     parser.add_argument("--headless", action="store_true", default=True, help="Run headless browser")
     parser.add_argument("--proxy-port", type=int, default=0, help="Specific proxy port (0 = Auto-detect WARP cluster)")
     parser.add_argument("--limit", type=int, default=0, help="Max companies to search (0 = all pending)")
+    parser.add_argument("--recrawl-days", type=int, default=60, help="Recrawl interval in days for companies without website (default: 60)")
     parser.add_argument("--log-file", default="yahoo_searcher.log", help="Log file path")
     return parser.parse_args()
 
@@ -139,8 +140,8 @@ async def rotate_proxy(port: int):
             
     return False
 
-def load_companies_from_db(limit: int = 0):
-    """Lấy danh sách các công ty thiếu Website hoặc SĐT trực tiếp từ Master DB và HelloWork DB."""
+def load_companies_from_db(limit: int = 0, recrawl_days: int = 60):
+    """Lấy danh sách các công ty thiếu Website hoặc SĐT trực tiếp từ Master DB và HelloWork DB, hỗ trợ chu kỳ tái cào thông minh."""
     if not os.path.exists(DB_PATH):
         log.error(f"Không tìm thấy database tại {DB_PATH}")
         return []
@@ -205,19 +206,22 @@ def load_companies_from_db(limit: int = 0):
         except Exception as e:
             log.warning(f"Lỗi khi liên kết HelloWork DB: {e}")
 
-    # 2. Nếu chưa đạt limit hoặc cào rộng: Lấy thêm các công ty trong Master DB chưa từng cào Yahoo
+    # 2. Hàng đợi thông minh: Các công ty chưa từng cào (IS NULL) hoặc chưa có website và đã quá recrawl_days
     remaining_limit = limit - len(targets) if limit > 0 else 0
     if limit == 0 or remaining_limit > 0:
         try:
             conn = sqlite3.connect(DB_PATH, timeout=40.0)
             conn.execute("PRAGMA journal_mode=WAL;")
             c = conn.cursor()
-            query = """
+            query = f"""
                 SELECT corporate_number, company_name, prefecture_name, city_name, full_address
                 FROM companies
                 WHERE (website_url IS NULL OR website_url = '' OR website_url LIKE '%なし%' OR website_url LIKE '%none%')
-                  AND yahoo_last_crawled_at IS NULL
-                ORDER BY rowid ASC
+                  AND (yahoo_last_crawled_at IS NULL OR yahoo_last_crawled_at < datetime('now', '-{recrawl_days} days'))
+                ORDER BY 
+                  CASE WHEN yahoo_last_crawled_at IS NULL THEN 0 ELSE 1 END,
+                  CASE WHEN is_hiring = 1 THEN 0 ELSE 1 END,
+                  yahoo_last_crawled_at ASC
             """
             if remaining_limit > 0:
                 query += f" LIMIT {remaining_limit}"
@@ -548,7 +552,7 @@ async def main_async():
     # 2. Nạp dữ liệu
     retry_file = os.path.join(CURRENT_DIR, "data", "yahoo_retry_queue.csv")
     if args.input == "db":
-        companies = load_companies_from_db(args.limit)
+        companies = load_companies_from_db(args.limit, recrawl_days=args.recrawl_days)
     else:
         companies = []
         with open(args.input, "r", encoding="utf-8-sig") as f:

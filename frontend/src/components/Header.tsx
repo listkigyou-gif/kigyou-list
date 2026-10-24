@@ -21,7 +21,9 @@ import {
   ArrowUpRight,
   Download,
   Home,
-  Tag
+  Tag,
+  Activity,
+  Bell
 } from "lucide-react";
 import { LogoIcon } from "./LogoIcon";
 import { useLanguage } from "@/context/LanguageContext";
@@ -141,7 +143,7 @@ export const Header: React.FC = () => {
             </div>
           </LocaleLink>
 
-          {/* Center: Desktop Navigation Links (Spacious, No vertical text wrapping) */}
+          {/* Center: Desktop Navigation Links (Spacious, Minimalist Japanese B2B) */}
           <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-xs lg:text-sm font-semibold shrink-0">
             <LocaleLink
               href="/search"
@@ -153,30 +155,6 @@ export const Header: React.FC = () => {
               }`}
             >
               {t.header.search}
-            </LocaleLink>
-
-            <LocaleLink
-              href="/directory"
-              prefetch={true}
-              className={`whitespace-nowrap transition-colors py-1 ${
-                isNavActive("/directory")
-                  ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
-                  : "text-slate-600 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400"
-              }`}
-            >
-              {t.header.directory}
-            </LocaleLink>
-
-            <LocaleLink
-              href="/pricing"
-              prefetch={true}
-              className={`whitespace-nowrap transition-colors py-1 ${
-                isNavActive("/pricing")
-                  ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
-                  : "text-slate-600 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400"
-              }`}
-            >
-              {t.header.pricing}
             </LocaleLink>
 
             <LocaleLink
@@ -192,16 +170,39 @@ export const Header: React.FC = () => {
             </LocaleLink>
 
             <LocaleLink
-              href="/developer"
+              href="/invoice"
               prefetch={true}
-              className={`whitespace-nowrap transition-colors py-1 flex items-center gap-1.5 ${
-                isNavActive("/developer")
-                  ? "text-cyan-600 dark:text-cyan-400 font-bold"
-                  : "text-slate-600 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-cyan-400"
+              className={`whitespace-nowrap transition-colors py-1 ${
+                isNavActive("/invoice")
+                  ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
+                  : "text-slate-600 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400"
               }`}
             >
-              <span>{locale === 'en' ? "Developers / AI" : locale === 'vi' ? "Dành cho AI / Dev" : "開発者・AI基盤"}</span>
-              <span className="text-[9px] bg-cyan-600 text-white font-bold px-1.5 py-0.2 rounded-full uppercase tracking-wider">API</span>
+              {locale === 'en' ? "Invoice Checker" : locale === 'vi' ? "Tra cứu Invoice" : "インボイス一括照会"}
+            </LocaleLink>
+
+            <LocaleLink
+              href="/watchlist"
+              prefetch={true}
+              className={`whitespace-nowrap transition-colors py-1 ${
+                isNavActive("/watchlist")
+                  ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
+                  : "text-slate-600 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400"
+              }`}
+            >
+              {locale === 'en' ? "Watchlist & Alerts" : locale === 'vi' ? "Giám sát biến động" : "企業監視・検知"}
+            </LocaleLink>
+
+            <LocaleLink
+              href="/pricing"
+              prefetch={true}
+              className={`whitespace-nowrap transition-colors py-1 ${
+                isNavActive("/pricing")
+                  ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
+                  : "text-slate-600 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400"
+              }`}
+            >
+              {t.header.pricing}
             </LocaleLink>
 
             {isLoggedIn && (
@@ -409,6 +410,16 @@ export const Header: React.FC = () => {
                         </LocaleLink>
 
                         <LocaleLink
+                          href="/dashboard?tab=watchlist"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors cursor-pointer"
+                        >
+                          <Activity className="w-4 h-4 text-amber-500" />
+                          <span>{locale === "en" ? "Company Watchlist & Alerts" : locale === "vi" ? "Theo dõi & Cảnh báo biến động" : "監視リスト・変動アラート"}</span>
+                          <span className="text-[9px] bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold px-1.5 py-0.2 rounded-full ml-auto">NEW</span>
+                        </LocaleLink>
+
+                        <LocaleLink
                           href="/dashboard?tab=list"
                           onClick={() => setUserDropdownOpen(false)}
                           className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors cursor-pointer"
@@ -568,14 +579,33 @@ export const Header: React.FC = () => {
             >
               {t.header.search}
             </LocaleLink>
-            
+
             <LocaleLink 
-              href="/directory" 
+              href="/form-marketing" 
               prefetch={true}
               onClick={() => setMobileMenuOpen(false)}
-              className="text-sm font-bold text-slate-700 hover:text-[#1B4F8A] dark:text-slate-300 py-1"
+              className="text-sm font-bold text-slate-700 hover:text-[#1B4F8A] dark:text-slate-300 py-1 flex items-center justify-between"
             >
-              {t.header.directory}
+              <span>{t.header.formDm}</span>
+            </LocaleLink>
+
+            <LocaleLink 
+              href="/invoice" 
+              prefetch={true}
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-sm font-bold text-slate-700 hover:text-[#1B4F8A] dark:text-slate-300 py-1 flex items-center justify-between"
+            >
+              <span>{locale === 'en' ? "Invoice Checker" : locale === 'vi' ? "Tra cứu Invoice" : "インボイス一括照会"}</span>
+            </LocaleLink>
+
+            <LocaleLink 
+              href="/watchlist" 
+              prefetch={true}
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-sm font-bold text-slate-700 hover:text-[#1B4F8A] dark:text-slate-300 py-1 flex items-center justify-between"
+            >
+              <span>{locale === 'en' ? "Watchlist & Alerts" : locale === 'vi' ? "Giám sát biến động" : "企業監視・検知"}</span>
+              <span className="text-[10px] bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/60 dark:text-blue-300 font-bold px-1.5 py-0.2 rounded-full">NEW</span>
             </LocaleLink>
 
             <LocaleLink 
@@ -585,26 +615,6 @@ export const Header: React.FC = () => {
               className="text-sm font-bold text-slate-700 hover:text-[#1B4F8A] dark:text-slate-300 py-1"
             >
               {t.header.pricing}
-            </LocaleLink>
-
-            <LocaleLink 
-              href="/form-marketing" 
-              prefetch={true}
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-sm font-bold text-slate-700 hover:text-[#1B4F8A] dark:text-slate-300 py-1 flex items-center justify-between"
-            >
-              <span>{t.header.formDm}</span>
-              <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.5 rounded-full uppercase">NEW</span>
-            </LocaleLink>
-
-            <LocaleLink 
-              href="/developer" 
-              prefetch={true}
-              onClick={() => setMobileMenuOpen(false)}
-              className="text-sm font-bold text-slate-700 hover:text-[#1B4F8A] dark:text-slate-300 py-1 flex items-center justify-between"
-            >
-              <span>{locale === 'en' ? "Developers / AI" : locale === 'vi' ? "Dành cho AI / Dev" : "開発者・AI基盤 / API"}</span>
-              <span className="text-[9px] bg-cyan-600 text-white font-bold px-1.5 py-0.5 rounded-full uppercase">API</span>
             </LocaleLink>
 
             <LocaleLink 
@@ -687,10 +697,10 @@ export const Header: React.FC = () => {
                 <div className="flex flex-col gap-2">
                   <button
                     onClick={() => { setAuthModalOpen(true); setMobileMenuOpen(false); }}
-                    className="w-full py-2.5 text-center text-xs font-bold text-white bg-gradient-to-r from-[#1B4F8A] to-[#143D6C] hover:from-[#163e6d] hover:to-[#0f2c4e] rounded-xl shadow-md flex items-center justify-center gap-1.5"
+                    className="w-full py-2.5 text-center text-xs font-bold text-white bg-[#1B4F8A] hover:bg-[#143D6C] active:scale-[0.98] rounded-xl shadow-xs flex items-center justify-center gap-1.5 transition-all"
                   >
                     <span>{t.header.register}</span>
-                    <span className="text-[9px] bg-amber-400 text-slate-900 font-black px-1.5 py-0.2 rounded">0円</span>
+                    <span className="text-[9px] bg-amber-400 text-slate-900 font-bold px-1.5 py-0.2 rounded">0円</span>
                   </button>
                   <button
                     onClick={() => { setAuthModalOpen(true); setMobileMenuOpen(false); }}

@@ -145,9 +145,16 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                   <h3 className="font-bold text-slate-850 dark:text-white text-sm leading-tight truncate">
                     {meta.title}
                   </h3>
-                  <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 font-mono tabular-nums">
-                    {t.company.registeredCount.replace("{count}", totalCount.toLocaleString())}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 font-mono tabular-nums">
+                      {t.company.registeredCount.replace("{count}", totalCount.toLocaleString())}
+                    </span>
+                    {type === '求人あり' && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200/70 dark:border-emerald-800/60">
+                        {locale === 'en' ? 'Past 3 months (Max 10)' : locale === 'vi' ? '3 tháng gần nhất (Tối đa 10)' : '直近3ヶ月以内・最大10件'}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 

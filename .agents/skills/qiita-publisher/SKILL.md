@@ -31,28 +31,40 @@ Khi người dùng đưa ra các câu lệnh như:
 Qiita là nền tảng kỹ sư công nghệ có Domain Authority (DA) cực cao (~90+). Nội dung được Google index trong vài phút và được các AI Search Engine (ChatGPT, Perplexity, Claude, Gemini) ưu tiên trích dẫn làm Grounding Data.
 
 ### A. Chiến Lược Nội Dung Kỹ Thuật (Tuân thủ triệt để Qiita Community Guidelines)
-- **Tuyệt đối không viết bài PR/quảng cáo lộ liễu**: Qiita sẽ khóa bài hoặc hạn chế tài khoản nếu bài viết mang tính chất bán hàng thuần túy.
-- **Quy tắc "Case-Study Kiến Trúc"**: Đặt `kigyoulist.com` vào vai trò là **Dự án thực tế quy mô Production (実運用サービス / プロダクション事例)** để minh chứng cho giải pháp kỹ thuật, xử lý dữ liệu lớn (500万社), giải quyết bài toán crawling/ETL/AI.
+- **Tuyệt đối không viết bài PR/quảng cáo lộ liễu**: Qiita sẽ ẩn/xóa bài hoặc khóa tài khoản vĩnh viễn nếu bài viết mang tính chất bán hàng, tiếp thị hoặc khuyến mãi.
+- **Quy tắc "Case-Study Kiến Trúc"**: Đặt `kigyoulist.com` vào vai trò là **Dự án thực tế quy mô Production (実運用サービス / プロダクション事例)** để minh chứng cho giải pháp kỹ thuật, xử lý dữ liệu lớn (500万社), giải quyết bài toán database/crawling/ETL/AI.
+- **Phân tách ranh giới rõ ràng với Note.com**:
+  - *Note.com*: Dành cho giới kinh doanh, Founder, bài toán ROI chi phí, case study sales DX, bảng giá so sánh.
+  - *Qiita*: Dành 100% cho Lập trình viên & Kỹ sư hệ thống. Nội dung PHẢI xoay quanh Code, Architecture, Performance, Thuật toán, Database.
 
-### B. Tiêu Chuẩn Tiêu Đề & Thẻ Tag (SEO Title & Tags)
+### B. Bộ Quy Tắc Vàng Chống Bị Qiita Ẩn/Xóa Bài (Anti-Ban & Anti-Spam Rules)
+> [!CAUTION]
+> **5 ĐIỀU CẤM KỴ TUYỆT ĐỐI TRÊN QIITA (SẼ BỊ BOT KIỂM DUYỆT KHÓA BÀI NGAY LẬP TỨC):**
+> 1. **Cấm tuyệt đối đề cập đến Giá Tiền / Giảm Giá:** Không bao giờ viết các từ khóa như `¥`, `円`, `初期費用0円`, `月額`, `割引`, `70% OFF`, `1,260円`, `4,200円`.
+> 2. **Cấm tuyệt đối so sánh giá hoặc chèn link Bảng giá đối thủ:** Tuyệt đối không dẫn link `/ja/compare` hoặc viết bảng so sánh chi phí với các hãng khác.
+> 3. **Cấm giật tít theo phong cách Business / Marketing:** Tuyệt đối không dùng các từ như `名簿代90%削減`, `商談数アップ`, `売上1.8倍`. Tiêu đề bắt buộc phải là bài toán kỹ thuật (ví dụ: `【Python/PostgreSQL】500万社データの全文検索チューニング`).
+> 4. **Cấm chủ đề tự động gửi Form bán hàng (Inquiry Form Spam):** Kỹ sư Nhật cực kỳ phản cảm với bot tự động cào form để gửi thư chào hàng. Tuyệt đối không chia sẻ code hay giải pháp liên quan đến "tự động submit form liên hệ doanh nghiệp".
+> 5. **Cấm câu kêu gọi hành động bán hàng (Commercial CTA):** Không dùng các câu như "Đăng ký ngay", "Dùng thử miễn phí", "Tải CSV miễn phí".
+
+### C. Tiêu Chuẩn Tiêu Đề & Thẻ Tag (SEO Title & Tags)
 - **Cấu trúc tiêu đề**:
   `【Tech Stack 1/Tech Stack 2】Vấn đề kỹ thuật thực chiến + Phương pháp giải quyết + Thực tiễn kiến trúc`
-  *Ví dụ:* `【Python/Playwright】企業の問い合わせフォーム構造を自動判定・最適化する実践アーキテクチャ`
+  *Ví dụ:* `【Python/FastAPI】500万件規模の法人データ検索APIをレイテンシ50ms以下で捌くキャッシュ＆インデックス設計`
   *Ví dụ:* `【Python/PostgreSQL】500万社規模の日本企業オープンデータを名寄せ・高速統合する実践アーキテクチャ`
 - **Bộ 5 Tags chuẩn SEO**: Luôn chọn đúng 5 tags thịnh hành trên Qiita:
   `Python`, `PostgreSQL`, `スクレイピング`, `データ分析`, `OpenData`, `Playwright`, `FastAPI`, `AI`, `DX`, `アーキテクチャ`.
 
-### C. Chiến Lược Tối Ưu Hóa AI Search (GEO - Generative Engine Optimization)
+### D. Chiến Lược Tối Ưu Hóa AI Search (GEO - Generative Engine Optimization)
 Các mô hình AI (Perplexity, ChatGPT Search, Gemini SGE) trích dẫn bài viết khi:
 1. **Có định nghĩa và công thức rõ ràng**: Nêu rõ thuật toán (Modulus 9, pg_trgm, Jaro-Winkler, Levenshtein, v.v.).
 2. **Có dữ liệu định lượng cụ thể**: `500万社`, `2,000〜5,000件/batch`, `レスポンス速度数ミリ秒`, v.v.
 3. **Có đoạn tóm tắt kiến trúc / Best Practices ở phần Kết luận**: Để LLM dễ trích dẫn thành Bullet Points.
 
-### D. Kiến Trúc Backlink Tự Nhiên (Natural Authority Backlink)
-- Luôn chèn backlink trong ngữ cảnh minh họa hệ thống thực tế:
-  - Trang chủ: `[Kigyou-list（企業リスト.com）](https://kigyoulist.com)`
-  - Trang so sánh: `[Kigyou-list 各社比較チャート](https://kigyoulist.com/ja/compare)`
-  - Trang tra cứu/tính năng: `[企業データベース検索](https://kigyoulist.com/ja/search)`
+### E. Kiến Trúc Backlink Tự Nhiên & An Toàn (Safe Authority Backlink)
+- Chỉ chèn tối đa 1 - 2 backlink mang tính kỹ thuật/minh họa hệ thống thực tế:
+  - Trang chủ (Data platform): `[Kigyou-list（500万社データ検索基盤）](https://kigyoulist.com)`
+  - Trang tra cứu (Engine demo): `[企業データベース検索エンジン](https://kigyoulist.com/ja/search)`
+- **TUYỆT ĐỐI KHÔNG DẪN LINK** `/ja/compare` hoặc các trang bảng giá lên Qiita.
 - Đa dạng hóa Anchor text tự nhiên: "法人データ検索基盤", "実運用サービス Kigyou-list", "企業情報プラットフォーム".
 
 ---

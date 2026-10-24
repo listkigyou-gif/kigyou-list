@@ -38,21 +38,25 @@ def main():
     print(f"[*] Source Database: {SRC_DB}")
     print(f"[*] Destination Database: {DEST_DB}")
 
-    # Establish connections
-    src_conn = sqlite3.connect(SRC_DB)
+    # Establish connections with generous timeouts
+    src_conn = sqlite3.connect(SRC_DB, timeout=120.0)
+    src_conn.execute("PRAGMA cache_size = -64000;")
     src_cur = src_conn.cursor()
 
-    dest_conn = sqlite3.connect(DEST_DB)
+    dest_conn = sqlite3.connect(DEST_DB, timeout=120.0)
+    dest_conn.execute("PRAGMA busy_timeout = 120000;")
+    dest_conn.execute("PRAGMA synchronous = NORMAL;")
+    dest_conn.execute("PRAGMA cache_size = -64000;")
     dest_cur = dest_conn.cursor()
 
     # Step 1: Create a unique index on raw_hellowork(job_number) to allow fast and idempotent merge
     print("[*] Creating unique index on destination table for idempotent integration...")
     try:
         dest_cur.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_raw_hellowork_job_number ON raw_hellowork(job_number);")
+        dest_cur.execute("CREATE INDEX IF NOT EXISTS idx_raw_hellowork_corp_num ON raw_hellowork(corporate_number);")
         dest_conn.commit()
     except Exception as e:
-        print(f"[-] Could not create index on destination: {e}")
-        # Proceed anyway
+        print(f"[-] Index setup note: {e}")
 
     # Step 2: Query total row counts from source
     print("[*] Checking source records count...")
@@ -133,8 +137,9 @@ def main():
         )
     """
 
+    BATCH_CHUNK = 25000
     while True:
-        rows = src_cur.fetchmany(BATCH_SIZE)
+        rows = src_cur.fetchmany(BATCH_CHUNK)
         if not rows:
             break
             
@@ -143,7 +148,6 @@ def main():
         # Insert chunk in transaction
         dest_cur.execute("BEGIN TRANSACTION;")
         try:
-            # We track rows affected via total changes
             before_changes = dest_conn.total_changes
             dest_cur.executemany(insert_sql, rows)
             after_changes = dest_conn.total_changes
@@ -165,13 +169,13 @@ def main():
         speed = total_processed / elapsed if elapsed > 0 else 0
         pct = (total_processed / total_jobs) * 100 if total_jobs > 0 else 100
         print(f"    Processed: {total_processed:,}/{total_jobs:,} ({pct:.1f}%) | "
-              f"New: {inserted_count:,} | Duplicates skipped: {ignored_count:,} | "
+              f"New: {inserted_count:,} | Skipped: {ignored_count:,} | "
               f"Speed: {speed:.0f} rows/sec", end="\r")
 
     end_time = time.time()
     total_elapsed = end_time - start_time
     print("\n" + "="*60)
-    print("      MIGRATION RUN COMPLETED SUCCESSFULLY!")
+    print("      HELLOWORK JOBS MIGRATION COMPLETED")
     print("="*60)
     print(f"[*] Total Records Processed: {total_processed:,}")
     print(f"[+] Total New Records Saved:  {inserted_count:,}")
@@ -179,11 +183,76 @@ def main():
     print(f"[*] Total Time Elapsed:       {total_elapsed:.2f} seconds")
     if total_elapsed > 0:
         print(f"[*] Average Throughput:       {total_processed/total_elapsed:.0f} rows/sec")
+
+    # Step 4: Enrich companies table with newly discovered websites
+    print("\n[*] Step 4: Enriching companies with newly discovered official websites...")
+    try:
+        dest_cur.execute(f"ATTACH DATABASE '{SRC_DB.replace(chr(92), '/')}' AS hw_src;")
+        dest_cur.execute("""
+            UPDATE companies
+            SET website_url = (
+                SELECT hw_c.website
+                FROM hw_src.companies hw_c
+                WHERE hw_c.corporate_number = companies.corporate_number
+                  AND hw_c.website IS NOT NULL
+                  AND length(hw_c.website) > 5
+                LIMIT 1
+            )
+            WHERE (website_url IS NULL OR website_url = '')
+              AND EXISTS (
+                SELECT 1 FROM hw_src.companies hw_c
+                WHERE hw_c.corporate_number = companies.corporate_number
+                  AND hw_c.website IS NOT NULL
+                  AND length(hw_c.website) > 5
+              );
+        """)
+        website_updates = dest_cur.rowcount
+        dest_conn.commit()
+        print(f"[+] Successfully enriched {website_updates:,} new official company websites!")
+    except Exception as e:
+        print(f"[-] Website enrichment note: {e}")
+        dest_conn.rollback()
+
+    # Step 5: Update is_hiring flag for corporate entities
+    print("\n[*] Step 5: Updating is_hiring = 1 flag for active hiring companies...")
+    try:
+        dest_cur.execute("""
+            UPDATE companies
+            SET is_hiring = 1
+            WHERE (is_hiring IS NULL OR is_hiring != 1)
+              AND corporate_number IN (
+                  SELECT DISTINCT corporate_number 
+                  FROM raw_hellowork 
+                  WHERE corporate_number IS NOT NULL AND length(corporate_number) = 13
+              );
+        """)
+        hiring_updates = dest_cur.rowcount
+        dest_conn.commit()
+        print(f"[+] Updated is_hiring = 1 for {hiring_updates:,} companies!")
+    except Exception as e:
+        print(f"[-] Hiring flag update note: {e}")
+        dest_conn.rollback()
+
+    try:
+        dest_cur.execute("DETACH DATABASE hw_src;")
+    except Exception:
+        pass
+
+    # Step 6: Final count verification
+    cur_total = dest_cur.execute("SELECT COUNT(*) FROM raw_hellowork;").fetchone()[0]
+    cur_hiring = dest_cur.execute("SELECT COUNT(*) FROM companies WHERE is_hiring = 1;").fetchone()[0]
+    cur_websites = dest_cur.execute("SELECT COUNT(*) FROM companies WHERE website_url IS NOT NULL AND website_url != '';").fetchone()[0]
+    print("="*60)
+    print(f"[*] FINAL REPOSITORY STATE:")
+    print(f"    - Total raw_hellowork: {cur_total:,} (+{inserted_count:,} newly added)")
+    print(f"    - Total is_hiring = 1: {cur_hiring:,} (+{hiring_updates:,} newly flagged)")
+    print(f"    - Total websites:      {cur_websites:,} (+{website_updates:,} enriched)")
     print("="*60)
 
     # Close databases
     src_conn.close()
     dest_conn.close()
+    return inserted_count, website_updates, hiring_updates
 
 if __name__ == "__main__":
     main()

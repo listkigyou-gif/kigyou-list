@@ -24,6 +24,7 @@ export interface AuthContextType {
   // MyList
   savedCompanies: string[];
   toggleSaveCompany: (corpNum: string) => void;
+  saveCompaniesBatch: (corpNums: string[]) => { addedCount: number; totalCount: number; maxReached: boolean };
   isCompanySaved: (corpNum: string) => boolean;
   // Kanban Stages
   kanbanStages: Record<string, KanbanStage>;
@@ -205,6 +206,45 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   };
 
+  const saveCompaniesBatch = (corpNums: string[]) => {
+    const validNums = corpNums.filter(n => typeof n === "string" && /^\d{13}$/.test(n));
+    let added = 0;
+    let limitHit = false;
+    const MAX_LIMIT = 100;
+
+    setSavedCompanies((prev) => {
+      const existingSet = new Set(prev);
+      const toAdd: string[] = [];
+
+      for (const num of validNums) {
+        if (!existingSet.has(num)) {
+          if (existingSet.size + toAdd.length >= MAX_LIMIT) {
+            limitHit = true;
+            break;
+          }
+          toAdd.push(num);
+        }
+      }
+
+      if (toAdd.length === 0) return prev;
+
+      added = toAdd.length;
+
+      // Update Kanban stages
+      setKanbanStages((prevKanban) => {
+        const next = { ...prevKanban };
+        for (const num of toAdd) {
+          next[num] = "未連絡";
+        }
+        return next;
+      });
+
+      return [...prev, ...toAdd];
+    });
+
+    return { addedCount: added, totalCount: validNums.length, maxReached: limitHit };
+  };
+
   const isCompanySaved = (corpNum: string) => {
     return savedCompanies.includes(corpNum);
   };
@@ -230,6 +270,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setAuthModalOpen,
         savedCompanies,
         toggleSaveCompany,
+        saveCompaniesBatch,
         isCompanySaved,
         kanbanStages,
         updateKanbanStage,

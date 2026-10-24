@@ -53,6 +53,8 @@ export class SmartSearchLRUCache {
   private misses = 0;
   private evictions = 0;
   private sweepTimer: NodeJS.Timeout | null = null;
+  private countMap = new Map<string, { count: number; expiresAt: number }>();
+  private readonly MAX_COUNT_ENTRIES = 2000;
 
   constructor() {
     // Periodic background cleanup of expired nodes
@@ -62,6 +64,95 @@ export class SmartSearchLRUCache {
         this.sweepTimer.unref(); // Do not prevent process exit
       }
     }
+  }
+
+  /**
+   * Generates a deterministic normalized key for total count queries (independent of pagination offset & limit).
+   * Ensures identical filter combinations reuse the cached total count across Page 1, 2, 3...
+   */
+  public static normalizeCountKey(
+    keyword: string,
+    filters: Partial<SearchFilters>
+  ): string {
+    const parts: string[] = [];
+
+    const cleanKw = (keyword || '').trim().toLowerCase();
+    if (cleanKw) parts.push(`kw=${encodeURIComponent(cleanKw)}`);
+
+    const activeEntries: [string, any][] = [];
+
+    if (filters.prefecture_code) activeEntries.push(['pref', filters.prefecture_code]);
+    if (filters.city_name) activeEntries.push(['city', filters.city_name]);
+    if (filters.industry_code) activeEntries.push(['ind', filters.industry_code]);
+
+    if (filters.min_employees != null) activeEntries.push(['emp_min', filters.min_employees]);
+    if (filters.max_employees != null) activeEntries.push(['emp_max', filters.max_employees]);
+
+    if (filters.min_capital != null) activeEntries.push(['cap_min', filters.min_capital]);
+    if (filters.max_capital != null) activeEntries.push(['cap_max', filters.max_capital]);
+
+    if (filters.min_sales != null) activeEntries.push(['sales_min', filters.min_sales]);
+    if (filters.max_sales != null) activeEntries.push(['sales_max', filters.max_sales]);
+
+    if (filters.min_establishment_year != null) activeEntries.push(['est_min', filters.min_establishment_year]);
+    if (filters.max_establishment_year != null) activeEntries.push(['est_max', filters.max_establishment_year]);
+
+    if (filters.has_hiring === true) activeEntries.push(['sig_hiring', '1']);
+    if (filters.has_subsidy === true) activeEntries.push(['sig_subsidy', '1']);
+    if (filters.has_bidding === true) activeEntries.push(['sig_bidding', '1']);
+    if (filters.has_award === true) activeEntries.push(['sig_award', '1']);
+    if (filters.has_certification === true) activeEntries.push(['sig_cert', '1']);
+    if (filters.has_patent === true) activeEntries.push(['sig_patent', '1']);
+    if (filters.has_financials === true) activeEntries.push(['sig_fin', '1']);
+
+    if (filters.has_contact_form === true) activeEntries.push(['cnt_form', '1']);
+    if (filters.has_email === true) activeEntries.push(['cnt_email', '1']);
+    if (filters.has_phone === true) activeEntries.push(['cnt_phone', '1']);
+    if (filters.has_website === true) activeEntries.push(['cnt_web', '1']);
+    if (filters.has_fax === true) activeEntries.push(['cnt_fax', '1']);
+    if (filters.email_type) activeEntries.push(['email_type', filters.email_type]);
+    if (filters.company_status) activeEntries.push(['status', filters.company_status]);
+
+    if (filters.min_operating_income != null) activeEntries.push(['op_inc_min', filters.min_operating_income]);
+    if (filters.max_operating_income != null) activeEntries.push(['op_inc_max', filters.max_operating_income]);
+    if (filters.min_ordinary_income != null) activeEntries.push(['ord_inc_min', filters.min_ordinary_income]);
+    if (filters.max_ordinary_income != null) activeEntries.push(['ord_inc_max', filters.max_ordinary_income]);
+    if (filters.min_net_income != null) activeEntries.push(['net_inc_min', filters.min_net_income]);
+    if (filters.max_net_income != null) activeEntries.push(['net_inc_max', filters.max_net_income]);
+
+    activeEntries.sort((a, b) => a[0].localeCompare(b[0]));
+    for (const [k, v] of activeEntries) {
+      parts.push(`${k}=${v}`);
+    }
+
+    return `count:v1:${parts.join('|')}`;
+  }
+
+  /**
+   * Retrieves cached totalCount for a given countKey.
+   */
+  public getCount(countKey: string): number | null {
+    const entry = this.countMap.get(countKey);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+      this.countMap.delete(countKey);
+      return null;
+    }
+    return entry.count;
+  }
+
+  /**
+   * Stores totalCount in cache with 15-minute TTL.
+   */
+  public setCount(countKey: string, count: number, ttlMs: number = DEFAULT_TTL_MS): void {
+    if (this.countMap.size >= this.MAX_COUNT_ENTRIES) {
+      const oldestKey = this.countMap.keys().next().value;
+      if (oldestKey) this.countMap.delete(oldestKey);
+    }
+    this.countMap.set(countKey, {
+      count,
+      expiresAt: Date.now() + ttlMs
+    });
   }
 
   /**
@@ -327,8 +418,10 @@ const globalForCache = globalThis as unknown as {
   __kigyouSearchLRUCache?: SmartSearchLRUCache;
 };
 
-export const searchLRUCache =
-  globalForCache.__kigyouSearchLRUCache || new SmartSearchLRUCache();
+export const searchLRUCache: SmartSearchLRUCache =
+  (globalForCache.__kigyouSearchLRUCache && typeof globalForCache.__kigyouSearchLRUCache.getCount === 'function')
+    ? globalForCache.__kigyouSearchLRUCache
+    : (globalForCache.__kigyouSearchLRUCache = new SmartSearchLRUCache());
 
 if (process.env.NODE_ENV !== 'production') {
   globalForCache.__kigyouSearchLRUCache = searchLRUCache;

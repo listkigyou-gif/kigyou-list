@@ -114,6 +114,7 @@ export async function GET(request: NextRequest) {
     if (searchParams.get("certification") === "true") filters.has_certification = true;
     if (searchParams.get("patent") === "true") filters.has_patent = true;
     if (searchParams.get("financials") === "true") filters.has_financials = true;
+    if (searchParams.get("is_listed") === "true" || searchParams.get("listed") === "true") filters.is_listed = true;
     
     const min_establishment_year = searchParams.get("min_establishment_year");
     if (min_establishment_year) {

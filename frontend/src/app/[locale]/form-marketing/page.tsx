@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 import { 
   Send, ShieldCheck, CheckCircle2, Clock, 
   ArrowRight, FileText, Phone, Mail, Building2, User, 
-  ChevronDown, Check, Zap, Target, BarChart3,
+  ChevronDown, Check, Zap, Target, BarChart3, ChevronRight,
   ExternalLink, Loader2, AlertCircle, Award, Layers,
   Calculator, Copy, Receipt, Lock, Banknote, TrendingUp, Coins, CreditCard
 } from "lucide-react";
@@ -288,10 +288,21 @@ ${message || "未入力"}`
         {/* HERO SECTION: Authoritative Japan B2B Header */}
         <section className="relative overflow-hidden pt-12 pb-16 lg:pt-16 lg:pb-20 border-b border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0D1117]">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            {/* Breadcrumb Navigation */}
+            <nav className="flex items-center gap-1.5 text-xs text-slate-500 mb-6">
+              <Link href={`/${locale}`} className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                {isJa ? "ホーム" : isVi ? "Trang chủ" : "Home"}
+              </Link>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-slate-900 dark:text-white font-medium">
+                {isJa ? "フォーム営業 (Form DM)" : isVi ? "Gửi Form tự động" : "Form Outreach"}
+              </span>
+            </nav>
+
             <div className="text-center max-w-3xl mx-auto">
               {/* B2B Eyebrow Tag */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 text-[#1B4F8A] dark:text-blue-400 text-xs font-bold mb-6 tracking-wide shadow-2xs">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A] dark:bg-blue-400 animate-pulse" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-xs font-semibold mb-6">
+                <Send className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
                 <span>
                   {isJa
                     ? "国内500万社DB連携 × 完全オンライン自動フォーム営業プラットフォーム"

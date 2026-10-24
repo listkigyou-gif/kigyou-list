@@ -204,6 +204,33 @@ body {
   border-color: #484F58;
 }
 
+/* Chrome Native Dark Mode Compatibility (prefers-color-scheme: dark) */
+@media (prefers-color-scheme: dark) {
+  .b2b-card {
+    background-color: #161B22;
+    border-color: #30363D;
+    box-shadow: none;
+    color: #F8FAFC;
+  }
+  .b2b-card:hover {
+    border-color: #484F58;
+  }
+  .b2b-kicker {
+    background-color: #1E293B;
+    color: #E2E8F0;
+    border-color: #334155;
+  }
+  .b2b-btn-secondary {
+    background-color: #21262D;
+    border-color: #363B42;
+    color: #C9D1D9;
+  }
+  .b2b-btn-secondary:hover {
+    background-color: #30363D;
+    color: #FFFFFF;
+  }
+}
+
 .b2b-btn-primary {
   display: inline-flex;
   align-items: center;

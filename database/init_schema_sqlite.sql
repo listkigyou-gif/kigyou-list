@@ -49,6 +49,11 @@ CREATE TABLE IF NOT EXISTS companies (
     business_summary TEXT NULL,
     jigyo_shumoku TEXT NULL, -- 事業種目
     branch_phone_numbers TEXT NULL, -- 支店電話番号
+    contact_form_url TEXT NULL, -- お問い合わせフォームURL
+    recruit_url TEXT NULL, -- 採用ページURL
+    fiscal_month TEXT NULL, -- 決算期
+    main_clients TEXT NULL, -- 主要取引先
+    main_banks TEXT NULL, -- 主要取引銀行
     sns_links TEXT NULL, -- ソーシャルメディア (JSON: twitter, facebook, wantedly, note, linkedin...)
     yahoo_last_crawled_at TEXT NULL, -- Yahoo最終検索日 (Chu kỳ 2 năm)
     website_last_crawled_at TEXT NULL, -- 公式ウェブサイト最終収集日 (Chu kỳ 2 năm)
@@ -236,6 +241,32 @@ CREATE TABLE IF NOT EXISTS industry_prefecture_pairs (
     prefecture_code TEXT,
     PRIMARY KEY (industry_code, prefecture_code)
 );
+
+-- =============================================================================
+-- Dynamic Hubs for Programmatic SEO ("Mạng Nhện Biến Động")
+-- =============================================================================
+CREATE TABLE IF NOT EXISTS hub_dynamic_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    corporate_number TEXT NOT NULL,
+    company_name TEXT NOT NULL,
+    prefecture_code TEXT NOT NULL,
+    prefecture_name TEXT NOT NULL,
+    city_name TEXT NULL,
+    event_category TEXT NOT NULL, -- 'new_establishment', 'relocation', 'representative', 'merger', 'bankruptcies', 'hiring'
+    event_date TEXT NOT NULL,      -- YYYY-MM-DD
+    title_ja TEXT NOT NULL,
+    description_ja TEXT NULL,
+    old_value TEXT NULL,
+    new_value TEXT NULL,
+    source TEXT DEFAULT '国税庁 / 商業登記',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (corporate_number, event_category, event_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_hub_cat_date ON hub_dynamic_events (event_category, event_date DESC);
+CREATE INDEX IF NOT EXISTS idx_hub_pref_cat_date ON hub_dynamic_events (prefecture_code, event_category, event_date DESC);
+CREATE INDEX IF NOT EXISTS idx_hub_corp_num ON hub_dynamic_events (corporate_number);
+CREATE INDEX IF NOT EXISTS idx_hub_date ON hub_dynamic_events (event_date DESC);
 
 
 

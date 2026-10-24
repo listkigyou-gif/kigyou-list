@@ -740,9 +740,9 @@ export async function adminUpdateCampaignStatus(
   }
 
   // If campaign is marked completed (Approach 1: Auto-settle & Refund unsent targets)
-  let successCount = metrics?.success_count !== undefined ? Number(metrics.success_count) : Number(cmp.success_count || 0);
-  let skippedCount = metrics?.skipped_count !== undefined ? Number(metrics.skipped_count) : Math.max(0, targetCount - successCount);
-  let reportUrl = metrics?.report_file_url || null;
+  const successCount = metrics?.success_count !== undefined ? Number(metrics.success_count) : Number(cmp.success_count || 0);
+  const _skippedCount = metrics?.skipped_count !== undefined ? Number(metrics.skipped_count) : Math.max(0, targetCount - successCount);
+  const reportUrl = metrics?.report_file_url || null;
 
   if (newStatus === 'completed' && ['approved', 'processing', 'pending_approval', 'sending'].includes(cmp.status)) {
     const delivered = Math.min(successCount, targetCount);

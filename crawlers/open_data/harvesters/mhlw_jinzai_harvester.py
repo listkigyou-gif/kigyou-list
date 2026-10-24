@@ -437,7 +437,14 @@ async def harvest_mhlw(pref_code, harvest_type="hakken", max_pages=None, start_p
             if batch_comp_updates:
                 cur.executemany(
                     """UPDATE companies 
-                       SET phone_number = COALESCE(?, phone_number),
+                       SET has_license = 1,
+                           primary_industry_code = COALESCE(primary_industry_code, '91'),
+                           major_industry_code = COALESCE(major_industry_code, 'R'),
+                           industry_confidence = CASE 
+                               WHEN industry_confidence IN ('UNCLASSIFIED', 'VERIFIED_WEB', NULL, '') THEN 'CONFIRMED_LICENSE'
+                               ELSE industry_confidence 
+                           END,
+                           phone_number = COALESCE(?, phone_number),
                            jigyo_shumoku = COALESCE(?, jigyo_shumoku),
                            updated_at = CURRENT_TIMESTAMP
                        WHERE corporate_number = ?;""",

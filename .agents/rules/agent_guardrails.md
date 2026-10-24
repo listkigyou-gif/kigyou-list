@@ -5,7 +5,7 @@ Quy tắc này áp dụng tự động cho mọi tác nhân và subagent trong d
 ---
 
 ## 1. Bảo Vệ Dữ Liệu & Phiên Làm Việc (Data & Session Protection)
-- **Tuyệt đối không xóa:** Không xóa các tệp cơ sở dữ liệu (`kigyou-list.db`, `hellowork.db`), dữ liệu gốc trong `importdata/` và 6 thư mục phiên làm việc của trình duyệt (`.x_user_profile`, `.facebook_user_profile`, `.linkedin_user_profile`, `.valuepress_user_profile`, `.note_user_profile`, `.zenn_user_profile`).
+- **Tuyệt đối không xóa:** Không xóa các tệp cơ sở dữ liệu (`kigyou-list.db`, `hellowork.db`), dữ liệu gốc trong `importdata/` và 7 thư mục phiên làm việc của trình duyệt (`.x_user_profile`, `.facebook_user_profile`, `.linkedin_user_profile`, `.valuepress_user_profile`, `.note_user_profile`, `.zenn_user_profile`, `.free_pressrelease_user_profile`).
 - Các thư mục user profile trên chứa toàn bộ cookies và phiên đăng nhập đã xác thực để tự động đăng bài lên mạng xã hội/báo chí.
 
 ## 2. Tự Hành & Tối Ưu Tốc Độ (Autonomous & Zero-Friction Execution)

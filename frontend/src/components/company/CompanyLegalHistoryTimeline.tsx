@@ -36,9 +36,9 @@ export function CompanyLegalHistoryTimeline({
   const [expanded, setExpanded] = useState(false);
 
   const title = translations.title || (
-    locale === 'en' ? 'Corporate Registry History (NTA Official System)' :
-    locale === 'vi' ? 'Lịch sử thay đổi pháp lý chính thức (Tổng cục Thuế NTA)' :
-    '主な変更履歴（国税庁 法人番号公表システム）'
+    locale === 'en' ? 'Corporate Change History' :
+    locale === 'vi' ? 'Lịch sử thay đổi pháp lý' :
+    '主な変更履歴'
   );
 
   const desc = translations.desc || (
@@ -101,7 +101,7 @@ export function CompanyLegalHistoryTimeline({
       className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs scroll-mt-20"
       aria-label={title}
     >
-      {/* Header with Kachi-iro Navy Accent & NTA Badge */}
+      {/* Header with Kachi-iro Navy Accent */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 mb-4 border-b border-slate-150 dark:border-slate-800 gap-2">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-lg bg-[#1B4F8A]/10 dark:bg-blue-950/60 flex items-center justify-center text-[#1B4F8A] dark:text-blue-400 shrink-0">
@@ -114,16 +114,9 @@ export function CompanyLegalHistoryTimeline({
           </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-            <ShieldCheck className="w-3.5 h-3.5" />
-            {officialBadge}
-          </span>
-          <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 tabular-nums">
-            {events.length} {locale === 'en' ? 'records' : locale === 'vi' ? 'mốc sự kiện' : '件'}
-          </span>
-        </div>
+        <span className="text-xs font-mono text-slate-500 dark:text-slate-400 tabular-nums">
+          {events.length} {locale === 'en' ? 'records' : locale === 'vi' ? 'mốc sự kiện' : '件の記録'}
+        </span>
       </div>
 
       <p className="text-xs text-slate-600 dark:text-slate-400 mb-5 leading-relaxed">
@@ -136,52 +129,70 @@ export function CompanyLegalHistoryTimeline({
           {emptyText}
         </div>
       ) : (
-        <div className="relative pl-6 sm:pl-7 space-y-5 before:absolute before:left-2 sm:before:left-2.5 before:top-2.5 before:bottom-2.5 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
+        <div className="relative pl-6 sm:pl-7 space-y-4 before:absolute before:left-2 sm:before:left-2.5 before:top-2.5 before:bottom-2.5 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
           {displayedEvents.map((event, idx) => {
-            const isInvoice = event.eventType === 'invoice_registration';
-            const isEst = event.eventType === 'establishment';
+            const isInvoice = event.eventType === 'invoice_registration' || event.eventType === 'invoice_change';
+            const isEst = event.eventType === 'establishment' || event.eventType === 'new_establishment';
+            const isRepChange = event.eventType === 'representative_change';
+            const isBankruptcy = event.eventType === 'bankruptcy';
+            const isMerger = event.eventType === 'merger';
+            const isRelocation = event.eventType === 'address_change' || event.eventType === 'relocation';
+
+            // Determine border & badge colors based on B2B design guidelines
+            let nodeBorderClass = 'border-slate-400 text-slate-500 dark:border-slate-600 dark:text-slate-400';
+            let dotClass = 'bg-slate-400 dark:bg-slate-500';
+            let badgeClass = 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+
+            if (isRepChange) {
+              nodeBorderClass = 'border-purple-600 text-purple-600 dark:border-purple-400 dark:text-purple-400';
+              dotClass = 'bg-purple-600 dark:bg-purple-400';
+              badgeClass = 'bg-purple-50 text-purple-750 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/60 font-semibold';
+            } else if (isInvoice) {
+              nodeBorderClass = 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400';
+              dotClass = 'bg-emerald-600 dark:bg-emerald-400';
+              badgeClass = 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60 font-medium';
+            } else if (isBankruptcy) {
+              nodeBorderClass = 'border-rose-600 text-rose-600 dark:border-rose-400 dark:text-rose-400';
+              dotClass = 'bg-rose-600 dark:bg-rose-400';
+              badgeClass = 'bg-rose-50 text-rose-800 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800/60 font-semibold';
+            } else if (isMerger) {
+              nodeBorderClass = 'border-indigo-600 text-indigo-600 dark:border-indigo-400 dark:text-indigo-400';
+              dotClass = 'bg-indigo-600 dark:bg-indigo-400';
+              badgeClass = 'bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800/60 font-medium';
+            } else if (isRelocation) {
+              nodeBorderClass = 'border-sky-600 text-sky-600 dark:border-sky-400 dark:text-sky-400';
+              dotClass = 'bg-sky-600 dark:bg-sky-400';
+              badgeClass = 'bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-800/60 font-medium';
+            } else if (isEst) {
+              nodeBorderClass = 'border-[#1B4F8A] text-[#1B4F8A] dark:border-blue-400 dark:text-blue-400';
+              dotClass = 'bg-[#1B4F8A] dark:bg-blue-400';
+              badgeClass = 'bg-blue-50 text-[#1B4F8A] border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60 font-medium';
+            }
 
             return (
               <div key={event.id || idx} className="relative group">
                 {/* Timeline node icon */}
-                <div className={`absolute -left-6 sm:-left-7 top-0.5 w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 bg-white dark:bg-[#161B22] ${
-                  isInvoice 
-                    ? 'border-emerald-600 text-emerald-600 dark:border-emerald-400 dark:text-emerald-400' 
-                    : isEst 
-                    ? 'border-[#1B4F8A] text-[#1B4F8A] dark:border-blue-400 dark:text-blue-400' 
-                    : 'border-slate-400 text-slate-500 dark:border-slate-600 dark:text-slate-400'
-                }`}>
-                  <span className={`w-1.5 h-1.5 rounded-full ${
-                    isInvoice ? 'bg-emerald-600 dark:bg-emerald-400' :
-                    isEst ? 'bg-[#1B4F8A] dark:bg-blue-400' :
-                    'bg-slate-400 dark:bg-slate-500'
-                  }`} />
+                <div className={`absolute -left-6 sm:-left-7 top-0.5 w-4.5 h-4.5 rounded-full flex items-center justify-center border-2 bg-white dark:bg-[#161B22] ${nodeBorderClass}`}>
+                  <span className={`w-1.5 h-1.5 rounded-full ${dotClass}`} />
                 </div>
 
                 {/* Event Card Content */}
                 <div className="bg-slate-50/70 hover:bg-slate-50 dark:bg-slate-800/30 dark:hover:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-lg p-3 sm:p-3.5 transition-colors">
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center gap-1 text-[11px] font-bold font-mono text-slate-900 dark:text-slate-200 tabular-nums">
-                        <Calendar className="w-3 h-3 text-slate-400 dark:text-slate-500" />
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold font-mono text-slate-900 dark:text-slate-200 tabular-nums">
+                        <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                         {formatDateDisplay(event.date)}
                       </span>
 
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold border ${
-                        isInvoice 
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60' 
-                          : isEst 
-                          ? 'bg-blue-50 text-[#1B4F8A] border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/60' 
-                          : 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700'
-                      }`}>
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs border ${badgeClass}`}>
                         {getEventBadge(event)}
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-1 text-[10px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200/60 dark:border-emerald-800/50">
-                      <CheckCircle2 className="w-3 h-3" />
-                      <span>{locale === 'en' ? 'Verified' : locale === 'vi' ? 'Đã xác minh' : '登記確認済'}</span>
-                    </div>
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
+                      {event.source}
+                    </span>
                   </div>
 
                   <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1">
@@ -192,10 +203,46 @@ export function CompanyLegalHistoryTimeline({
                     {getEventDetails(event)}
                   </p>
 
-                  <div className="mt-2 pt-1.5 border-t border-slate-200/50 dark:border-slate-800/50 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                    <span>{event.source}</span>
-                    <span className="tabular-nums">法人番号: {corporateNumber}</span>
-                  </div>
+                  {/* Diff Box for Representative / Corporate changes */}
+                  {(event.oldValue || event.newValue) && (
+                    <div className="mt-2.5 pt-2 border-t border-slate-200/70 dark:border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                      {event.oldValue && (
+                        <div className="p-2 rounded bg-white dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800">
+                          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 block mb-0.5 uppercase tracking-wider">
+                            {locale === 'en' ? 'Previous / Before:' : locale === 'vi' ? 'Trước thay đổi:' : '変更前:'}
+                          </span>
+                          <span className="text-slate-700 dark:text-slate-300 line-through decoration-slate-400/80 break-words">
+                            {event.oldValue}
+                          </span>
+                        </div>
+                      )}
+                      {event.newValue && (
+                        <div className="p-2 rounded bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200/80 dark:border-emerald-800/60">
+                          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5 uppercase tracking-wider">
+                            {locale === 'en' ? 'Current / After:' : locale === 'vi' ? 'Sau thay đổi:' : '変更後:'}
+                          </span>
+                          <span className="text-slate-900 dark:text-slate-100 font-semibold break-words">
+                            {event.newValue}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* External Source Link */}
+                  {event.sourceUrl && (
+                    <div className="mt-2 text-right">
+                      <a
+                        href={event.sourceUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-[#1B4F8A] dark:text-blue-400 hover:underline"
+                      >
+                        <span>{locale === 'en' ? 'Official Registry Source' : locale === 'vi' ? 'Xem nguồn công bố chính thức' : '公表ソースを確認'}</span>
+                        <span aria-hidden="true">→</span>
+                      </a>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -216,24 +263,6 @@ export function CompanyLegalHistoryTimeline({
           </button>
         </div>
       )}
-
-      {/* Clean Attribution Footer - Zero Outbound Links to keep users 100% on Kigyou-list */}
-      <div className="mt-5 pt-3.5 border-t border-slate-150 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400">
-          <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-          <span className="text-[11px] leading-relaxed">
-            {locale === 'en' 
-              ? 'Source: Japan National Tax Agency Corporate Number & Qualified Invoice Publication System (Official Registry Sync)'
-              : locale === 'vi' 
-              ? 'Nguồn: Dữ liệu công bố từ Cổng Mã số Pháp nhân & Hệ thống Hóa đơn Hợp lệ - Tổng cục Thuế Quốc gia Nhật Bản (Đồng bộ đăng ký thương mại)'
-              : '出典：国税庁 法人番号公表システム・適格請求書発行事業者公表サイト（商業登記データ同期）'}
-          </span>
-        </div>
-
-        <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500 tabular-nums">
-          法人番号: {corporateNumber}
-        </span>
-      </div>
     </section>
   );
 }

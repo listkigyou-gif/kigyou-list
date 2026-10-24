@@ -18,6 +18,7 @@
     "**/*.zip": true,
     "**/__pycache__": true,
     "importdata/**": true,
+    "scratch/**": true,
     "frontend/.next/**": true,
     "crawlers/**/data/**": true,
     "crawlers/**/logs/**": true,
@@ -31,7 +32,8 @@
     ".free_pressrelease_user_profile/**": true,
     ".*_user_profile/**": true,
     "scripts/.note_profile/**": true,
-    "scripts/form_dispatcher/reports/**": true
+    "scripts/form_dispatcher/reports/**": true,
+    "logs/**": true
   },
   "search.exclude": {
     "**/node_modules": true,
@@ -63,7 +65,8 @@
     ".*_user_profile/**": true,
     "scripts/.note_profile/**": true,
     "scripts/form_dispatcher/reports/**": true,
-    "scripts/**/*.png": true
+    "scripts/**/*.png": true,
+    "logs/**": true
   },
   "files.watcherExclude": {
     "**/.git/objects/**": true,
@@ -94,6 +97,7 @@
     ".free_pressrelease_user_profile/**": true,
     ".*_user_profile/**": true,
     "scripts/.note_profile/**": true,
-    "scripts/form_dispatcher/reports/**": true
+    "scripts/form_dispatcher/reports/**": true,
+    "logs/**": true
   }
 }

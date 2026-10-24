@@ -4,6 +4,7 @@
 *.sqlite*
 *.csv
 *.log*
+logs/
 crawlers/yahoo/data/
 crawlers/yahoo/logs/
 crawlers/hellowork/data/

@@ -360,14 +360,20 @@ https://kigyoulist.com/contact
       description: isEn ? "Perfect for testing usability" : isVi ? "Lý tưởng để kiểm tra thử tính năng của hệ thống" : "まずは使い勝手を試してみたい方に最適",
       features: isEn ? [
         "20 CSV exports per day (50 for verified business)",
+        "Bulk Invoice verification (Up to 100 T-numbers per run)",
+        "Corporate Watchlist & Risk Alerts (Up to 100 companies free)",
         "Full access to contact & sales intent filters",
         "View company profiles, FAX, shareholders & signals"
       ] : isVi ? [
         "Tải xuống 20 dòng CSV mỗi ngày (50 dòng nếu định danh doanh nghiệp)",
+        "Đối soát Hóa đơn Invoice hàng loạt (Tối đa 100 mã/lần)",
+        "Giám sát Doanh nghiệp & Cảnh báo biến động (Miễn phí 100 công ty)",
         "Mở toàn bộ bộ lọc kênh liên hệ & tín hiệu kinh doanh",
         "Xem toàn bộ chi tiết doanh nghiệp, số FAX & cổ đông"
       ] : [
         "毎日 20 件の CSV ダウンロード枠 (企業認証で50件/日)",
+        "インボイス一括照会ツール（1回最大100件まで無料）",
+        "企業監視・重要変動検知アラート（最大100社まで無料見守り）",
         "全検索条件・営業シグナル・連絡先絞り込みの利用",
         "企業詳細プロフィール・FAX・主要株主の閲覧"
       ]
@@ -383,18 +389,24 @@ https://kigyoulist.com/contact
       description: isEn ? "Ideal for sole proprietors & salespeople running outreach" : isVi ? "Lý tưởng cho cá nhân kinh doanh & nhân viên bán hàng tiếp cận khách hàng" : "テレアポ・DM営業を始めたい個人事業主や営業マンに最適",
       features: isEn ? [
         "2,000 CSV downloads per month",
+        "Corporate Watchlist priority real-time alerts",
+        "Bulk Invoice verification report CSV download",
         "API integration (Key issuance & CRM/ERP syncing)",
         "Email address disclosure",
         "ABM Kanban CRM board",
         "Filter by email/phone availability"
       ] : isVi ? [
         "Tải xuống 2.000 dòng CSV mỗi tháng",
+        "Cảnh báo biến động đối tác ưu tiên thời gian thực",
+        "Xuất báo cáo đối soát hóa đơn Invoice ra CSV",
         "Tích hợp API (Cấp khóa API & đồng bộ CRM/ERP)",
         "Mở khóa địa chỉ email doanh nghiệp",
         "Bảng quản lý phễu CRM Kanban ABM",
         "Lọc theo sự tồn tại của email/số điện thoại"
       ] : [
         "毎月 2,000 件の CSV ダウンロード枠",
+        "企業監視リスト 優先リアルタイム通知・アラート",
+        "インボイス一括照会 結果CSVレポート出力",
         "API連携 (API Key 発行・外部CRM/ERP連携)",
         "メールアドレスの開示",
         "ABM かんばん営業管理 CRM ボード",
@@ -673,9 +685,10 @@ https://kigyoulist.com/contact
 
         {/* Main Title Section */}
         <section className="text-center max-w-4xl mx-auto flex flex-col gap-3" style={{ fontFeatureSettings: '"palt"' }}>
-          <span className="text-[11px] font-bold text-[#1B4F8A] dark:text-blue-300 uppercase tracking-wider bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900/60 px-3 py-1 rounded-md w-fit mx-auto">
-            {t.pricing.tagline}
-          </span>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 w-fit mx-auto mb-1">
+            <Coins className="w-3.5 h-3.5 text-slate-600 dark:text-slate-400" />
+            <span>{t.pricing.tagline}</span>
+          </div>
           <h1 className="text-[clamp(20px,4vw,36px)] font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
             <span className="block whitespace-nowrap">
               {t.pricing.title1}
@@ -916,7 +929,7 @@ https://kigyoulist.com/contact
                         : plan.recommended
                         ? "bg-[#1B4F8A] hover:bg-[#143D6C] text-white shadow-2xs cursor-pointer active:scale-[0.99]"
                         : plan.id === "pro"
-                        ? "bg-slate-900 hover:bg-slate-800 text-white dark:bg-white dark:hover:bg-slate-100 dark:text-slate-900 shadow-2xs cursor-pointer active:scale-[0.99]"
+                        ? "bg-[#1B4F8A] hover:bg-[#143D6C] text-white dark:bg-[#1f6feb] dark:hover:bg-[#388bfd] dark:text-white shadow-2xs cursor-pointer active:scale-[0.99]"
                         : "border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-[#151B22] dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-2xs cursor-pointer active:scale-[0.99]"
                     }`}
                   >

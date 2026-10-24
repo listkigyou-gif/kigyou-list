@@ -1,9 +1,10 @@
 import { MetadataRoute } from 'next';
 import { getSitemapCompanies, getSitemapCompaniesCount, getActiveIndustryPrefecturePairs } from '@/lib/db';
+import { PREFECTURES } from '@/lib/hubUtils';
 
 export const revalidate = 86400; // Cache sitemap for 24 hours, rebuild in background
 
-const SITEMAP_LIMIT = 50000;
+const SITEMAP_LIMIT = 10000; // Optimized for Googlebot speed (10k URLs ~1.5MB uncompressed, ~150KB gzip)
 
 export async function generateSitemaps() {
   const totalCompanies = await getSitemapCompaniesCount();
@@ -63,6 +64,84 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
         changeFrequency: 'weekly',
         priority: 0.85,
       });
+      corePages.push({
+        url: `${baseUrl}/${loc}/invoice`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/watchlist`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+
+      // Programmatic SEO Dynamic Hubs ("Mạng Nhện Biến Động")
+      corePages.push({
+        url: `${baseUrl}/${loc}/new-companies`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/changes/relocation`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/status/bankruptcies`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/jobs/latest`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/changes/merger`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+
+      // 47 Prefectures Dynamic Hub Pages
+      for (const p of PREFECTURES) {
+        corePages.push({
+          url: `${baseUrl}/${loc}/new-companies/${p.slug}`,
+          lastModified: new Date(),
+          changeFrequency: 'daily',
+          priority: 0.90,
+        });
+        corePages.push({
+          url: `${baseUrl}/${loc}/changes/relocation/${p.slug}`,
+          lastModified: new Date(),
+          changeFrequency: 'daily',
+          priority: 0.90,
+        });
+        corePages.push({
+          url: `${baseUrl}/${loc}/status/bankruptcies/${p.slug}`,
+          lastModified: new Date(),
+          changeFrequency: 'daily',
+          priority: 0.90,
+        });
+        corePages.push({
+          url: `${baseUrl}/${loc}/jobs/latest/${p.slug}`,
+          lastModified: new Date(),
+          changeFrequency: 'daily',
+          priority: 0.90,
+        });
+        corePages.push({
+          url: `${baseUrl}/${loc}/changes/merger/${p.slug}`,
+          lastModified: new Date(),
+          changeFrequency: 'daily',
+          priority: 0.90,
+        });
+      }
 
       // 47 Prefectures Local SEO Hubs (pSEO)
       for (let p = 1; p <= 47; p++) {

@@ -38,6 +38,11 @@ Không chia lẻ kênh, mỗi ngày Agent sẽ lấy **1 Chủ Đề Cốt Lõi 
 *(Quy tắc ngoại lệ: **ValuePress** bắt buộc giãn cách tối thiểu 30 ngày/bài. Bài trước đăng ngày 11/10/2026, do đó **TẠM KHÓA ĐẾN SAU 13/11/2026**).*
 *(Tạm thời bỏ qua **LinkedIn** cho đến khi kích hoạt lại. Đã loại trừ vĩnh viễn Yahoo! Chiebukuro).*
 
+> [!WARNING]
+> **QUY TẮC PHÂN TÁCH NỘI DUNG TUYỆT ĐỐI (PLATFORM BOUNDARY ENFORCEMENT):**
+> * **Note.com:** Kênh dành cho Giới kinh doanh, Founder, SME, Marketing. Thoải mái phân tích ROI, case study tiếp cận khách hàng, so sánh chi phí và giới thiệu gói 1,260¥.
+> * **Qiita & Zenn:** Kênh thuần túy dành cho Kỹ sư & Lập trình viên. **TUYỆT ĐỐI CẤM** viết về bảng giá, tiền tệ (`¥`, `円`), so sánh đối thủ, cấm link `/ja/compare`, cấm chủ đề cào form gửi thư bán hàng (Inquiry form sales spam). Qiita sẽ gắn cờ và ẩn bài ngay lập tức nếu phát hiện yếu tố tiếp thị / sales pitch! Mọi bài viết Qiita/Zenn chỉ được tập trung 100% vào: Code, Thuật toán, Kiến trúc DB, Big Data 5 triệu records, Performance tuning.
+
 ---
 
 ## 3. Bảng Kiểm Soát Hạn Ngạch & Tần Suất Cổng Báo Chí (PR Quota Governance)
@@ -73,6 +78,7 @@ Mỗi ngày, Agent **BẮT BUỘC** gọi tool `generate_image` để tạo ản
 Để bài viết đạt độ chín, sâu sắc và không bị lỗi lẫn lộn văn phong:
 - Agent Chỉ Huy **KHÔNG viết gộp chung** nội dung các kênh trong 1 câu trả lời.
 - Agent Chỉ Huy chịu trách nhiệm: chốt **1 Chủ Đề Lõi (Core Theme)** + sinh **Ảnh bìa 16:9**.
+- **Tham chiếu tính năng từ [FEATURES.md](file:///c:/kigyou-list/FEATURES.md)**: Luôn bám sát danh mục tính năng (SĐT đảo ngược, FSA Edinet tài chính 5 năm, T-Number Invoice, Form DM, CSV Export, MCP Server) để chọn góc nhìn bài viết độc bản và chèn đúng Deep link landing page.
 - Sau đó giao đề bài cho từng **Agent Con chuyên trách**:
   - `note-publisher`: Viết bài dài, bảng so sánh định lượng ROI, FAQ kích hoạt AI SEO.
   - `facebook-publisher`: Tối ưu 90 ký tự hook, văn phong Keigo B2B, đăng đồng thời Fanpage + Profile Takahashi Rika.

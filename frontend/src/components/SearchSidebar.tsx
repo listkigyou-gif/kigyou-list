@@ -4,24 +4,10 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
-  Filter, 
-  Lock, 
-  MapPin, 
-  Send, 
-  Building2, 
-  Zap, 
-  TrendingUp, 
   RotateCcw, 
   ChevronDown,
-  Mail,
-  Phone,
-  Globe,
-  Printer,
-  Award,
-  FileCheck2,
-  Lightbulb,
-  FileSpreadsheet,
-  CheckCircle2
+  ChevronUp,
+  Lock,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
@@ -49,7 +35,6 @@ interface MajorIndustry {
 interface SearchSidebarProps {
   prefectures: PrefectureOption[];
   industries: MajorIndustry[];
-  // current active filter values (from URL params)
   prefCode?: string;
   city?: string;
   cities?: { cityName: string; count: number }[];
@@ -67,6 +52,7 @@ interface SearchSidebarProps {
   hasCertification: boolean;
   hasPatent: boolean;
   hasFinancials: boolean;
+  isListed?: boolean;
   minSales?: number;
   maxSales?: number;
   hasEmail: boolean;
@@ -108,6 +94,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   hasCertification,
   hasPatent,
   hasFinancials,
+  isListed,
   minSales,
   maxSales,
   hasEmail,
@@ -133,13 +120,16 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   const { locale, t } = useLanguage();
   const isProOrHigher = Boolean(user && (user.role === 'pro' || user.role === 'business' || user.role === 'enterprise' || user.role === 'admin'));
 
-  const hasActiveFin = Boolean(minSales || maxSales || minOpIncome || maxOpIncome || minOrdIncome || maxOrdIncome || minNetIncome || maxNetIncome);
-  const [isFinOpen, setIsFinOpen] = useState(hasActiveFin);
+  // Collapsible Accordion states
+  const [openArea, setOpenArea] = useState(true);
+  const [openChannels, setOpenChannels] = useState(true);
+  const [openScale, setOpenScale] = useState(true);
+  const [openSignals, setOpenSignals] = useState(true);
 
   const activeCount = [
     prefCode, city, indCode, minEmp, maxEmp, minCap, maxCap,
     hasHiring, hasSubsidy, hasBidding, minEstYear, maxEstYear,
-    hasAward, hasCertification, hasPatent, hasFinancials,
+    hasAward, hasCertification, hasPatent, hasFinancials, isListed,
     minSales, maxSales, hasEmail, hasPhone, hasWebsite, hasFax,
     hasContactForm, emailType, companyStatus, minOpIncome, maxOpIncome,
     minOrdIncome, maxOrdIncome, minNetIncome, maxNetIncome
@@ -168,57 +158,11 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
     return String((locale === 'en' || locale === 'vi') ? (num / 100) : num);
   };
 
-  // Build a new query string merging current params with overrides
-  const buildUrl = (overrides: Record<string, string | null | undefined>) => {
-    const params = new URLSearchParams();
-
-    const current: Record<string, string | null | undefined> = {
-      prefecture: prefCode,
-      city: city,
-      industry: indCode,
-      min_employees: minEmp != null ? String(minEmp) : undefined,
-      max_employees: maxEmp != null ? String(maxEmp) : undefined,
-      min_capital: minCap != null ? String(minCap) : undefined,
-      max_capital: maxCap != null ? String(maxCap) : undefined,
-      hiring: hasHiring ? "true" : undefined,
-      subsidy: hasSubsidy ? "true" : undefined,
-      bidding: hasBidding ? "true" : undefined,
-      min_establishment_year: minEstYear != null ? String(minEstYear) : undefined,
-      max_establishment_year: maxEstYear != null ? String(maxEstYear) : undefined,
-      award: hasAward ? "true" : undefined,
-      certification: hasCertification ? "true" : undefined,
-      patent: hasPatent ? "true" : undefined,
-      financials: hasFinancials ? "true" : undefined,
-      min_sales: minSales != null ? String(minSales) : undefined,
-      max_sales: maxSales != null ? String(maxSales) : undefined,
-      email: hasEmail ? "true" : undefined,
-      phone: hasPhone ? "true" : undefined,
-      website: hasWebsite ? "true" : undefined,
-      fax: hasFax ? "true" : undefined,
-      contact_form: hasContactForm ? "true" : undefined,
-      email_type: emailType || undefined,
-      status: companyStatus,
-      min_operating_income: minOpIncome != null ? String(minOpIncome) : undefined,
-      max_operating_income: maxOpIncome != null ? String(maxOpIncome) : undefined,
-      min_ordinary_income: minOrdIncome != null ? String(minOrdIncome) : undefined,
-      max_ordinary_income: maxOrdIncome != null ? String(maxOrdIncome) : undefined,
-      min_net_income: minNetIncome != null ? String(minNetIncome) : undefined,
-      max_net_income: maxNetIncome != null ? String(maxNetIncome) : undefined,
-    };
-
-    const merged: Record<string, string | null | undefined> = {
-      ...current,
-      ...overrides,
-      page: "1",
-    };
-
-    Object.entries(merged).forEach(([k, v]) => {
-      if (v != null && v !== "" && v !== "false") {
-        params.set(k, v);
-      }
-    });
-
-    return `/search?${params.toString()}`;
+  const handleKeyDownEnter = (e: React.KeyboardEvent<HTMLInputElement>, updates: Record<string, string | null | undefined>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      navigate(updates, true);
+    }
   };
 
   const navigate = (overrides: Record<string, string | null | undefined>, autoExecute = false) => {
@@ -241,6 +185,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         else if (key === "certification") updates.certification = val === "true";
         else if (key === "patent") updates.patent = val === "true";
         else if (key === "financials") updates.financials = val === "true";
+        else if (key === "is_listed") updates.is_listed = val === "true";
         else if (key === "min_sales") updates.min_sales = val;
         else if (key === "max_sales") updates.max_sales = val;
         else if (key === "email") updates.email = val === "true";
@@ -249,7 +194,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         else if (key === "fax") updates.fax = val === "true";
         else if (key === "contact_form") updates.contact_form = val === "true";
         else if (key === "email_type") updates.email_type = val;
-        else if (key === "status") updates.status = val;
+        else if (key === "status") updates.company_status = val;
         else if (key === "min_operating_income") updates.min_operating_income = val;
         else if (key === "max_operating_income") updates.max_operating_income = val;
         else if (key === "min_ordinary_income") updates.min_ordinary_income = val;
@@ -258,11 +203,48 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         else if (key === "max_net_income") updates.max_net_income = val;
       });
       onFilterChange(updates, autoExecute);
-      if (onCloseMobile) {
-        onCloseMobile();
-      }
     } else {
-      router.push(buildUrl(overrides));
+      const params = new URLSearchParams();
+      const current: Record<string, string | null | undefined> = {
+        prefecture: prefCode,
+        city: city,
+        industry: indCode,
+        min_employees: minEmp != null ? String(minEmp) : undefined,
+        max_employees: maxEmp != null ? String(maxEmp) : undefined,
+        min_capital: minCap != null ? String(minCap) : undefined,
+        max_capital: maxCap != null ? String(maxCap) : undefined,
+        hiring: hasHiring ? "true" : undefined,
+        subsidy: hasSubsidy ? "true" : undefined,
+        bidding: hasBidding ? "true" : undefined,
+        min_establishment_year: minEstYear != null ? String(minEstYear) : undefined,
+        max_establishment_year: maxEstYear != null ? String(maxEstYear) : undefined,
+        award: hasAward ? "true" : undefined,
+        certification: hasCertification ? "true" : undefined,
+        patent: hasPatent ? "true" : undefined,
+        financials: hasFinancials ? "true" : undefined,
+        is_listed: isListed ? "true" : undefined,
+        min_sales: minSales != null ? String(minSales) : undefined,
+        max_sales: maxSales != null ? String(maxSales) : undefined,
+        email: hasEmail ? "true" : undefined,
+        phone: hasPhone ? "true" : undefined,
+        website: hasWebsite ? "true" : undefined,
+        fax: hasFax ? "true" : undefined,
+        contact_form: hasContactForm ? "true" : undefined,
+        email_type: emailType || undefined,
+        status: companyStatus,
+        min_operating_income: minOpIncome != null ? String(minOpIncome) : undefined,
+        max_operating_income: maxOpIncome != null ? String(maxOpIncome) : undefined,
+        min_ordinary_income: minOrdIncome != null ? String(minOrdIncome) : undefined,
+        max_ordinary_income: maxOrdIncome != null ? String(maxOrdIncome) : undefined,
+        min_net_income: minNetIncome != null ? String(minNetIncome) : undefined,
+        max_net_income: maxNetIncome != null ? String(maxNetIncome) : undefined,
+      };
+
+      const merged = { ...current, ...overrides, page: "1" };
+      Object.entries(merged).forEach(([k, v]) => {
+        if (v != null && v !== "" && v !== "false") params.set(k, v);
+      });
+      router.push(`/search?${params.toString()}`);
     }
   };
 
@@ -285,6 +267,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         certification: false,
         patent: false,
         financials: false,
+        is_listed: false,
         min_sales: null,
         max_sales: null,
         email: false,
@@ -293,7 +276,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         fax: false,
         contact_form: false,
         email_type: null,
-        status: null,
+        company_status: null,
         min_operating_income: null,
         max_operating_income: null,
         min_ordinary_income: null,
@@ -307,11 +290,13 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   };
 
   return (
-    <aside className={className || "hidden lg:block w-76 shrink-0 bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 rounded-2xl p-4 sticky top-20 max-h-[calc(100vh-6.5rem)] overflow-y-auto scrollbar-thin shadow-2xs"}>
+    <aside 
+      aria-label="絞り込み検索"
+      className={className || "hidden lg:block w-76 shrink-0 bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-4 sticky top-20 max-h-[calc(100vh-6.5rem)] overflow-y-auto scrollbar-thin shadow-2xs text-xs"}
+    >
       {/* Sidebar Header */}
       <div className="flex items-center justify-between mb-3.5 pb-2.5 border-b border-slate-200/80 dark:border-slate-800">
         <div className="flex items-center gap-2">
-          <Filter className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
           <h2 className="font-bold text-sm text-slate-900 dark:text-white">
             {t.search.title}
           </h2>
@@ -326,7 +311,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
           <button
             type="button"
             onClick={handleClearAll}
-            className="text-xs font-semibold text-slate-400 hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors flex items-center gap-1 cursor-pointer"
+            className="text-xs font-medium text-slate-400 hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors flex items-center gap-1 cursor-pointer"
           >
             <RotateCcw className="w-3 h-3" />
             <span>{t.search.clear}</span>
@@ -334,172 +319,161 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         )}
       </div>
 
-      <div className="flex flex-col gap-3.5">
+      <div className="flex flex-col gap-3">
+
         {/* ========================================================
-            CARD 1: エリア・業種 (Location & Industry)
+            GROUP 1: 地域・業界 (Area & Industry)
             ======================================================== */}
-        <div className="bg-slate-50/70 dark:bg-slate-900/40 rounded-xl p-3 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2.5">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-            <MapPin className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-            <span>{locale === 'ja' ? 'エリア・業界' : locale === 'vi' ? 'Khu vực & Ngành nghề' : 'Location & Industry'}</span>
-          </div>
+        <div className="border border-slate-200/80 dark:border-slate-800 rounded-lg overflow-hidden bg-slate-50/50 dark:bg-slate-900/30">
+          <button
+            type="button"
+            onClick={() => setOpenArea(!openArea)}
+            className="w-full flex items-center justify-between p-3 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+          >
+            <span>{locale === 'ja' ? '地域・業界' : locale === 'vi' ? 'Khu vực & Ngành nghề' : 'Area & Industry'}</span>
+            {openArea ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+          </button>
 
-          {/* Prefecture */}
-          <div>
-            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-              {t.search.prefecture}
-            </label>
-            <select
-              value={prefCode || ""}
-              onChange={(e) => navigate({ prefecture: e.target.value || null, city: null }, true)}
-              className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 transition-colors shadow-2xs cursor-pointer"
-            >
-              <option value="">{t.search.allPrefectures}</option>
-              {prefectures.map((pref) => (
-                <option key={pref.code} value={pref.code}>
-                  {(t.prefectures as Record<string, string>)?.[pref.name] || pref.name} ({pref.count.toLocaleString('ja-JP')}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* City */}
-          <div>
-            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-              {t.search.city}
-            </label>
-            <select
-              value={city || ""}
-              onChange={(e) => navigate({ city: e.target.value || null }, true)}
-              disabled={!prefCode}
-              className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-slate-100 dark:disabled:bg-slate-900 transition-colors shadow-2xs cursor-pointer"
-            >
-              <option value="">{t.search.allCities}</option>
-              {prefCode && cities && cities.map((c) => (
-                <option key={c.cityName} value={c.cityName}>
-                  {c.cityName} ({c.count.toLocaleString('ja-JP')}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Industry */}
-          <div>
-            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-              {t.search.industry}
-            </label>
-            <select
-              value={indCode || ""}
-              onChange={(e) => navigate({ industry: e.target.value || null }, true)}
-              className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 transition-colors shadow-2xs cursor-pointer"
-            >
-              <option value="">{t.search.allIndustries}</option>
-              {industries.map((major) => (
-                <React.Fragment key={major.code}>
-                  <option value={major.code} className="font-semibold text-slate-900 dark:text-white">
-                    {major.code} {(t.majorIndustries as Record<string, string>)?.[major.code] || major.name} ({locale === 'en' ? 'Total' : locale === 'vi' ? 'Tổng cộng' : '計'} {major.totalCount.toLocaleString('ja-JP')}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
-                  </option>
-                  {major.children.map((medium) => (
-                    <option key={medium.code} value={medium.code} className="text-slate-700 dark:text-slate-300">
-                      {"\u00A0\u00A0"}{medium.code} {getIndustryName(medium.name, locale)} ({medium.count.toLocaleString('ja-JP')}{locale === 'en' ? ' companies' : locale === 'vi' ? ' doanh nghiệp' : '社'})
+          {openArea && (
+            <div className="p-3 pt-0 flex flex-col gap-2.5">
+              {/* Prefecture */}
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  {t.search.prefecture}
+                </label>
+                <select
+                  value={prefCode || ""}
+                  onChange={(e) => navigate({ prefecture: e.target.value || null, city: null }, true)}
+                  className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 cursor-pointer"
+                >
+                  <option value="">{t.search.allPrefectures}</option>
+                  {prefectures.map((pref) => (
+                    <option key={pref.code} value={pref.code}>
+                      {(t.prefectures as Record<string, string>)?.[pref.name] || pref.name} ({pref.count.toLocaleString('ja-JP')}社)
                     </option>
                   ))}
-                </React.Fragment>
-              ))}
-            </select>
-          </div>
+                </select>
+              </div>
+
+              {/* City */}
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  {t.search.city}
+                </label>
+                <select
+                  value={city || ""}
+                  onChange={(e) => navigate({ city: e.target.value || null }, true)}
+                  disabled={!prefCode}
+                  className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 cursor-pointer"
+                >
+                  <option value="">{t.search.allCities}</option>
+                  {prefCode && cities && cities.map((c) => (
+                    <option key={c.cityName} value={c.cityName}>
+                      {c.cityName} ({c.count.toLocaleString('ja-JP')}社)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Industry */}
+              <div>
+                <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  {t.search.industry}
+                </label>
+                <select
+                  value={indCode || ""}
+                  onChange={(e) => navigate({ industry: e.target.value || null }, true)}
+                  className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 cursor-pointer"
+                >
+                  <option value="">{t.search.allIndustries}</option>
+                  {industries.map((major) => (
+                    <React.Fragment key={major.code}>
+                      <option value={major.code} className="font-semibold text-slate-900 dark:text-white">
+                        {major.code} {(t.majorIndustries as Record<string, string>)?.[major.code] || major.name} (計 {major.totalCount.toLocaleString('ja-JP')}社)
+                      </option>
+                      {major.children.map((medium) => (
+                        <option key={medium.code} value={medium.code} className="text-slate-700 dark:text-slate-300">
+                          {"\u00A0\u00A0"}{medium.code} {getIndustryName(medium.name, locale)} ({medium.count.toLocaleString('ja-JP')}社)
+                        </option>
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* ========================================================
-            CARD 2: 連絡先・アプローチ手段 (Contact Channels & Form Outreach)
+            GROUP 2: アプローチ手段・連絡先 (B2B Channels)
             ======================================================== */}
-        <div className="bg-slate-50/70 dark:bg-slate-900/40 rounded-xl p-3 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2.5 relative">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-              <Send className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-              <span>{locale === 'ja' ? '連絡先・営業手段' : locale === 'vi' ? 'Kênh liên hệ & Gửi Form' : 'Outreach & Contact'}</span>
-            </div>
-          </div>
+        <div className="border border-slate-200/80 dark:border-slate-800 rounded-lg overflow-hidden bg-slate-50/50 dark:bg-slate-900/30">
+          <button
+            type="button"
+            onClick={() => setOpenChannels(!openChannels)}
+            className="w-full flex items-center justify-between p-3 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+          >
+            <span>{locale === 'ja' ? 'アプローチ手段・連絡先' : locale === 'vi' ? 'Kênh liên hệ & Gửi Form' : 'Contact Channels'}</span>
+            {openChannels ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+          </button>
 
-          <div className="flex flex-col gap-2">
-            {/* Highlighted Flagship: お問い合わせフォーム */}
-            <label className={`flex items-center gap-2 p-2 rounded-lg border transition-all cursor-pointer ${
-              hasContactForm 
-                ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-200 shadow-2xs ring-1 ring-emerald-400/40' 
-                : 'bg-white border-slate-200 text-slate-800 hover:border-slate-300 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200'
-            }`}>
-              <input
-                type="checkbox"
-                checked={!!hasContactForm}
-                onChange={(e) => navigate({ contact_form: e.target.checked ? "true" : null }, true)}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
-              />
-              <div className="flex-1 flex items-center justify-between gap-1 flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs font-semibold">
-                    {locale === 'en' ? 'Contact Form' : locale === 'vi' ? 'Biểu mẫu liên hệ' : 'お問い合わせフォーム'}
-                  </span>
-                  <span className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium">
-                    ({(235000).toLocaleString('ja-JP')}{locale === 'en' ? ' co.' : locale === 'vi' ? ' DN' : '社'})
-                  </span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.2 rounded font-black tracking-wide">
-                    FORM
-                  </span>
-                  <span className="text-[9px] bg-indigo-50 text-indigo-700 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 px-1 py-0.2 rounded font-medium">
-                    {locale === 'ja' ? '自動営業' : locale === 'vi' ? 'Tự động' : 'Outreach'}
-                  </span>
-                </div>
-              </div>
-            </label>
-
-            {/* Email Address with Type selector */}
-            <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-2 flex flex-col gap-1.5">
-              <label className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors">
+          {openChannels && (
+            <div className="p-3 pt-0 flex flex-col gap-2">
+              {/* Contact Form */}
+              <label className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
-                    checked={hasEmail}
-                    onChange={(e) => navigate({ 
-                      email: e.target.checked ? "true" : null,
-                      email_type: e.target.checked ? emailType : null 
-                    }, true)}
+                    checked={!!hasContactForm}
+                    onChange={(e) => navigate({ contact_form: e.target.checked ? "true" : null }, true)}
                     className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
                   />
-                  <span className="flex items-center gap-1.5">
-                    <Mail className="w-3.5 h-3.5 text-slate-400" />
-                    <span>{t.search.emailLabel}</span>
-                  </span>
+                  <span>{locale === 'en' ? 'Contact Form' : locale === 'vi' ? 'Biểu mẫu liên hệ' : 'お問い合わせフォームあり'}</span>
                 </div>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                  ({(176000).toLocaleString('ja-JP')}{locale === 'en' ? ' co.' : locale === 'vi' ? ' DN' : '社'})
+                <span className="text-[10px] text-slate-400">
+                  (235,290社)
                 </span>
               </label>
 
-              {hasEmail && (
-                <div className="pl-6 pt-1 flex items-center gap-1.5 border-t border-slate-100 dark:border-slate-700/60 mt-1">
-                  <span className="text-[10px] text-slate-500 shrink-0">
-                    {locale === 'en' ? 'Type:' : locale === 'vi' ? 'Loại:' : '種別:'}
+              {/* Email */}
+              <div className="flex flex-col gap-1">
+                <label className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={hasEmail}
+                      onChange={(e) => navigate({ 
+                        email: e.target.checked ? "true" : null,
+                        email_type: e.target.checked ? emailType : null 
+                      }, true)}
+                      className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                    />
+                    <span>{t.search.emailLabel}</span>
+                  </div>
+                  <span className="text-[10px] text-slate-400">
+                    (176,505社)
                   </span>
-                  <select
-                    value={emailType || ""}
-                    onChange={(e) => navigate({ email_type: e.target.value || null }, true)}
-                    className="w-full text-[10px] font-medium text-slate-800 bg-slate-50 border border-slate-200 rounded px-1.5 py-0.5 focus:outline-none dark:bg-slate-900 dark:text-slate-200 dark:border-slate-700 cursor-pointer"
-                  >
-                    <option value="">{locale === 'en' ? 'All Types' : locale === 'vi' ? 'Tất cả loại' : '全種別'}</option>
-                    <option value="GENERAL">{locale === 'en' ? 'General / Info' : locale === 'vi' ? 'Chung / Đại diện' : '代表・総合'}</option>
-                    <option value="SALES">{locale === 'en' ? 'Sales' : locale === 'vi' ? 'Kinh doanh' : '営業'}</option>
-                    <option value="RECRUIT">{locale === 'en' ? 'Recruiting' : locale === 'vi' ? 'Tuyển dụng' : '採用'}</option>
-                    <option value="PR">{locale === 'en' ? 'PR / Media' : locale === 'vi' ? 'Truyền thông/PR' : '広報・PR'}</option>
-                  </select>
-                </div>
-              )}
-            </div>
+                </label>
 
-            {/* Other Channels */}
-            <div className="grid grid-cols-1 gap-1.5 pt-0.5">
-              <label className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
+                {hasEmail && (
+                  <div className="pl-6 pb-1">
+                    <select
+                      value={emailType || ""}
+                      onChange={(e) => navigate({ email_type: e.target.value || null }, true)}
+                      className="w-full text-[11px] text-slate-800 bg-white border border-slate-200 rounded px-2 py-1 focus:outline-none dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 cursor-pointer"
+                    >
+                      <option value="">{locale === 'en' ? 'All Types' : locale === 'vi' ? 'Tất cả loại' : '全種別'}</option>
+                      <option value="GENERAL">{locale === 'en' ? 'General / Info' : locale === 'vi' ? 'Đại diện / Chung' : '代表・総合'}</option>
+                      <option value="SALES">{locale === 'en' ? 'Sales' : locale === 'vi' ? 'Kinh doanh' : '営業'}</option>
+                      <option value="RECRUIT">{locale === 'en' ? 'Recruiting' : locale === 'vi' ? 'Tuyển dụng' : '採用'}</option>
+                      <option value="PR">{locale === 'en' ? 'PR / Media' : locale === 'vi' ? 'Truyền thông' : '広報・PR'}</option>
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Phone */}
+              <label className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -507,15 +481,15 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                     onChange={(e) => navigate({ phone: e.target.checked ? "true" : null }, true)}
                     className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
                   />
-                  <Phone className="w-3.5 h-3.5 text-slate-400" />
                   <span>{t.search.phoneLabel}</span>
                 </div>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                  ({(1758000).toLocaleString('ja-JP')}{locale === 'en' ? ' co.' : locale === 'vi' ? ' DN' : '社'})
+                <span className="text-[10px] text-slate-400">
+                  (1,758,775社)
                 </span>
               </label>
 
-              <label className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
+              {/* Website */}
+              <label className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -523,15 +497,15 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                     onChange={(e) => navigate({ website: e.target.checked ? "true" : null }, true)}
                     className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
                   />
-                  <Globe className="w-3.5 h-3.5 text-slate-400" />
                   <span>{t.search.websiteLabel}</span>
                 </div>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                  ({(540000).toLocaleString('ja-JP')}{locale === 'en' ? ' co.' : locale === 'vi' ? ' DN' : '社'})
+                <span className="text-[10px] text-slate-400">
+                  (539,749社)
                 </span>
               </label>
 
-              <label className="flex items-center justify-between text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
+              {/* Fax */}
+              <label className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
                 <div className="flex items-center gap-2">
                   <input
                     type="checkbox"
@@ -539,634 +513,273 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                     onChange={(e) => navigate({ fax: e.target.checked ? "true" : null }, true)}
                     className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
                   />
-                  <Printer className="w-3.5 h-3.5 text-slate-400" />
                   <span>{t.search.faxLabel}</span>
                 </div>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                  ({(301000).toLocaleString('ja-JP')}{locale === 'en' ? ' co.' : locale === 'vi' ? ' DN' : '社'})
+                <span className="text-[10px] text-slate-400">
+                  (301,404社)
                 </span>
               </label>
             </div>
-          </div>
+          )}
         </div>
 
         {/* ========================================================
-            CARD 3: 営業活動シグナル (Sales Intent Signals)
+            GROUP 3: 企業規模・財務情報 (FSA EDINET & Scale)
             ======================================================== */}
-        <div className="bg-slate-50/70 dark:bg-slate-900/40 rounded-xl p-3 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2 relative">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-              <Zap className="w-3.5 h-3.5 text-amber-500" />
-              <span>{locale === 'ja' ? '営業活動シグナル' : locale === 'vi' ? 'Tín hiệu kinh doanh' : 'Sales Intent Signals'}</span>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-2 pt-0.5">
-            <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
-              <input
-                type="checkbox"
-                checked={hasHiring}
-                onChange={(e) => navigate({ hiring: e.target.checked ? "true" : null }, true)}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
-              />
-              <span>{t.search.hiring}</span>
-            </label>
-
-            <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
-              <input
-                type="checkbox"
-                checked={hasSubsidy}
-                onChange={(e) => navigate({ subsidy: e.target.checked ? "true" : null }, true)}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
-              />
-              <span>{t.search.subsidy}</span>
-            </label>
-
-            <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
-              <input
-                type="checkbox"
-                checked={hasBidding}
-                onChange={(e) => navigate({ bidding: e.target.checked ? "true" : null }, true)}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
-              />
-              <span>{t.search.bidding}</span>
-            </label>
-
-            <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
-              <input
-                type="checkbox"
-                checked={hasAward}
-                onChange={(e) => navigate({ award: e.target.checked ? "true" : null }, true)}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
-              />
-              <span>{t.search.award}</span>
-            </label>
-
-            <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
-              <input
-                type="checkbox"
-                checked={hasCertification}
-                onChange={(e) => navigate({ certification: e.target.checked ? "true" : null }, true)}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
-              />
-              <span>{t.search.certification}</span>
-            </label>
-
-            <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
-              <input
-                type="checkbox"
-                checked={hasPatent}
-                onChange={(e) => navigate({ patent: e.target.checked ? "true" : null }, true)}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
-              />
-              <span>{t.search.patent}</span>
-            </label>
-
-            <label className="flex items-center gap-2 text-xs font-medium text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-slate-100 transition-colors p-1 rounded">
-              <input
-                type="checkbox"
-                checked={hasFinancials}
-                onChange={(e) => navigate({ financials: e.target.checked ? "true" : null }, true)}
-                className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
-              />
-              <span>{t.search.hasFinancials}</span>
-            </label>
-          </div>
-        </div>
-
-        {/* ========================================================
-            CARD 4: 企業規模・ステータス (Scale & Status)
-            ======================================================== */}
-        <div className="bg-slate-50/70 dark:bg-slate-900/40 rounded-xl p-3 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2.5">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-            <Building2 className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-            <span>{locale === 'ja' ? '企業規模・ステータス' : locale === 'vi' ? 'Quy mô & Trạng thái' : 'Scale & Status'}</span>
-          </div>
-
-          {/* Capital */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400">
-                {t.search.capital}
-              </label>
-              {minCap && (
-                <button
-                  type="button"
-                  onClick={() => navigate({ min_capital: null, max_capital: null })}
-                  className="text-[10px] text-slate-400 hover:text-red-500 transition-colors"
-                >
-                  {t.search.clear}
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-              <input
-                key={`minCap_${minCap ?? ''}`}
-                type="number"
-                placeholder={t.search.minCapital}
-                defaultValue={displayCapital(minCap)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const val = (e.target as HTMLInputElement).value;
-                    navigate({ min_capital: processCapitalInput(val) });
-                  }
-                }}
-                onBlur={(e) => {
-                  const val = e.target.value;
-                  if (val !== displayCapital(minCap)) {
-                    navigate({ min_capital: processCapitalInput(val) });
-                  }
-                }}
-                className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
-              />
-              <input
-                key={`maxCap_${maxCap ?? ''}`}
-                type="number"
-                placeholder={t.search.maxCapital}
-                defaultValue={displayCapital(maxCap)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const val = (e.target as HTMLInputElement).value;
-                    navigate({ max_capital: processCapitalInput(val) });
-                  }
-                }}
-                onBlur={(e) => {
-                  const val = e.target.value;
-                  if (val !== displayCapital(maxCap)) {
-                    navigate({ max_capital: processCapitalInput(val) });
-                  }
-                }}
-                className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
-              />
-            </div>
-            {/* Quick Presets for Capital */}
-            <div className="flex flex-wrap gap-1">
-              {[
-                { label: locale === 'ja' ? '1,000万+' : '10M+', value: 1000 },
-                { label: locale === 'ja' ? '5,000万+' : '50M+', value: 5000 },
-                { label: locale === 'ja' ? '1億+' : '100M+', value: 10000 },
-                { label: locale === 'ja' ? '10億+' : '1B+', value: 100000 },
-              ].map((preset) => {
-                const isActive = minCap === preset.value && !maxCap;
-                return (
-                  <button
-                    key={preset.value}
-                    type="button"
-                    onClick={() => {
-                      if (isActive) {
-                        navigate({ min_capital: null, max_capital: null });
-                      } else {
-                        navigate({ min_capital: String(preset.value), max_capital: null });
-                      }
-                    }}
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-[#1B4F8A] text-white shadow-2xs"
-                        : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-750"
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Employees */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400">
-                {t.search.employees}
-              </label>
-              {minEmp && (
-                <button
-                  type="button"
-                  onClick={() => navigate({ min_employees: null, max_employees: null })}
-                  className="text-[10px] text-slate-400 hover:text-red-500 transition-colors"
-                >
-                  {t.search.clear}
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-              <input
-                key={`minEmp_${minEmp ?? ''}`}
-                type="number"
-                placeholder={t.search.minEmployees}
-                defaultValue={minEmp || ""}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const val = (e.target as HTMLInputElement).value;
-                    navigate({ min_employees: val || null });
-                  }
-                }}
-                onBlur={(e) => {
-                  const val = e.target.value;
-                  if (val !== (minEmp != null ? String(minEmp) : "")) {
-                    navigate({ min_employees: val || null });
-                  }
-                }}
-                className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
-              />
-              <input
-                key={`maxEmp_${maxEmp ?? ''}`}
-                type="number"
-                placeholder={t.search.maxEmployees}
-                defaultValue={maxEmp || ""}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const val = (e.target as HTMLInputElement).value;
-                    navigate({ max_employees: val || null });
-                  }
-                }}
-                onBlur={(e) => {
-                  const val = e.target.value;
-                  if (val !== (maxEmp != null ? String(maxEmp) : "")) {
-                    navigate({ max_employees: val || null });
-                  }
-                }}
-                className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
-              />
-            </div>
-            {/* Quick Presets for Employees */}
-            <div className="flex flex-wrap gap-1">
-              {[
-                { label: locale === 'ja' ? '10人+' : '10+', value: 10 },
-                { label: locale === 'ja' ? '30人+' : '30+', value: 30 },
-                { label: locale === 'ja' ? '50人+' : '50+', value: 50 },
-                { label: locale === 'ja' ? '100人+' : '100+', value: 100 },
-                { label: locale === 'ja' ? '300人+' : '300+', value: 300 },
-              ].map((preset) => {
-                const isActive = minEmp === preset.value && !maxEmp;
-                return (
-                  <button
-                    key={preset.value}
-                    type="button"
-                    onClick={() => {
-                      if (isActive) {
-                        navigate({ min_employees: null, max_employees: null });
-                      } else {
-                        navigate({ min_employees: String(preset.value), max_employees: null });
-                      }
-                    }}
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-[#1B4F8A] text-white shadow-2xs"
-                        : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-750"
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Establishment Year */}
-          <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400">
-                {t.search.establishmentYear}
-              </label>
-              {minEstYear && (
-                <button
-                  type="button"
-                  onClick={() => navigate({ min_establishment_year: null, max_establishment_year: null })}
-                  className="text-[10px] text-slate-400 hover:text-red-500 transition-colors"
-                >
-                  {t.search.clear}
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 gap-1.5 mb-1.5">
-              <input
-                key={`minEstYear_${minEstYear ?? ''}`}
-                type="number"
-                placeholder={t.search.minEstablishmentYear}
-                defaultValue={minEstYear || ""}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const val = (e.target as HTMLInputElement).value;
-                    navigate({ min_establishment_year: val || null });
-                  }
-                }}
-                onBlur={(e) => {
-                  const val = e.target.value;
-                  if (val !== (minEstYear != null ? String(minEstYear) : "")) {
-                    navigate({ min_establishment_year: val || null });
-                  }
-                }}
-                className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
-              />
-              <input
-                key={`maxEstYear_${maxEstYear ?? ''}`}
-                type="number"
-                placeholder={t.search.maxEstablishmentYear}
-                defaultValue={maxEstYear || ""}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    const val = (e.target as HTMLInputElement).value;
-                    navigate({ max_establishment_year: val || null });
-                  }
-                }}
-                onBlur={(e) => {
-                  const val = e.target.value;
-                  if (val !== (maxEstYear != null ? String(maxEstYear) : "")) {
-                    navigate({ max_establishment_year: val || null });
-                  }
-                }}
-                className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
-              />
-            </div>
-            {/* Quick Presets for Establishment Year */}
-            <div className="flex flex-wrap gap-1">
-              {[
-                { label: locale === 'ja' ? '2020年以降' : '2020+', value: 2020 },
-                { label: locale === 'ja' ? '2015年以降' : '2015+', value: 2015 },
-                { label: locale === 'ja' ? '2010年以降' : '2010+', value: 2010 },
-                { label: locale === 'ja' ? '2000年以降' : '2000+', value: 2000 },
-              ].map((preset) => {
-                const isActive = minEstYear === preset.value && !maxEstYear;
-                return (
-                  <button
-                    key={preset.value}
-                    type="button"
-                    onClick={() => {
-                      if (isActive) {
-                        navigate({ min_establishment_year: null, max_establishment_year: null });
-                      } else {
-                        navigate({ min_establishment_year: String(preset.value), max_establishment_year: null });
-                      }
-                    }}
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-md transition-all cursor-pointer ${
-                      isActive
-                        ? "bg-[#1B4F8A] text-white shadow-2xs"
-                        : "bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900 border border-slate-200/80 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-750"
-                    }`}
-                  >
-                    {preset.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Company Status (now correctly including 解散) */}
-          <div>
-            <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-              {t.search.status}
-            </label>
-            <select
-              value={companyStatus || ""}
-              onChange={(e) => navigate({ status: e.target.value || null }, true)}
-              className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-2 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 transition-colors shadow-2xs cursor-pointer"
-            >
-              <option value="">{t.search.allStatuses}</option>
-              <option value="活動中">{t.search.active}</option>
-              <option value="閉鎖">{t.search.closed}</option>
-              <option value="解散">{t.search.dissolved}</option>
-            </select>
-          </div>
-        </div>
-
-        {/* ========================================================
-            CARD 5: 財務指標・業績 (Financial Performance)
-            ======================================================== */}
-        <div className="bg-slate-50/70 dark:bg-slate-900/40 rounded-xl p-3 border border-slate-200/80 dark:border-slate-800 flex flex-col gap-2.5">
-          <div 
-            className="flex items-center justify-between cursor-pointer select-none"
-            onClick={() => setIsFinOpen(!isFinOpen)}
+        <div className="border border-slate-200/80 dark:border-slate-800 rounded-lg overflow-hidden bg-slate-50/50 dark:bg-slate-900/30">
+          <button
+            type="button"
+            onClick={() => setOpenScale(!openScale)}
+            className="w-full flex items-center justify-between p-3 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
           >
-            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-              <TrendingUp className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-              <span>{locale === 'ja' ? '財務指標・業績' : locale === 'vi' ? 'Chỉ số tài chính' : 'Financial Performance'}</span>
-            </div>
-            <div className="flex items-center gap-1">
-              {hasActiveFin && (
-                <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A] dark:bg-blue-400" />
-              )}
-              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isFinOpen ? 'rotate-180' : ''}`} />
-            </div>
-          </div>
+            <span>{locale === 'ja' ? '企業規模・財務情報 (EDINET)' : locale === 'vi' ? 'Quy mô & Tài chính EDINET' : 'Scale & Financials'}</span>
+            {openScale ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+          </button>
 
-          {isFinOpen && (
-            <div className="flex flex-col gap-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-800">
-              {/* Sales */}
+          {openScale && (
+            <div className="p-3 pt-0 flex flex-col gap-2.5">
+              {/* Listed Companies (上場企業) */}
+              <label className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={!!isListed}
+                    onChange={(e) => navigate({ is_listed: e.target.checked ? "true" : null }, true)}
+                    className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                  />
+                  <span>
+                    {locale === 'ja' ? '上場企業のみ' : locale === 'vi' ? 'Chỉ DN niêm yết' : 'Listed Companies Only'}
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-400">
+                  (4,852社)
+                </span>
+              </label>
+
+              {/* FSA EDINET Financial Report Presence */}
+              <label className="flex items-center justify-between text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={hasFinancials}
+                    onChange={(e) => navigate({ financials: e.target.checked ? "true" : null }, true)}
+                    className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                  />
+                  <span>{t.search.hasFinancials}</span>
+                </div>
+                <span className="text-[10px] text-slate-400">
+                  (17,427社)
+                </span>
+              </label>
+
+              {/* Capital Inputs & Presets */}
               <div>
                 <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  {t.search.sales}
+                  {t.search.capital} ({locale === 'ja' ? '万円' : '10K JPY'})
                 </label>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-2 gap-1.5 mb-1.5">
                   <input
-                    key={`minSales_${minSales ?? ''}`}
                     type="number"
-                    placeholder={t.search.minSales}
-                    defaultValue={displaySales(minSales)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const val = (e.target as HTMLInputElement).value;
-                        navigate({ min_sales: processSalesInput(val) });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const val = e.target.value;
-                      if (val !== displaySales(minSales)) {
-                        navigate({ min_sales: processSalesInput(val) });
-                      }
-                    }}
-                    className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
+                    placeholder={t.search.minCapital}
+                    defaultValue={displayCapital(minCap)}
+                    onBlur={(e) => navigate({ min_capital: processCapitalInput(e.target.value) })}
+                    onKeyDown={(e) => handleKeyDownEnter(e, { min_capital: processCapitalInput(e.currentTarget.value) })}
+                    className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded px-2 py-1 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                   />
                   <input
-                    key={`maxSales_${maxSales ?? ''}`}
                     type="number"
-                    placeholder={t.search.maxSales}
-                    defaultValue={displaySales(maxSales)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const val = (e.target as HTMLInputElement).value;
-                        navigate({ max_sales: processSalesInput(val) });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const val = e.target.value;
-                      if (val !== displaySales(maxSales)) {
-                        navigate({ max_sales: processSalesInput(val) });
-                      }
-                    }}
-                    className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
+                    placeholder={t.search.maxCapital}
+                    defaultValue={displayCapital(maxCap)}
+                    onBlur={(e) => navigate({ max_capital: processCapitalInput(e.target.value) })}
+                    onKeyDown={(e) => handleKeyDownEnter(e, { max_capital: processCapitalInput(e.currentTarget.value) })}
+                    className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded px-2 py-1 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                   />
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    { label: '1,000万+', value: 1000 },
+                    { label: '5,000万+', value: 5000 },
+                    { label: '1億+', value: 10000 },
+                  ].map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => navigate({ min_capital: minCap === p.value ? null : String(p.value), max_capital: null })}
+                      className={`text-[10px] font-medium px-2 py-0.5 rounded border transition-colors ${
+                        minCap === p.value
+                          ? "bg-[#1B4F8A] text-white border-[#1B4F8A]"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Operating Income */}
+              {/* Employees Inputs & Presets */}
               <div>
                 <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  {t.search.operatingIncome}
+                  {t.search.employees} ({locale === 'ja' ? '名' : 'people'})
                 </label>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-2 gap-1.5 mb-1.5">
                   <input
-                    key={`minOpIncome_${minOpIncome ?? ''}`}
                     type="number"
-                    placeholder={t.search.minSales}
-                    defaultValue={displaySales(minOpIncome)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const val = (e.target as HTMLInputElement).value;
-                        navigate({ min_operating_income: processSalesInput(val) });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const val = e.target.value;
-                      if (val !== displaySales(minOpIncome)) {
-                        navigate({ min_operating_income: processSalesInput(val) });
-                      }
-                    }}
-                    className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
+                    placeholder={t.search.minEmployees}
+                    defaultValue={minEmp != null ? String(minEmp) : ""}
+                    onBlur={(e) => navigate({ min_employees: e.target.value || null })}
+                    onKeyDown={(e) => handleKeyDownEnter(e, { min_employees: e.currentTarget.value || null })}
+                    className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded px-2 py-1 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                   />
                   <input
-                    key={`maxOpIncome_${maxOpIncome ?? ''}`}
                     type="number"
-                    placeholder={t.search.maxSales}
-                    defaultValue={displaySales(maxOpIncome)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const val = (e.target as HTMLInputElement).value;
-                        navigate({ max_operating_income: processSalesInput(val) });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const val = e.target.value;
-                      if (val !== displaySales(maxOpIncome)) {
-                        navigate({ max_operating_income: processSalesInput(val) });
-                      }
-                    }}
-                    className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
+                    placeholder={t.search.maxEmployees}
+                    defaultValue={maxEmp != null ? String(maxEmp) : ""}
+                    onBlur={(e) => navigate({ max_employees: e.target.value || null })}
+                    onKeyDown={(e) => handleKeyDownEnter(e, { max_employees: e.currentTarget.value || null })}
+                    className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded px-2 py-1 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                   />
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    { label: '10名+', value: 10 },
+                    { label: '50名+', value: 50 },
+                    { label: '100名+', value: 100 },
+                  ].map((p) => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => navigate({ min_employees: minEmp === p.value ? null : String(p.value), max_employees: null })}
+                      className={`text-[10px] font-medium px-2 py-0.5 rounded border transition-colors ${
+                        minEmp === p.value
+                          ? "bg-[#1B4F8A] text-white border-[#1B4F8A]"
+                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
+                      }`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {/* Ordinary Income */}
+              {/* Establishment Year */}
               <div>
                 <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  {t.search.ordinaryIncome}
+                  {t.search.establishmentYear}
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
                   <input
-                    key={`minOrdIncome_${minOrdIncome ?? ''}`}
                     type="number"
-                    placeholder={t.search.minSales}
-                    defaultValue={displaySales(minOrdIncome)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const val = (e.target as HTMLInputElement).value;
-                        navigate({ min_ordinary_income: processSalesInput(val) });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const val = e.target.value;
-                      if (val !== displaySales(minOrdIncome)) {
-                        navigate({ min_ordinary_income: processSalesInput(val) });
-                      }
-                    }}
-                    className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
+                    placeholder="YYYY"
+                    defaultValue={minEstYear != null ? String(minEstYear) : ""}
+                    onBlur={(e) => navigate({ min_establishment_year: e.target.value || null })}
+                    onKeyDown={(e) => handleKeyDownEnter(e, { min_establishment_year: e.currentTarget.value || null })}
+                    className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded px-2 py-1 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                   />
                   <input
-                    key={`maxOrdIncome_${maxOrdIncome ?? ''}`}
                     type="number"
-                    placeholder={t.search.maxSales}
-                    defaultValue={displaySales(maxOrdIncome)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const val = (e.target as HTMLInputElement).value;
-                        navigate({ max_ordinary_income: processSalesInput(val) });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const val = e.target.value;
-                      if (val !== displaySales(maxOrdIncome)) {
-                        navigate({ max_ordinary_income: processSalesInput(val) });
-                      }
-                    }}
-                    className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
-                  />
-                </div>
-              </div>
-
-              {/* Net Income */}
-              <div>
-                <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  {t.search.netIncome}
-                </label>
-                <div className="grid grid-cols-2 gap-1.5">
-                  <input
-                    key={`minNetIncome_${minNetIncome ?? ''}`}
-                    type="number"
-                    placeholder={t.search.minSales}
-                    defaultValue={displaySales(minNetIncome)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const val = (e.target as HTMLInputElement).value;
-                        navigate({ min_net_income: processSalesInput(val) });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const val = e.target.value;
-                      if (val !== displaySales(minNetIncome)) {
-                        navigate({ min_net_income: processSalesInput(val) });
-                      }
-                    }}
-                    className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
-                  />
-                  <input
-                    key={`maxNetIncome_${maxNetIncome ?? ''}`}
-                    type="number"
-                    placeholder={t.search.maxSales}
-                    defaultValue={displaySales(maxNetIncome)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        const val = (e.target as HTMLInputElement).value;
-                        navigate({ max_net_income: processSalesInput(val) });
-                      }
-                    }}
-                    onBlur={(e) => {
-                      const val = e.target.value;
-                      if (val !== displaySales(maxNetIncome)) {
-                        navigate({ max_net_income: processSalesInput(val) });
-                      }
-                    }}
-                    className="w-full text-xs font-medium text-slate-800 bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 shadow-2xs"
+                    placeholder="YYYY"
+                    defaultValue={maxEstYear != null ? String(maxEstYear) : ""}
+                    onBlur={(e) => navigate({ max_establishment_year: e.target.value || null })}
+                    onKeyDown={(e) => handleKeyDownEnter(e, { max_establishment_year: e.currentTarget.value || null })}
+                    className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded px-2 py-1 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
                   />
                 </div>
               </div>
             </div>
           )}
         </div>
+
+        {/* ========================================================
+            GROUP 4: 公的信用・ビジネスシグナル (Trust & GEPS Signals)
+            ======================================================== */}
+        <div className="border border-slate-200/80 dark:border-slate-800 rounded-lg overflow-hidden bg-slate-50/50 dark:bg-slate-900/30">
+          <button
+            type="button"
+            onClick={() => setOpenSignals(!openSignals)}
+            className="w-full flex items-center justify-between p-3 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+          >
+            <span>{locale === 'ja' ? '公的信用・シグナル' : locale === 'vi' ? 'Tín nhiệm & Tín hiệu kinh doanh' : 'Trust & Signals'}</span>
+            {openSignals ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+          </button>
+
+          {openSignals && (
+            <div className="p-3 pt-0 flex flex-col gap-2">
+              {/* Bidding (GEPS) */}
+              <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <input
+                  type="checkbox"
+                  checked={hasBidding}
+                  onChange={(e) => navigate({ bidding: e.target.checked ? "true" : null }, true)}
+                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                />
+                <span>{locale === 'ja' ? '官公庁入札・落札実績あり (GEPS)' : locale === 'vi' ? 'Trúng thầu cơ quan chính phủ (GEPS)' : 'Public Procurement & Bids (GEPS)'}</span>
+              </label>
+
+              {/* Subsidy */}
+              <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <input
+                  type="checkbox"
+                  checked={hasSubsidy}
+                  onChange={(e) => navigate({ subsidy: e.target.checked ? "true" : null }, true)}
+                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                />
+                <span>{locale === 'ja' ? '国・自治体の補助金受給履歴あり' : locale === 'vi' ? 'Có lịch sử nhận trợ cấp chính phủ' : 'Subsidies & Grants History'}</span>
+              </label>
+
+              {/* Hiring (HelloWork) */}
+              <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <input
+                  type="checkbox"
+                  checked={hasHiring}
+                  onChange={(e) => navigate({ hiring: e.target.checked ? "true" : null }, true)}
+                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                />
+                <span>{locale === 'ja' ? '求人募集中・採用シグナルあり' : locale === 'vi' ? 'Đang tuyển dụng / Có tin tuyển dụng' : 'Actively Hiring Signals'}</span>
+              </label>
+
+              {/* Award */}
+              <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <input
+                  type="checkbox"
+                  checked={hasAward}
+                  onChange={(e) => navigate({ award: e.target.checked ? "true" : null }, true)}
+                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                />
+                <span>{t.search.award}</span>
+              </label>
+
+              {/* Certification */}
+              <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <input
+                  type="checkbox"
+                  checked={hasCertification}
+                  onChange={(e) => navigate({ certification: e.target.checked ? "true" : null }, true)}
+                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                />
+                <span>{t.search.certification}</span>
+              </label>
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* Sticky Bottom Apply Button */}
       {onApplyFilters && (
-        <div className="sticky bottom-0 left-0 right-0 pt-3 pb-1 mt-3 bg-white/95 dark:bg-[#161B22]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 z-30 shadow-sm">
+        <div className="sticky bottom-0 left-0 right-0 pt-3 pb-1 mt-3 bg-white/95 dark:bg-[#161B22]/95 backdrop-blur-md border-t border-slate-200/90 dark:border-slate-800 z-30 shadow-xs">
           <button
             type="button"
             onClick={() => {
               onApplyFilters();
-              if (onCloseMobile) {
-                onCloseMobile();
-              }
+              if (onCloseMobile) onCloseMobile();
             }}
-            className={`w-full py-2.5 px-4 text-white text-xs font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98] ${
-              activeCount > 0
-                ? "bg-gradient-to-r from-[#1B4F8A] to-[#143D6C] hover:from-[#143D6C] hover:to-[#0F2D50] ring-2 ring-[#1B4F8A]/30 shadow-[#1B4F8A]/20"
-                : "bg-[#1B4F8A] hover:bg-[#143D6C]"
-            }`}
+            className="w-full py-2.5 px-4 text-white text-xs font-semibold rounded-lg bg-[#1B4F8A] hover:bg-[#153e6d] shadow-2xs transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
           >
-            <Filter className="w-3.5 h-3.5" />
             <span>
-              {locale === 'en' 
-                ? (activeCount > 0 ? `Apply Filters (${activeCount})` : 'Apply Filters')
-                : locale === 'vi' 
-                ? (activeCount > 0 ? `Áp dụng bộ lọc (${activeCount} điều kiện)` : 'Áp dụng bộ lọc')
-                : (activeCount > 0 ? `この条件で検索する (${activeCount}件の条件)` : 'この条件で検索する')}
+              {activeCount > 0 
+                ? (locale === 'ja' ? `この条件で検索する (${activeCount}件)` : `Apply Filters (${activeCount})`)
+                : (locale === 'ja' ? 'この条件で検索する' : 'Apply Filters')}
             </span>
           </button>
         </div>
@@ -1174,4 +787,3 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
     </aside>
   );
 };
-

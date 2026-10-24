@@ -78,6 +78,7 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
   const hasSubsidy = searchParamsVal.subsidy === 'true';
   const hasBidding = searchParamsVal.bidding === 'true';
   const hasFinancials = searchParamsVal.financials === 'true';
+  const isListed = searchParamsVal.is_listed === 'true' || searchParamsVal.listed === 'true';
   
   let minEstYear: number | undefined;
   if (searchParamsVal.min_establishment_year) {
@@ -175,6 +176,7 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
     has_certification: hasCertification,
     has_patent: hasPatent,
     has_financials: hasFinancials,
+    is_listed: isListed ? true : undefined,
     min_establishment_year: minEstYear,
     max_establishment_year: maxEstYear,
     min_sales: minSales,
@@ -259,6 +261,7 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
     hasSubsidy,
     hasBidding,
     hasFinancials,
+    isListed,
     minEstYear,
     maxEstYear,
     hasAward,
@@ -282,8 +285,49 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
     page
   };
 
+  const itemListSchema = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": `${keyword ? keyword + " - " : ""}${locale === 'en' ? 'Search Results' : locale === 'vi' ? 'Kết quả tìm kiếm' : '企業検索結果'} | Kigyou-list`,
+    "description": "日本全国500万社から高度な条件で絞り込まれた法人データ一覧",
+    "numberOfItems": companies.length,
+    "itemListElement": companies.map((c: any, idx: number) => ({
+      "@type": "ListItem",
+      "position": idx + 1,
+      "name": c.company_name,
+      "url": `https://kigyoulist.com/${locale}/company/${c.corporate_number}`
+    }))
+  };
+
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      {
+        "@type": "ListItem",
+        "position": 1,
+        "name": locale === 'en' ? 'Home' : locale === 'vi' ? 'Trang chủ' : 'ホーム',
+        "item": `https://kigyoulist.com/${locale}`
+      },
+      {
+        "@type": "ListItem",
+        "position": 2,
+        "name": locale === 'en' ? 'Search Companies' : locale === 'vi' ? 'Tìm kiếm doanh nghiệp' : '企業検索',
+        "item": `https://kigyoulist.com/${locale}/search`
+      }
+    ]
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 transition-colors">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(itemListSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
+      />
       <Header />
       <h1 className="sr-only">
         {locale === 'en' ? 'Search Companies' : locale === 'vi' ? 'Tìm kiếm doanh nghiệp' : '企業データ検索'}

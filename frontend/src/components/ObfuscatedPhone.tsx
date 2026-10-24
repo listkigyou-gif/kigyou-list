@@ -34,7 +34,7 @@ export const ObfuscatedPhone: React.FC<ObfuscatedPhoneProps> = ({ encodedPhone }
   return (
     <a 
       href={`tel:${phone.replace(/[\s()\-]/g, "")}`} 
-      className="hover:underline text-slate-800 dark:text-slate-100 font-mono text-base font-bold transition-all"
+      className="hover:underline text-slate-900 dark:text-slate-100 font-mono text-sm font-medium tabular-nums transition-colors"
     >
       {phone}
     </a>

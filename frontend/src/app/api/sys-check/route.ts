@@ -9,8 +9,10 @@ export async function GET(request: NextRequest) {
 
     console.warn(`[Honeypot Triggered] IP: ${ip} accessed /api/sys-check`);
 
-    // Blacklist the offending IP
-    await blockIp(ip, "honeypot_trap");
+    // Blacklist the offending IP (skip localhost)
+    if (ip !== "127.0.0.1" && ip !== "::1" && ip !== "::ffff:127.0.0.1") {
+      await blockIp(ip, "honeypot_trap");
+    }
 
     return NextResponse.json(
       { error: "Access Forbidden: Automated scrapping is prohibited." },

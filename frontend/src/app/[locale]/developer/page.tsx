@@ -259,26 +259,26 @@ resolveCompany("sample.co.jp");`
               </div>
             </div>
 
-            {/* Code Box */}
-            <div className="relative p-5 bg-[#0F172A] font-mono text-[11px] overflow-x-auto text-slate-200">
+            {/* Code Box - Eye-friendly Soft Gray / White Standard */}
+            <div className="relative p-5 bg-slate-50 dark:bg-[#161B22] border-t border-slate-200 dark:border-slate-800 font-mono text-[11px] overflow-x-auto text-slate-800 dark:text-slate-200 rounded-b-xl">
               <button
                 onClick={() => copyCode(codeSnippets[activeCodeTab], activeCodeTab)}
-                className="absolute top-4 right-4 p-2 rounded-lg bg-slate-800/90 hover:bg-slate-700 text-slate-300 transition-all border border-slate-700 flex items-center gap-1.5 cursor-pointer"
+                className="absolute top-4 right-4 px-2.5 py-1.5 rounded-md bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 transition-all border border-slate-200 dark:border-slate-700 flex items-center gap-1.5 cursor-pointer shadow-2xs"
                 title="Copy to clipboard"
               >
                 {copiedTab === activeCodeTab ? (
                   <>
-                    <Check className="w-3.5 h-3.5 text-emerald-400" />
-                    <span className="text-[10px] text-emerald-400 font-sans font-bold">{isVi ? "Đã sao chép" : "コピー完了"}</span>
+                    <Check className="w-3.5 h-3.5 text-emerald-600" />
+                    <span className="text-[10px] text-emerald-600 font-sans font-bold">{isVi ? "Đã sao chép" : "コピー完了"}</span>
                   </>
                 ) : (
                   <>
-                    <Copy className="w-3.5 h-3.5" />
+                    <Copy className="w-3.5 h-3.5 text-slate-500" />
                     <span className="text-[10px] font-sans font-medium">{isVi ? "Sao chép" : "コピー"}</span>
                   </>
                 )}
               </button>
-              <pre className="leading-relaxed whitespace-pre font-mono select-all">{codeSnippets[activeCodeTab]}</pre>
+              <pre className="leading-relaxed whitespace-pre font-mono select-all text-slate-800 dark:text-slate-200">{codeSnippets[activeCodeTab]}</pre>
             </div>
           </div>
         </section>

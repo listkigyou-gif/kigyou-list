@@ -10,31 +10,30 @@ import {
   Database, 
   ArrowRight, 
   CheckCircle2, 
-  TrendingUp, 
-  Sparkles, 
-  Filter, 
   Users, 
   Award, 
-  ExternalLink, 
-  HelpCircle, 
   ChevronRight, 
-  Layers, 
   FileSpreadsheet, 
   Lock, 
   Clock, 
-  DollarSign,
-  FileText,
-  BadgeCheck,
-  Zap,
-  Target,
-  Terminal
+  Zap, 
+  Activity, 
+  MapPin,
+  TrendingUp,
+  FileCheck2,
+  AlertTriangle,
+  RotateCw,
+  HelpCircle,
+  Scale,
+  Sparkles,
+  Bell
 } from "lucide-react";
 import { getDatabaseStats } from "@/lib/db";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getTranslations } from "@/lib/i18n";
 
-export const revalidate = 3600; // Cache for 1 hour for high performance
+export const revalidate = 3600; // 1-hour ISR cache for fast sub-50ms TTFB
 
 interface PageParams {
   params: Promise<{ locale: string }>;
@@ -46,9 +45,10 @@ export default async function Home({ params }: PageParams) {
   const isJa = locale === "ja";
   const isVi = locale === "vi";
 
-  // Fetch real database counts dynamically
+  // Dynamic database statistics
   const stats = await getDatabaseStats();
 
+  // Tier 1 Schema: WebSite with Google Sitelinks SearchBox Action
   const websiteSchema = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -64,33 +64,57 @@ export default async function Home({ params }: PageParams) {
     }
   };
 
+  // Tier 2 Schema: Legal Entity Authority (TQC Inc.)
   const organizationSchema = {
     "@context": "https://schema.org",
     "@type": "Organization",
     "name": "Kigyou-list",
+    "legalName": "TQC株式会社",
     "url": `https://kigyoulist.com/${locale}`,
-    "logo": "https://kigyoulist.com/icon.svg"
+    "logo": "https://kigyoulist.com/icon.svg",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "千代田区",
+      "addressRegion": "東京都",
+      "addressCountry": "JP"
+    },
+    "sameAs": [
+      "https://x.com/kigyoulist",
+      "https://note.com/kigyoulist",
+      "https://www.linkedin.com/in/userkigyoulist",
+      "https://qiita.com/listkigyou",
+      "https://zenn.dev/kigyoulist"
+    ]
   };
 
+  // Tier 3 Schema: FAQPage for Rich Snippets Accordion in Google & Bing
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     "mainEntity": [
       {
         "@type": "Question",
-        "name": isJa ? "データの更新頻度と出典について教えてください。" : isVi ? "Dữ liệu được cập nhật từ đâu và tần suất thế nào?" : "Where is the data sourced and how often is it updated?",
+        "name": isJa 
+          ? "データの更新頻度と情報源（データソース）について教えてください。" 
+          : isVi 
+          ? "Dữ liệu được cập nhật từ đâu và tần suất thế nào?" 
+          : "Where is the data sourced and how often is it updated?",
         "acceptedAnswer": {
           "@type": "Answer",
           "text": isJa
-            ? "国税庁の法人番号公表サイト、法務省、経済産業省のgBizINFOなどの公的オープンデータをベースに、週次・月次で更新しています。連絡先情報（電話・Webフォーム・メール）も独自のクローラーにより常時鮮度を保っています。"
+            ? "国税庁の法人番号公表サイト、法務省登記所データ、経済産業省gBizINFOなどの公的オープンデータをベースに、週次・月次で更新しています。連絡先情報（電話・Webフォーム・メール）も独自のクローラーにより常時鮮度を保っています。"
             : isVi
-            ? "Dữ liệu được đồng bộ từ Cổng thông tin Quốc thuế, Bộ Tư pháp, METI gBizINFO hàng tuần. Thông tin kênh liên hệ (Web form, phone, email) được bot rà quét cập nhật liên tục."
-            : "Sourced from the National Tax Agency, Ministry of Justice, and METI gBizINFO, updated weekly and monthly."
+            ? "Dữ liệu được đồng bộ trực tiếp từ Cổng thông tin Quốc thuế, Bộ Tư pháp, METI gBizINFO hàng tuần. Thông tin kênh liên hệ (Web form, điện thoại, email) được bot rà quét cập nhật liên tục."
+            : "Sourced from the National Tax Agency, Ministry of Justice, and METI gBizINFO, continuously refreshed with verified corporate contacts."
         }
       },
       {
         "@type": "Question",
-        "name": isJa ? "フォーム営業で苦情やクレームが来る心配はありませんか？" : isVi ? "Gửi Form tự động có rủi ro bị khiếu nại không?" : "Are there risks of spam complaints with automated form outreach?",
+        "name": isJa 
+          ? "フォーム自動営業で苦情やクレームが来る心配はありませんか？" 
+          : isVi 
+          ? "Gửi Form tự động có rủi ro bị khiếu nại không?" 
+          : "Are there risks of spam complaints with automated form outreach?",
         "acceptedAnswer": {
           "@type": "Answer",
           "text": isJa
@@ -102,78 +126,58 @@ export default async function Home({ params }: PageParams) {
       },
       {
         "@type": "Question",
-        "name": isJa ? "どのような業種・ターゲットにアプローチできますか？" : isVi ? "Có thể tiếp cận những ngành nghề và đối tượng nào?" : "Which industries and targets can we reach?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": isJa
-            ? "IT・通信、製造、建設、不動産、医療、飲食、士業など、日本標準産業分類（JSIC）の全業種に対応しています。都道府県や市区町村別の絞り込みに加え、「資本金1,000万円以上」「求人中」などの条件を掛け合わせることで、貴社に最適なターゲットを抽出できます。"
-            : isVi
-            ? "Phủ khắp toàn bộ các ngành như IT, sản xuất, xây dựng, bất động sản, y tế, dịch vụ... Có thể kết hợp lọc địa lý, vốn điều lệ và các tín hiệu tuyển dụng."
-            : "Covers all JSIC industries nationwide with cross-filtering by capital, geography, and intent signals."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": isJa ? "無料会員でもどこまで利用できますか？" : isVi ? "Tài khoản miễn phí có thể làm được những gì?" : "What can free accounts do?",
+        "name": isJa 
+          ? "無料会員でもどこまで利用できますか？" 
+          : isVi 
+          ? "Tài khoản miễn phí có thể làm được những gì?" 
+          : "What can free accounts do?",
         "acceptedAnswer": {
           "@type": "Answer",
           "text": isJa
             ? "無料登録を行うだけで、全国500万社の基本情報（社名、所在地、業種、法人番号）の検索および毎日20件（月最大600件、企業認証で1日50件/月1,500件）までのCSVダウンロードが可能です。連絡先フィルター（フォーム・メール）や大量CSV出力、フォーム自動営業をご利用いただく場合はProプラン以上をご利用ください。"
             : isVi
-            ? "Đăng ký miễn phí có thể tìm kiếm dữ liệu cơ bản của 5 triệu cty và xuất CSV 20 dòng mỗi ngày (tối đa 600 dòng/tháng, định danh doanh nghiệp mở rộng 50 dòng/ngày tức 1.500 dòng/tháng). Để dùng bộ lọc kênh liên lạc và gửi Form tự động, bạn có thể nâng cấp Pro bất kỳ lúc nào."
-            : "Free accounts can search all 5M companies and export 20 CSV rows per day (up to 600/month, 50/day or 1,500/month for verified businesses). Upgrade to PRO to unlock contact filters and form outreach."
+            ? "Đăng ký miễn phí có thể tìm kiếm dữ liệu cơ bản của 5 triệu cty và xuất CSV 20 dòng mỗi ngày (tối đa 600 dòng/tháng). Để dùng bộ lọc kênh liên lạc và gửi Form tự động, bạn có thể nâng cấp Pro bất kỳ lúc nào."
+            : "Free accounts can search all 5M companies and export 20 CSV rows per day. Upgrade to PRO to unlock contact filters and form outreach."
         }
       },
       {
         "@type": "Question",
-        "name": isJa ? "営業リストを無料で集める方法（国税庁やタウンページ）と、Kigyou-listの違いは何ですか？" : isVi ? "Sự khác biệt giữa việc tự cào danh sách miễn phí (Quốc thuế, Townpage) và dùng Kigyou-list là gì?" : "What is the difference between building lists for free and using Kigyou-list?",
+        "name": isJa 
+          ? "営業リストを購入する場合、名簿業者からの買い切りと比べてどのようなメリットがありますか？" 
+          : isVi 
+          ? "So với việc mua danh sách từ các công ty bán danh bạ truyền thống, Kigyou-list có ưu điểm gì?" 
+          : "What are the advantages of Kigyou-list compared to buying static lists from list brokers?",
         "acceptedAnswer": {
           "@type": "Answer",
           "text": isJa
-            ? "国税庁の法人番号サイトやiタウンページを手作業で集める場合、費用は0円ですが、電話番号やHP URLが欠落していたり、100件集めるだけで数時間以上の人件費が浪費されます。Kigyou-listは、全国500万社の法人データから業種・地域・連絡先有無で瞬時に絞り込み、電話番号・WebサイトURL付きで一括CSVダウンロードが可能です。初月1,260円〜（通常4,200円、初月70%OFF・年間縛りなし）で利用できるため、人件費と作業時間を大幅に削減して本来の営業活動に集中できます。"
+            ? "従来のリスト販売業者は1件あたり10〜50円と高額な上に、古いデータが混ざり不通電話や廃業ロスが発生します。Kigyou-listは公的オープンデータを常時クローリングして鮮度を担保し、月額定額（初月1,260円〜、通常4,200円）で必要な分だけ最新データをCSV抽出できます。年間縛りもありません。"
             : isVi
-            ? "Tự thu thập thủ công từ Cổng thông tin Quốc thuế hoặc Townpage tốn 0 đồng nhưng mất hàng chục giờ công, dữ liệu thiếu số điện thoại hoặc website. Kigyou-list giúp bạn lọc ngay lập tức từ 5 triệu doanh nghiệp theo ngành nghề, khu vực, có sẵn SĐT và URL website, xuất file CSV chỉ trong vài giây. Với chi phí chỉ từ 1,260 JPY tháng đầu (giảm 70%, giá gốc 4,200 JPY) và không ràng buộc hợp đồng năm, doanh nghiệp tiết kiệm 90% thời gian để tập trung bán hàng."
-            : "While manual scraping from public portals costs zero, it takes dozens of hours and lacks verified phone numbers and websites. Kigyou-list allows instant multi-criteria filtering across 5M companies with complete phones, websites, and emails ready for CSV export. At only 1,260 JPY 1st month (70% OFF, reg. 4,200 JPY) with no annual lock-in, it saves tremendous staff hours."
-        }
-      },
-      {
-        "@type": "Question",
-        "name": isJa ? "テレアポやDM用のリストを購入する場合、名簿業者からの買い切りと比べてどのようなメリットがありますか？" : isVi ? "So với việc mua danh sách từ các công ty bán danh bạ truyền thống, Kigyou-list có ưu điểm gì?" : "What are the advantages of Kigyou-list compared to buying static lists from list brokers?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": isJa
-            ? "従来のリスト販売業者は、1件あたり10〜50円と高額な上に、数年前の古いデータが混ざっており不通電話や廃業によるロスが発生しやすいリスクがあります。Kigyou-listは公的オープンデータや最新Web情報を常時クローリングして鮮度を担保しており、月額定額（初月1,260円〜、通常4,200円）で必要な分だけ最新データをCSV抽出できます。年間契約の縛りもないため、テストマーケティングや短期の架電キャンペーンにも最小限のコストで導入可能です。"
-            : isVi
-            ? "Các đơn vị bán danh bạ thường tính phí 10-50 Yên/công ty và dữ liệu tĩnh cũ dễ gặp số chết hoặc doanh nghiệp đã giải thể. Kigyou-list liên tục cập nhật dữ liệu mới nhất từ cổng thông tin quốc gia, hoạt động theo mô hình thuê bao linh hoạt (chỉ từ 1,260 Yên tháng đầu - giảm 70%, không ràng buộc năm), giúp bạn lấy đúng dữ liệu đang hoạt động với chi phí rẻ hơn nhiều lần."
-            : "Traditional list vendors charge high per-record fees (10-50 JPY/lead) for static lists that often contain outdated numbers and dissolved companies. Kigyou-list provides continuously refreshed cloud data on a flexible monthly subscription (1st mo 1,260 JPY, 70% OFF) without annual commitments, maximizing telemarketing connect rates at a fraction of the cost."
+            ? "Các đơn vị bán danh bạ thường tính phí 10-50 Yên/công ty và dữ liệu tĩnh cũ dễ gặp số chết. Kigyou-list liên tục cập nhật dữ liệu mới nhất, hoạt động theo mô hình thuê bao linh hoạt (chỉ từ 1,260 Yên tháng đầu - giảm 70%, không ràng buộc năm), tiết kiệm 90% chi phí."
+            : "Traditional list vendors charge 10-50 JPY/lead for static lists. Kigyou-list provides continuously refreshed cloud data on a flexible monthly subscription without annual commitments."
         }
       }
     ]
   };
 
+  // Tier 4 Schema: Google Dataset Search Specification
   const datasetSchema = {
     "@context": "https://schema.org",
     "@type": "Dataset",
     "name": "Kigyou-list Japan Corporate Intelligence Database",
     "description": "Comprehensive B2B directory covering over 5,000,000 registered Japanese corporate entities across 47 prefectures and all JSIC industries.",
     "keywords": ["企業リスト", "企業データ", "営業リスト", "日本企業データベース", "500万社"],
-    "url": `https://kigyoulist.com/${locale}`,
-    "license": `https://kigyoulist.com/${locale}/terms`,
+    "license": "https://kigyoulist.com/terms",
     "isAccessibleForFree": true,
     "creator": {
       "@type": "Organization",
-      "name": "TQC Corporation",
+      "name": "TQC株式会社",
       "url": "https://kigyoulist.com"
-    },
-    "spatialCoverage": {
-      "@type": "Place",
-      "name": "Japan"
     }
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900 dark:bg-[#0D1117] dark:text-slate-100 font-sans antialiased selection:bg-[#1B4F8A]/15 selection:text-[#1B4F8A]">
-      {/* Schema Injection */}
+    <div className="min-h-screen flex flex-col bg-[#F8FAFC] dark:bg-[#0D1117] text-slate-800 dark:text-slate-100 transition-colors">
+      {/* 4-Tier Structured Data Schemas */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
@@ -191,71 +195,61 @@ export default async function Home({ params }: PageParams) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(datasetSchema) }}
       />
 
-      {/* Global Sleek Header */}
+      {/* Global Navigation Header */}
       <Header />
 
-      <main className="flex-1">
+      <main className="flex-1" role="main">
         {/* ========================================================
-            1. HERO SECTION (B2B Authority & Dual Proposition)
+            TẦNG 1: HERO TỐI GIẢN & TÌM KIẾM 1 CHẠM (Sub-Agent 1)
             ======================================================== */}
-        <section className="relative overflow-hidden pt-12 pb-16 lg:pt-20 lg:pb-24 bg-white dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">
-          {/* Subtle grid pattern background */}
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#f1f5f9_1px,transparent_1px),linear-gradient(to_bottom,#f1f5f9_1px,transparent_1px)] dark:bg-[linear-gradient(to_right,#161b22_1px,transparent_1px),linear-gradient(to_bottom,#161b22_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] pointer-events-none" />
-
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 relative text-center">
-            {/* Kicker Eyebrow */}
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800/80 border border-slate-200/90 dark:border-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold mb-6 tracking-wide shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-[#1B4F8A] dark:bg-blue-400 animate-pulse" />
+        <section aria-labelledby="hero-heading" className="pt-12 pb-14 lg:pt-16 lg:pb-20 border-b border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#0D1117]">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            
+            {/* Kicker Eyebrow (Tối giản, trang nhã, không nhấp nháy AI) */}
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold mb-5 tracking-wide border border-slate-200/80 dark:border-slate-700">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A] dark:bg-blue-400" />
               <span>
                 {isJa 
                   ? "国内最大級 500万社データベース × 完全自動フォーム営業" 
                   : isVi 
-                  ? "5 Triệu Doanh Nghiệp Nhật Bản × Tự Động Hóa Gửi Form B2B" 
-                  : "Over 5M Japanese Companies DB × Automated Form Outreach"}
+                  ? "Cơ sở dữ liệu 5 Triệu Doanh Nghiệp × Tự Động Hóa Gửi Form B2B" 
+                  : "Japan 5M+ Company Database × Automated Form Outreach"}
               </span>
             </div>
 
-            {/* H1 Main Heading */}
-            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.25] text-slate-900 dark:text-white mb-6">
+            {/* H1 Main Heading: Chuẩn SEO Exact Match cho Google & Bing */}
+            <h1 id="hero-heading" className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight leading-[1.35] text-slate-900 dark:text-white mb-4">
               {isJa ? (
                 <>
-                  日本全国500万社の<span className="text-[#1B4F8A] dark:text-blue-400">企業リスト・企業データ</span>を、次の一手へ。<br className="hidden sm:inline" />
-                  高確度ターゲティングから
-                  <span className="text-[#1B4F8A] dark:text-blue-400">自動フォーム営業</span>
-                  までワンストップ。
+                  日本全国500万社の<span className="text-[#1B4F8A] dark:text-blue-400">企業リスト・企業データ・営業リスト</span>を、次の一手へ。<br className="hidden sm:inline" />
+                  高確度ターゲティングから<span className="text-[#1B4F8A] dark:text-blue-400">自動フォーム営業</span>までワンストップ。
                 </>
               ) : isVi ? (
                 <>
-                  Dữ liệu 5 triệu doanh nghiệp Nhật Bản cho chiến lược mới.<br className="hidden sm:inline" />
-                  <span className="text-[#1B4F8A] dark:text-blue-400">Từ lọc khách hàng mục tiêu</span>
-                  đến
-                  <span className="text-[#1B4F8A] dark:text-blue-400">gửi Form tự động</span>
-                  toàn diện.
+                  Dữ liệu 5 triệu doanh nghiệp Nhật Bản cho chiến lược bán hàng B2B.<br className="hidden sm:inline" />
+                  <span className="text-[#1B4F8A] dark:text-blue-400">Lọc khách hàng mục tiêu</span> đến <span className="text-[#1B4F8A] dark:text-blue-400">gửi Form tự động</span> toàn diện.
                 </>
               ) : (
                 <>
-                  Power your B2B Pipeline with 5M+ Japanese Companies.<br className="hidden sm:inline" />
-                  <span className="text-[#1B4F8A] dark:text-blue-400">Precision Targeting</span>
-                  to
-                  <span className="text-[#1B4F8A] dark:text-blue-400">Automated Form Outreach</span>
-                  in One Place.
+                  Power Your Sales Pipeline with 5M+ Japanese Companies.<br className="hidden sm:inline" />
+                  <span className="text-[#1B4F8A] dark:text-blue-400">Precision Targeting</span> to <span className="text-[#1B4F8A] dark:text-blue-400">Automated Form Outreach</span>.
                 </>
               )}
             </h1>
 
             {/* Subtitle */}
-            <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400 max-w-3xl mx-auto mb-10 leading-relaxed font-normal">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-2xl mx-auto mb-8 leading-relaxed font-normal">
               {isJa
                 ? "国税庁・法務省・公的オープンデータに直結した法人データベース。求人・助成金・入札・特許などの最新営業意図シグナルで確度の高い企業を抽出し、AIによる安全なフォーム営業自動配信で新規商談を最大化します。"
                 : isVi
-                ? "Cơ sở dữ liệu kết nối trực tiếp với Bộ Tư pháp và Cơ quan Thuế Nhật Bản. Trích xuất chính xác các doanh nghiệp đang tuyển dụng, nhận trợ cấp, trúng thầu công và tự động hóa gửi chào hàng qua biểu mẫu liên hệ an toàn."
-                : "Official government-linked database with 5 million verified companies. Target businesses with active hiring, subsidies, and public bids, and automate safe contact form outreach at scale."}
+                ? "Cơ sở dữ liệu kết nối trực tiếp với Cơ quan Thuế và Bộ Tư pháp Nhật Bản. Trích xuất chính xác các doanh nghiệp đang tuyển dụng, nhận trợ cấp, trúng thầu công để tiếp cận chào hàng an toàn."
+                : "Official government-linked database with 5 million verified companies. Target businesses with active hiring, subsidies, and public bids with automated safe outreach."}
             </p>
 
             {/* Central B2B Search Box */}
-            <div className="max-w-3xl mx-auto mb-6">
-              <form action={`/${locale}/search`} method="GET" className="relative flex items-center p-1.5 rounded-xl bg-white shadow-sm border border-slate-300/90 dark:bg-[#161B22] dark:border-slate-700 focus-within:ring-2 focus-within:ring-[#1B4F8A]/20 focus-within:border-[#1B4F8A] transition-all">
-                <Search className="w-5 h-5 text-slate-400 ml-3.5 shrink-0" />
+            <div className="max-w-2xl mx-auto mb-5">
+              <form action={`/${locale}/search`} method="GET" className="relative flex items-center p-1.5 rounded-xl bg-white dark:bg-[#161B22] border border-slate-300 dark:border-slate-700 shadow-2xs focus-within:ring-2 focus-within:ring-[#1B4F8A]/20 focus-within:border-[#1B4F8A] transition-all">
+                <Search className="w-4 h-4 text-slate-400 ml-3 shrink-0" />
                 <input
                   type="text"
                   name="q"
@@ -266,812 +260,767 @@ export default async function Home({ params }: PageParams) {
                       ? "Nhập tên công ty, mã số pháp nhân (13 số) hoặc từ khóa..." 
                       : "Search by company name, corporate number (13 digits), or keywords..."
                   }
-                  className="w-full px-4 py-3 bg-transparent text-slate-900 placeholder-slate-400 focus:outline-none dark:text-white text-sm"
+                  className="w-full px-3 py-2.5 bg-transparent text-slate-900 placeholder-slate-400 focus:outline-none dark:text-white text-xs sm:text-sm"
                 />
                 <button
                   type="submit"
-                  className="px-6 py-3 font-bold text-xs sm:text-sm text-white bg-[#1B4F8A] hover:bg-[#143D6C] rounded-lg shadow-xs transition-colors whitespace-nowrap cursor-pointer shrink-0"
+                  className="px-5 py-2.5 font-bold text-xs sm:text-sm text-white bg-[#1B4F8A] hover:bg-[#143D6C] rounded-lg shadow-2xs transition-colors whitespace-nowrap cursor-pointer shrink-0"
                 >
                   {isJa ? "企業を検索" : isVi ? "Tìm kiếm" : "Search"}
                 </button>
               </form>
             </div>
 
-            {/* Quick Intent Filter Chips */}
-            <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto text-xs text-slate-500 dark:text-slate-400 mb-8">
-              <span className="font-bold text-slate-400 dark:text-slate-500 text-[11px] uppercase tracking-wider mr-1">
-                {isJa ? "人気の条件:" : isVi ? "Bộ lọc nhanh:" : "Hot Filters:"}
+            {/* Quick Intent Filter Chips (Tối giản thanh lịch, xóa bỏ emoji chìa khóa 🔑) */}
+            <div className="flex flex-wrap items-center justify-center gap-2 max-w-2xl mx-auto text-xs text-slate-500 dark:text-slate-400 mb-8">
+              <span className="font-semibold text-slate-400 dark:text-slate-500 text-[11px] uppercase tracking-wider mr-1">
+                {isJa ? "人気の絞り込み:" : isVi ? "Bộ lọc phổ biến:" : "Quick Filters:"}
               </span>
               <Link 
                 href={`/${locale}/search?contact_form=true`} 
-                className="px-2.5 py-1 rounded-md bg-white border border-slate-200/90 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors shadow-2xs flex items-center gap-1"
+                className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors text-[11px]"
               >
-                <Send className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
-                <span>{isJa ? "お問い合わせフォームあり 🔑" : isVi ? "Có biểu mẫu liên hệ 🔑" : "Contact Form 🔑"}</span>
+                {isJa ? "お問い合わせフォームあり" : isVi ? "Có biểu mẫu liên hệ" : "Contact Form Available"}
               </Link>
               <Link 
                 href={`/${locale}/search?hiring=true`} 
-                className="px-2.5 py-1 rounded-md bg-white border border-slate-200/90 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors shadow-2xs"
+                className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors text-[11px]"
               >
-                {isJa ? "求人活動中 🔑" : isVi ? "Đang tuyển dụng 🔑" : "Actively Hiring 🔑"}
+                {isJa ? "求人活動中" : isVi ? "Đang tuyển dụng" : "Actively Hiring"}
               </Link>
               <Link 
                 href={`/${locale}/search?subsidy=true`} 
-                className="px-2.5 py-1 rounded-md bg-white border border-slate-200/90 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors shadow-2xs"
+                className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors text-[11px]"
               >
-                {isJa ? "補助金受給 🔑" : isVi ? "Nhận trợ cấp 🔑" : "Subsidies 🔑"}
+                {isJa ? "補助金受給企業" : isVi ? "Nhận trợ cấp" : "Subsidy Recipients"}
               </Link>
               <Link 
                 href={`/${locale}/search?bidding=true`} 
-                className="px-2.5 py-1 rounded-md bg-white border border-slate-200/90 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors shadow-2xs"
+                className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors text-[11px]"
               >
-                {isJa ? "公共入札実績 🔑" : isVi ? "Đấu thầu công 🔑" : "Public Bids 🔑"}
-              </Link>
-              <Link 
-                href={`/${locale}/search?industry=G`} 
-                className="px-2.5 py-1 rounded-md bg-white border border-slate-200/90 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors shadow-2xs"
-              >
-                {isJa ? "IT・情報通信業" : isVi ? "IT & Phần mềm" : "IT / Software"}
-              </Link>
-              <Link 
-                href={`/${locale}/search?prefecture=13`} 
-                className="px-2.5 py-1 rounded-md bg-white border border-slate-200/90 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors shadow-2xs"
-              >
-                {isJa ? "東京都" : isVi ? "Tokyo" : "Tokyo"}
+                {isJa ? "公共入札実績" : isVi ? "Đấu thầu công" : "Public Bidders"}
               </Link>
             </div>
 
-            {/* Dual CTA Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3.5">
+            {/* Dual Primary CTA Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link
                 href={`/${locale}/search`}
-                className="w-full sm:w-auto px-6 py-3 rounded-lg font-bold text-xs sm:text-sm text-white bg-[#1B4F8A] hover:bg-[#143D6C] shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-xs sm:text-sm text-white bg-[#1B4F8A] hover:bg-[#143D6C] shadow-2xs flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
               >
                 <Search className="w-4 h-4" />
                 <span>{isJa ? "企業データベースを検索する" : isVi ? "Khám phá Cơ sở dữ liệu 5M cty" : "Explore Corporate Database"}</span>
-                <ArrowRight className="w-4 h-4" />
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
               <Link
                 href={`/${locale}/form-marketing`}
-                className="w-full sm:w-auto px-6 py-3 rounded-lg font-bold text-xs sm:text-sm text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-750 shadow-2xs flex items-center justify-center gap-2 transition-all cursor-pointer"
+                className="w-full sm:w-auto px-6 py-2.5 rounded-lg font-bold text-xs sm:text-sm text-slate-800 bg-white hover:bg-slate-50 border border-slate-300 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 dark:hover:bg-slate-700 shadow-2xs flex items-center justify-center gap-2 transition-all cursor-pointer"
               >
                 <Send className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
-                <span>{isJa ? "セルフ型フォーム営業の詳細を見る" : isVi ? "Tìm hiểu dịch vụ Gửi Form tự động" : "Learn About Form Outreach"}</span>
-                <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded uppercase">NEW</span>
+                <span>{isJa ? "自動フォーム営業の詳細を見る" : isVi ? "Tìm hiểu dịch vụ Gửi Form tự động" : "Learn About Form Outreach"}</span>
               </Link>
             </div>
+
           </div>
         </section>
 
         {/* ========================================================
-            2. REAL DATABASE STATS (Official Data Credibility)
+            TẦNG 2: CHỈ SỐ MINH BẠCH TỔNG CỤC DỮ LIỆU (Sub-Agent 2)
             ======================================================== */}
-        <section className="py-12 bg-slate-50 dark:bg-[#0B0F17] border-b border-slate-200/80 dark:border-slate-800">
+        <section aria-labelledby="stats-heading" className="py-10 bg-slate-50 dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+            <h2 id="stats-heading" className="sr-only">
+              {isJa ? "データベース収録規模" : "Database Coverage Scope"}
+            </h2>
+
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Stat 1 */}
-              <div className="p-6 rounded-xl bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 shadow-2xs flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              <div className="p-5 rounded-xl bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                     {isJa ? "収録法人データ数" : isVi ? "Số pháp nhân toàn quốc" : "Corporate Records"}
                   </span>
                   <Database className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                 </div>
                 <div>
-                  <span className="text-3xl sm:text-4xl font-extrabold text-[#1B4F8A] font-mono tracking-tight dark:text-blue-400">
+                  <span className="text-2xl sm:text-3xl font-bold text-[#1B4F8A] dark:text-blue-400 tabular-nums font-mono">
                     {(stats.totalCompanies).toLocaleString('ja-JP')}+
                   </span>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
-                    {isJa ? "国税庁・法務省連携の最新法人番号データベース" : isVi ? "Cơ quan Thuế & Bộ Tư pháp Nhật Bản" : "Official NTA & MOJ registered businesses"}
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    {isJa ? "国税庁・法務省公表の公式法人番号" : isVi ? "Cơ quan Thuế & Bộ Tư pháp" : "Official NTA & MOJ registered"}
                   </p>
                 </div>
               </div>
 
               {/* Stat 2 */}
-              <div className="p-6 rounded-xl bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 shadow-2xs flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    {isJa ? "地域・産業の網羅性" : isVi ? "Tỉnh thành & Ngành nghề" : "Coverage Scope"}
+              <div className="p-5 rounded-xl bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {isJa ? "地域カバー率" : isVi ? "Độ bao phủ địa lý" : "Regional Coverage"}
                   </span>
                   <Building2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 </div>
                 <div>
-                  <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-mono tracking-tight dark:text-white">
+                  <span className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tabular-nums font-mono">
                     {stats.totalPrefectures} 都道府県
                   </span>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
-                    {isJa ? `全 ${stats.totalIndustries} 産業大分類（JSIC準拠）を完全網羅` : isVi ? `Bao phủ toàn bộ ${stats.totalIndustries} ngành chuẩn JSIC` : `All ${stats.totalIndustries} JSIC industries covered`}
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    {isJa ? "日本全国の全市区町村を網羅" : isVi ? "Toàn bộ 47 tỉnh thành Nhật Bản" : "All 47 prefectures nationwide"}
                   </p>
                 </div>
               </div>
 
               {/* Stat 3 */}
-              <div className="p-6 rounded-xl bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 shadow-2xs flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    {isJa ? "営業意図シグナル抽出" : isVi ? "Tín hiệu bằng sáng chế & R&D" : "Intent Signals"}
+              <div className="p-5 rounded-xl bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {isJa ? "標準産業分類 (JSIC)" : isVi ? "Phân loại ngành JSIC" : "JSIC Industries"}
                   </span>
-                  <Zap className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  <Activity className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
-                  <span className="text-3xl sm:text-4xl font-extrabold text-amber-600 dark:text-amber-400 font-mono tracking-tight">
-                    {(stats.signalPatent).toLocaleString('ja-JP')}+
+                  <span className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tabular-nums font-mono">
+                    {stats.totalIndustries} 産業大分類
                   </span>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
-                    {isJa ? "特許・求人・助成金・公共入札の購買意欲を可視化" : isVi ? "Tuyển dụng, trợ cấp, đấu thầu, bằng sáng chế" : "Patents, hiring, grants, and public bids"}
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    {isJa ? "総務省準拠の業種コード体系" : isVi ? "Chuẩn phân ngành chính thức" : "Ministry of Internal Affairs code"}
                   </p>
                 </div>
               </div>
 
               {/* Stat 4 */}
-              <div className="p-6 rounded-xl bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 shadow-2xs flex flex-col justify-between">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                    {isJa ? "フォーム営業 開封実績" : isVi ? "Tỷ lệ mở Form tiếp cận" : "Outreach Open Rate"}
+              <div className="p-5 rounded-xl bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 shadow-2xs flex flex-col justify-between">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                    {isJa ? "フォーム営業 開封率" : isVi ? "Tỷ lệ mở Form DM" : "Outreach Open Rate"}
                   </span>
-                  <Send className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <Send className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div>
-                  <span className="text-3xl sm:text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 font-mono tracking-tight">
+                  <span className="text-2xl sm:text-3xl font-bold text-indigo-600 dark:text-indigo-400 tabular-nums font-mono">
                     50% 〜 90%
                   </span>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5 leading-snug">
-                    {isJa ? "決裁権者・担当者への直接届く高反響アプローチ" : isVi ? "Tiếp cận trực tiếp lãnh đạo, vượt trội email lạnh" : "Executive direct read rates, 5x higher than cold email"}
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    {isJa ? "決裁権者へ直接届く高い視認性" : isVi ? "Tiếp cận trực tiếp lãnh đạo" : "Executive direct read rates"}
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Official Source Footnote */}
-            <div className="text-center mt-6">
-              <span className="text-[11px] text-slate-400 dark:text-slate-500">
-                {isJa 
-                  ? "※ データソース: 国税庁法人番号公表サイト、法務省登記所データ、経済産業省gBizINFO、厚生労働省、特許庁の公的オープンデータ"
-                  : isVi 
-                  ? "※ Nguồn dữ liệu: Dữ liệu mở chính thức từ Quốc thuế, Bộ Tư pháp, METI gBizINFO, Bộ Y tế Lao động và Cục Sáng chế Nhật Bản"
-                  : "※ Sources: Official public open data from NTA, Ministry of Justice, METI gBizINFO, and JPO"}
+            <p className="text-center text-[11px] text-slate-400 dark:text-slate-500 mt-4 font-normal">
+              {isJa 
+                ? "※ 出典: 国税庁法人番号公表サイト、法務省登記所データ、経済産業省gBizINFO、厚生労働省、特許庁の公的オープンデータ"
+                : isVi 
+                ? "※ Nguồn: Dữ liệu mở từ Cục Thuế Quốc gia (NTA), Bộ Tư pháp (MOJ), METI gBizINFO, Bộ Y tế Lao động và Cục Sáng chế Nhật Bản"
+                : "※ Official Sources: National Tax Agency, Ministry of Justice, METI gBizINFO, and Japan Patent Office."}
+            </p>
+          </div>
+        </section>
+
+        {/* ========================================================
+            TẦNG 3: ⚡ DỮ LIỆU BIẾN ĐỘNG THỜI GIAN THỰC (Sub-Agent 3)
+            Trọng tâm Lưới 6 Hub biến động - Tối ưu SEO cho Google & Bing
+            ======================================================== */}
+        <section aria-labelledby="signals-heading" className="py-14 bg-white dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            {/* Section Header */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 pb-4 border-b border-slate-200/80 dark:border-slate-800 gap-3">
+              <div>
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider mb-1">
+                  <Activity className="w-3.5 h-3.5 text-amber-500" />
+                  <span>REAL-TIME BUSINESS SIGNALS</span>
+                </div>
+                <h2 id="signals-heading" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  {isJa ? "最新の企業動向・市場シグナル" : isVi ? "Tín hiệu biến động doanh nghiệp thời gian thực" : "Real-Time Market & Business Signals"}
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  {isJa 
+                    ? "公的オープンデータや市場動態から、今アプローチすべき確度の高い営業ターゲットを即時抽出" 
+                    : isVi 
+                    ? "Dữ liệu pháp lý và thị trường giúp xác định ngay doanh nghiệp đang có nhu cầu ngân sách" 
+                    : "Discover active prospects from verified legal changes, hiring, and bidding wins."}
+                </p>
+              </div>
+              <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+                {isJa ? "※ 毎週次・月次自動同期中" : isVi ? "※ Đồng bộ định kỳ hàng tuần" : "※ Synchronized weekly"}
               </span>
             </div>
-          </div>
-        </section>
 
-
-
-        {/* ========================================================
-            4. THE 5 CORE PILLARS (Tất cả tính năng mới cốt lõi)
-            ======================================================== */}
-        <section id="features" className="py-20 bg-white dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Section Header */}
-            <div className="text-center max-w-3xl mx-auto mb-16">
-              <div className="b2b-kicker mb-3">
-                <Target className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-                <span>{isJa ? "プラットフォーム主要機能" : isVi ? "5 Trụ cột tính năng toàn diện" : "Platform Capabilities"}</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">
-                {isJa 
-                  ? "B2B新規開拓に必要なすべてを、ひとつの画面に。" 
-                  : isVi 
-                  ? "Mọi công cụ phát triển khách hàng B2B hội tụ trong một nền tảng" 
-                  : "Everything You Need for B2B Pipeline Growth in One Place"}
-              </h2>
-              <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base leading-relaxed">
-                {isJa
-                  ? "リストの抽出から、意図シグナルの分析、案件管理、自動アプローチまで。営業チームの生産性を劇的に引き上げる5つのソリューション。"
-                  : isVi
-                  ? "Từ lọc tệp khách hàng tiềm năng, phân tích tài chính, quản lý phễu đàm phán đến tự động gửi Form tiếp cận hàng nghìn doanh nghiệp."
-                  : "From list extraction and intent signals to pipeline management and automated outreach, fully integrated."}
-              </p>
-            </div>
-
-            {/* 5 Pillars Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
-              {/* Pillar 1: 5M Company Database */}
-              <div className="b2b-card p-6 flex flex-col justify-between group">
-                <div>
-                  <div className="w-10 h-10 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center mb-4 border border-blue-200/70 dark:border-blue-800">
-                    <Database className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                    {isJa ? "1. 500万社 企業データベース" : isVi ? "1. Cơ sở dữ liệu 5 triệu doanh nghiệp" : "1. 5M+ Verified Database"}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                    {isJa
-                      ? "47都道府県、市区町村、JSIC全産業コード、資本金、従業員規模、設立年など、精密な絞り込みが可能。ノイズのない高確度リストを即座に生成します。"
-                      : isVi
-                      ? "Tìm kiếm chi tiết theo 47 tỉnh thành, quận huyện, ngành nghề chuẩn JSIC, vốn điều lệ, quy mô nhân sự, năm thành lập để tạo tệp khách hàng chính xác."
-                      : "Filter by 47 prefectures, cities, JSIC industry codes, capital, employee counts, and establishment year for targeted lists."}
-                  </p>
-                </div>
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center text-xs font-bold text-[#1B4F8A] dark:text-blue-400">
-                  <Link href={`/${locale}/search`} className="inline-flex items-center gap-1 hover:underline">
-                    <span>{isJa ? "絞り込み検索を試す" : isVi ? "Thử nghiệm bộ lọc tìm kiếm" : "Try Search Filters"}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Pillar 2: Automated Form Outreach (Featured Highlight) */}
-              <div className="b2b-card p-6 flex flex-col justify-between group border-indigo-200 dark:border-indigo-900/60 bg-gradient-to-b from-indigo-50/20 to-white dark:from-indigo-950/20 dark:to-[#161B22]">
-                <div>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 flex items-center justify-center border border-indigo-200/70 dark:border-indigo-800">
-                      <Send className="w-5 h-5" />
-                    </div>
-                    <span className="text-[10px] bg-indigo-600 text-white font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                      NEW FEATURE
-                    </span>
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-1.5">
-                    <span>{isJa ? "2. セルフ型フォーム自動営業" : isVi ? "2. Gửi Form tự động (Self-serve)" : "2. Automated Form Outreach"}</span>
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                    {isJa
-                      ? "絞り込んだターゲット企業のWebフォームへ自動配信。AIが「営業お断り」サイトを自動検知して除外。開封率50〜90%で決裁権者へ直接リーチし、送信URLログをCSVで完全納品。"
-                      : isVi
-                      ? "Gửi thông điệp tự động vào form liên hệ của doanh nghiệp. AI tự lọc bỏ trang web cấm quảng cáo, tỷ lệ mở 50%-90%, xuất báo cáo CSV chi tiết thời gian và URL gửi thành công."
-                      : "Automated delivery to verified company inquiry forms. AI automatically detects and excludes anti-sales sites. 50-90% read rates with live URL delivery CSV logs."}
-                  </p>
-                </div>
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center text-xs font-bold text-indigo-600 dark:text-indigo-400">
-                  <Link href={`/${locale}/form-marketing`} className="inline-flex items-center gap-1 hover:underline">
-                    <span>{isJa ? "フォーム営業の仕組みを見る" : isVi ? "Khám phá chi tiết giải pháp" : "Learn How It Works"}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Pillar 3: Corporate Signals & Financials */}
-              <div className="b2b-card p-6 flex flex-col justify-between group">
-                <div>
-                  <div className="w-10 h-10 rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-400 flex items-center justify-center mb-4 border border-amber-200/70 dark:border-amber-800">
-                    <Zap className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                    {isJa ? "3. 購買意図シグナル・財務3期分析" : isVi ? "3. Tín hiệu tăng trưởng & Tài chính 3 năm" : "3. Intent Signals & Financials"}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                    {isJa
-                      ? "求人活動、補助金・助成金の採択実績、公共入札落札、特許取得などの動態データを可視化。売上高・純利益の推移と合わせて「今、投資意欲の高い企業」を特定します。"
-                      : isVi
-                      ? "Dữ liệu thời gian thực về tuyển dụng, nhận trợ cấp, đấu thầu công, bằng sáng chế và doanh thu 3 năm giúp xác định ngay doanh nghiệp đang có nhu cầu chi tiêu ngân sách."
-                      : "Track live intent signals: active hiring, government subsidy grants, public bidding wins, patents, and 3-year revenue trends."}
-                  </p>
-                </div>
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center text-xs font-bold text-amber-600 dark:text-amber-400">
-                  <Link href={`/${locale}/search?hiring=true`} className="inline-flex items-center gap-1 hover:underline">
-                    <span>{isJa ? "シグナル抽出条件を見る" : isVi ? "Xem các bộ lọc tín hiệu" : "Explore Signal Filters"}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Pillar 4: Kanban CRM & MyList */}
-              <div className="b2b-card p-6 flex flex-col justify-between group">
-                <div>
-                  <div className="w-10 h-10 rounded-lg bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400 flex items-center justify-center mb-4 border border-purple-200/70 dark:border-purple-800">
-                    <Kanban className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                    {isJa ? "4. カンバン進捗管理 & マイリスト" : isVi ? "4. Quản lý phễu Kanban CRM & MyList" : "4. Kanban Pipeline & MyList"}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                    {isJa
-                      ? "気になる企業をワンクリックでマイリストに保存。「未連絡・連絡済み・商談中・成約」の4段階カンバンボードで、高額なSFAを導入せずともチームで営業案件を進捗管理できます。"
-                      : isVi
-                      ? "Lưu danh sách doanh nghiệp tiềm năng và quản lý quy trình tiếp cận 4 bước: Chưa liên hệ, Đã liên hệ, Đang đàm phán, Thành công mà không cần mua phần mềm CRM đắt đỏ."
-                      : "Save target companies to MyList and manage deals across 4 visual stages: Uncontacted, Contacted, In Progress, and Closed."}
-                  </p>
-                </div>
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center text-xs font-bold text-purple-600 dark:text-purple-400">
-                  <Link href={`/${locale}/dashboard`} className="inline-flex items-center gap-1 hover:underline">
-                    <span>{isJa ? "ダッシュボードを開く" : isVi ? "Mở Dashboard quản lý" : "Open Dashboard"}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Pillar 5: CSV Bulk Export & Quota */}
-              <div className="b2b-card p-6 flex flex-col justify-between group">
-                <div>
-                  <div className="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 flex items-center justify-center mb-4 border border-emerald-200/70 dark:border-emerald-800">
-                    <FileSpreadsheet className="w-5 h-5" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                    {isJa ? "5. CSV一括出力 & SFA連携" : isVi ? "5. Xuất dữ liệu CSV hàng loạt & Tích hợp" : "5. Bulk CSV Export & SFA Ready"}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                    {isJa
-                      ? "絞り込んだ企業リストを、電話番号・メールアドレス・代表者名・WebサイトURL付きで一括CSV出力。Salesforce、HubSpot、kintoneなどのSFA/CRMへ即日インポート可能です。"
-                      : isVi
-                      ? "Xuất file CSV chứa đầy đủ số điện thoại, email, tên người đại diện, URL website để nạp thẳng vào Salesforce, HubSpot, kintone hoặc chạy quảng cáo B2B."
-                      : "Export filtered lists with phones, emails, executive names, and URLs. Formatted for instant import into Salesforce, HubSpot, and Excel."}
-                  </p>
-                </div>
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                  <Link href={`/${locale}/pricing`} className="inline-flex items-center gap-1 hover:underline">
-                    <span>{isJa ? "ダウンロード容量・料金表" : isVi ? "Xem hạn ngạch tải CSV" : "Check Export Quotas"}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-
-              {/* Pillar 6: Anti-Spam Compliance */}
-              <div className="b2b-card p-6 flex flex-col justify-between group">
-                <div>
-                  <div className="w-10 h-10 rounded-lg bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 flex items-center justify-center mb-4 border border-slate-200 dark:border-slate-700">
-                    <ShieldCheck className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />
-                  </div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                    {isJa ? "6. 法令遵守 & AIクレーム除外" : isVi ? "6. Tuân thủ Pháp lý & Tránh khiếu nại" : "6. Strict Compliance & AI Filtering"}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                    {isJa
-                      ? "特定電子メール法および関係ガイドラインに準拠。Webフォームの「セールスお断り」「特定目的以外の送信禁止」免責事項をAIが事前検知し、トラブルリスクをゼロへ近づけます。"
-                      : isVi
-                      ? "Tuân thủ chặt chẽ Đạo luật Thư điện tử Đặc biệt của Nhật Bản. AI tự phát hiện điều khoản từ chối chào hàng trên form để bảo vệ uy tín thương hiệu của bạn."
-                      : "Strictly compliant with Japanese Electronic Messaging laws. AI automatically screens out contact pages that prohibit commercial solicitations."}
-                  </p>
-                </div>
-                <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center text-xs font-bold text-slate-600 dark:text-slate-400">
-                  <Link href={`/${locale}/tokushoho`} className="inline-flex items-center gap-1 hover:underline">
-                    <span>{isJa ? "法令遵守ポリシー" : isVi ? "Chính sách pháp lý" : "Compliance Policy"}</span>
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ========================================================
-            5. WORKFLOW: 3-STEP IMPLEMENTATION (Quy trình 3 bước)
-            ======================================================== */}
-        <section className="py-20 bg-slate-50 dark:bg-[#0B0F17] border-b border-slate-200/90 dark:border-slate-800">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <div className="b2b-kicker mb-3">
-                <Clock className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-                <span>{isJa ? "導入は最短5分" : isVi ? "Quy trình 3 bước nhanh gọn" : "3-Step Workflow"}</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3">
-                {isJa ? "最短3ステップで、新規商談アプローチを開始" : isVi ? "Triển khai tiếp cận khách hàng B2B chỉ sau 3 bước" : "Launch Outreach in 3 Simple Steps"}
-              </h2>
-              <p className="text-slate-600 dark:text-slate-400 text-sm">
-                {isJa ? "面倒な名簿収集や手作業のフォーム送信から営業チームを解放します。" : isVi ? "Giải phóng đội ngũ kinh doanh khỏi việc gõ từng form thủ công." : "Save your sales team from hours of manual list gathering and form submission."}
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
-              {/* Step 1 */}
-              <div className="b2b-card p-6 relative">
-                <div className="w-8 h-8 rounded-lg bg-[#1B4F8A] text-white font-extrabold text-sm flex items-center justify-center mb-4">
-                  01
-                </div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                  {isJa ? "条件指定でターゲット抽出" : isVi ? "Bước 1: Lọc tệp doanh nghiệp" : "Step 1: Precision Filter"}
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  {isJa
-                    ? "地域、業界、資本金、そして「お問い合わせフォームあり」「求人活動中」などのシグナルで、今アプローチすべき企業をピンポイント抽出。"
-                    : isVi
-                    ? "Chọn khu vực, ngành nghề và tích chọn 'Có biểu mẫu liên hệ' hoặc 'Đang tuyển dụng' để lọc đúng tệp doanh nghiệp tiềm năng nhất."
-                    : "Filter companies by prefecture, industry, capital, and active signals like 'Contact Form' and 'Hiring'."}
-                </p>
-              </div>
-
-              {/* Step 2 */}
-              <div className="b2b-card p-6 relative">
-                <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white font-extrabold text-sm flex items-center justify-center mb-4">
-                  02
-                </div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                  {isJa ? "文面作成 & 配信件数の指定" : isVi ? "Bước 2: Soạn nội dung & Số lượng" : "Step 2: Draft & Volume"}
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  {isJa
-                    ? "業種別の高反響テンプレートを活用し、敬語と訴求文を設定。送信したい件数（100件〜）を指定してキャンペーンを下書き保存または即時送信。"
-                    : isVi
-                    ? "Dùng các mẫu thư ngỏ chuẩn kính ngữ tiếng Nhật, cài đặt tiêu đề và nội dung chào hàng, chọn số lượng form cần gửi (từ 100 form)."
-                    : "Select pre-built Keigo templates, customize your pitch, and choose target volume (100+ forms)."}
-                </p>
-              </div>
-
-              {/* Step 3 */}
-              <div className="b2b-card p-6 relative">
-                <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white font-extrabold text-sm flex items-center justify-center mb-4">
-                  03
-                </div>
-                <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                  {isJa ? "自動配信 & レポート確認" : isVi ? "Bước 3: Tự động gửi & Nhận báo cáo" : "Step 3: Auto-Delivery & Logs"}
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-                  {isJa
-                    ? "AIエンジンが営業お断りサイトを除外しつつ自動配信。送信完了後、送信先URLと日時の完全CSVログをダウンロードして反響を確認。"
-                    : isVi
-                    ? "Hệ thống AI tự động xử lý gửi an toàn. Sau khi hoàn thành, bạn tải về file log CSV chứa toàn bộ URL và thời gian đã gửi để theo dõi."
-                    : "AI handles automated delivery while skipping disclaimer forms. Download full URL delivery CSV logs to track replies."}
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-12 text-center">
-              <Link
-                href={`/${locale}/search`}
-                className="b2b-btn-primary px-8 py-3.5 text-sm"
+            {/* Grid 6 Dynamic Hubs (3 Cột x 2 Hàng) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              
+              {/* Hub 1: Pháp nhân mới thành lập */}
+              <Link 
+                href={`/${locale}/new-companies`} 
+                className="b2b-card p-5 hover:border-[#1B4F8A] dark:hover:border-blue-400 transition-all flex flex-col justify-between group"
               >
-                <span>{isJa ? "まずは条件を指定して企業を探す" : isVi ? "Bắt đầu lọc danh sách doanh nghiệp ngay" : "Start Filtering Companies Now"}</span>
-                <ArrowRight className="w-4 h-4 ml-1" />
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                      {isJa ? "新規登記速報" : isVi ? "Mới đăng ký" : "New Register"}
+                    </span>
+                    <Building2 className="w-4 h-4 text-slate-400 group-hover:text-[#1B4F8A] transition-colors" />
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors">
+                    {isJa ? "新設法人・新規設立企業速報" : isVi ? "Pháp nhân mới thành lập" : "Newly Established Companies"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                    {isJa
+                      ? "設立直後のスタートアップ・新設法人へ、競合他社より早く初期提案を実施。"
+                      : isVi
+                      ? "Tiếp cận các công ty mới thành lập trước đối thủ để chào các gói dịch vụ ban đầu."
+                      : "Target newly registered businesses before competitors for early commercial pitches."}
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-[#1B4F8A] dark:text-blue-400">
+                  <span>{isJa ? "最新リストを見る" : isVi ? "Xem danh sách" : "View List"}</span>
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
               </Link>
+
+              {/* Hub 2: Chuyển trụ sở văn phòng */}
+              <Link 
+                href={`/${locale}/changes/relocation`} 
+                className="b2b-card p-5 hover:border-[#1B4F8A] dark:hover:border-blue-400 transition-all flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800">
+                      {isJa ? "拠点拡大・移転" : isVi ? "Mở rộng văn phòng" : "Relocation"}
+                    </span>
+                    <MapPin className="w-4 h-4 text-slate-400 group-hover:text-[#1B4F8A] transition-colors" />
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors">
+                    {isJa ? "本社移転・所在地変更企業速報" : isVi ? "Công ty đổi trụ sở / chuyển văn phòng" : "Head Office Relocations"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                    {isJa
+                      ? "オフィス移転・拠点新設に伴うIT機器、什器、通信回線の需要を早期キャッチ。"
+                      : isVi
+                      ? "Đón đầu nhu cầu mua sắm thiết bị văn phòng, mạng viễn thông khi công ty chuyển địa điểm."
+                      : "Catch early procurement demand for office equipment, IT, and telecom services."}
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-[#1B4F8A] dark:text-blue-400">
+                  <span>{isJa ? "最新リストを見る" : isVi ? "Xem danh sách" : "View List"}</span>
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
+
+              {/* Hub 3: Tuyển dụng gấp */}
+              <Link 
+                href={`/${locale}/jobs/latest`} 
+                className="b2b-card p-5 hover:border-[#1B4F8A] dark:hover:border-blue-400 transition-all flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">
+                      {isJa ? "採用意欲大" : isVi ? "Đang mở rộng" : "Hiring"}
+                    </span>
+                    <Users className="w-4 h-4 text-slate-400 group-hover:text-[#1B4F8A] transition-colors" />
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors">
+                    {isJa ? "求人募集中・新着採用企業速報" : isVi ? "Doanh nghiệp đang tuyển dụng gấp" : "Actively Hiring Companies"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                    {isJa
+                      ? "採用費を投じている成長企業へ、人材サービスや業務効率化ツールを提案。"
+                      : isVi
+                      ? "Chào bán dịch vụ tuyển dụng, phần mềm nhân sự cho các công ty đang mở rộng quy mô."
+                      : "Pitch HR tools, staffing services, and software to fast-growing hiring teams."}
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-[#1B4F8A] dark:text-blue-400">
+                  <span>{isJa ? "最新リストを見る" : isVi ? "Xem danh sách" : "View List"}</span>
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
+
+              {/* Hub 4: Đấu thầu công & Trợ cấp */}
+              <Link 
+                href={`/${locale}/search?subsidy=true&bidding=true`} 
+                className="b2b-card p-5 hover:border-[#1B4F8A] dark:hover:border-blue-400 transition-all flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-800 border border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800">
+                      {isJa ? "予算獲得企業" : isVi ? "Có ngân sách" : "Funded"}
+                    </span>
+                    <Award className="w-4 h-4 text-slate-400 group-hover:text-[#1B4F8A] transition-colors" />
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors">
+                    {isJa ? "補助金受給・官公庁入札企業" : isVi ? "Trợ cấp chính phủ & Đấu thầu công" : "Subsidies & Public Bidders"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                    {isJa
+                      ? "ものづくり補助金等の採択企業や省庁入札落札企業など、予算潤沢な先を特定。"
+                      : isVi
+                      ? "Xác định các doanh nghiệp vừa nhận nguồn tiền trợ cấp hoặc trúng gói thầu chính phủ."
+                      : "Target companies that recently secured government grants and public contract wins."}
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-[#1B4F8A] dark:text-blue-400">
+                  <span>{isJa ? "最新リストを見る" : isVi ? "Xem danh sách" : "View List"}</span>
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
+
+              {/* Hub 5: Đổi tên công ty & M&A */}
+              <Link 
+                href={`/${locale}/changes/merger`} 
+                className="b2b-card p-5 hover:border-[#1B4F8A] dark:hover:border-blue-400 transition-all flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-teal-50 text-teal-800 border border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800">
+                      {isJa ? "体制刷新" : isVi ? "Tái cấu trúc" : "Reorganization"}
+                    </span>
+                    <RotateCw className="w-4 h-4 text-slate-400 group-hover:text-[#1B4F8A] transition-colors" />
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors">
+                    {isJa ? "商号変更・企業合併一覧" : isVi ? "Đổi tên công ty / Sáp nhập M&A" : "Name Changes & Mergers"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                    {isJa
+                      ? "社名変更やM&A合併によるリブランディング、システム刷新の商機を発掘。"
+                      : isVi
+                      ? "Khai thác cơ hội nâng cấp hệ thống và dịch vụ tư vấn khi công ty tái cơ cấu thương hiệu."
+                      : "Discover software migration and rebranding opportunities during M&A integrations."}
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-[#1B4F8A] dark:text-blue-400">
+                  <span>{isJa ? "最新リストを見る" : isVi ? "Xem danh sách" : "View List"}</span>
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
+
+              {/* Hub 6: Giải thể & Phá sản (Quản trị rủi ro) */}
+              <Link 
+                href={`/${locale}/status/bankruptcies`} 
+                className="b2b-card p-5 hover:border-red-400 dark:hover:border-red-700 transition-all flex flex-col justify-between group"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-rose-50 text-rose-800 border border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800">
+                      {isJa ? "与信リスク管理" : isVi ? "Rủi ro tín dụng" : "Credit Risk"}
+                    </span>
+                    <AlertTriangle className="w-4 h-4 text-slate-400 group-hover:text-rose-600 transition-colors" />
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                    {isJa ? "倒産・解散・清算結了速報" : isVi ? "Doanh nghiệp giải thể / phá sản" : "Dissolutions & Closures"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                    {isJa
+                      ? "取引先や営業先リストから活動停止企業を即時検知し、未回収リスクを未然に防止。"
+                      : isVi
+                      ? "Kiểm tra và loại bỏ các đối tác đã dừng hoạt động để tránh rủi ro công nợ khó đòi."
+                      : "Screen out dissolved entities from sales campaigns to protect credit accounts."}
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-rose-600 dark:text-rose-400">
+                  <span>{isJa ? "最新リストを見る" : isVi ? "Xem danh sách" : "View List"}</span>
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
+
             </div>
           </div>
         </section>
 
         {/* ========================================================
-            5.5 DEVELOPER & AI AGENT INFRASTRUCTURE (Hạ tầng AI Sales)
+            TẦNG 4: 4 TRỤ CỘT GIẢI PHÁP KINH DOANH (Sub-Agent 4)
             ======================================================== */}
-        <section className="py-20 bg-slate-50/70 dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800 relative">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col lg:flex-row items-center justify-between gap-12">
-              <div className="max-w-xl">
-                <div className="b2b-kicker mb-3">
-                  <Terminal className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-                  <span>{isJa ? "次世代データ連携・AI営業基盤" : isVi ? "Hạ tầng AI Sales B2B" : "AI Agent Data Infrastructure"}</span>
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4 leading-tight">
-                  {isJa ? (
-                    <>自律型AI営業（AI SDR）を支える、<br /><span className="text-[#1B4F8A] dark:text-blue-400">500万社 企業データ基盤</span></>
-                  ) : isVi ? (
-                    <>Hạ tầng dữ liệu ngầm cho <span className="text-[#1B4F8A] dark:text-blue-400">AI Sales Agent</span> tại Nhật Bản</>
-                  ) : (
-                    <>The Invisible Data Backbone for <span className="text-[#1B4F8A] dark:text-blue-400">AI Sales Agents</span> in Japan</>
-                  )}
-                </h2>
-                <p className="text-slate-600 dark:text-slate-400 text-xs sm:text-sm leading-relaxed mb-6">
-                  {isJa
-                    ? "Claude、Cursor、LangChain、Difyと直接連携可能。法人番号13桁の一意特定、特定電子メール法準拠スコアリング、リアルタイム購買シグナル（求人・補助金）のWebhook通知を標準提供しています。"
-                    : isVi
-                    ? "Kết nối trực tiếp vào Claude, Cursor, LangChain, Dify và n8n qua Model Context Protocol (MCP) và Webhook đẩy biến động theo thời gian thực."
-                    : "Connect directly to Claude, Cursor, and Dify via Model Context Protocol (MCP) with real-time intent webhooks and compliance verification."}
-                </p>
-
-                <div className="grid grid-cols-2 gap-3 mb-8 text-xs font-medium">
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>{isJa ? "MCPサーバー標準対応" : "Native MCP Server"}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>{isJa ? "特定電子メール法 適合チェック" : "Legal Safety Scoring"}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>{isJa ? "シグナル即時 Webhooks" : "Realtime Webhooks"}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                    <span>{isJa ? "Dify / n8n テンプレート" : "Dify 1-Click Integration"}</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-3">
-                  <Link
-                    href={`/${locale}/developer`}
-                    className="b2b-btn-primary"
-                  >
-                    <span>{isJa ? "開発者向け仕様・連携ガイドを見る" : isVi ? "Xem hướng dẫn tích hợp AI / API" : "Explore Developer Hub"}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
-                  <Link
-                    href={`/${locale}/dashboard?tab=developer`}
-                    className="b2b-btn-secondary"
-                  >
-                    <span>{isJa ? "APIキー発行" : isVi ? "Lấy API Key" : "Get API Key"}</span>
-                  </Link>
-                </div>
-              </div>
-
-              {/* Code Snippet Preview Card */}
-              <div className="w-full lg:w-96 rounded-xl bg-[#0F172A] border border-slate-800 p-5 shadow-xs font-mono text-[11px] text-slate-300">
-                <div className="flex items-center justify-between pb-3 mb-3 border-b border-slate-800 text-[10px] text-slate-400 font-sans">
-                  <span className="flex items-center gap-1.5 text-blue-400 font-bold">
-                    <Terminal className="w-3.5 h-3.5" />
-                    <span>Python SDK (AI Agent)</span>
-                  </span>
-                  <span className="text-slate-500 font-mono">v1.1.0</span>
-                </div>
-                <pre className="text-slate-200 overflow-x-auto leading-relaxed font-mono">
-{`from kigyoulist import KigyouListClient
-client = KigyouListClient(api_key="...")
-
-# AI Intent Search
-leads = client.semantic_search(
-  query="物流DX・採用強化中の企業"
-)
-
-# Output Prompt Hook
-print(leads[0]["ai_sales_hook"])`}
-                </pre>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ========================================================
-            6. TRANSPARENT PRICING PREVIEW (Minh bạch chi phí)
-            ======================================================== */}
-        <section id="pricing" className="py-20 bg-white dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center max-w-2xl mx-auto mb-16">
-              <div className="b2b-kicker mb-3">
-                <DollarSign className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>{isJa ? "明瞭な料金体系" : isVi ? "Bảng giá minh bạch" : "Clear Pricing Plans"}</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-3">
-                {isJa ? "事業規模に応じた柔軟な料金プラン" : isVi ? "Lựa chọn gói cước phù hợp quy mô doanh nghiệp" : "Flexible Plans Built for Your Scale"}
+        <section aria-labelledby="solutions-heading" className="py-16 bg-slate-50 dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div className="text-center max-w-2xl mx-auto mb-12">
+              <span className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider block mb-1">
+                {isJa ? "4つの主要ソリューション" : isVi ? "4 Trụ cột giải pháp" : "Core Capabilities"}
+              </span>
+              <h2 id="solutions-heading" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                {isJa ? "B2B新規開拓に必要なすべてを、ひとつの画面に" : isVi ? "Mọi giải pháp phát triển bán hàng B2B trên một nền tảng" : "Integrated B2B Pipeline Growth Platform"}
               </h2>
-              <p className="text-slate-600 dark:text-slate-400 text-sm">
-                {isJa ? "初期費用0円・契約期間の縛りなし。必要な機能と容量に合わせてお選びいただけます。" : isVi ? "Không phí khởi tạo, hủy bất cứ lúc nào, thanh toán an toàn qua Stripe." : "No setup fees, cancel anytime, secure checkout via Stripe."}
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                {isJa 
+                  ? "リストの抽出から意図シグナルの分析、案件管理、自動アプローチまで。営業チームの生産性を引き上げる4つの柱。" 
+                  : isVi 
+                  ? "Từ lọc tệp khách hàng, phân tích tín hiệu, quản lý phễu đàm phán đến tự động hóa gửi Form tiếp cận." 
+                  : "Target, analyze, track, and automate outreach to Japanese corporate accounts seamlessly."}
               </p>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-              {/* Free Plan */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+              
+              {/* Pillar 1 */}
               <div className="b2b-card p-6 flex flex-col justify-between">
                 <div>
-                  <div className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">FREE</div>
-                  <div className="text-2xl font-black text-slate-900 dark:text-white mb-4">
-                    ¥0 <span className="text-xs font-normal text-slate-500">/ 永久無料</span>
+                  <div className="w-9 h-9 rounded-lg bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/50 dark:text-blue-400 flex items-center justify-center mb-4 border border-blue-200/70 dark:border-blue-800">
+                    <Database className="w-4 h-4" />
                   </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-6">
-                    {isJa ? "基本企業情報の閲覧・簡易検索をお試しされたい個人・小規模チーム向け" : isVi ? "Dành cho cá nhân trải nghiệm tra cứu dữ liệu doanh nghiệp cơ bản" : "For basic lookups and trying out company search"}
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2">
+                    {isJa ? "1. 500万社 企業データベース" : isVi ? "1. CSDL 5M+ Doanh nghiệp" : "1. 5M+ Company Database"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+                    {isJa
+                      ? "地域、JSIC全産業、資本金、従業員規模などの複合条件で即座にリスト作成。電話番号・HP・代表者名付きでCSV一括出力。"
+                      : isVi
+                      ? "Lọc theo 47 tỉnh thành, ngành nghề JSIC, vốn điều lệ, nhân sự và xuất file CSV có SĐT, website, người đại diện."
+                      : "Filter across prefectures, JSIC industry codes, capital, and staff. Export verified CSV lists."}
                   </p>
-                  <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 mb-6">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>{isJa ? "全国500万社の基本情報検索" : isVi ? "Tìm kiếm cơ bản 5 triệu cty" : "Basic 5M search"}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>{isJa ? "毎日 20件 CSV出力（企業認証で50件/日）" : isVi ? "Xuất CSV: 20 dòng/ngày (xác thực: 50 dòng/ngày)" : "20 CSV rows / day (50/day if verified)"}</span>
-                    </li>
-                    <li className="flex items-center gap-2 text-slate-400">
-                      <span className="w-4 text-center">—</span>
-                      <span>{isJa ? "連絡先フィルター（PRO限定）" : isVi ? "Bộ lọc liên hệ (Cần PRO)" : "Contact filters (PRO only)"}</span>
-                    </li>
-                  </ul>
                 </div>
-                <Link
-                  href={`/${locale}/search`}
-                  className="b2b-btn-secondary w-full"
-                >
-                  {isJa ? "無料で始める" : isVi ? "Bắt đầu miễn phí" : "Start Free"}
+                <Link href={`/${locale}/search`} className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 inline-flex items-center gap-1 hover:underline pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <span>{isJa ? "検索を試す" : isVi ? "Dùng thử bộ lọc" : "Explore DB"}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
 
-              {/* PRO Plan (Recommended) */}
-              <div className="b2b-card p-6 flex flex-col justify-between border-2 border-[#1B4F8A] dark:border-blue-500 relative shadow-md">
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-rose-600 text-white text-[10px] font-bold px-3 py-0.5 rounded-full uppercase tracking-wider shadow-xs whitespace-nowrap">
-                  {isJa ? "★ 新規限定・初月70%OFF" : isVi ? "★ Giảm 70% tháng đầu" : "★ 70% OFF 1st Month"}
-                </div>
+              {/* Pillar 2 */}
+              <div className="b2b-card p-6 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider">PRO</div>
-                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900">
-                      70% OFF
-                    </span>
+                  <div className="w-9 h-9 rounded-lg bg-indigo-50 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400 flex items-center justify-center mb-4 border border-indigo-200/70 dark:border-indigo-800">
+                    <Send className="w-4 h-4" />
                   </div>
-                  <div className="flex items-baseline gap-1.5 mb-1">
-                    <span className="text-2xl sm:text-3xl font-black text-[#1B4F8A] dark:text-blue-300">¥1,260</span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">/ {isJa ? "初月" : isVi ? "tháng đầu" : "1st mo"}</span>
-                  </div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="line-through text-slate-400 font-mono text-xs">¥4,200</span>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
-                      {isJa ? "（2ヶ月目以降: ¥4,200/月）" : isVi ? "(Từ tháng 2: ¥4.200/tháng)" : "(2nd mo+: ¥4,200/mo)"}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-6">
-                    {isJa ? "「連絡先情報の有無」の全解除、求人・助成金シグナル、毎月2,000件CSV出力、フォーム営業の全連携" : isVi ? "Mở khóa toàn bộ kênh liên lạc (Form, Email, Phone), tín hiệu tuyển dụng, 2.000 dòng CSV/tháng, gửi form tự động" : "Unlock all contact filters, intent signals, 2,000 CSV rows/mo, and automated form campaigns"}
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2">
+                    {isJa ? "2. セルフ型フォーム自動営業" : isVi ? "2. Gửi Form tự động (Form DM)" : "2. Automated Form Outreach"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+                    {isJa
+                      ? "Web問い合わせフォームへ自動配信。AIが「営業お断り」サイトを自動除外し、開封率50〜90%で決裁権者へリーチ。"
+                      : isVi
+                      ? "Gửi thư ngỏ vào form website công ty. AI tự lọc bỏ trang cấm quảng cáo, tỷ lệ mở 50-90%, báo cáo URL gửi thành công."
+                      : "Deliver directly to inquiry forms. AI automatically skips disclaimer sites, delivering 50-90% read rates."}
                   </p>
-                  <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 mb-6">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>{isJa ? "連絡先情報（フォーム・メール・電話）全アンロック" : isVi ? "Mở khóa Form, Email, SĐT, Fax" : "Full contact presence unlocked"}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>{isJa ? "CSV出力 2,000件 / 月" : isVi ? "Xuất CSV: 2.000 dòng/tháng" : "2,000 CSV rows / month"}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>{isJa ? "フォーム営業（自動配信）利用権限" : isVi ? "Quyền chạy chiến dịch Gửi Form" : "Automated Form Outreach access"}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />
-                      <span>{isJa ? "カンバンCRM & マイリスト無制限" : isVi ? "Kanban CRM & MyList không giới hạn" : "Unlimited Kanban & MyList"}</span>
-                    </li>
-                  </ul>
                 </div>
-                <Link
-                  href={`/${locale}/pricing`}
-                  className="b2b-btn-primary w-full"
-                >
-                  {isJa ? "Proプランにアップグレード (70%OFF)" : isVi ? "Nâng cấp gói PRO (Giảm 70%)" : "Upgrade to PRO (70% OFF)"}
+                <Link href={`/${locale}/form-marketing`} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1 hover:underline pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <span>{isJa ? "詳細を見る" : isVi ? "Xem chi tiết" : "Learn More"}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
 
-              {/* Form Outreach Add-on Wallet */}
-              <div className="b2b-card p-6 flex flex-col justify-between bg-gradient-to-b from-indigo-50/30 to-white dark:from-indigo-950/20 dark:to-[#161B22]">
+              {/* Pillar 3 */}
+              <div className="b2b-card p-6 flex flex-col justify-between">
                 <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-xs font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">
-                      {isJa ? "フォーム営業配信" : isVi ? "Gửi Form Marketing" : "Form Outreach"}
-                    </div>
-                    <span className="text-[10px] font-bold text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200 dark:border-rose-900">
-                      初回 70% OFF
-                    </span>
+                  <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400 flex items-center justify-center mb-4 border border-emerald-200/70 dark:border-emerald-800">
+                    <FileCheck2 className="w-4 h-4" />
                   </div>
-                  <div className="flex items-baseline gap-1.5 mb-1">
-                    <span className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">1通 ¥5.9〜</span>
-                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">/ {isJa ? "初回限定" : isVi ? "lần đầu" : "1st order"}</span>
-                  </div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <span className="line-through text-slate-400 font-mono text-xs">通常 ¥19.8〜</span>
-                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
-                      {isJa ? "業界最安値" : isVi ? "Rẻ nhất thị trường" : "Lowest Rate"}
-                    </span>
-                  </div>
-                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-6">
-                    {isJa ? "必要な送信件数に応じて都度チャージ。初期費用0円・月額固定費なし、初回70%OFFで格安アプローチ" : isVi ? "Nạp credits theo nhu cầu, không phí duy trì, giảm 70% cho đơn hàng đầu tiên tiếp cận khách hàng siêu rẻ" : "Pay-as-you-go credits for form outreach. No recurring fee, 70% OFF for first-time orders"}
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2">
+                    {isJa ? "3. 適格請求書（インボイス）一括照会" : isVi ? "3. Đối soát Hóa đơn Invoice hàng loạt" : "3. Bulk Invoice Verification (NTA)"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+                    {isJa
+                      ? "国税庁Web-APIと直結し、登録番号（T番号）を最大100件まで一括高速照会。失効・取消・社名不一致リスクを瞬時に検知。"
+                      : isVi
+                      ? "Kết nối trực tiếp Web-API Quốc thuế Nhật Bản, đối soát tối đa 100 mã số T-Number cùng lúc. Phát hiện ngay số hết hạn hoặc sai lệch."
+                      : "Direct connection to Japan NTA Web-API. Validate up to 100 T-numbers in bulk. Detect revoked or mismatched invoices instantly."}
                   </p>
-                  <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 mb-6">
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0" />
-                      <span>{isJa ? "AI営業お断り自動除外機能込み" : isVi ? "Bao gồm AI lọc web cấm quảng cáo" : "AI anti-spam auto exclusion"}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0" />
-                      <span>{isJa ? "送信日時・URLのCSVログ完全納品" : isVi ? "Báo cáo CSV thời gian & URL gửi" : "Full timestamp & URL CSV logs"}</span>
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-indigo-500 shrink-0" />
-                      <span>{isJa ? "1,000件〜 大量配信対応" : isVi ? "Từ 1.000 form đến 50.000+ form" : "From 1,000 forms up to 50k+"}</span>
-                    </li>
-                  </ul>
                 </div>
-                <Link
-                  href={`/${locale}/pricing?tab=form`}
-                  className="b2b-btn-secondary w-full border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 font-bold"
-                >
-                  {isJa ? "フォーム営業プランを見る (70%OFF)" : isVi ? "Xem Bảng Giá Gửi Form (Giảm 70%)" : "View Form Plans (70% OFF)"}
+                <Link href={`/${locale}/invoice`} className="text-xs font-bold text-emerald-600 dark:text-emerald-400 inline-flex items-center gap-1 hover:underline pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <span>{isJa ? "一括照会を試す" : isVi ? "Tra cứu hàng loạt" : "Verify Invoices"}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
+
+              {/* Pillar 4 */}
+              <div className="b2b-card p-6 flex flex-col justify-between">
+                <div>
+                  <div className="w-9 h-9 rounded-lg bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400 flex items-center justify-center mb-4 border border-purple-200/70 dark:border-purple-800">
+                    <Bell className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2">
+                    {isJa ? "4. 企業監視・重要変動検知" : isVi ? "4. Giám sát Doanh nghiệp & Biến động" : "4. Company Monitoring & Risk Alerts"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
+                    {isJa
+                      ? "取引先や営業先を最大100社まで無料見守り。代表者交代、本社移転、インボイス登録取消、法人閉鎖を毎日自動検知してアラート。"
+                      : isVi
+                      ? "Theo dõi miễn phí tối đa 100 đối tác. Tự động phát hiện thay đổi đại diện, dời trụ sở, hủy mã số Invoice hoặc giải thể."
+                      : "Monitor up to 100 partner companies. Automatically detect CEO changes, relocations, invoice revocations, and closures."}
+                  </p>
+                </div>
+                <Link href={`/${locale}/watchlist`} className="text-xs font-bold text-purple-600 dark:text-purple-400 inline-flex items-center gap-1 hover:underline pt-3 border-t border-slate-100 dark:border-slate-800">
+                  <span>{isJa ? "見守り機能を見る" : isVi ? "Khám phá tính năng" : "Explore Watchlist"}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+
             </div>
+          </div>
+        </section>
 
-            <div className="text-center">
+        {/* ========================================================
+            TẦNG 5: BẢN ĐỒ DỮ LIỆU 47 TỈNH THÀNH (Sub-Agent 5)
+            ======================================================== */}
+        <section aria-labelledby="prefectures-heading" className="py-14 bg-white dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-slate-200/80 dark:border-slate-800 gap-3">
+              <div>
+                <span className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider block mb-1">
+                  REGIONAL DATABASE
+                </span>
+                <h2 id="prefectures-heading" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  {isJa ? "日本全国47都道府県の企業一覧・営業リスト" : isVi ? "Danh mục doanh nghiệp theo 47 tỉnh thành" : "Japan 47 Prefectures Business Directory"}
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {isJa ? "各都道府県の主要企業、法人番号、電話番号、財務情報を網羅した地域別データベース" : isVi ? "Dữ liệu pháp nhân theo từng địa bàn từ Hokkaido đến Okinawa" : "Explore corporate profiles across all 47 prefectures"}
+                </p>
+              </div>
               <Link
-                href={`/${locale}/pricing`}
-                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1B4F8A] dark:text-blue-400 hover:underline"
+                href={`/${locale}/directory#industries`}
+                className="inline-flex items-center gap-1 text-xs font-bold text-[#1B4F8A] dark:text-blue-400 hover:underline shrink-0"
               >
-                <span>{isJa ? "Enterpriseプラン・年払い割引などの全詳細を見る" : isVi ? "Xem bảng so sánh chi tiết và gói Enterprise" : "View full feature matrix and annual discounts"}</span>
+                <span>{isJa ? "JSIC産業分類・全カテゴリを見る" : isVi ? "Xem phân loại ngành JSIC" : "View JSIC Categories"}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 text-xs">
+              {[
+                {
+                  regionJa: "北海道・東北",
+                  regionEn: "Hokkaido & Tohoku",
+                  regionVi: "Hokkaido & Tohoku",
+                  items: [
+                    { code: "01", ja: "北海道", en: "Hokkaido", vi: "Hokkaido" },
+                    { code: "02", ja: "青森県", en: "Aomori", vi: "Aomori" },
+                    { code: "03", ja: "岩手県", en: "Iwate", vi: "Iwate" },
+                    { code: "04", ja: "宮城県", en: "Miyagi", vi: "Miyagi" },
+                    { code: "05", ja: "秋田県", en: "Akita", vi: "Akita" },
+                    { code: "06", ja: "山形県", en: "Yamagata", vi: "Yamagata" },
+                    { code: "07", ja: "福島県", en: "Fukushima", vi: "Fukushima" },
+                  ]
+                },
+                {
+                  regionJa: "関東",
+                  regionEn: "Kanto",
+                  regionVi: "Kanto",
+                  items: [
+                    { code: "08", ja: "茨城県", en: "Ibaraki", vi: "Ibaraki" },
+                    { code: "09", ja: "栃木県", en: "Tochigi", vi: "Tochigi" },
+                    { code: "10", ja: "群馬県", en: "Gunma", vi: "Gunma" },
+                    { code: "11", ja: "埼玉県", en: "Saitama", vi: "Saitama" },
+                    { code: "12", ja: "千葉県", en: "Chiba", vi: "Chiba" },
+                    { code: "13", ja: "東京都", en: "Tokyo", vi: "Tokyo" },
+                    { code: "14", ja: "神奈川県", en: "Kanagawa", vi: "Kanagawa" },
+                  ]
+                },
+                {
+                  regionJa: "中部・北陸",
+                  regionEn: "Chubu & Hokuriku",
+                  regionVi: "Chubu & Hokuriku",
+                  items: [
+                    { code: "15", ja: "新潟県", en: "Niigata", vi: "Niigata" },
+                    { code: "16", ja: "富山県", en: "Toyama", vi: "Toyama" },
+                    { code: "17", ja: "石川県", en: "Ishikawa", vi: "Ishikawa" },
+                    { code: "18", ja: "福井県", en: "Fukui", vi: "Fukui" },
+                    { code: "19", ja: "山梨県", en: "Yamanashi", vi: "Yamanashi" },
+                    { code: "20", ja: "長野県", en: "Nagano", vi: "Nagano" },
+                    { code: "21", ja: "岐阜県", en: "Gifu", vi: "Gifu" },
+                    { code: "22", ja: "静岡県", en: "Shizuoka", vi: "Shizuoka" },
+                    { code: "23", ja: "愛知県", en: "Aichi", vi: "Aichi" },
+                  ]
+                },
+                {
+                  regionJa: "近畿・関西",
+                  regionEn: "Kinki & Kansai",
+                  regionVi: "Kinki & Kansai",
+                  items: [
+                    { code: "24", ja: "三重県", en: "Mie", vi: "Mie" },
+                    { code: "25", ja: "滋賀県", en: "Shiga", vi: "Shiga" },
+                    { code: "26", ja: "京都府", en: "Kyoto", vi: "Kyoto" },
+                    { code: "27", ja: "大阪府", en: "Osaka", vi: "Osaka" },
+                    { code: "28", ja: "兵庫県", en: "Hyogo", vi: "Hyogo" },
+                    { code: "29", ja: "奈良県", en: "Nara", vi: "Nara" },
+                    { code: "30", ja: "和歌山県", en: "Wakayama", vi: "Wakayama" },
+                  ]
+                },
+                {
+                  regionJa: "中国・四国",
+                  regionEn: "Chugoku & Shikoku",
+                  regionVi: "Chugoku & Shikoku",
+                  items: [
+                    { code: "31", ja: "鳥取県", en: "Tottori", vi: "Tottori" },
+                    { code: "32", ja: "島根県", en: "Shimane", vi: "Shimane" },
+                    { code: "33", ja: "岡山県", en: "Okayama", vi: "Okayama" },
+                    { code: "34", ja: "広島県", en: "Hiroshima", vi: "Hiroshima" },
+                    { code: "35", ja: "山口県", en: "Yamaguchi", vi: "Yamaguchi" },
+                    { code: "36", ja: "徳島県", en: "Tokushima", vi: "Tokushima" },
+                    { code: "37", ja: "香川県", en: "Kagawa", vi: "Kagawa" },
+                    { code: "38", ja: "愛媛県", en: "Ehime", vi: "Ehime" },
+                    { code: "39", ja: "高知県", en: "Kochi", vi: "Kochi" },
+                  ]
+                },
+                {
+                  regionJa: "九州・沖縄",
+                  regionEn: "Kyushu & Okinawa",
+                  regionVi: "Kyushu & Okinawa",
+                  items: [
+                    { code: "40", ja: "福岡県", en: "Fukuoka", vi: "Fukuoka" },
+                    { code: "41", ja: "佐賀県", en: "Saga", vi: "Saga" },
+                    { code: "42", ja: "長崎県", en: "Nagasaki", vi: "Nagasaki" },
+                    { code: "43", ja: "熊本県", en: "Kumamoto", vi: "Kumamoto" },
+                    { code: "44", ja: "大分県", en: "Oita", vi: "Oita" },
+                    { code: "45", ja: "宮崎県", en: "Miyazaki", vi: "Miyazaki" },
+                    { code: "46", ja: "鹿児島県", en: "Kagoshima", vi: "Kagoshima" },
+                    { code: "47", ja: "沖縄県", en: "Okinawa", vi: "Okinawa" },
+                  ]
+                }
+              ].map((group) => {
+                const regionTitle = isJa ? group.regionJa : isVi ? group.regionVi : group.regionEn;
+                return (
+                  <div key={group.regionJa} className="p-4 rounded-xl bg-slate-50 dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800">
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200 mb-2.5 text-xs flex items-center justify-between pb-2 border-b border-slate-200/60 dark:border-slate-800">
+                      <span>{regionTitle}</span>
+                      <span className="text-[10px] font-mono text-slate-400">{group.items.length} 府県</span>
+                    </h3>
+                    <div className="flex flex-wrap gap-1.5">
+                      {group.items.map((item) => {
+                        const name = isJa ? item.ja : isVi ? item.vi : item.en;
+                        return (
+                          <Link
+                            key={item.code}
+                            href={`/${locale}/area/${item.code}`}
+                            className="px-2.5 py-1 rounded bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-[#1B4F8A] dark:hover:border-blue-400 hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors font-medium text-[11px]"
+                          >
+                            {name}
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
           </div>
         </section>
 
         {/* ========================================================
-            7. FAQ (Câu hỏi thường gặp B2B)
+            TẦNG 6: BẢNG SO SÁNH GIÁ TRỊ & TIẾT KIỆM CHI PHÍ (Sub-Agent 6)
             ======================================================== */}
-        <section className="py-20 bg-slate-50 dark:bg-[#0B0F17] border-b border-slate-200/90 dark:border-slate-800">
+        <section aria-labelledby="comparison-heading" className="py-16 bg-slate-50 dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-14">
-              <div className="b2b-kicker mb-3">
-                <HelpCircle className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-                <span>{isJa ? "FAQ" : isVi ? "Hỏi đáp" : "FAQ"}</span>
-              </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-2">
-                {isJa ? "よくあるご質問" : isVi ? "Câu hỏi thường gặp" : "Frequently Asked Questions"}
+            
+            <div className="text-center max-w-2xl mx-auto mb-10">
+              <span className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider block mb-1">
+                ROI & COST EFFICIENCY
+              </span>
+              <h2 id="comparison-heading" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                {isJa ? "従来の営業リスト調達との決定的な違い" : isVi ? "So sánh hiệu quả chi phí với cách truyền thống" : "Traditional Procurement vs. Kigyou-list"}
               </h2>
-              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-                {isJa ? "ご不明な点がございましたらお気軽にお問い合わせください。" : isVi ? "Các thắc mắc phổ biến về dữ liệu và cơ chế gửi form." : "Common questions about our database and outreach automation."}
+              <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                {isJa ? "高額な名簿買い切りや手作業の非効率から営業チームを解放します" : isVi ? "Tiết kiệm 90% chi phí và thời gian so với mua danh bạ cũ" : "Stop overpaying for stale static lists."}
               </p>
             </div>
 
-            <div className="space-y-4">
-              {/* Q1 */}
-              <div className="b2b-card p-5">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                  <span className="text-[#1B4F8A] dark:text-blue-400 font-mono font-bold">Q.</span>
-                  <span>{isJa ? "データの更新頻度と出典について教えてください。" : isVi ? "Dữ liệu được cập nhật từ đâu và tần suất thế nào?" : "Where is the data sourced and how often is it updated?"}</span>
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-6">
-                  {isJa
-                    ? "国税庁の法人番号公表サイト、法務省、経済産業省のgBizINFOなどの公的オープンデータをベースに、週次・月次で更新しています。連絡先情報（電話・Webフォーム・メール）も独自のクローラーにより常時鮮度を保っています。"
-                    : isVi
-                    ? "Dữ liệu được đồng bộ từ Cổng thông tin Quốc thuế, Bộ Tư pháp, METI gBizINFO hàng tuần. Thông tin kênh liên hệ (Web form, phone, email) được bot rà quét cập nhật liên tục."
-                    : "Sourced from the National Tax Agency, Ministry of Justice, and METI gBizINFO, updated weekly and monthly."}
-                </p>
-              </div>
-
-              {/* Q2 */}
-              <div className="b2b-card p-5">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                  <span className="text-[#1B4F8A] dark:text-blue-400 font-mono font-bold">Q.</span>
-                  <span>{isJa ? "フォーム営業で苦情やクレームが来る心配はありませんか？" : isVi ? "Gửi Form tự động có rủi ro bị khiếu nại không?" : "Are there risks of spam complaints with automated form outreach?"}</span>
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-6">
-                  {isJa
-                    ? "当システムはAIにより、Webサイト上の「営業お断り」「特定目的以外の送信禁止」といった免責事項を自動検出し、該当企業への送信を自動でスキップします。また、日本のビジネスマナー・敬語に準拠した文面設定により、クレーム発生率を極めて低く抑えています。"
-                    : isVi
-                    ? "Hệ thống tích hợp AI tự động quét và bỏ qua các website có ghi chú 'Cấm chào hàng/Cấm quảng cáo'. Ngoài ra văn phong sử dụng chuẩn kính ngữ Keigo giúp tỷ lệ phàn nàn giảm xuống mức tối thiểu."
-                    : "Our AI engine automatically detects and skips websites that specify 'No commercial solicitations', keeping risk minimal."}
-                </p>
-              </div>
-
-              {/* Q3 */}
-              <div className="b2b-card p-5">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                  <span className="text-[#1B4F8A] dark:text-blue-400 font-mono font-bold">Q.</span>
-                  <span>{isJa ? "どのような業種・ターゲットにアプローチできますか？" : isVi ? "Có thể tiếp cận những ngành nghề và đối tượng nào?" : "Which industries and targets can we reach?"}</span>
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-6">
-                  {isJa
-                    ? "IT・通信、製造、建設、不動産、医療、飲食、士業など、日本標準産業分類（JSIC）の全業種に対応しています。都道府県や市区町村別の絞り込みに加え、「資本金1,000万円以上」「求人中」などの条件を掛け合わせることで、貴社に最適なターゲットを抽出できます。"
-                    : isVi
-                    ? "Phủ khắp toàn bộ các ngành như IT, sản xuất, xây dựng, bất động sản, y tế, dịch vụ... Có thể kết hợp lọc địa lý, vốn điều lệ và các tín hiệu tuyển dụng."
-                    : "Covers all JSIC industries nationwide with cross-filtering by capital, geography, and intent signals."}
-                </p>
-              </div>
-
-              {/* Q4 */}
-              <div className="b2b-card p-5">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                  <span className="text-[#1B4F8A] dark:text-blue-400 font-mono font-bold">Q.</span>
-                  <span>{isJa ? "無料会員でもどこまで利用できますか？" : isVi ? "Tài khoản miễn phí có thể làm được những gì?" : "What can free accounts do?"}</span>
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-6">
-                  {isJa
-                    ? "無料登録を行うだけで、全国500万社の基本情報（社名、所在地、業種、法人番号）の検索および毎日20件（月最大600件、企業認証で1日50件/月1,500件）までのCSVダウンロードが可能です。連絡先フィルター（フォーム・メール）や大量CSV出力、フォーム自動営業をご利用いただく場合はProプラン以上をご利用ください。"
-                    : isVi
-                    ? "Đăng ký miễn phí có thể tìm kiếm dữ liệu cơ bản của 5 triệu cty và xuất CSV 20 dòng mỗi ngày (tối đa 600 dòng/tháng, định danh doanh nghiệp mở rộng 50 dòng/ngày tức 1.500 dòng/tháng). Để dùng bộ lọc kênh liên lạc và gửi Form tự động, bạn có thể nâng cấp Pro bất kỳ lúc nào."
-                    : "Free accounts can search all 5M companies and export 20 CSV rows per day (up to 600/month, 50/day or 1,500/month for verified businesses). Upgrade to PRO to unlock contact filters and form outreach."}
-                </p>
-              </div>
-
-              {/* Q5 - Yahoo Chiebukuro / SEO AI Target Query */}
-              <div className="b2b-card p-5">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                  <span className="text-[#1B4F8A] dark:text-blue-400 font-mono font-bold">Q.</span>
-                  <span>{isJa ? "営業リストを無料で集める方法（国税庁やタウンページ）と、Kigyou-listの違いは何ですか？" : isVi ? "Sự khác biệt giữa việc tự cào danh sách miễn phí (Quốc thuế, Townpage) và dùng Kigyou-list là gì?" : "What is the difference between building lists for free and using Kigyou-list?"}</span>
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-6">
-                  {isJa
-                    ? "国税庁の法人番号サイトやiタウンページを手作業で集める場合、費用は0円ですが、電話番号やHP URLが欠落していたり、100件集めるだけで数時間以上の人件費が浪費されます。Kigyou-listは、全国500万社の法人データから業種・地域・連絡先有無で瞬時に絞り込み、電話番号・WebサイトURL付きで一括CSVダウンロードが可能です。初月1,260円〜（通常4,200円、初月70%OFF・年間縛りなし）で利用できるため、人件費と作業時間を大幅に削減して本来の営業活動に集中できます。"
-                    : isVi
-                    ? "Tự thu thập thủ công từ Cổng thông tin Quốc thuế hoặc Townpage tốn 0 đồng nhưng mất hàng chục giờ công, dữ liệu thiếu số điện thoại hoặc website. Kigyou-list giúp bạn lọc ngay lập tức từ 5 triệu doanh nghiệp theo ngành nghề, khu vực, có sẵn SĐT và URL website, xuất file CSV chỉ trong vài giây. Với chi phí chỉ từ 1,260 JPY tháng đầu (giảm 70%, giá gốc 4,200 JPY) và không ràng buộc hợp đồng năm, doanh nghiệp tiết kiệm 90% thời gian để tập trung bán hàng."
-                    : "While manual scraping from public portals costs zero, it takes dozens of hours and lacks verified phone numbers and websites. Kigyou-list allows instant multi-criteria filtering across 5M companies with complete phones, websites, and emails ready for CSV export. At only 1,260 JPY 1st month (70% OFF, reg. 4,200 JPY) with no annual lock-in, it saves tremendous staff hours."}
-                </p>
-              </div>
-
-              {/* Q6 - Yahoo Chiebukuro / SEO AI Target Query */}
-              <div className="b2b-card p-5">
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-2 flex items-center gap-2">
-                  <span className="text-[#1B4F8A] dark:text-blue-400 font-mono font-bold">Q.</span>
-                  <span>{isJa ? "テレアポやDM用のリストを購入する場合、名簿業者からの買い切りと比べてどのようなメリットがありますか？" : isVi ? "So với việc mua danh sách từ các công ty bán danh bạ truyền thống, Kigyou-list có ưu điểm gì?" : "What are the advantages of Kigyou-list compared to buying static lists from list brokers?"}</span>
-                </h3>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pl-6">
-                  {isJa
-                    ? "従来のリスト販売業者は、1件あたり10〜50円と高額な上に、数年前の古いデータが混ざっており不通電話や廃業によるロスが発生しやすいリスクがあります。Kigyou-listは公的オープンデータや最新Web情報を常時クローリングして鮮度を担保しており、月額定額（初月1,260円〜、通常4,200円）で必要な分だけ最新データをCSV抽出できます。年間契約の縛りもないため、テストマーケティングや短期の架電キャンペーンにも最小限のコストで導入可能です。"
-                    : isVi
-                    ? "Các đơn vị bán danh bạ thường tính phí 10-50 Yên/công ty và dữ liệu tĩnh cũ dễ gặp số chết hoặc doanh nghiệp đã giải thể. Kigyou-list liên tục cập nhật dữ liệu mới nhất từ cổng thông tin quốc gia, hoạt động theo mô hình thuê bao linh hoạt (chỉ từ 1,260 Yên tháng đầu - giảm 70%, không ràng buộc năm), giúp bạn lấy đúng dữ liệu đang hoạt động với chi phí rẻ hơn nhiều lần."
-                    : "Traditional list vendors charge high per-record fees (10-50 JPY/lead) for static lists that often contain outdated numbers and dissolved companies. Kigyou-list provides continuously refreshed cloud data on a flexible monthly subscription (1st mo 1,260 JPY, 70% OFF) without annual commitments, maximizing telemarketing connect rates at a fraction of the cost."}
-                </p>
+            {/* Comparison Table */}
+            <div className="bg-white dark:bg-[#161B22] rounded-xl border border-slate-200/90 dark:border-slate-800 overflow-hidden shadow-2xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50">
+                      <th className="py-3 px-4 font-bold text-slate-500 dark:text-slate-400">{isJa ? "項目" : isVi ? "Tiêu chí" : "Criteria"}</th>
+                      <th className="py-3 px-4 font-bold text-slate-500 dark:text-slate-400">{isJa ? "名簿販売業者 (買い切り)" : isVi ? "Mua danh bạ cũ" : "Traditional Brokers"}</th>
+                      <th className="py-3 px-4 font-bold text-slate-500 dark:text-slate-400">{isJa ? "手作業でのWeb収集" : isVi ? "Tự cào thủ công" : "Manual Scraping"}</th>
+                      <th className="py-3 px-4 font-bold text-[#1B4F8A] dark:text-blue-400 bg-blue-50/50 dark:bg-blue-950/20">{isJa ? "Kigyou-list" : "Kigyou-list"}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-800 dark:text-slate-200">{isJa ? "1件あたりの単価" : isVi ? "Chi phí mỗi công ty" : "Cost per Lead"}</td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{isJa ? "10円 〜 50円（高額）" : "10 - 50 Yên/công ty"}</td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{isJa ? "0円（莫大な人件費）" : "0đ (Mất nhiều giờ công)"}</td>
+                      <td className="py-3 px-4 font-bold text-[#1B4F8A] dark:text-blue-400 bg-blue-50/30 dark:bg-blue-950/10">
+                        {isJa ? "実質 0.1円〜（定額使い放題）" : isVi ? "Từ 0.1 Yên (Thuê bao cố định)" : "From 0.1 JPY (Flat)"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-800 dark:text-slate-200">{isJa ? "データの鮮度" : isVi ? "Độ tươi mới" : "Data Freshness"}</td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{isJa ? "数年前の古いデータ混在" : "Dữ liệu tĩnh cũ, nhiều số chết"}</td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{isJa ? "最新だが収集限界あり" : "Thu thập chậm"}</td>
+                      <td className="py-3 px-4 font-bold text-emerald-600 dark:text-emerald-400 bg-blue-50/30 dark:bg-blue-950/10">
+                        {isJa ? "公的オープンデータを常時更新" : isVi ? "Cập nhật liên tục từ NTA" : "Continuously refreshed"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-800 dark:text-slate-200">{isJa ? "契約期間の縛り" : isVi ? "Thời hạn hợp đồng" : "Commitment"}</td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{isJa ? "年間一括契約が多い" : "Bắt buộc ký 1 năm"}</td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{isJa ? "なし" : "Không có"}</td>
+                      <td className="py-3 px-4 font-bold text-[#1B4F8A] dark:text-blue-400 bg-blue-50/30 dark:bg-blue-950/10">
+                        {isJa ? "月額制・縛りなし（いつでも解約可）" : isVi ? "Không ràng buộc năm (Hủy bất kỳ lúc nào)" : "Monthly, Cancel Anytime"}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-bold text-slate-800 dark:text-slate-200">{isJa ? "営業アプローチ手段" : isVi ? "Công cụ tiếp cận" : "Outreach Integration"}</td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{isJa ? "CSV提供のみ" : "Chỉ đưa file Excel"}</td>
+                      <td className="py-3 px-4 text-slate-600 dark:text-slate-400">{isJa ? "手動入力のみ" : "Gõ tay từng form"}</td>
+                      <td className="py-3 px-4 font-bold text-indigo-600 dark:text-indigo-400 bg-blue-50/30 dark:bg-blue-950/10">
+                        {isJa ? "完全自動フォーム営業連携" : isVi ? "Tích hợp Gửi Form tự động 1 chạm" : "Automated Form Outreach"}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
             </div>
+
+            <div className="mt-8 text-center">
+              <Link
+                href={`/${locale}/pricing`}
+                className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-lg text-xs sm:text-sm font-bold text-white bg-[#1B4F8A] hover:bg-[#143D6C] shadow-2xs transition-colors"
+              >
+                <span>{isJa ? "料金プランを見る (初月70%OFF 1,260円〜)" : isVi ? "Xem bảng giá (Tháng đầu giảm 70% còn 1,260 JPY)" : "View Pricing (From 1,260 JPY 1st Mo)"}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
           </div>
         </section>
+
+        {/* ========================================================
+            TẦNG 7: FAQ CHUẨN DOANH NGHIỆP & BẢO ĐẢM PHÁP LÝ (Sub-Agent 7)
+            ======================================================== */}
+        <section aria-labelledby="faq-heading" className="py-16 bg-white dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div className="text-center max-w-2xl mx-auto mb-10">
+              <span className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider block mb-1">
+                FAQ & COMPLIANCE
+              </span>
+              <h2 id="faq-heading" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                {isJa ? "よくあるご質問" : isVi ? "Câu hỏi thường gặp" : "Frequently Asked Questions"}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {isJa ? "ご不明な点がございましたらお気軽にお問い合わせください" : isVi ? "Mọi thắc mắc vui lòng liên hệ bộ phận hỗ trợ" : "Need help? Contact our support team anytime."}
+              </p>
+            </div>
+
+            <div className="space-y-3 text-xs sm:text-sm">
+              {faqSchema.mainEntity.map((item, idx) => (
+                <details 
+                  key={idx}
+                  className="group rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-[#161B22] p-4 transition-colors"
+                >
+                  <summary className="font-bold text-slate-800 dark:text-slate-200 cursor-pointer list-none flex items-center justify-between gap-3">
+                    <span className="flex items-center gap-2">
+                      <span className="w-5 h-5 rounded-md bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-blue-900/40 dark:text-blue-300 flex items-center justify-center font-mono text-xs shrink-0 font-bold">
+                        Q
+                      </span>
+                      <span>{item.name}</span>
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-open:rotate-90 transition-transform shrink-0" />
+                  </summary>
+                  <p className="mt-3 pt-3 border-t border-slate-200/70 dark:border-slate-800 text-slate-600 dark:text-slate-400 leading-relaxed text-xs">
+                    {item.acceptedAnswer.text}
+                  </p>
+                </details>
+              ))}
+            </div>
+
+          </div>
+        </section>
+
       </main>
 
       {/* Global Sleek Footer */}

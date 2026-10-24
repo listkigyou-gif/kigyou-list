@@ -176,12 +176,21 @@ def query_companies_batch(batch_size):
         
         global crawled_in_session
         
-        # Fetch matching rows from DB
+        # Fetch matching rows from DB with Smart Recrawl Policy:
+        # - Never crawled: priority 0
+        # - Hiring companies without website: priority 1
+        # - Missing website & crawled > 60 days ago: recrawl
+        # - Has website & crawled > 360 days ago: refresh
         cur.execute("""
             SELECT corporate_number, company_name, full_address, prefecture_name, city_name
             FROM companies
             WHERE (yahoo_last_crawled_at IS NULL
-               OR yahoo_last_crawled_at < datetime('now', '-360 days'))
+               OR ((website_url IS NULL OR website_url = '' OR website_url LIKE '%なし%') AND yahoo_last_crawled_at < datetime('now', '-60 days'))
+               OR (website_url IS NOT NULL AND yahoo_last_crawled_at < datetime('now', '-360 days')))
+            ORDER BY 
+              CASE WHEN yahoo_last_crawled_at IS NULL THEN 0 ELSE 1 END,
+              CASE WHEN (has_public_tender = 1 OR has_financial_report = 1 OR has_license = 1) THEN 0 ELSE 1 END,
+              yahoo_last_crawled_at ASC
             LIMIT ?
         """, (batch_size + len(crawled_in_session),))
         
@@ -243,12 +252,17 @@ def query_companies_for_port(port, batch_size, ports):
 
         logger.info(f"[+] Loaded {len(excluded_companies)} excluded (done/pending) corporate numbers in memory.")
         
-        # Fetch matching rows from DB
+        # Fetch matching rows from DB with Smart Recrawl Policy
         cur.execute("""
             SELECT corporate_number, company_name, full_address, prefecture_name, city_name
             FROM companies
             WHERE (yahoo_last_crawled_at IS NULL
-               OR yahoo_last_crawled_at < datetime('now', '-360 days'))
+               OR ((website_url IS NULL OR website_url = '' OR website_url LIKE '%なし%') AND yahoo_last_crawled_at < datetime('now', '-60 days'))
+               OR (website_url IS NOT NULL AND yahoo_last_crawled_at < datetime('now', '-360 days')))
+            ORDER BY 
+              CASE WHEN yahoo_last_crawled_at IS NULL THEN 0 ELSE 1 END,
+              CASE WHEN (has_public_tender = 1 OR has_financial_report = 1 OR has_license = 1) THEN 0 ELSE 1 END,
+              yahoo_last_crawled_at ASC
             LIMIT ?
         """, (batch_size + len(excluded_companies),))
         
@@ -324,7 +338,7 @@ def spawn_yahoo_workers(companies_todo, max_workers):
         out_file = os.path.join("data", f"results_{port}.csv")
         log_file = os.path.join("logs", f"crawler_{port}.log")
         cmd = [
-            sys.executable, "-u", "yahoo_searcher.py",
+            sys.executable, "-u", "yahoo_http_searcher.py",
             "--input", part_file,
             "--output", out_file,
             "--proxy-port", str(port),
@@ -683,7 +697,7 @@ def main():
                                     out_file = os.path.join("data", f"results_{port}.csv")
                                     log_file = os.path.join("logs", f"crawler_{port}.log")
                                     cmd = [
-                                        sys.executable, "-u", "yahoo_searcher.py",
+                                        sys.executable, "-u", "yahoo_http_searcher.py",
                                         "--input", os.path.join("data", "parts", f"part_{part_index}.csv"),
                                         "--output", out_file,
                                         "--proxy-port", str(port),
@@ -722,7 +736,7 @@ def main():
                         out_file = os.path.join("data", f"results_{port}.csv")
                         log_file = os.path.join("logs", f"crawler_{port}.log")
                         cmd = [
-                            sys.executable, "-u", "yahoo_searcher.py",
+                            sys.executable, "-u", "yahoo_http_searcher.py",
                             "--input", os.path.join("data", "parts", f"part_{part_index}.csv"),
                             "--output", out_file,
                             "--proxy-port", str(port),

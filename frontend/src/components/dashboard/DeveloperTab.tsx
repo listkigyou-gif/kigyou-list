@@ -315,12 +315,12 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ user, quota, locale 
               </span>
             </div>
           </div>
-          <a
-            href="/developer"
+          <Link
+            href={`/${locale}/developer`}
             className="b2b-btn-secondary text-[11px] py-1.5 px-3 self-end sm:self-auto"
           >
             {isJa ? "リファレンス" : "Reference"}
-          </a>
+          </Link>
         </div>
       </div>
 
@@ -343,7 +343,7 @@ export const DeveloperTab: React.FC<DeveloperTabProps> = ({ user, quota, locale 
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 leading-relaxed">
               Claude Desktop や Cursor の設定ファイルに下記を追加するだけで、AIが自律的に企業データとシグナルを検索できます。
             </p>
-            <div className="bg-[#0F172A] p-3 rounded-lg border border-slate-800 font-mono text-[11px] text-slate-200 mb-4 overflow-x-auto">
+            <div className="bg-slate-50 dark:bg-slate-900 p-3 rounded-lg border border-slate-200 dark:border-slate-800 font-mono text-[11px] text-slate-800 dark:text-slate-200 mb-4 overflow-x-auto">
               <pre>{mcpConfigJson}</pre>
             </div>
           </div>

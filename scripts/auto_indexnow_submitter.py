@@ -74,20 +74,49 @@ def fetch_target_companies(conn: sqlite3.Connection, limit: int = 1000) -> List[
     cursor = conn.cursor()
     selected: List[Tuple[str, int]] = []
 
-    # 1. Ưu tiên 500k doanh nghiệp trọng điểm từ sitemap_companies
-    query_sitemap = """
-    SELECT s.corporate_number
-    FROM sitemap_companies s
-    LEFT JOIN indexnow_submissions sub ON s.corporate_number = sub.corporate_number
+    # 0. Ưu tiên hàng đầu (Tier 0): Các doanh nghiệp đã được làm giàu dữ liệu (Báo cáo tài chính EDINET & Giấy phép quốc gia)
+    query_enriched_fin = """
+    SELECT f.corporate_number
+    FROM company_financials f
+    LEFT JOIN indexnow_submissions sub ON f.corporate_number = sub.corporate_number
     WHERE sub.corporate_number IS NULL
-    ORDER BY s.employee_count DESC, s.corporate_number ASC
+    GROUP BY f.corporate_number
     LIMIT ?
     """
-    rows = cursor.execute(query_sitemap, (limit,)).fetchall()
-    for r in rows:
-        selected.append((r[0], 1))
+    rows_fin = cursor.execute(query_enriched_fin, (limit,)).fetchall()
+    for r in rows_fin:
+        selected.append((r[0], 0))
 
-    # 2. Nếu đã hết sitemap_companies, lấy tiếp từ bảng companies
+    remaining = limit - len(selected)
+    if remaining > 0:
+        query_enriched_lic = """
+        SELECT l.corporate_number
+        FROM company_licenses l
+        LEFT JOIN indexnow_submissions sub ON l.corporate_number = sub.corporate_number
+        WHERE sub.corporate_number IS NULL
+        GROUP BY l.corporate_number
+        LIMIT ?
+        """
+        rows_lic = cursor.execute(query_enriched_lic, (remaining,)).fetchall()
+        for r in rows_lic:
+            selected.append((r[0], 0))
+
+    # 1. Kế tiếp (Tier 1): 500k doanh nghiệp trọng điểm từ sitemap_companies (theo nhân sự)
+    remaining = limit - len(selected)
+    if remaining > 0:
+        query_sitemap = """
+        SELECT s.corporate_number
+        FROM sitemap_companies s
+        LEFT JOIN indexnow_submissions sub ON s.corporate_number = sub.corporate_number
+        WHERE sub.corporate_number IS NULL
+        ORDER BY s.employee_count DESC, s.corporate_number ASC
+        LIMIT ?
+        """
+        rows = cursor.execute(query_sitemap, (remaining,)).fetchall()
+        for r in rows:
+            selected.append((r[0], 1))
+
+    # 2. Dự phòng (Tier 2): Lấy tiếp từ bảng companies
     remaining = limit - len(selected)
     if remaining > 0:
         query_general = """
@@ -155,44 +184,52 @@ def run_batch_submission(batch_size: int = 1000, dry_run: bool = False) -> Dict[
             "message": f"Chế độ chạy thử: Sẵn sàng nộp {len(urls)} URL mà không ghi vào DB."
         }
 
-    # Gửi qua API
-    status_code, resp_body = submit_to_indexnow(urls)
+    # Chia nhỏ thành các gói 10.000 URLs theo quy chuẩn IndexNow API
+    CHUNK_SIZE = 10000
+    chunks = [urls[i:i + CHUNK_SIZE] for i in range(0, len(urls), CHUNK_SIZE)]
+    print(f"[*] Chia {len(urls):,} URLs thành {len(chunks)} gói nộp (tối đa 10,000 URLs/gói)...")
 
-    if status_code in (200, 202):
-        # Lưu vào Database
-        cursor = conn.cursor()
-        now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        records = [
-            (target[0], f"{BASE_URL}/ja/company/{target[0]}", now_str, batch_id, status_code, target[1])
-            for target in targets
-        ]
-        cursor.executemany("""
-            INSERT OR REPLACE INTO indexnow_submissions 
-            (corporate_number, url, submitted_at, batch_id, response_code, priority_level)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, records)
-        conn.commit()
-        stats = get_stats(conn)
-        conn.close()
+    cursor = conn.cursor()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        return {
-            "status": "success",
-            "batch_id": batch_id,
-            "submitted_count": len(urls),
-            "http_status": status_code,
-            "total_indexed_so_far": stats["total_submitted"],
-            "remaining": stats["remaining_unsubmitted"],
-            "coverage": f"{stats['coverage_percent']}%"
-        }
-    else:
-        conn.close()
-        raise RuntimeError(f"IndexNow API Error {status_code}: {resp_body}")
+    for idx, chunk_urls in enumerate(chunks, 1):
+        print(f"[*] [Gói {idx}/{len(chunks)}] Đang nộp {len(chunk_urls):,} URLs lên IndexNow...")
+        status_code, resp_body = submit_to_indexnow(chunk_urls)
+
+        if status_code not in (200, 202):
+            conn.close()
+            raise RuntimeError(f"IndexNow API Error {status_code}: {resp_body}")
+        print(f"    ↳ Phản hồi IndexNow: HTTP {status_code} OK")
+
+    # Lưu toàn bộ vào Database
+    records = [
+        (target[0], f"{BASE_URL}/ja/company/{target[0]}", now_str, batch_id, 200, target[1])
+        for target in targets
+    ]
+    cursor.executemany("""
+        INSERT OR REPLACE INTO indexnow_submissions 
+        (corporate_number, url, submitted_at, batch_id, response_code, priority_level)
+        VALUES (?, ?, ?, ?, ?, ?)
+    """, records)
+    conn.commit()
+    stats = get_stats(conn)
+    conn.close()
+
+    return {
+        "status": "success",
+        "batch_id": batch_id,
+        "submitted_count": len(urls),
+        "http_status": 200,
+        "total_indexed_so_far": stats["total_submitted"],
+        "remaining": stats["remaining_unsubmitted"],
+        "coverage": f"{stats['coverage_percent']}%"
+    }
 
 
 def main():
     import argparse
     parser = argparse.ArgumentParser(description="Automated Anti-Duplicate IndexNow Submitter for Kigyoulist")
-    parser.add_argument("--batch-size", type=int, default=1000, help="Số lượng URL nộp trong đợt này (Mặc định: 1000, tối đa 10000)")
+    parser.add_argument("--batch-size", type=int, default=50000, help="Số lượng URL nộp trong đợt này (Mặc định: 50000, chia gói 10000/lần theo chuẩn IndexNow)")
     parser.add_argument("--dry-run", action="store_true", help="Chạy thử nghiệm kiểm tra danh sách mà không gửi thật")
     parser.add_argument("--stats", action="store_true", help="Xem báo cáo tổng quan số lượng URL đã nộp và còn lại")
     args = parser.parse_args()

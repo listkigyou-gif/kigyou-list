@@ -8,7 +8,7 @@ def check_activity():
     conn = psycopg2.connect(DATABASE_URL)
     cur = conn.cursor()
     cur.execute("""
-        SELECT pid, state, query_start, now() - query_start AS duration, query
+        SELECT pid, state, query_start, now() - query_start AS duration, wait_event_type, wait_event, query
         FROM pg_stat_activity
         WHERE query NOT LIKE '%pg_stat_activity%'
           AND state != 'idle';
@@ -16,7 +16,7 @@ def check_activity():
     rows = cur.fetchall()
     print("--- RUNNING QUERIES ---")
     for r in rows:
-        print(f"PID: {r[0]} | State: {r[1]} | Duration: {r[3]} | Query: {r[4][:120]}...")
+        print(f"PID: {r[0]} | State: {r[1]} | Duration: {r[3]} | Wait: {r[4]}:{r[5]} | Query: {r[6][:100]}...")
     conn.close()
 
 if __name__ == '__main__':

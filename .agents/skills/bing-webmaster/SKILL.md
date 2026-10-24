@@ -61,3 +61,12 @@ Khi người dùng hỏi:
 * Hoặc trong chu trình tổng hợp buổi sáng của `growth-orchestrator`:
 
 👉 **Agent tự động gọi `bing_webmaster.py` để lấy số liệu thực tế, giải thích rõ ràng và chủ động submit các URL mới để gia tăng độ phủ SEO B2B tại Nhật.**
+
+---
+
+## 4. Tự Động Hóa 100% Qua Master Data Orchestrator Hook
+
+IndexNow được tích hợp trực tiếp vào vòng lặp Daemon của [master_orchestrator.py](file:///c:/kigyou-list/master_orchestrator.py) qua hàm `trigger_instant_indexing_hook(num_urls=500)`:
+* **Chu kỳ**: Tự động kích hoạt sau mỗi lần hoàn thành Bulk Delta Sync lên VPS PostgreSQL.
+* **Tier 0 ưu tiên**: Tự động lọc ra 500 doanh nghiệp vừa được bổ sung Báo cáo tài chính (EDINET) hoặc Giấy phép quốc gia (MLIT/NPA) chưa từng nộp.
+* **Kiểm định**: Cam kết 100% không trùng lặp qua bảng SQLite `indexnow_submissions` và sử dụng IndexNow Key đã xác thực `0a1fbe0a7866441bb57817e0bf538068`.

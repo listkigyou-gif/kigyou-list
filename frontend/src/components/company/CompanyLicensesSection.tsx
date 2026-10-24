@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { CompanyLicense } from '@/lib/db';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Award } from 'lucide-react';
 
 interface Props {
   corporateNumber: string;
@@ -12,12 +12,13 @@ interface Props {
 }
 
 export function CompanyLicensesSection({
-  corporateNumber,
+  corporateNumber: _corporateNumber,
   companyName,
   licenses,
   locale,
 }: Props) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [currentTime] = useState(() => Date.now());
 
   if (!licenses || licenses.length === 0) {
     return null;
@@ -48,7 +49,7 @@ export function CompanyLicensesSection({
       const parts = lic.valid_until.split('-');
       if (parts.length === 3) {
         const expDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
-        const isExpired = expDate.getTime() < Date.now();
+        const isExpired = expDate.getTime() < currentTime;
         return { displayDate: `${parts[0]}/${parts[1]}/${parts[2]}`, isExpired };
       }
       return { displayDate: lic.valid_until, isExpired: false };
@@ -68,7 +69,7 @@ export function CompanyLicensesSection({
         const expMonth = String(targetDate.getMonth() + 1).padStart(2, '0');
         const expDay = String(targetDate.getDate()).padStart(2, '0');
 
-        const isExpired = targetDate.getTime() < Date.now();
+        const isExpired = targetDate.getTime() < currentTime;
         return { displayDate: `${expYear}/${expMonth}/${expDay}`, isExpired };
       }
     }
@@ -87,17 +88,22 @@ export function CompanyLicensesSection({
       style={{ fontFeatureSettings: '"palt"' }}
     >
       {/* Alarmbox-style Clean Header */}
-      <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100 dark:border-slate-800/80">
-        <h2 
-          id="licenses-heading" 
-          className="text-base sm:text-lg font-bold text-slate-900 dark:text-white border-l-4 border-[#1B4F8A] pl-3 flex items-center gap-2"
-        >
-          {locale === 'en' 
-            ? `${companyName} Licenses & Permits` 
-            : locale === 'vi' 
-            ? `Thông tin giấy phép của ${companyName}` 
-            : `${companyName}の許可情報`}
-        </h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3.5 mb-4 border-b border-slate-150 dark:border-slate-800 gap-2">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-[#1B4F8A]/10 dark:bg-blue-950/60 flex items-center justify-center text-[#1B4F8A] dark:text-blue-400 shrink-0">
+            <Award className="w-4 h-4" />
+          </div>
+          <h2 
+            id="licenses-heading" 
+            className="text-base sm:text-lg font-bold text-slate-900 dark:text-white"
+          >
+            {locale === 'en' 
+              ? `${companyName} Licenses & Permits` 
+              : locale === 'vi' 
+              ? `Thông tin giấy phép của ${companyName}` 
+              : `${companyName}の許可情報`}
+          </h2>
+        </div>
         <span className="text-xs font-mono text-slate-500 dark:text-slate-400 tabular-nums">
           {licenses.length} {locale === 'en' ? 'records' : locale === 'vi' ? 'mục' : '件'}
         </span>
@@ -137,9 +143,12 @@ export function CompanyLicensesSection({
               }
 
               // Extract office / facility name
-              const officeName = (specialtiesData && specialtiesData.office_name) 
-                ? specialtiesData.office_name 
-                : companyName;
+              let officeName = companyName;
+              if (specialtiesData && specialtiesData.office_name) {
+                officeName = specialtiesData.office_name;
+              } else if (specialtiesData && specialtiesData.事務所名 && specialtiesData.事務所名 !== '本店') {
+                officeName = `${companyName} (${specialtiesData.事務所名})`;
+              }
 
               // Build concise category & specialties summary
               let categoryLabel = lic.license_type;
@@ -168,6 +177,16 @@ export function CompanyLicensesSection({
                 }
               } else if (lic.license_type === '有料職業紹介事業') {
                 categoryLabel = '有料職業紹介事業';
+              } else if (lic.license_type === '宅地建物取引業') {
+                categoryLabel = '宅地建物取引業';
+                if (lic.license_category) {
+                  categoryLabel = `宅地建物取引業 (${lic.license_category.replace('免許', '')})`;
+                }
+              } else if (lic.license_type === '古物商許可') {
+                categoryLabel = '古物商許可';
+                if (specialtiesData && specialtiesData.区分) {
+                  subSpecialtiesText = specialtiesData.区分;
+                }
               }
 
               return (

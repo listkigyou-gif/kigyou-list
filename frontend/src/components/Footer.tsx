@@ -6,12 +6,12 @@ import { useLanguage } from "@/context/LanguageContext";
 import { LocaleLink } from "./LocaleLink";
 import {
   Building2,
+  Activity,
   SendHorizontal,
-  Scale,
   ShieldCheck,
+  CheckCircle2,
   CreditCard,
   Lock,
-  CheckCircle2
 } from "lucide-react";
 
 const socialChannels = [
@@ -81,60 +81,111 @@ export const Footer: React.FC = () => {
   return (
     <footer data-nosnippet className="bg-slate-50 border-t border-slate-200 dark:bg-[#0D1117] dark:border-slate-800 transition-colors mt-auto pb-24 md:pb-12 pt-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        {/* Multi-Column Sitemap (4 Columns B2B SaaS Standard) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 lg:gap-10 pt-4 text-xs">
+        
+        {/* 1. Multi-Column Sitemap: 4 Perfectly Balanced Columns (6 Links Each) */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10 text-xs">
           
-          {/* Column 1: Database & Search */}
-          <div className="space-y-4">
-            <h3 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5">
+          {/* Column 1: Database & Directory */}
+          <div className="space-y-3.5">
+            <h3 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5 pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
               <Building2 className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
               <span>
-                {locale === "en" ? "Data & Search" : locale === "vi" ? "Dữ liệu & Tìm kiếm" : "企業データ・検索"}
+                {locale === "en" ? "Data & Directory" : locale === "vi" ? "Dữ liệu & Tra cứu" : "データベース・企業検索"}
               </span>
             </h3>
-            <ul className="space-y-2.5 text-slate-600 dark:text-slate-400">
+            <ul className="space-y-2.5 text-slate-600 dark:text-slate-400 font-normal">
               <li>
                 <LocaleLink href="/search" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
-                  {locale === "en" ? "Advanced Search" : locale === "vi" ? "Tìm kiếm chi tiết" : "企業詳細検索"}
+                  {locale === "en" ? "Corporate Search" : locale === "vi" ? "Tìm kiếm doanh nghiệp" : "企業詳細検索"}
                 </LocaleLink>
               </li>
               <li>
-                <LocaleLink href="/directory" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
-                  {locale === "en" ? "47 Prefectures Directory" : locale === "vi" ? "47 Tỉnh thành Nhật Bản" : "47都道府県別一覧"}
+                <LocaleLink href="/invoice" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Batch Invoice Checker" : locale === "vi" ? "Tra cứu Invoice hàng loạt" : "インボイス一括照会"}
                 </LocaleLink>
               </li>
               <li>
-                <LocaleLink href="/directory" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                <LocaleLink href="/directory#regions" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "47 Prefectures Directory" : locale === "vi" ? "Danh bạ 47 Tỉnh thành" : "全国47都道府県別一覧"}
+                </LocaleLink>
+              </li>
+              <li>
+                <LocaleLink href="/directory#industries" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
                   {locale === "en" ? "JSIC Industry Directory" : locale === "vi" ? "Phân loại ngành JSIC" : "JSIC産業分類別一覧"}
                 </LocaleLink>
               </li>
               <li>
-                <LocaleLink href="/search" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors flex items-center gap-1">
-                  <span>{locale === "en" ? "Hiring Intent Signals" : locale === "vi" ? "Tín hiệu tuyển dụng" : "求人・採用シグナル検索"}</span>
-                  <span className="text-[9px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold px-1 rounded">HOT</span>
+                <LocaleLink href="/search?subsidy=true&bidding=true" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Public Bids & Subsidies" : locale === "vi" ? "Trúng thầu công & Trợ cấp" : "官公庁入札・補助金受給"}
                 </LocaleLink>
               </li>
               <li>
                 <LocaleLink href="/search" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
-                  {locale === "en" ? "Subsidies & Grants" : locale === "vi" ? "Trợ cấp & Đấu thầu công" : "補助金受給・官公庁入札"}
+                  {locale === "en" ? "5-Year Financial Trends" : locale === "vi" ? "Xu hướng tài chính 5 năm" : "5年決算トレンド・業績"}
                 </LocaleLink>
               </li>
             </ul>
           </div>
 
-          {/* Column 2: Solutions */}
-          <div className="space-y-4">
-            <h3 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5">
-              <SendHorizontal className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+          {/* Column 2: Real-time Business Signals Hubs */}
+          <div className="space-y-3.5">
+            <h3 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5 pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
+              <Activity className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>
-                {locale === "en" ? "Sales Solutions" : locale === "vi" ? "Giải pháp B2B" : "営業ソリューション"}
+                {locale === "en" ? "Real-Time Signals" : locale === "vi" ? "Tín hiệu biến động" : "法人動向・速報ハブ"}
               </span>
             </h3>
-            <ul className="space-y-2.5 text-slate-600 dark:text-slate-400">
+            <ul className="space-y-2.5 text-slate-600 dark:text-slate-400 font-normal">
               <li>
-                <LocaleLink href="/form-marketing" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors flex items-center gap-1.5">
-                  <span>{locale === "en" ? "Form DM Automation" : locale === "vi" ? "Tự động gửi Form DM" : "フォーム自動営業 (Form DM)"}</span>
-                  <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded-full">NEW</span>
+                <LocaleLink href="/new-companies" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Newly Incorporated Companies" : locale === "vi" ? "Công ty mới thành lập" : "新設法人・新規設立企業速報"}
+                </LocaleLink>
+              </li>
+              <li>
+                <LocaleLink href="/changes/relocation" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Head Office Relocations" : locale === "vi" ? "Đổi trụ sở & văn phòng" : "本社移転・所在地変更速報"}
+                </LocaleLink>
+              </li>
+              <li>
+                <LocaleLink href="/jobs/latest" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Actively Hiring Companies" : locale === "vi" ? "Doanh nghiệp tuyển dụng gấp" : "求人募集中・新着採用速報"}
+                </LocaleLink>
+              </li>
+              <li>
+                <LocaleLink href="/changes/merger" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "M&A & Name Changes" : locale === "vi" ? "Đổi tên công ty & Sáp nhập" : "商号変更・企業合併一覧"}
+                </LocaleLink>
+              </li>
+              <li>
+                <LocaleLink href="/status/bankruptcies" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Dissolutions & Closures" : locale === "vi" ? "Giải thể & Phá sản" : "倒産・解散・清算結了速報"}
+                </LocaleLink>
+              </li>
+              <li>
+                <LocaleLink href="/search?hiring=true" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Hiring Intent Signal Search" : locale === "vi" ? "Tìm kiếm theo tín hiệu tuyển dụng" : "採用意欲シグナル検索"}
+                </LocaleLink>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: Sales Solutions & Pricing */}
+          <div className="space-y-3.5">
+            <h3 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5 pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
+              <SendHorizontal className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+              <span>
+                {locale === "en" ? "Sales & Solutions" : locale === "vi" ? "Giải pháp & Bảng giá" : "営業支援・DX機能"}
+              </span>
+            </h3>
+            <ul className="space-y-2.5 text-slate-600 dark:text-slate-400 font-normal">
+              <li>
+                <LocaleLink href="/form-marketing" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Form DM Automation" : locale === "vi" ? "Tự động gửi Form Marketing" : "フォーム自動営業 (Form DM)"}
+                </LocaleLink>
+              </li>
+              <li>
+                <LocaleLink href="/watchlist" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Company Watchlist & Alerts" : locale === "vi" ? "Theo dõi & Cảnh báo biến động" : "企業監視・変動検知アラート"}
                 </LocaleLink>
               </li>
               <li>
@@ -143,73 +194,40 @@ export const Footer: React.FC = () => {
                 </LocaleLink>
               </li>
               <li>
-                <LocaleLink href="/developer" className="hover:text-cyan-600 dark:hover:text-cyan-400 text-cyan-700 dark:text-cyan-400 font-semibold transition-colors flex items-center gap-1.5">
-                  <span>{locale === "en" ? "AI / REST API & MCP" : locale === "vi" ? "AI / REST API & MCP Server" : "開発者・AI基盤 / API"}</span>
-                  <span className="text-[9px] bg-cyan-600 text-white font-bold px-1 rounded">API</span>
+                <LocaleLink href="/developer" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Developer API & MCP Server" : locale === "vi" ? "API & MCP Server" : "開発者向け AI / REST API"}
                 </LocaleLink>
               </li>
               <li>
-                <LocaleLink href="/search" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
-                  {locale === "en" ? "5-Year Financial Trends" : locale === "vi" ? "Xu hướng tài chính 5 năm" : "5年決算トレンド可視化"}
-                </LocaleLink>
-              </li>
-              <li>
-                <LocaleLink href="/dashboard" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
-                  {locale === "en" ? "Official Profile Claim" : locale === "vi" ? "Quản lý hồ sơ chính thức" : "企業公式オーナー管理"}
-                </LocaleLink>
-              </li>
-            </ul>
-          </div>
-
-          {/* Column 3: Service & Comparison */}
-          <div className="space-y-4">
-            <h3 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5">
-              <Scale className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-              <span>
-                {locale === "en" ? "Service & Pricing" : locale === "vi" ? "Dịch vụ & So sánh" : "サービス案内・比較"}
-              </span>
-            </h3>
-            <ul className="space-y-2.5 text-slate-600 dark:text-slate-400">
-              <li>
-                <LocaleLink href="/pricing" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors font-semibold">
-                  {locale === "en" ? "Pricing Plans (Free to Enterprise)" : locale === "vi" ? "Bảng giá (Từ Free đến Enterprise)" : "料金プラン一覧"}
+                <LocaleLink href="/pricing" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Pricing Plans (Free to Pro)" : locale === "vi" ? "Bảng giá dịch vụ" : "料金プラン一覧"}
                 </LocaleLink>
               </li>
               <li>
                 <LocaleLink href="/compare" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
-                  {locale === "en" ? "Competitor Comparison" : locale === "vi" ? "So sánh với đối thủ" : "他社サービス徹底比較"}
-                </LocaleLink>
-              </li>
-              <li>
-                <LocaleLink href="/contact" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
-                  {locale === "en" ? "Help & Contact Us" : locale === "vi" ? "Hỗ trợ & Liên hệ" : "お問い合わせ・サポート"}
-                </LocaleLink>
-              </li>
-              <li>
-                <LocaleLink href="/opt-out" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
-                  {locale === "en" ? "Company Info Opt-out" : locale === "vi" ? "Yêu cầu ẩn thông tin" : "情報掲載停止 (オプトアウト)"}
-                </LocaleLink>
-              </li>
-              <li>
-                <LocaleLink href="/unsubscribe" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
-                  {locale === "en" ? "Email Unsubscribe" : locale === "vi" ? "Hủy nhận email" : "メール配信解除"}
+                  {locale === "en" ? "Service Comparison" : locale === "vi" ? "So sánh với đối thủ" : "他社サービス徹底比較"}
                 </LocaleLink>
               </li>
             </ul>
           </div>
 
-          {/* Column 4: Legal & Compliance */}
-          <div className="space-y-4">
-            <h3 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5">
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          {/* Column 4: Legal & Support */}
+          <div className="space-y-3.5">
+            <h3 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5 pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
               <span>
-                {locale === "en" ? "Legal & Trust" : locale === "vi" ? "Pháp lý & Tuân thủ" : "法務・コンプライアンス"}
+                {locale === "en" ? "Legal & Trust" : locale === "vi" ? "Pháp lý & Hỗ trợ" : "サポート・法務規約"}
               </span>
             </h3>
-            <ul className="space-y-2.5 text-slate-600 dark:text-slate-400">
+            <ul className="space-y-2.5 text-slate-600 dark:text-slate-400 font-normal">
               <li>
-                <LocaleLink href="/tokushoho" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors font-medium">
-                  {locale === "en" ? "Act on Specified Commercial Transactions" : locale === "vi" ? "Luật giao dịch thương mại đặc định" : "特定商取引法に基づく表記"}
+                <LocaleLink href="/contact" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Contact Support" : locale === "vi" ? "Hỗ trợ & Liên hệ" : "お問い合わせ・サポート"}
+                </LocaleLink>
+              </li>
+              <li>
+                <LocaleLink href="/opt-out" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Company Info Opt-Out" : locale === "vi" ? "Yêu cầu ẩn thông tin" : "情報掲載停止 (オプトアウト)"}
                 </LocaleLink>
               </li>
               <li>
@@ -223,80 +241,82 @@ export const Footer: React.FC = () => {
                 </LocaleLink>
               </li>
               <li>
-                <div className="pt-2 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  {locale === "en"
-                    ? "Registered invoice system compliant. Providing trusted open corporate intelligence."
-                    : locale === "vi"
-                    ? "Hệ thống hóa đơn hợp chuẩn khấu trừ thuế Nhật Bản. Dữ liệu mở minh bạch & đáng tin cậy."
-                    : "適格請求書発行事業者登録対応。国税庁法人番号公表データに基づく適正な情報提供。"}
-                </div>
+                <LocaleLink href="/tokushoho" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Specified Commercial Transactions" : locale === "vi" ? "Luật giao dịch thương mại đặc định" : "特定商取引法に基づく表記"}
+                </LocaleLink>
+              </li>
+              <li>
+                <LocaleLink href="/unsubscribe" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Email Unsubscribe" : locale === "vi" ? "Hủy nhận email" : "メール配信解除"}
+                </LocaleLink>
               </li>
             </ul>
           </div>
+
         </div>
 
-        {/* 3. B2B Trust & Compliance Badges */}
-        <div className="pt-8 pb-4 border-t border-slate-200/80 dark:border-slate-800/80">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white dark:bg-[#151B22] border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-              <Building2 className="w-4 h-4 text-blue-600 shrink-0" />
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate">国税庁データ連携</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">法人番号公表サイト準拠</span>
+        {/* 2. Streamlined Trust & Compliance Strip (Horizontal Minimalist Ribbon) */}
+        <div className="py-3 px-4 rounded-lg bg-white/80 dark:bg-[#161B22]/80 border border-slate-200/80 dark:border-slate-800 text-[11px] text-slate-600 dark:text-slate-400">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+            <div className="flex items-center gap-2">
+              <Building2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <div className="truncate">
+                <span className="font-semibold text-slate-900 dark:text-slate-200">国税庁データ連携</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-500 ml-1.5 hidden sm:inline">法人番号準拠</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white dark:bg-[#151B22] border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate">インボイス制度対応</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">適格請求書・領収書即時発行</span>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <div className="truncate">
+                <span className="font-semibold text-slate-900 dark:text-slate-200">インボイス制度対応</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-500 ml-1.5 hidden sm:inline">適格請求書発行</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white dark:bg-[#151B22] border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-              <CreditCard className="w-4 h-4 text-indigo-600 shrink-0" />
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate">Stripe 決済保護</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">PCI DSS レベル1認定暗号化</span>
+            <div className="flex items-center gap-2">
+              <CreditCard className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
+              <div className="truncate">
+                <span className="font-semibold text-slate-900 dark:text-slate-200">Stripe 決済保護</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-500 ml-1.5 hidden sm:inline">PCI DSS Level 1</span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2.5 p-2.5 rounded-xl bg-white dark:bg-[#151B22] border border-slate-200/80 dark:border-slate-800 shadow-2xs">
-              <Lock className="w-4 h-4 text-teal-600 shrink-0" />
-              <div className="flex flex-col min-w-0">
-                <span className="text-[11px] font-bold text-slate-900 dark:text-white truncate">SSL/TLS 256bit 暗号化</span>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate">個人情報保護法厳格遵守</span>
+            <div className="flex items-center gap-2">
+              <Lock className="w-3.5 h-3.5 text-teal-600 shrink-0" />
+              <div className="truncate">
+                <span className="font-semibold text-slate-900 dark:text-slate-200">SSL/TLS 256bit 暗号化</span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-500 ml-1.5 hidden sm:inline">APPI法令遵守</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* 4. Bottom Bar: Brand Logo, Social Channels & Copyright */}
-        <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-6 border-t border-slate-200/60 dark:border-slate-800/60">
+        {/* 3. Bottom Bar: Brand Logo, Legal Operator & Copyright */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-5 pt-4 border-t border-slate-200/60 dark:border-slate-800/60 text-xs">
           <div className="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
-            <LocaleLink href="/" className="flex items-center gap-2.5 active:scale-98 transition-transform">
-              <div className="w-7 h-7 rounded-lg bg-[#1B4F8A] flex items-center justify-center shadow-xs shrink-0">
-                <LogoIcon className="w-3.5 h-3.5 text-white" />
+            <LocaleLink href="/" className="flex items-center gap-2 active:scale-98 transition-transform">
+              <div className="w-6 h-6 rounded-md bg-[#1B4F8A] flex items-center justify-center shadow-xs shrink-0">
+                <LogoIcon className="w-3 h-3 text-white" />
               </div>
-              <span className="font-extrabold text-slate-900 dark:text-white tracking-tight">
+              <span className="font-extrabold text-slate-900 dark:text-white tracking-tight text-sm">
                 Kigyou<span className="text-[#1B4F8A] dark:text-blue-400">-list</span>
               </span>
             </LocaleLink>
             <span className="text-slate-300 dark:text-slate-700 hidden sm:inline">|</span>
-            <span className="text-xs text-slate-500 dark:text-slate-400">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400">
               {locale === "en"
-                ? "Japan's Leading Open Corporate Intelligence Platform"
+                ? "Operated by TQC Inc. (Tokyo, Japan) · 5M+ Verified Corporate Intelligence"
                 : locale === "vi"
-                ? "Nền tảng dữ liệu doanh nghiệp mở hàng đầu Nhật Bản"
-                : "国内最大級500万件の法人オープンデータ基盤"}
+                ? "Vận hành bởi TQC Inc. (Tokyo) · Dữ liệu 5M+ doanh nghiệp Nhật Bản"
+                : "運営会社: TQC株式会社 (東京都千代田区) · 国内最大級500万社法人データ基盤"}
             </span>
           </div>
 
           {/* Social Channels */}
           <div className="flex items-center gap-2">
             <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mr-1 hidden sm:inline">
-              Official Channels:
+              Official:
             </span>
             <div className="flex items-center gap-1.5">
               {socialChannels.map((item) => (
@@ -307,7 +327,7 @@ export const Footer: React.FC = () => {
                   rel="noopener noreferrer"
                   title={`${item.name} (${item.handle})`}
                   aria-label={`${item.name} - ${item.handle}`}
-                  className="w-7 h-7 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-[#1B4F8A] hover:border-[#1B4F8A] dark:hover:text-blue-400 dark:hover:border-blue-400/50 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-all duration-150 shadow-2xs"
+                  className="w-6 h-6 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-center text-slate-600 dark:text-slate-400 hover:text-[#1B4F8A] hover:border-[#1B4F8A] dark:hover:text-blue-400 dark:hover:border-blue-400/50 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-all shadow-2xs"
                 >
                   {item.icon}
                 </a>
@@ -316,7 +336,7 @@ export const Footer: React.FC = () => {
           </div>
 
           <div className="text-[11px] text-slate-400 dark:text-slate-500">
-            &copy; 2022 - {new Date().getFullYear()} Kigyou-list. {t.footer.rights}
+            &copy; 2022 - {new Date().getFullYear()} TQC Inc. / Kigyou-list. {t.footer.rights}
           </div>
         </div>
 

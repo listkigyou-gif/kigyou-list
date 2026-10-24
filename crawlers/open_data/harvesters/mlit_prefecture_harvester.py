@@ -295,7 +295,15 @@ async def harvest_prefecture(pref_code, max_pages=None, start_page=1):
                 if batch_comp_updates:
                     cur.executemany("""
                         UPDATE companies
-                        SET representative_name = COALESCE(?, representative_name),
+                        SET has_construction_lic = 1,
+                            has_license = 1,
+                            primary_industry_code = COALESCE(primary_industry_code, '06'),
+                            major_industry_code = COALESCE(major_industry_code, 'D'),
+                            industry_confidence = CASE 
+                                WHEN industry_confidence IN ('UNCLASSIFIED', 'VERIFIED_WEB', NULL, '') THEN 'CONFIRMED_LICENSE'
+                                ELSE industry_confidence 
+                            END,
+                            representative_name = COALESCE(?, representative_name),
                             jigyo_shumoku = COALESCE(?, jigyo_shumoku),
                             updated_at = CURRENT_TIMESTAMP
                         WHERE corporate_number = ?;

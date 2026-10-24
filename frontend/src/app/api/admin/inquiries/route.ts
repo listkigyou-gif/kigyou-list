@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getInquiries, resolveInquiry, hideCompany, unhideCompany, logAdminAction } from "@/lib/db";
+import { getInquiries, resolveInquiry, hideCompany, unhideCompany, logAdminAction, getCompanyEditHistoriesByInquiryId } from "@/lib/db";
 import { isAdmin } from "@/lib/adminAuth";
 
 export async function GET(request: Request) {
@@ -8,7 +8,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    const inquiries = await getInquiries();
+    const rawInquiries = await getInquiries(200);
+    const inquiries = await Promise.all(
+      rawInquiries.map(async (inq) => {
+        let editHistories: any[] = [];
+        if (inq.type === 'update' || inq.type === 'edit') {
+          editHistories = await getCompanyEditHistoriesByInquiryId(inq.id);
+        }
+        return {
+          ...inq,
+          edit_histories: editHistories,
+        };
+      })
+    );
     return NextResponse.json({ inquiries });
   } catch (error) {
     console.error("Error in /api/admin/inquiries GET:", error);

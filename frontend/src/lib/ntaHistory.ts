@@ -4,7 +4,19 @@ export interface LegalHistoryEvent {
   id: string;
   date: string; // YYYY-MM-DD
   rawDate: string;
-  eventType: 'invoice_registration' | 'establishment' | 'address_change' | 'name_change' | 'status_check';
+  eventType: 
+    | 'invoice_registration' 
+    | 'establishment' 
+    | 'address_change' 
+    | 'name_change' 
+    | 'status_check'
+    | 'representative_change'
+    | 'invoice_change'
+    | 'merger'
+    | 'bankruptcy'
+    | 'relocation'
+    | 'new_establishment'
+    | 'other';
   eventBadgeJa: string;
   eventBadgeEn: string;
   eventBadgeVi: string;
@@ -16,6 +28,8 @@ export interface LegalHistoryEvent {
   detailsVi: string;
   source: string;
   sourceUrl?: string;
+  oldValue?: string | null;
+  newValue?: string | null;
 }
 
 // In-memory cache for live NTA history (24 hour TTL)

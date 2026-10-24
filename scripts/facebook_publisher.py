@@ -56,7 +56,9 @@ def post_to_personal_profile(page, text: str, image_path: Optional[str] = None) 
         create_trigger.click()
         time.sleep(3)
 
-        dialog = page.locator('div[role="dialog"]').first
+        dialog = page.locator('div[role="dialog"]:has-text("Create post"), div[role="dialog"]:has-text("投稿を作成"), div[aria-label="Create post"]').first
+        if dialog.count() == 0 or not dialog.is_visible():
+            dialog = page.locator('div[role="dialog"]').last
         dialog.wait_for(state="visible", timeout=10000)
 
         # Upload ảnh

@@ -9,7 +9,14 @@ import { parseUTCDate } from "@/lib/dateUtils";
 import { useAdminToast } from "../AdminToast";
 import { AdminConfirmModal } from "../AdminConfirmModal";
 
-interface Inquiry {
+export interface EditHistoryItem {
+  field_name: string;
+  old_value: string | null;
+  new_value: string | null;
+  status: string;
+}
+
+export interface Inquiry {
   id: string;
   corporate_number: string;
   company_name: string;
@@ -18,7 +25,36 @@ interface Inquiry {
   message: string;
   status: string;
   created_at: string;
+  edit_histories?: EditHistoryItem[];
 }
+
+const FIELD_LABELS: Record<string, string> = {
+  phone_number: "代表電話番号",
+  website_url: "公式ウェブサイト",
+  email_address: "代表メールアドレス",
+  fax_number: "FAX番号",
+  representative_name: "代表者名",
+  representative_position: "代表者役職",
+  capital_amount: "資本金",
+  employee_count: "従業員数",
+  sales_amount: "売上高",
+  fiscal_month: "決算期",
+  contact_form_url: "問い合わせフォームURL",
+  recruit_url: "採用情報URL",
+  jigyo_shumoku: "事業種目・概要",
+  business_summary: "事業概要",
+  postal_code: "郵便番号",
+  full_address: "所在地",
+  street_address: "番地・建物名",
+  company_name_kana: "企業名カナ",
+  company_name_en: "企業名英語",
+  branch_phone_numbers: "支店電話番号",
+  main_clients: "主要取引先",
+  main_banks: "主要取引銀行",
+  sns_links: "SNSリンク",
+  pr_title: "PRキャッチコピー",
+  pr_message: "公式PRメッセージ"
+};
 
 interface InquiriesTabProps {
   adminEmail: string;
@@ -201,6 +237,72 @@ export const InquiriesTab: React.FC<InquiriesTabProps> = ({
         }
       },
     });
+  };
+
+  // Direct 1-Click Approve Update (Apply to DB)
+  const handleApproveUpdate = async (inq: Inquiry) => {
+    if (!window.confirm(`企業「${inq.company_name}」の変更申請を承認し、データベースに即時反映しますか？`)) {
+      return;
+    }
+    try {
+      const headers = { ...getAdminHeaders(), "Content-Type": "application/json" };
+      const res = await fetch("/api/admin/inquiries/resolve", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          id: inq.id,
+          action: "approve_update",
+          corporate_number: inq.corporate_number,
+          company_name: inq.company_name,
+          requester_email: inq.requester_email,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.success(data.message || "更新を承認し、データベースへ反映しました。");
+        setSelectedInquiry(null);
+        fetchInquiries();
+      } else {
+        toast.error(data.error || "処理に失敗しました。");
+      }
+    } catch {
+      toast.error("通信エラーが発生しました。");
+    }
+  };
+
+  // Direct 1-Click Reject Update
+  const handleRejectUpdate = async (inq: Inquiry) => {
+    const reason = window.prompt(
+      "却下の理由を入力してください（申請者へメール送信されます）:",
+      "公的登記情報または企業公式ウェブサイトとの一致が確認できませんでした。"
+    );
+    if (reason === null) return;
+
+    try {
+      const headers = { ...getAdminHeaders(), "Content-Type": "application/json" };
+      const res = await fetch("/api/admin/inquiries/resolve", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          id: inq.id,
+          action: "reject",
+          corporate_number: inq.corporate_number,
+          company_name: inq.company_name,
+          requester_email: inq.requester_email,
+          reason,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast.info("申請を却下しました。");
+        setSelectedInquiry(null);
+        fetchInquiries();
+      } else {
+        toast.error(data.error || "処理に失敗しました。");
+      }
+    } catch {
+      toast.error("通信エラーが発生しました。");
+    }
   };
 
   // Bulk Resolve
@@ -536,7 +638,26 @@ export const InquiriesTab: React.FC<InquiriesTabProps> = ({
 
                         {inq.status === 'pending' && (
                           <>
-                            {inq.type === 'hide' ? (
+                            {inq.type === 'update' || inq.type === 'edit' ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRejectUpdate(inq)}
+                                  className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 font-semibold rounded-md transition-colors flex items-center gap-1 cursor-pointer"
+                                  title="却下"
+                                >
+                                  <Ban className="w-3 h-3 text-rose-600" /> 却下
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleApproveUpdate(inq)}
+                                  className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 font-semibold rounded-md transition-colors flex items-center gap-1 cursor-pointer"
+                                  title="承認してDB反映"
+                                >
+                                  <CheckCircle className="w-3 h-3 text-emerald-600" /> 承認
+                                </button>
+                              </>
+                            ) : inq.type === 'hide' ? (
                               <button
                                 type="button"
                                 onClick={() => handleResolve(inq.id, inq.corporate_number, "unhide")}
@@ -553,13 +674,15 @@ export const InquiriesTab: React.FC<InquiriesTabProps> = ({
                                 <Ban className="w-3 h-3" /> 非公開
                               </button>
                             )}
-                            <button
-                              type="button"
-                              onClick={() => handleResolve(inq.id, inq.corporate_number, "resolve")}
-                              className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-[#1B4F8A] dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 font-semibold rounded-md transition-colors flex items-center gap-1 cursor-pointer"
-                            >
-                              <CheckCircle className="w-3 h-3" /> 解決
-                            </button>
+                            {inq.type !== 'update' && inq.type !== 'edit' && (
+                              <button
+                                type="button"
+                                onClick={() => handleResolve(inq.id, inq.corporate_number, "resolve")}
+                                className="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-[#1B4F8A] dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 font-semibold rounded-md transition-colors flex items-center gap-1 cursor-pointer"
+                              >
+                                <CheckCircle className="w-3 h-3" /> 解決
+                              </button>
+                            )}
                           </>
                         )}
                       </div>
@@ -659,10 +782,51 @@ export const InquiriesTab: React.FC<InquiriesTabProps> = ({
                     {copiedMsg ? "コピー済み" : "本文をコピー"}
                   </button>
                 </div>
-                <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed max-h-56 overflow-y-auto border border-slate-100 dark:border-slate-800 text-xs">
+                <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 whitespace-pre-wrap leading-relaxed max-h-40 overflow-y-auto border border-slate-100 dark:border-slate-800 text-xs">
                   {selectedInquiry.message || "(本文なし)"}
                 </div>
               </div>
+
+              {/* Diff Preview Table if available */}
+              {selectedInquiry.edit_histories && selectedInquiry.edit_histories.length > 0 && (
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="text-slate-700 dark:text-slate-200 font-bold flex items-center gap-1.5">
+                      <CheckCircle className="w-3.5 h-3.5 text-emerald-600" />
+                      申請された変更項目（差分プレビュー）
+                    </span>
+                    <span className="text-[10px] bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 px-2 py-0.5 rounded font-semibold border border-emerald-200 dark:border-emerald-800">
+                      {selectedInquiry.edit_histories.length} 項目
+                    </span>
+                  </div>
+                  <div className="border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 text-[11px] text-slate-500">
+                        <tr>
+                          <th className="py-2 px-3 font-semibold">変更項目</th>
+                          <th className="py-2 px-3 font-semibold">現在の登録値</th>
+                          <th className="py-2 px-3 font-semibold text-[#1B4F8A] dark:text-blue-400">申請値（更新後）</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-800 font-mono">
+                        {selectedInquiry.edit_histories.map((h, i) => (
+                          <tr key={i} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50">
+                            <td className="py-2 px-3 font-sans font-medium text-slate-700 dark:text-slate-300">
+                              {FIELD_LABELS[h.field_name] || h.field_name}
+                            </td>
+                            <td className="py-2 px-3 text-slate-400 max-w-[140px] truncate" title={h.old_value || "(未登録)"}>
+                              {h.old_value || "(未登録)"}
+                            </td>
+                            <td className="py-2 px-3 text-emerald-600 dark:text-emerald-400 font-bold max-w-[180px] truncate" title={h.new_value || "-"}>
+                              {h.new_value || "-"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
@@ -670,18 +834,40 @@ export const InquiriesTab: React.FC<InquiriesTabProps> = ({
                 href={`/ja/company/${selectedInquiry.corporate_number}`}
                 target="_blank"
                 rel="noreferrer"
-                className="text-xs text-[#1B4F8A] font-semibold hover:underline flex items-center gap-1"
+                className="text-xs text-[#1B4F8A] dark:text-blue-400 font-semibold hover:underline flex items-center gap-1"
               >
                 <span>企業ページを開く</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
 
-              <button
-                onClick={() => setSelectedInquiry(null)}
-                className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-lg text-xs cursor-pointer transition-colors"
-              >
-                閉じる
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSelectedInquiry(null)}
+                  className="px-3.5 py-1.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold rounded-lg text-xs cursor-pointer transition-colors"
+                >
+                  閉じる
+                </button>
+
+                {selectedInquiry.status === 'pending' && (selectedInquiry.type === 'update' || selectedInquiry.type === 'edit') && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => handleRejectUpdate(selectedInquiry)}
+                      className="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 font-semibold rounded-lg text-xs cursor-pointer transition-colors"
+                    >
+                      却下する
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleApproveUpdate(selectedInquiry)}
+                      className="px-4 py-1.5 bg-[#1B4F8A] hover:bg-[#163E6D] text-white font-semibold rounded-lg text-xs cursor-pointer shadow-xs transition-colors flex items-center gap-1.5"
+                    >
+                      <CheckCircle className="w-3.5 h-3.5" />
+                      承認してDBに即時反映
+                    </button>
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>

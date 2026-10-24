@@ -50,14 +50,37 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
   const formatAmount = (val: number | null, useFull = false) => {
     if (val === null || val === undefined) return '-';
     if (locale === 'en') {
+      if (Math.abs(val) >= 1_000_000_000_000) {
+        const trillVal = val / 1_000_000_000_000;
+        const formatted = trillVal.toLocaleString('en-US', { maximumFractionDigits: 1 });
+        return useFull ? `¥${formatted} Trillion JPY` : `¥${formatted}T JPY`;
+      }
+      if (Math.abs(val) >= 1_000_000_000) {
+        const billVal = val / 1_000_000_000;
+        const formatted = billVal.toLocaleString('en-US', { maximumFractionDigits: 1 });
+        return useFull ? `¥${formatted} Billion JPY` : `¥${formatted}B JPY`;
+      }
       const millionVal = val / 1000000;
-      const formatted = millionVal.toLocaleString('en-US', { maximumFractionDigits: 2 });
+      const formatted = millionVal.toLocaleString('en-US', { maximumFractionDigits: 1 });
       return useFull ? `¥${formatted} Million JPY` : `¥${formatted}M JPY`;
     }
     if (locale === 'vi') {
+      if (Math.abs(val) >= 1_000_000_000_000) {
+        const trillVal = val / 1_000_000_000_000;
+        const formatted = trillVal.toLocaleString('vi-VN', { maximumFractionDigits: 1 });
+        return useFull ? `¥${formatted} nghìn tỷ JPY` : `¥${formatted} nghìn tỷ`;
+      }
+      if (Math.abs(val) >= 1_000_000_000) {
+        const billVal = val / 1_000_000_000;
+        const formatted = billVal.toLocaleString('vi-VN', { maximumFractionDigits: 1 });
+        return useFull ? `¥${formatted} tỷ JPY` : `¥${formatted} tỷ`;
+      }
       const millionVal = val / 1000000;
-      const formatted = millionVal.toLocaleString('vi-VN', { maximumFractionDigits: 2 });
+      const formatted = millionVal.toLocaleString('vi-VN', { maximumFractionDigits: 1 });
       return useFull ? `¥${formatted} triệu JPY` : `¥${formatted}tr JPY`;
+    }
+    if (Math.abs(val) >= 1_000_000_000_000) {
+      return `${(val / 1_000_000_000_000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}兆円`;
     }
     if (Math.abs(val) >= 100000000) {
       return `${(val / 100000000).toLocaleString('ja-JP', { maximumFractionDigits: 1 })}億円`;
@@ -85,7 +108,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
     
     const width = 600;
     const height = 240;
-    const paddingLeft = 70;
+    const paddingLeft = 72;
     const paddingRight = 20;
     const paddingTop = 25;
     const paddingBottom = 40;
@@ -104,7 +127,8 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
       const y = height - paddingBottom - barHeight;
 
       const incomeVal = f.ordinary_income || 0;
-      const lineY = height - paddingBottom - ((incomeVal / chartMax) * chartHeight);
+      const rawLineY = height - paddingBottom - ((incomeVal / chartMax) * chartHeight);
+      const lineY = Math.min(height - paddingBottom + 5, Math.max(paddingTop, rawLineY));
       points.push(`${x},${lineY}`);
 
       return {
@@ -410,7 +434,7 @@ export const CompanyFinancials: React.FC<CompanyFinancialsProps> = ({ financials
 
     const width = 600;
     const height = 260;
-    const paddingLeft = 70;
+    const paddingLeft = 72;
     const paddingRight = 20;
     const paddingTop = 25;
     const paddingBottom = 40;

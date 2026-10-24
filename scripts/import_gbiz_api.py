@@ -54,8 +54,9 @@ try:
 except Exception:
     pass
 
-DB_PATH = "kigyou-list.db"
-STATE_FILE = "importdata/gbiz-data/gbiz_sync_state.json"
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+DB_PATH = os.path.join(PROJECT_ROOT, "kigyou-list.db")
+STATE_FILE = os.path.join(PROJECT_ROOT, "importdata", "gbiz-data", "gbiz_sync_state.json")
 API_TOKEN = "wkEEhgj9URidoSvpfzzA4ZocL0iL8cEK"
 
 # Target organization types based on digits 6-7 of NTA 13-digit corporate number:
@@ -570,7 +571,10 @@ def fetch_gbiz_updates(from_date, limit_max=None):
                 error_body = e.read().decode("utf-8")
             except Exception:
                 error_body = ""
-            print(f"[-] G-Biz API HTTP Error {e.code}: {e.reason} | {error_body}")
+            if e.code == 404:
+                print(f"[*] G-Biz API: No new corporate updates found for date range ({from_param} to {to_param}).")
+            else:
+                print(f"[-] G-Biz API HTTP Error {e.code}: {e.reason} | {error_body}")
             if e.code == 429:
                 print("[-] Rate limit exceeded. Waiting 10s...")
                 time.sleep(10)

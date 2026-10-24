@@ -27,6 +27,7 @@ async function ensureAllTablesInitialized() {
     await initBackupLogsTable();
     await initBlogPostsTable();
     await initBlockedIpsTable();
+    await initHubDynamicEventsTable();
     allTablesInitialized = true;
   } catch (err) {
     console.error('Failed to initialize all database tables:', err);
@@ -291,6 +292,9 @@ export interface Company {
   has_fax?: boolean;
   has_contact_form?: boolean;
   industry_name?: string | null;
+  is_listed?: boolean | null;
+  listing_market?: string | null;
+  stock_code?: string | null;
 }
 
 export interface Industry {
@@ -378,6 +382,15 @@ export interface SearchFilters {
   has_website?: boolean;
   has_fax?: boolean;
   has_contact_form?: boolean;
+  has_license?: boolean;
+  has_construction_lic?: boolean;
+  has_real_estate_lic?: boolean;
+  has_kobutsu_lic?: boolean;
+  has_haken_lic?: boolean;
+  has_shokugyo_lic?: boolean;
+  has_financial_report?: boolean;
+  has_public_tender?: boolean;
+  is_listed?: boolean;
   email_type?: string;
   company_status?: string;
   min_operating_income?: number;
@@ -456,6 +469,9 @@ function mapCompanyRow(row: any): Company {
     claimed_by_department: row.claimed_by_department || null,
     pr_title: row.pr_title || null,
     pr_message: row.pr_message || null,
+    is_listed: Boolean(row.is_listed),
+    listing_market: row.listing_market || null,
+    stock_code: row.stock_code || null,
   };
 }
 
@@ -574,6 +590,11 @@ function mapSignalRow(row: any): BusinessSignal {
 
 export async function getCompanySignals(corpNum: string): Promise<BusinessSignal[]> {
   try {
+    const isPG = !!DATABASE_URL;
+    const hiringDateCondition = isPG
+      ? "(signal_date IS NOT NULL AND signal_date >= CURRENT_DATE - INTERVAL '90 days')"
+      : "(signal_date IS NOT NULL AND signal_date >= date('now', '-90 days'))";
+
     const rows = await runQuery(`
       SELECT id, corporate_number, signal_type, signal_title, signal_date, source_url, details, total_count
       FROM (
@@ -582,6 +603,10 @@ export async function getCompanySignals(corpNum: string): Promise<BusinessSignal
                COUNT(*) OVER (PARTITION BY signal_type) as total_count
         FROM business_signals 
         WHERE corporate_number = ?
+          AND (
+            signal_type != '求人あり' 
+            OR ${hiringDateCondition}
+          )
       ) t
       WHERE rn <= 10
       ORDER BY signal_date DESC, id DESC
@@ -1044,6 +1069,7 @@ function buildSearchQuery(
     c.establishment_date, c.capital_amount, c.employee_count, c.sales_amount, 
     c.phone_number, c.fax_number, c.website_url, c.email_address, c.contact_form_url, c.email_type, NULL AS logo_url,
     c.jigyo_shumoku, c.branch_phone_numbers, c.status, c.is_detailed, c.created_at, c.updated_at,
+    c.is_listed, c.listing_market, c.stock_code,
     ${isPG ? 'c.has_financials' : 'cfs.corporate_number AS has_financials'}
   `;
   const sql = isCountOnly 
@@ -1053,29 +1079,31 @@ function buildSearchQuery(
   const params: any[] = [];
   const whereClauses: string[] = [];
 
-  // Industry filter (rewritten to utilize materialized path for major industries and exact code for medium industries)
+  // Industry filter (Ultra-fast direct indexed column check)
   if (filters.industry_code) {
     const isMajor = /^[A-Z]$/.test(filters.industry_code);
     if (isMajor) {
       whereClauses.push(
-        'c.corporate_number IN (' +
-        '  SELECT ci.corporate_number FROM company_industries ci' +
-        '  WHERE ci.industry_path LIKE ?' +
-        ')'
+        isPG
+          ? "c.major_industry_code = ?"
+          : "c.corporate_number IN (SELECT ci.corporate_number FROM company_industries ci WHERE ci.industry_path LIKE ?)"
       );
-      params.push(`${filters.industry_code}%`);
+      if (isPG) {
+        params.push(filters.industry_code);
+      } else {
+        params.push(`${filters.industry_code}%`);
+      }
     } else {
       whereClauses.push(
-        'c.corporate_number IN (' +
-        '  SELECT ci.corporate_number FROM company_industries ci' +
-        '  WHERE ci.industry_code = ?' +
-        '  UNION' +
-        '  SELECT ci.corporate_number FROM company_industries ci' +
-        '  WHERE ci.industry_code = (SELECT parent_code FROM m_industries WHERE industry_code = ? LIMIT 1)' +
-        '    AND ci.is_detailed = false' +
-        ')'
+        isPG
+          ? "c.primary_industry_code = ?"
+          : "c.corporate_number IN (SELECT ci.corporate_number FROM company_industries ci WHERE ci.industry_code = ? UNION SELECT ci.corporate_number FROM company_industries ci WHERE ci.industry_code = (SELECT parent_code FROM m_industries WHERE industry_code = ? LIMIT 1) AND ci.is_detailed = false)"
       );
-      params.push(filters.industry_code, filters.industry_code);
+      if (isPG) {
+        params.push(filters.industry_code);
+      } else {
+        params.push(filters.industry_code, filters.industry_code);
+      }
     }
   }
 
@@ -1189,21 +1217,50 @@ function buildSearchQuery(
     params.push(filters.max_sales * 100000000);
   }
 
-  // Contact presence filters
+  // Contact presence filters (Robust dual-check for both boolean flag & non-empty column)
   if (filters.has_email === true) {
-    whereClauses.push("c.email_address IS NOT NULL AND c.email_address != ''");
+    whereClauses.push(isPG ? "(c.has_email = true OR (c.email_address IS NOT NULL AND c.email_address != ''))" : "(c.email_address IS NOT NULL AND c.email_address != '')");
   }
   if (filters.has_phone === true) {
-    whereClauses.push("c.phone_number IS NOT NULL AND c.phone_number != ''");
+    whereClauses.push(isPG ? "(c.has_phone = true OR (c.phone_number IS NOT NULL AND c.phone_number != ''))" : "(c.phone_number IS NOT NULL AND c.phone_number != '')");
   }
   if (filters.has_website === true) {
-    whereClauses.push("c.website_url IS NOT NULL AND c.website_url != ''");
+    whereClauses.push(isPG ? "(c.has_website = true OR (c.website_url IS NOT NULL AND c.website_url != ''))" : "(c.website_url IS NOT NULL AND c.website_url != '')");
   }
   if (filters.has_fax === true) {
-    whereClauses.push("c.fax_number IS NOT NULL AND c.fax_number != ''");
+    whereClauses.push(isPG ? "(c.has_fax = true OR (c.fax_number IS NOT NULL AND c.fax_number != ''))" : "(c.fax_number IS NOT NULL AND c.fax_number != '')");
   }
   if (filters.has_contact_form === true) {
-    whereClauses.push("c.contact_form_url IS NOT NULL AND c.contact_form_url != ''");
+    whereClauses.push(isPG ? "(c.has_contact_form = true OR (c.contact_form_url IS NOT NULL AND c.contact_form_url != ''))" : "(c.contact_form_url IS NOT NULL AND c.contact_form_url != '')");
+  }
+
+  // Official Government Licenses & Trust Filters (Ultra-fast boolean index lookup)
+  if (filters.has_license === true) {
+    whereClauses.push(isPG ? "c.has_license = true" : "c.has_license = 1");
+  }
+  if (filters.has_construction_lic === true) {
+    whereClauses.push(isPG ? "c.has_construction_lic = true" : "c.has_construction_lic = 1");
+  }
+  if (filters.has_real_estate_lic === true) {
+    whereClauses.push(isPG ? "c.has_real_estate_lic = true" : "c.has_real_estate_lic = 1");
+  }
+  if (filters.has_kobutsu_lic === true) {
+    whereClauses.push(isPG ? "c.has_kobutsu_lic = true" : "c.has_kobutsu_lic = 1");
+  }
+  if (filters.has_haken_lic === true) {
+    whereClauses.push(isPG ? "c.has_haken_lic = true" : "c.has_haken_lic = 1");
+  }
+  if (filters.has_shokugyo_lic === true) {
+    whereClauses.push(isPG ? "c.has_shokugyo_lic = true" : "c.has_shokugyo_lic = 1");
+  }
+  if (filters.has_financial_report === true) {
+    whereClauses.push(isPG ? "c.has_financial_report = true" : "c.has_financial_report = 1");
+  }
+  if (filters.has_public_tender === true) {
+    whereClauses.push(isPG ? "c.has_public_tender = true" : "c.has_public_tender = 1");
+  }
+  if (filters.is_listed === true) {
+    whereClauses.push(isPG ? "c.is_listed = true" : "c.is_listed = 1");
   }
   if (filters.email_type) {
     whereClauses.push("c.email_type = ?");
@@ -1390,93 +1447,90 @@ export async function searchCompanies(
     }
 
     const fetchTotalCount = async (): Promise<number> => {
+      // 1. Check Count Cache (reused across all pages for identical filter set)
+      const countKey = SmartSearchLRUCache.normalizeCountKey(keyword, filters);
+      const cachedCount = searchLRUCache.getCount(countKey);
+      if (cachedCount !== null) {
+        return cachedCount;
+      }
+
+      let count = 0;
       if (activeFiltersList.length === 0) {
         const stats = await getDatabaseStats();
-        return stats.totalCompanies;
-      }
-      if (activeFiltersList.length === 2 && activeFiltersList.includes('prefecture') && activeFiltersList.includes('city') && filters.prefecture_code && filters.city_name) {
+        count = stats.totalCompanies;
+      } else if (activeFiltersList.length === 2 && activeFiltersList.includes('prefecture') && activeFiltersList.includes('city') && filters.prefecture_code && filters.city_name) {
         const row = await runGetQuery('SELECT company_count FROM city_counts WHERE prefecture_code = ? AND city_name = ?', [filters.prefecture_code, filters.city_name]);
-        return row ? Number(row.company_count) : 0;
-      }
-      if (activeFiltersList.length === 1) {
+        count = row ? Number(row.company_count) : 0;
+      } else if (activeFiltersList.length === 1) {
         const singleFilter = activeFiltersList[0];
         if (singleFilter === 'prefecture' && filters.prefecture_code) {
           const row = await runGetQuery('SELECT company_count FROM prefecture_counts WHERE prefecture_code = ?', [filters.prefecture_code]);
-          return row ? Number(row.company_count) : 0;
-        }
-        if (singleFilter === 'city' && filters.prefecture_code && filters.city_name) {
+          count = row ? Number(row.company_count) : 0;
+        } else if (singleFilter === 'city' && filters.prefecture_code && filters.city_name) {
           const row = await runGetQuery('SELECT company_count FROM city_counts WHERE prefecture_code = ? AND city_name = ?', [filters.prefecture_code, filters.city_name]);
-          return row ? Number(row.company_count) : 0;
-        }
-        if (singleFilter === 'industry' && filters.industry_code) {
+          count = row ? Number(row.company_count) : 0;
+        } else if (singleFilter === 'industry' && filters.industry_code) {
           const row = await runGetQuery('SELECT company_count FROM industry_counts WHERE industry_code = ?', [filters.industry_code]);
-          return row ? Number(row.company_count) : 0;
-        }
-        if (singleFilter === 'hiring') {
+          count = row ? Number(row.company_count) : 0;
+        } else if (singleFilter === 'hiring') {
           const stats = await getDatabaseStats();
-          return stats.signalHiring;
-        }
-        if (singleFilter === 'subsidy') {
+          count = stats.signalHiring;
+        } else if (singleFilter === 'subsidy') {
           const stats = await getDatabaseStats();
-          return stats.signalSubsidy;
-        }
-        if (singleFilter === 'bidding') {
+          count = stats.signalSubsidy;
+        } else if (singleFilter === 'bidding') {
           const stats = await getDatabaseStats();
-          return stats.signalBidding;
-        }
-        if (singleFilter === 'award') {
+          count = stats.signalBidding;
+        } else if (singleFilter === 'award') {
           const stats = await getDatabaseStats();
-          return stats.signalAward;
-        }
-        if (singleFilter === 'certification') {
+          count = stats.signalAward;
+        } else if (singleFilter === 'certification') {
           const stats = await getDatabaseStats();
-          return stats.signalCertification;
-        }
-        if (singleFilter === 'patent') {
+          count = stats.signalCertification;
+        } else if (singleFilter === 'patent') {
           const stats = await getDatabaseStats();
-          return stats.signalPatent;
-        }
-        if (singleFilter === 'contact_form') {
+          count = stats.signalPatent;
+        } else if (singleFilter === 'contact_form') {
           const stats = await getDatabaseStats();
-          return stats.signalContactForm;
-        }
-        if (singleFilter === 'email') {
+          count = stats.signalContactForm;
+        } else if (singleFilter === 'email') {
           const stats = await getDatabaseStats();
-          return stats.signalEmail;
-        }
-        if (singleFilter === 'website') {
+          count = stats.signalEmail;
+        } else if (singleFilter === 'website') {
           const stats = await getDatabaseStats();
-          return stats.signalWebsite;
-        }
-        if (singleFilter === 'phone') {
+          count = stats.signalWebsite;
+        } else if (singleFilter === 'phone') {
           const stats = await getDatabaseStats();
-          return stats.signalPhone;
-        }
-        if (singleFilter === 'fax') {
+          count = stats.signalPhone;
+        } else if (singleFilter === 'fax') {
           const stats = await getDatabaseStats();
-          return stats.signalFax;
-        }
-        if (singleFilter === 'financials') {
+          count = stats.signalFax;
+        } else if (singleFilter === 'financials') {
           const isPG = !!DATABASE_URL;
           if (isPG) {
             const row = await runGetQuery('SELECT COUNT(*) as count FROM companies WHERE has_financials = true');
-            return row ? Number(row.count) : 0;
+            count = row ? Number(row.count) : 0;
+          } else {
+            const row = await runGetQuery(`
+              SELECT COUNT(DISTINCT fr.corporate_number) as count 
+              FROM financial_records fr 
+              WHERE fr.corporate_number NOT IN (SELECT corporate_number FROM hidden_companies)
+            `);
+            count = row ? Number(row.count) : 0;
           }
-          const row = await runGetQuery(`
-            SELECT COUNT(DISTINCT fr.corporate_number) as count 
-            FROM financial_records fr 
-            WHERE fr.corporate_number NOT IN (SELECT corporate_number FROM hidden_companies)
-          `);
-          return row ? Number(row.count) : 0;
         }
+      } else {
+        // Dynamic bounded count query
+        const countQuery = buildSearchQuery(keyword, filters, true);
+        const innerSql = countQuery.sql.replace('SELECT COUNT(*) as count', 'SELECT 1');
+        const boundedCountSql = `SELECT COUNT(*) as count FROM (${innerSql} LIMIT 2000) as subquery`;
+        const countResult = await runGetQuery(boundedCountSql, countQuery.params);
+        count = countResult ? Number(countResult.count) : 0;
       }
 
-      // Dynamic bounded count query
-      const countQuery = buildSearchQuery(keyword, filters, true);
-      const innerSql = countQuery.sql.replace('SELECT COUNT(*) as count', 'SELECT 1');
-      const boundedCountSql = `SELECT COUNT(*) as count FROM (${innerSql} LIMIT 2000) as subquery`;
-      const countResult = await runGetQuery(boundedCountSql, countQuery.params);
-      return countResult ? Number(countResult.count) : 0;
+      // Cache the computed count
+      searchLRUCache.setCount(countKey, count);
+      return count;
     };
 
     // 2. Prepare data query
@@ -2456,7 +2510,7 @@ export async function getUserQuota(email: string): Promise<UserQuota & { last_re
       let plan = row.plan || 'free';
       let currentAllowance = Number(row.monthly_base_allowance);
       let subStatus = row.subscription_status || 'inactive';
-      let planExpiresAt = row.plan_expires_at ? String(row.plan_expires_at) : null;
+      const planExpiresAt = row.plan_expires_at ? String(row.plan_expires_at) : null;
 
       // Check if plan has expired for manual subscriptions (no active Stripe subscription)
       if (plan !== 'free' && planExpiresAt && !row.stripe_subscription_id) {
@@ -4204,6 +4258,17 @@ export async function saveCompanyEditHistory(
   }
 }
 
+export async function getCompanyEditHistoriesByInquiryId(inquiryId: string): Promise<any[]> {
+  await initAdminTables();
+  try {
+    const sql = `SELECT * FROM company_edit_history WHERE inquiry_id = ? ORDER BY id ASC`;
+    return await runQuery(sql, [inquiryId]);
+  } catch (error) {
+    console.error(`Error in getCompanyEditHistoriesByInquiryId(${inquiryId}):`, error);
+    return [];
+  }
+}
+
 export async function rollbackCompanyEdit(historyId: string): Promise<boolean> {
   await initAdminTables();
   try {
@@ -5380,7 +5445,10 @@ export async function initBlockedIpsTable(): Promise<void> {
   blockedIpsTableInitialized = true;
 }
 
+const LOCALHOST_IPS = new Set(['127.0.0.1', '::1', '::ffff:127.0.0.1', 'localhost', '0.0.0.0']);
+
 export async function isIpBlocked(ip: string): Promise<boolean> {
+  if (!ip || LOCALHOST_IPS.has(ip)) return false;
   if (blockedIpsCache.has(ip)) return true;
   try {
     const row = await runGetQuery('SELECT ip FROM blocked_ips WHERE ip = ?', [ip]);
@@ -5396,6 +5464,10 @@ export async function isIpBlocked(ip: string): Promise<boolean> {
 }
 
 export async function blockIp(ip: string, reason: string): Promise<boolean> {
+  if (!ip || LOCALHOST_IPS.has(ip)) {
+    console.warn(`[Security] Ignored blocking localhost IP: ${ip}`);
+    return false;
+  }
   try {
     const isPG = !!DATABASE_URL;
     let sql = "";
@@ -5422,8 +5494,328 @@ export async function blockIp(ip: string, reason: string): Promise<boolean> {
   }
 }
 
+// =============================================================================
+// Dynamic Hubs for Programmatic SEO ("Mạng Nhện Biến Động")
+// =============================================================================
 
+export interface HubDynamicEvent {
+  id: number;
+  corporate_number: string;
+  company_name: string;
+  prefecture_code: string;
+  prefecture_name: string;
+  city_name: string | null;
+  event_category: 'new_establishment' | 'relocation' | 'representative' | 'merger' | 'bankruptcies' | 'hiring';
+  event_date: string; // YYYY-MM-DD
+  title_ja: string;
+  description_ja: string | null;
+  old_value: string | null;
+  new_value: string | null;
+  source: string;
+  created_at?: string;
+  // Enriched company fields
+  capital_amount?: number | null;
+  employee_count?: number | null;
+  representative_name?: string | null;
+  phone_number?: string | null;
+  website_url?: string | null;
+  has_website?: boolean;
+}
 
+export interface GetHubEventsOptions {
+  category?: string;
+  prefectureCode?: string;
+  yearMonth?: string; // YYYY-MM
+  limit?: number;
+  offset?: number;
+}
 
+let hubDynamicEventsTableInitialized = false;
 
+export async function initHubDynamicEventsTable(): Promise<void> {
+  if (hubDynamicEventsTableInitialized) return;
+  const isPG = !!DATABASE_URL;
+  try {
+    if (isPG) {
+      const pool = getPGPool();
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS hub_dynamic_events (
+          id BIGSERIAL PRIMARY KEY,
+          corporate_number VARCHAR(13) NOT NULL,
+          company_name VARCHAR(255) NOT NULL,
+          prefecture_code VARCHAR(2) NOT NULL,
+          prefecture_name VARCHAR(50) NOT NULL,
+          city_name TEXT,
+          event_category VARCHAR(50) NOT NULL,
+          event_date DATE NOT NULL,
+          title_ja TEXT NOT NULL,
+          description_ja TEXT,
+          old_value TEXT,
+          new_value TEXT,
+          source VARCHAR(100) DEFAULT '国税庁 / 商業登記',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          CONSTRAINT uq_hub_event UNIQUE (corporate_number, event_category, event_date)
+        );
+        CREATE INDEX IF NOT EXISTS idx_hub_cat_date ON hub_dynamic_events (event_category, event_date DESC);
+        CREATE INDEX IF NOT EXISTS idx_hub_pref_cat_date ON hub_dynamic_events (prefecture_code, event_category, event_date DESC);
+        CREATE INDEX IF NOT EXISTS idx_hub_corp_num ON hub_dynamic_events (corporate_number);
+        CREATE INDEX IF NOT EXISTS idx_hub_date ON hub_dynamic_events (event_date DESC);
+      `);
+    } else {
+      const db = getSQLiteDB();
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS hub_dynamic_events (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          corporate_number TEXT NOT NULL,
+          company_name TEXT NOT NULL,
+          prefecture_code TEXT NOT NULL,
+          prefecture_name TEXT NOT NULL,
+          city_name TEXT NULL,
+          event_category TEXT NOT NULL,
+          event_date TEXT NOT NULL,
+          title_ja TEXT NOT NULL,
+          description_ja TEXT NULL,
+          old_value TEXT NULL,
+          new_value TEXT NULL,
+          source TEXT DEFAULT '国税庁 / 商業登記',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE (corporate_number, event_category, event_date)
+        );
+        CREATE INDEX IF NOT EXISTS idx_hub_cat_date ON hub_dynamic_events (event_category, event_date DESC);
+        CREATE INDEX IF NOT EXISTS idx_hub_pref_cat_date ON hub_dynamic_events (prefecture_code, event_category, event_date DESC);
+        CREATE INDEX IF NOT EXISTS idx_hub_corp_num ON hub_dynamic_events (corporate_number);
+        CREATE INDEX IF NOT EXISTS idx_hub_date ON hub_dynamic_events (event_date DESC);
+      `);
+    }
+    hubDynamicEventsTableInitialized = true;
+  } catch (err) {
+    console.error('Failed to init hub_dynamic_events table:', err);
+  }
+}
 
+/**
+ * Retrieve paginated dynamic events for programmatic SEO Hubs.
+ * Joins with companies to get rich B2B context (capital, employees, phone, website).
+ */
+export async function getHubDynamicEvents(options: GetHubEventsOptions = {}): Promise<HubDynamicEvent[]> {
+  const { category, prefectureCode, yearMonth, limit = 50, offset = 0 } = options;
+  const whereClauses: string[] = [];
+  const params: any[] = [];
+
+  if (category) {
+    whereClauses.push('h.event_category = ?');
+    params.push(category);
+  }
+
+  if (prefectureCode) {
+    whereClauses.push('h.prefecture_code = ?');
+    params.push(prefectureCode.padStart(2, '0'));
+  }
+
+  if (yearMonth) {
+    const isPG = !!DATABASE_URL;
+    if (isPG) {
+      whereClauses.push("TO_CHAR(h.event_date, 'YYYY-MM') = ?");
+    } else {
+      whereClauses.push("SUBSTR(h.event_date, 1, 7) = ?");
+    }
+    params.push(yearMonth);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const isPG = !!DATABASE_URL;
+  const dateSelect = isPG ? "TO_CHAR(h.event_date, 'YYYY-MM-DD') AS event_date" : "h.event_date";
+
+  const sql = `
+    SELECT 
+      h.id,
+      h.corporate_number,
+      h.company_name,
+      h.prefecture_code,
+      h.prefecture_name,
+      h.city_name,
+      h.event_category,
+      ${dateSelect},
+      h.title_ja,
+      h.description_ja,
+      h.old_value,
+      h.new_value,
+      h.source,
+      c.capital_amount,
+      c.employee_count,
+      c.representative_name,
+      c.phone_number,
+      c.website_url,
+      c.has_website
+    FROM hub_dynamic_events h
+    LEFT JOIN companies c ON h.corporate_number = c.corporate_number
+    ${whereSql}
+    ORDER BY h.event_date DESC, h.id DESC
+    LIMIT ? OFFSET ?
+  `;
+
+  params.push(limit, offset);
+
+  try {
+    const rows = await runQuery(sql, params);
+    return rows.map((r: any) => ({
+      id: Number(r.id),
+      corporate_number: String(r.corporate_number),
+      company_name: String(r.company_name),
+      prefecture_code: String(r.prefecture_code),
+      prefecture_name: String(r.prefecture_name),
+      city_name: r.city_name || null,
+      event_category: r.event_category,
+      event_date: String(r.event_date),
+      title_ja: String(r.title_ja),
+      description_ja: r.description_ja || null,
+      old_value: r.old_value || null,
+      new_value: r.new_value || null,
+      source: r.source || '国税庁 / 商業登記',
+      capital_amount: r.capital_amount != null ? Number(r.capital_amount) : null,
+      employee_count: r.employee_count != null ? Number(r.employee_count) : null,
+      representative_name: r.representative_name || null,
+      phone_number: r.phone_number || null,
+      website_url: r.website_url || null,
+      has_website: Boolean(r.has_website || r.website_url),
+    }));
+  } catch (error) {
+    console.error('Error in getHubDynamicEvents:', error);
+    return [];
+  }
+}
+
+/**
+ * Get total count for pagination on dynamic hub pages.
+ */
+export async function getHubDynamicEventsCount(options: GetHubEventsOptions = {}): Promise<number> {
+  const { category, prefectureCode, yearMonth } = options;
+  const whereClauses: string[] = [];
+  const params: any[] = [];
+
+  if (category) {
+    whereClauses.push('event_category = ?');
+    params.push(category);
+  }
+
+  if (prefectureCode) {
+    whereClauses.push('prefecture_code = ?');
+    params.push(prefectureCode.padStart(2, '0'));
+  }
+
+  if (yearMonth) {
+    const isPG = !!DATABASE_URL;
+    if (isPG) {
+      whereClauses.push("TO_CHAR(event_date, 'YYYY-MM') = ?");
+    } else {
+      whereClauses.push("SUBSTR(event_date, 1, 7) = ?");
+    }
+    params.push(yearMonth);
+  }
+
+  const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
+  const sql = `SELECT COUNT(*) AS total FROM hub_dynamic_events ${whereSql}`;
+
+  try {
+    const row = await runGetQuery(sql, params);
+    return row ? Number(row.total || row.count || 0) : 0;
+  } catch (error) {
+    console.error('Error in getHubDynamicEventsCount:', error);
+    return 0;
+  }
+}
+
+/**
+ * Get breakdown count by prefecture for a category (used in filter bars / regional breakdown).
+ */
+export async function getHubPrefectureCounts(
+  category: string,
+  yearMonth?: string
+): Promise<Array<{ prefecture_code: string; prefecture_name: string; count: number }>> {
+  const whereClauses: string[] = ['event_category = ?'];
+  const params: any[] = [category];
+
+  if (yearMonth) {
+    const isPG = !!DATABASE_URL;
+    if (isPG) {
+      whereClauses.push("TO_CHAR(event_date, 'YYYY-MM') = ?");
+    } else {
+      whereClauses.push("SUBSTR(event_date, 1, 7) = ?");
+    }
+    params.push(yearMonth);
+  }
+
+  const sql = `
+    SELECT prefecture_code, prefecture_name, COUNT(*) AS count
+    FROM hub_dynamic_events
+    WHERE ${whereClauses.join(' AND ')}
+    GROUP BY prefecture_code, prefecture_name
+    ORDER BY count DESC, prefecture_code ASC
+  `;
+
+  try {
+    const rows = await runQuery(sql, params);
+    return rows.map((r: any) => ({
+      prefecture_code: String(r.prefecture_code),
+      prefecture_name: String(r.prefecture_name),
+      count: Number(r.count || 0),
+    }));
+  } catch (error) {
+    console.error('Error in getHubPrefectureCounts:', error);
+    return [];
+  }
+}
+
+/**
+ * Get recent dynamic events for a specific company (for bidirectional linking from Company page to Hubs).
+ */
+export async function getRecentHubEventsForCompany(
+  corporateNumber: string,
+  limit: number = 5
+): Promise<HubDynamicEvent[]> {
+  const isPG = !!DATABASE_URL;
+  const dateSelect = isPG ? "TO_CHAR(event_date, 'YYYY-MM-DD') AS event_date" : "event_date";
+
+  const sql = `
+    SELECT 
+      id,
+      corporate_number,
+      company_name,
+      prefecture_code,
+      prefecture_name,
+      city_name,
+      event_category,
+      ${dateSelect},
+      title_ja,
+      description_ja,
+      old_value,
+      new_value,
+      source
+    FROM hub_dynamic_events
+    WHERE corporate_number = ?
+    ORDER BY event_date DESC, id DESC
+    LIMIT ?
+  `;
+
+  try {
+    const rows = await runQuery(sql, [corporateNumber, limit]);
+    return rows.map((r: any) => ({
+      id: Number(r.id),
+      corporate_number: String(r.corporate_number),
+      company_name: String(r.company_name),
+      prefecture_code: String(r.prefecture_code),
+      prefecture_name: String(r.prefecture_name),
+      city_name: r.city_name || null,
+      event_category: r.event_category,
+      event_date: String(r.event_date),
+      title_ja: String(r.title_ja),
+      description_ja: r.description_ja || null,
+      old_value: r.old_value || null,
+      new_value: r.new_value || null,
+      source: r.source || '国税庁 / 商業登記',
+    }));
+  } catch (error) {
+    console.error('Error in getRecentHubEventsForCompany:', error);
+    return [];
+  }
+}

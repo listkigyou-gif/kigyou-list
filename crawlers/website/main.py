@@ -578,8 +578,8 @@ def classify_website_industry(text: str) -> tuple[str, str, list[str]]:
 
 # --- PROXY POOL DISCOVERY ---
 def get_active_warp_proxies() -> list[dict]:
-    """Scan and verify all active Cloudflare WARP proxy ports on 127.0.0.1 (ports 40011-40050)."""
-    target_ports = list(range(40011, 40051))
+    """Scan and verify all active Cloudflare WARP proxy ports on 127.0.0.1 (ports 40001-40080)."""
+    target_ports = [40001] + list(range(40011, 40081))
     active = []
     for port in target_ports:
         try:
@@ -766,23 +766,83 @@ async def batch_db_writer(db_path: str, buffer_queue: asyncio.Queue, is_done: as
             break
 
 def _commit_batch(db_path: str, items: list):
-    """Execute a single atomic WAL transaction for raw_website and companies."""
+    """Execute a single atomic WAL transaction for raw_website and companies with B2B Data Engine compliance."""
     for attempt in range(5):
         try:
             conn = sqlite3.connect(db_path, timeout=60.0)
             conn.execute("PRAGMA journal_mode=WAL;")
+            conn.execute("PRAGMA busy_timeout=60000;")
             conn.execute("PRAGMA synchronous=NORMAL;")
             cur = conn.cursor()
             
+            # 1. Fetch existing metadata for this batch
+            c_nums = [it["corp_num"] for it in items]
+            placeholders = ",".join("?" * len(c_nums))
+            cur.execute(f"""
+                SELECT corporate_number, sns_links, manually_locked_fields, industry_confidence, primary_industry_code, major_industry_code, jigyo_shumoku
+                FROM companies WHERE corporate_number IN ({placeholders})
+            """, c_nums)
+            existing_map = {
+                r[0]: {
+                    "sns": r[1] or "{}",
+                    "locked": r[2] or "{}",
+                    "conf": r[3] or "UNCLASSIFIED",
+                    "primary": r[4],
+                    "major": r[5],
+                    "jigyo": r[6]
+                } for r in cur.fetchall()
+            }
+
             raw_inserts = []
             comp_updates = []
+            ind_inserts = []
             
             for it in items:
                 c_num = it["corp_num"]
                 w_url = it["website_url"]
                 info = it["info"]
                 scraped_at = it["scraped_at"]
+                crawl_status = info.get("crawl_status", "SUCCESS")
                 
+                # Merge SNS Links instead of blindly overwriting
+                old_sns_str = existing_map.get(c_num, {}).get("sns", "{}")
+                try:
+                    old_sns = json.loads(old_sns_str) if old_sns_str else {}
+                    if not isinstance(old_sns, dict): old_sns = {}
+                except Exception:
+                    old_sns = {}
+
+                new_sns_str = info.get("sns_links")
+                try:
+                    new_sns = json.loads(new_sns_str) if new_sns_str else {}
+                    if not isinstance(new_sns, dict): new_sns = {}
+                except Exception:
+                    new_sns = {}
+
+                merged_sns = {**old_sns, **new_sns}
+                final_sns_json = json.dumps(merged_sns, ensure_ascii=False) if merged_sns else None
+
+                # Respect manually_locked_fields
+                locked_str = existing_map.get(c_num, {}).get("locked", "{}")
+                try:
+                    locked_fields = set(json.loads(locked_str).keys()) if locked_str else set()
+                except Exception:
+                    locked_fields = set()
+
+                phone_val = info.get("phone_number", "") if "phone_number" not in locked_fields else ""
+                email_val = info.get("email_address", "") if "email_address" not in locked_fields else ""
+                form_val = info.get("contact_form_url", "") if "contact_form_url" not in locked_fields else ""
+                summary_val = info.get("business_summary", "") if "business_summary" not in locked_fields else ""
+                logo_val = info.get("logo_url", "")
+
+                # Deterministic Industry Tagging (VERIFIED_WEB - Level 6)
+                existing_conf = existing_map.get(c_num, {}).get("conf", "UNCLASSIFIED")
+                can_tag = existing_conf in ("UNCLASSIFIED", "", None) and bool(info.get("primary_industry_code"))
+                primary_code = info.get("primary_industry_code") if can_tag else existing_map.get(c_num, {}).get("primary")
+                major_code = info.get("major_industry_code") if can_tag else existing_map.get(c_num, {}).get("major")
+                conf_val = "VERIFIED_WEB" if can_tag else existing_conf
+                jigyo_val = info.get("jigyo_shumoku", "") if can_tag else existing_map.get(c_num, {}).get("jigyo")
+
                 raw_inserts.append((
                     c_num, w_url,
                     info.get("phone_number", ""),
@@ -792,27 +852,37 @@ def _commit_batch(db_path: str, items: list):
                     info.get("employee_count", ""),
                     info.get("representative_name", ""),
                     info.get("business_summary", ""),
-                    info.get("sns_links"),
-                    info.get("logo_url", ""),
-                    info.get("contact_form_url", ""),
+                    final_sns_json,
+                    logo_val,
+                    form_val,
                     scraped_at
                 ))
                 
                 comp_updates.append((
                     scraped_at,
-                    info.get("crawl_status", "SUCCESS"),
-                    info.get("crawl_status", "SUCCESS"),
-                    info.get("sns_links"),
-                    info.get("phone_number", ""),
-                    info.get("email_address", ""),
-                    info.get("contact_form_url", ""),
+                    crawl_status,
+                    crawl_status,
+                    crawl_status,
+                    final_sns_json,
+                    phone_val, phone_val, phone_val,
+                    email_val, email_val, email_val,
+                    form_val, form_val, form_val,
                     info.get("email_type", ""),
-                    info.get("logo_url", ""),
-                    info.get("jigyo_shumoku", ""),
-                    info.get("business_summary", ""),
+                    logo_val, logo_val,
+                    primary_code,
+                    major_code,
+                    conf_val,
+                    jigyo_val, jigyo_val, jigyo_val,
+                    summary_val, summary_val,
                     c_num
                 ))
-                
+
+                if can_tag:
+                    i_code = info.get("industry_code")
+                    i_path = info.get("industry_path")
+                    if i_code and i_path:
+                        ind_inserts.append((c_num, i_code, i_path, 1))
+
             cur.executemany("""
                 INSERT OR REPLACE INTO raw_website (
                     corporate_number, website_url, phone_number, fax_number, email_address,
@@ -825,27 +895,24 @@ def _commit_batch(db_path: str, items: list):
                 SET website_last_crawled_at = ?,
                     website_crawl_status = ?,
                     website_url = CASE WHEN ? IN ('DEAD_DOMAIN', 'PARKED_DOMAIN') THEN NULL ELSE website_url END,
-                    sns_links = CASE WHEN ? IS NOT NULL AND ? != '' THEN ? ELSE sns_links END,
+                    has_website = CASE WHEN ? IN ('DEAD_DOMAIN', 'PARKED_DOMAIN') THEN 0 ELSE has_website END,
+                    sns_links = COALESCE(?, sns_links),
                     phone_number = CASE WHEN (phone_number IS NULL OR phone_number = '') AND ? != '' THEN ? ELSE phone_number END,
+                    has_phone = CASE WHEN (? != '') OR (phone_number IS NOT NULL AND phone_number != '') THEN 1 ELSE has_phone END,
                     email_address = CASE WHEN (email_address IS NULL OR email_address = '') AND ? != '' THEN ? ELSE email_address END,
+                    has_email = CASE WHEN (? != '') OR (email_address IS NOT NULL AND email_address != '') THEN 1 ELSE has_email END,
                     contact_form_url = CASE WHEN ? != '' THEN ? ELSE contact_form_url END,
+                    has_contact_form = CASE WHEN (? != '') OR (contact_form_url IS NOT NULL AND contact_form_url != '') THEN 1 ELSE has_contact_form END,
                     email_type = CASE WHEN ? != '' THEN ? ELSE email_type END,
                     logo_url = CASE WHEN ? != '' THEN ? ELSE logo_url END,
-                    jigyo_shumoku = CASE WHEN ? != '' AND (jigyo_shumoku IS NULL OR jigyo_shumoku LIKE '%未分類%' OR jigyo_shumoku LIKE '%分類不能%') THEN ? ELSE jigyo_shumoku END,
+                    primary_industry_code = COALESCE(?, primary_industry_code),
+                    major_industry_code = COALESCE(?, major_industry_code),
+                    industry_confidence = COALESCE(?, industry_confidence),
+                    jigyo_shumoku = CASE WHEN ? IS NOT NULL AND ? != '' AND (jigyo_shumoku IS NULL OR jigyo_shumoku LIKE '%未分類%') THEN ? ELSE jigyo_shumoku END,
                     business_summary = CASE WHEN (business_summary IS NULL OR business_summary = '') AND ? != '' THEN ? ELSE business_summary END,
                     updated_at = CURRENT_TIMESTAMP
                 WHERE corporate_number = ?;
-            """, [(s, st, st, sn, sn, sn, ph, ph, em, em, cf, cf, et, et, lg, lg, jg, jg, bs, bs, c) for s, st, st2, sn, ph, em, cf, et, lg, jg, bs, c in comp_updates])
-
-            # Insert into company_industries if on-the-fly tagging succeeded
-            ind_inserts = []
-            for it in items:
-                c_num = it["corp_num"]
-                info = it["info"]
-                i_code = info.get("industry_code")
-                i_path = info.get("industry_path")
-                if i_code and i_path:
-                    ind_inserts.append((c_num, i_code, i_path, 1))
+            """, comp_updates)
 
             if ind_inserts:
                 cur.executemany("""
@@ -993,9 +1060,12 @@ async def website_worker(worker_id: int, proxy_cfg: dict, task_queue: asyncio.Qu
                 comb_tag_text = f"{page_title} {extracted_info.get('business_summary', '')} {' '.join(biz_snippets)} {clean_text[:1200]}"
                 ind_code, ind_path, ind_tags = classify_website_industry(comb_tag_text)
                 if ind_tags:
-                    extracted_info["jigyo_shumoku"] = ",".join(ind_tags) + " (AI確認済)"
+                    extracted_info["jigyo_shumoku"] = ",".join(ind_tags)
+                    extracted_info["primary_industry_code"] = ind_code
+                    extracted_info["major_industry_code"] = ind_path.split('.')[0] if ind_path else ""
                     extracted_info["industry_code"] = ind_code
                     extracted_info["industry_path"] = ind_path
+                    extracted_info["industry_confidence"] = "VERIFIED_WEB"
 
                 # 3.5 Deep Subpage Discovery (only 1 top-priority subpage if critical info is missing)
                 needs_more_info = (not extracted_info["phone_number"] or not extracted_info["representative_name"] or not extracted_info["contact_form_url"])

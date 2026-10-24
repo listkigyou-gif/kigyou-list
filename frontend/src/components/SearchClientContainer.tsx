@@ -5,7 +5,7 @@ import Link from "next/link";
 import { 
   Building2, Search, MapPin, X, Phone, Globe, Clock,
   ChevronLeft, ChevronRight, SlidersHorizontal, Lock, ExternalLink, MessageSquare, Send, Mail,
-  Sparkles, ArrowRight, RotateCcw, Filter, Zap, Award, FileCheck2, FileSpreadsheet, CheckCircle2, TrendingUp, Users, Printer
+  Sparkles, ArrowRight, RotateCcw, Filter, Zap, Award, FileCheck2, FileSpreadsheet, CheckCircle2, TrendingUp, Users, Printer, Activity
 } from "lucide-react";
 import { formatShortDate } from "@/lib/dateUtils";
 import { SearchSidebar } from "@/components/SearchSidebar";
@@ -87,6 +87,9 @@ interface Company {
   has_contact_form?: boolean;
   has_email?: boolean;
   email_type?: string | null;
+  is_listed?: boolean | null;
+  listing_market?: string | null;
+  stock_code?: string | null;
 }
 
 interface PrefectureOption {
@@ -135,6 +138,7 @@ interface SearchClientContainerProps {
     hasCertification?: boolean;
     hasPatent?: boolean;
     hasFinancials?: boolean;
+    isListed?: boolean;
     minSales?: number;
     maxSales?: number;
     hasEmail?: boolean;
@@ -205,7 +209,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   initialFilters
 }) => {
   const { locale, t } = useLanguage();
-  const { user, isLoggedIn, setAuthModalOpen } = useAuth();
+  const { user, isLoggedIn, setAuthModalOpen, isCompanySaved, toggleSaveCompany } = useAuth();
   const [formCredits, setFormCredits] = useState<number | null>(null);
 
   // 1. Local States
@@ -271,6 +275,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   const [hasCertification, setHasCertification] = useState(!!initialFilters.hasCertification);
   const [hasPatent, setHasPatent] = useState(!!initialFilters.hasPatent);
   const [hasFinancials, setHasFinancials] = useState(!!initialFilters.hasFinancials);
+  const [isListed, setIsListed] = useState(!!initialFilters.isListed);
   const [minSales, setMinSales] = useState(initialFilters.minSales);
   const [maxSales, setMaxSales] = useState(initialFilters.maxSales);
   const [hasEmail, setHasEmail] = useState(!!initialFilters.hasEmail);
@@ -350,6 +355,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     if (initialFilters.hasCertification) initialParams.set("certification", "true");
     if (initialFilters.hasPatent) initialParams.set("patent", "true");
     if (initialFilters.hasFinancials) initialParams.set("financials", "true");
+    if (initialFilters.isListed) initialParams.set("is_listed", "true");
     if (initialFilters.minSales != null) initialParams.set("min_sales", String(initialFilters.minSales));
     if (initialFilters.maxSales != null) initialParams.set("max_sales", String(initialFilters.maxSales));
     if (initialFilters.hasEmail) initialParams.set("email", "true");
@@ -399,6 +405,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     const newHasCertification = overrides.hasCertification !== undefined ? overrides.hasCertification : hasCertification;
     const newHasPatent = overrides.hasPatent !== undefined ? overrides.hasPatent : hasPatent;
     const newHasFinancials = overrides.hasFinancials !== undefined ? overrides.hasFinancials : hasFinancials;
+    const newIsListed = overrides.is_listed !== undefined ? overrides.is_listed : isListed;
     const newMinSales = overrides.minSales !== undefined ? overrides.minSales : minSales;
     const newMaxSales = overrides.maxSales !== undefined ? overrides.maxSales : maxSales;
     const newHasEmail = overrides.hasEmail !== undefined ? overrides.hasEmail : hasEmail;
@@ -437,6 +444,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     if (newHasCertification) apiParams.set("certification", "true");
     if (newHasPatent) apiParams.set("patent", "true");
     if (newHasFinancials) apiParams.set("financials", "true");
+    if (newIsListed) apiParams.set("is_listed", "true");
     if (newMinSales != null) apiParams.set("min_sales", String(newMinSales));
     if (newMaxSales != null) apiParams.set("max_sales", String(newMaxSales));
     if (newHasEmail) apiParams.set("email", "true");
@@ -488,6 +496,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       if (newHasCertification) browserParams.set("certification", "true");
       if (newHasPatent) browserParams.set("patent", "true");
       if (newHasFinancials) browserParams.set("financials", "true");
+      if (newIsListed) browserParams.set("is_listed", "true");
       if (newMinSales != null) browserParams.set("min_sales", String(newMinSales));
       if (newMaxSales != null) browserParams.set("max_sales", String(newMaxSales));
       if (newHasEmail) browserParams.set("email", "true");
@@ -568,6 +577,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       if (newHasCertification) browserParams.set("certification", "true");
       if (newHasPatent) browserParams.set("patent", "true");
       if (newHasFinancials) browserParams.set("financials", "true");
+      if (newIsListed) browserParams.set("is_listed", "true");
       if (newMinSales != null) browserParams.set("min_sales", String(newMinSales));
       if (newMaxSales != null) browserParams.set("max_sales", String(newMaxSales));
       if (newHasEmail) browserParams.set("email", "true");
@@ -681,6 +691,9 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     if (updates.financials !== undefined) {
       setHasFinancials(!!updates.financials);
     }
+    if (updates.is_listed !== undefined) {
+      setIsListed(!!updates.is_listed);
+    }
     if (updates.min_sales !== undefined) {
       setMinSales(updates.min_sales ? parseFloat(updates.min_sales) : undefined);
     }
@@ -752,6 +765,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       if (updates.certification !== undefined) overrides.hasCertification = !!updates.certification;
       if (updates.patent !== undefined) overrides.hasPatent = !!updates.patent;
       if (updates.financials !== undefined) overrides.hasFinancials = !!updates.financials;
+      if (updates.is_listed !== undefined) overrides.is_listed = !!updates.is_listed;
       if (updates.min_sales !== undefined) overrides.minSales = updates.min_sales ? parseFloat(updates.min_sales) : undefined;
       if (updates.max_sales !== undefined) overrides.maxSales = updates.max_sales ? parseFloat(updates.max_sales) : undefined;
       if (updates.email !== undefined) overrides.hasEmail = !!updates.email;
@@ -863,7 +877,19 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
 
   // 4. Skeleton Loader Overlay and Render Layout
   return (
-    <div className="flex-1 max-w-8xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 flex gap-8">
+    <div className="flex-1 max-w-8xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col gap-6">
+      {/* Breadcrumb Navigation */}
+      <nav className="flex items-center gap-1.5 text-xs text-slate-500" aria-label="Breadcrumb">
+        <Link href={`/${locale}`} className="hover:text-slate-900 dark:hover:text-white transition-colors">
+          {locale === "ja" ? "ホーム" : locale === "vi" ? "Trang chủ" : "Home"}
+        </Link>
+        <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+        <span className="text-slate-900 dark:text-white font-medium">
+          {locale === "ja" ? "企業検索・営業リスト作成" : locale === "vi" ? "Tìm kiếm doanh nghiệp" : "Company Search"}
+        </span>
+      </nav>
+
+      <div className="flex gap-8 w-full">
       {/* Mobile Drawer Backdrop */}
       {isMobileDrawerOpen && (
         <div 
@@ -910,6 +936,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             hasCertification={hasCertification}
             hasPatent={hasPatent}
             hasFinancials={hasFinancials}
+            isListed={isListed}
             minSales={minSales}
             maxSales={maxSales}
             hasEmail={hasEmail}
@@ -955,6 +982,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             hasCertification={hasCertification}
             hasPatent={hasPatent}
             hasFinancials={hasFinancials}
+            isListed={isListed}
             minSales={minSales}
             maxSales={maxSales}
             hasEmail={hasEmail}
@@ -1014,7 +1042,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
           const activeFiltersCount = [
             keyword, prefCode, city, indCode, minEmp, maxEmp, minCap, maxCap,
             hasHiring, hasSubsidy, hasBidding, minEstYear, maxEstYear,
-            hasAward, hasCertification, hasPatent, hasFinancials,
+            hasAward, hasCertification, hasPatent, hasFinancials, isListed,
             minSales, maxSales, hasEmail, hasPhone, hasWebsite, hasFax,
             hasContactForm, emailType, companyStatus, minOpIncome, maxOpIncome,
             minOrdIncome, maxOrdIncome, minNetIncome, maxNetIncome
@@ -1054,6 +1082,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     certification: false,
                     patent: false,
                     financials: false,
+                    is_listed: false,
                     min_sales: null,
                     max_sales: null,
                     email: false,
@@ -1219,6 +1248,13 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     <button type="button" onClick={() => handleFilterChange({ financials: false }, true)} className="p-0.5 rounded-full hover:bg-blue-200/60 dark:hover:bg-blue-800 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-blue-700 dark:text-blue-300" /></button>
                   </span>
                 )}
+                {isListed && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-950 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-200 dark:border-blue-800 text-xs font-semibold shadow-2xs">
+                    <span className="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                    <span>{locale === 'ja' ? '上場企業のみ' : locale === 'vi' ? 'Chỉ DN niêm yết' : 'Listed Companies Only'}</span>
+                    <button type="button" onClick={() => handleFilterChange({ is_listed: false }, true)} className="p-0.5 rounded-full hover:bg-blue-200/60 dark:hover:bg-blue-800 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-blue-700 dark:text-blue-300" /></button>
+                  </span>
+                )}
 
                 {/* Scale & Financial Ranges */}
                 {(minCap !== undefined || maxCap !== undefined) && (
@@ -1287,56 +1323,13 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
           );
         })()}
 
-        {/* Free Quota & Signup Conversion Banner for Unauthenticated Users */}
-        {!isLoggedIn && (
-          <div className="bg-gradient-to-r from-blue-50/70 via-slate-50 to-indigo-50/50 dark:from-slate-900/80 dark:via-[#161B22] dark:to-slate-900/80 border border-blue-200/80 dark:border-slate-800 p-3.5 sm:p-4 rounded-xl shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg bg-[#1B4F8A]/10 dark:bg-blue-900/40 border border-[#1B4F8A]/15 dark:border-blue-800/40 flex items-center justify-center shrink-0">
-                <Sparkles className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] font-bold text-[#1B4F8A] dark:text-blue-300 bg-[#E8EFF8] dark:bg-blue-950/80 border border-[#1B4F8A]/20 dark:border-blue-800/50 px-2 py-0.5 rounded tracking-wider">
-                    {locale === 'ja' ? '無料会員特典' : locale === 'vi' ? 'ĐẶC QUYỀN MIỄN PHÍ' : 'FREE TIER'}
-                  </span>
-                  <p className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                    {locale === 'ja' 
-                      ? '今すぐ無料登録で毎日20件のCSVダウンロード枠を即時プレゼント！' 
-                      : locale === 'vi'
-                      ? 'Đăng ký miễn phí ngay để nhận 20 lượt tải CSV mỗi ngày!'
-                      : 'Sign up free now to get 20 free CSV company downloads daily!'}
-                  </p>
-                </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 hidden sm:block mt-0.5">
-                  {locale === 'ja'
-                    ? 'クレジットカード不要・Googleアカウントで1秒ログイン可能'
-                    : locale === 'vi'
-                    ? 'Không cần thẻ tín dụng • Đăng nhập 1 chạm với Google'
-                    : 'No credit card required • 1-click Google sign in'}
-                </p>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => {
-                trackSignUpIntent("search_banner");
-                setAuthModalOpen(true);
-              }}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-[#1B4F8A] hover:bg-[#153e6d] text-white text-xs font-bold shadow-2xs hover:shadow-xs transition-all active:scale-[0.98] cursor-pointer shrink-0"
-            >
-              <span>{locale === 'ja' ? '無料でCSV枠を受け取る' : locale === 'vi' ? 'Nhận 20 lượt tải/ngày' : 'Claim Free CSV Trial'}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        )}
-
-        {/* Stats Bar */}
+        {/* Stats & Actions Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400 bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 p-3.5 sm:p-4 rounded-xl shadow-2xs">
-          <span>
+          <div>
             {totalCount > 0 ? (
               totalCount === 2000 ? (
                 <>
-                  <strong className="font-bold text-slate-800 dark:text-white">2,000+</strong>{" "}
+                  <strong className="font-bold text-slate-800 dark:text-white text-sm">2,000+</strong>{" "}
                   {locale === 'ja'
                     ? '件の企業が見つかりました（高速化のため上位2,000件を表示中）'
                     : locale === 'vi'
@@ -1344,13 +1337,18 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     : 'companies found (Fast search: showing top 2,000 companies)'}
                 </>
               ) : (
-                t.search.companiesFound.replace("{count}", totalCount.toLocaleString('ja-JP'))
+                <span className="font-medium text-slate-700 dark:text-slate-200">
+                  <strong className="font-bold text-slate-900 dark:text-white text-sm">
+                    {totalCount.toLocaleString('ja-JP')}
+                  </strong>{" "}
+                  {locale === 'ja' ? '件の企業が見つかりました' : locale === 'vi' ? 'doanh nghiệp tìm thấy' : 'companies found'}
+                </span>
               )
             ) : (
               t.search.companiesFoundZero
             )}
-          </span>
-          <div className="flex flex-wrap items-start gap-3 sm:gap-4">
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
             <ExportCSVButton 
               totalCount={totalCount}
               keyword={keyword}
@@ -1392,11 +1390,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               <button
                 type="button"
                 onClick={handleOpenFormCampaign}
-                className={`px-3.5 py-2 text-xs font-bold rounded-lg shadow-2xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-[0.98] ${
-                  !hasContactForm
-                    ? "text-white bg-[#1B4F8A] hover:bg-[#143D6C] border border-[#143D6C] ring-2 ring-amber-400/50"
-                    : "text-white bg-[#1B4F8A] hover:bg-[#143D6C] border border-[#143D6C]"
-                }`}
+                className="px-3.5 py-2 text-xs font-semibold rounded-lg bg-[#1B4F8A] hover:bg-[#153e6d] text-white shadow-2xs transition-all flex items-center gap-1.5 shrink-0 cursor-pointer active:scale-[0.98]"
                 title={
                   !isLoggedIn
                     ? (locale === 'ja'
@@ -1404,12 +1398,6 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                         : locale === 'vi'
                         ? "Đăng ký hoặc đăng nhập miễn phí để sử dụng tính năng gửi form"
                         : "Register free or login to use automated form outreach")
-                    : !hasContactForm
-                    ? (locale === 'ja'
-                        ? "【条件必須】「連絡先情報の有無 ＞ お問い合わせフォーム」の絞り込みが必要です"
-                        : locale === 'vi'
-                        ? "【Điều kiện bắt buộc】Vui lòng tích chọn bộ lọc 'Biểu mẫu liên hệ'"
-                        : "【Required Filter】Please check 'Contact Form' under Contact Presence")
                     : (locale === 'ja' 
                         ? "抽出したこのターゲットリストへフォーム営業を自動配信（セルフ型）" 
                         : locale === 'vi' 
@@ -1419,13 +1407,6 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{locale === 'ja' ? 'この条件でフォーム営業 (自動配信)' : locale === 'vi' ? 'Gửi Form tự động (Self-serve)' : 'Automated Form Outreach'}</span>
-                {!hasContactForm ? (
-                  <span className="text-[9px] bg-amber-400 text-amber-950 font-black px-1.5 py-0.2 rounded uppercase">
-                    {locale === 'ja' ? '要条件' : locale === 'vi' ? 'CẦN LỌC' : 'REQ'}
-                  </span>
-                ) : (
-                  <span className="text-[9px] bg-amber-400 text-amber-950 font-black px-1.5 py-0.2 rounded uppercase">NEW</span>
-                )}
               </button>
               {isLoggedIn && formCredits !== null && (
                 <span className="text-[10px] mt-1 text-slate-400 dark:text-slate-500">
@@ -1460,26 +1441,28 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
           ) : companies.length > 0 ? (
             <div className={`flex flex-col gap-3 transition-opacity duration-150 ${isLoading ? "opacity-50 pointer-events-none" : "opacity-100"}`}>
               {companies.map((company) => (
-              <div 
+              <article 
                 key={company.corporate_number}
-                className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-4 sm:p-5 shadow-2xs hover:border-slate-350 dark:hover:border-slate-700 transition-all"
+                itemScope
+                itemType="https://schema.org/Organization"
+                className="b2b-card bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-4 sm:p-5 shadow-2xs hover:border-slate-350 dark:hover:border-slate-700 transition-all"
               >
                 {/* 1. Header: Logo + (Tags, Meta, and Company Name) */}
-                <div className="flex flex-row gap-3.5 sm:gap-4 items-start min-w-0 mb-3.5">
+                <div className="flex flex-row gap-3.5 sm:gap-4 items-start min-w-0 mb-3">
                   <CompanyLogo
                     websiteUrl={company.website_url}
                     logoUrl={company.logo_url}
                     companyName={company.company_name}
                     corporateNumber={company.corporate_number}
-                    className="w-12 h-12 sm:w-14 sm:h-14 shrink-0 mt-0.5"
+                    className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 mt-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60"
                     size={128}
                   />
 
                   <div className="flex-1 min-w-0">
-                    {/* Top Row: Status, Prefecture, Industry & Metadata */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className={`text-[11px] font-medium px-2 py-0.5 rounded-md border ${
+                    {/* Top Row: Status, Prefecture, Primary Industry & Corporate Number */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
+                      <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                        <span className={`text-[11px] font-medium px-2 py-0.2 rounded border ${
                           company.status === '閉鎖' || company.status === '解散'
                             ? 'text-rose-700 bg-rose-50 dark:bg-rose-950/40 dark:text-rose-400 border-rose-200/80 dark:border-rose-900/60'
                             : 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-400 border-emerald-200/80 dark:border-emerald-900/60'
@@ -1488,28 +1471,32 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                         </span>
 
                         {company.prefecture_name && (
-                          <span className="text-slate-600 dark:text-slate-300 text-[11px] font-medium inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
-                            <MapPin className="w-3 h-3 text-slate-400" />
+                          <span className="text-slate-600 dark:text-slate-300 text-[11px] font-medium px-2 py-0.2 rounded bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
                             {(t.prefectures as Record<string, string>)?.[company.prefecture_name] || company.prefecture_name}
                           </span>
                         )}
 
-                        {company.industries?.filter(ind => ind.classification_level === '大分類').map((ind, idx) => (
-                          <span key={idx} className="text-[11px] font-medium text-slate-600 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
-                            {ind.industry_code}.{(t.majorIndustries as Record<string, string>)?.[ind.industry_code] || ind.industry_name}
+                        {company.is_listed && (
+                          <span className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.2 rounded bg-blue-50 text-[#1B4F8A] border border-blue-200 dark:bg-blue-950/50 dark:text-blue-300 dark:border-blue-800/80">
+                            <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A] dark:bg-blue-400"></span>
+                            {company.listing_market ? `${company.listing_market}上場` : '上場企業'}
+                          </span>
+                        )}
+
+                        {/* Primary Industry ONLY (Max 1 to avoid tag explosion) */}
+                        {company.industries?.filter(ind => ind.classification_level === '大分類').slice(0, 1).map((ind, idx) => (
+                          <span key={idx} className="text-[11px] font-medium text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 px-2 py-0.2 rounded border border-slate-200 dark:border-slate-700 truncate max-w-[200px]">
+                            {(t.majorIndustries as Record<string, string>)?.[ind.industry_code] || ind.industry_name}
                           </span>
                         ))}
                       </div>
 
                       {/* Right Meta: Updated Date & Corporate Number */}
-                      <div className="flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-                        <span className="inline-flex items-center gap-1">
-                          <Clock className="w-3 h-3 text-slate-400" />
-                          <span>{locale === 'en' ? 'Updated' : locale === 'vi' ? 'Cập nhật' : '更新'}: {formatShortDate(company.updated_at)}</span>
-                        </span>
+                      <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+                        <span>{formatShortDate(company.updated_at)}</span>
                         <span className="text-slate-300 dark:text-slate-700">|</span>
-                        <div className="inline-flex items-center gap-1">
-                          <span>{t.company.corporateNumber ? t.company.corporateNumber.replace('{number}', company.corporate_number) : company.corporate_number}</span>
+                        <div className="inline-flex items-center gap-1 font-mono">
+                          <span>{company.corporate_number}</span>
                           <CopyTextButton text={company.corporate_number} className="!px-0.5 !py-0 hover:!bg-transparent text-slate-400 hover:text-slate-600" />
                         </div>
                       </div>
@@ -1517,40 +1504,46 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
 
                     {/* Company Name */}
                     <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors break-words leading-snug">
-                      <Link href={`/${locale}/company/${company.corporate_number}`}>
-                        {company.company_name_en && locale === 'en' ? company.company_name_en : company.company_name}
+                      <Link 
+                        href={`/${locale}/company/${company.corporate_number}`}
+                        rel="bookmark"
+                        itemProp="url"
+                      >
+                        <span itemProp="name">
+                          {company.company_name_en && locale === 'en' ? company.company_name_en : company.company_name}
+                        </span>
                       </Link>
                     </h3>
                   </div>
                 </div>
 
                 {/* 2. Unified Specification Panel (企業スペック表) */}
-                <div className="bg-slate-50/80 dark:bg-slate-800/40 rounded-lg p-3 sm:px-4 sm:py-3 border border-slate-200/80 dark:border-slate-700/80 text-xs">
+                <div className="bg-slate-50/80 dark:bg-slate-800/40 rounded-lg p-3 sm:px-4 sm:py-2.5 border border-slate-200/80 dark:border-slate-700/80 text-xs">
                   {/* 4 Core Data Points */}
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
                     <div className="min-w-0">
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-0.5">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block">
                         {locale === 'vi' ? 'Tên phiên âm' : locale === 'en' ? 'Furigana' : 'フリガナ'}
                       </span>
-                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate block">
+                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate block mt-0.5">
                         {company.company_name_kana || t.company.unregistered}
                       </span>
                     </div>
 
                     <div className="min-w-0">
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-0.5">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block">
                         {t.company.capital}
                       </span>
-                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate block">
+                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate block mt-0.5">
                         {company.capital_amount ? formatJapaneseCurrency(company.capital_amount, locale) : t.company.unregistered}
                       </span>
                     </div>
 
                     <div className="min-w-0">
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-0.5">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block">
                         {t.company.employees}
                       </span>
-                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate block">
+                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate block mt-0.5">
                         {company.employee_count 
                           ? (locale === 'en' ? `${company.employee_count.toLocaleString('en-US')} employees` : locale === 'vi' ? `${company.employee_count.toLocaleString('vi-VN')} nhân viên` : `${company.employee_count.toLocaleString('ja-JP')}名`) 
                           : t.company.unregistered}
@@ -1558,10 +1551,10 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     </div>
 
                     <div className="min-w-0">
-                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block mb-0.5">
+                      <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium block">
                         {t.search.establishmentYear}
                       </span>
-                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate block">
+                      <span className="text-slate-800 dark:text-slate-200 font-semibold text-xs truncate block mt-0.5">
                         {company.establishment_date 
                           ? (locale === 'en' ? `Est. ${company.establishment_date.substring(0, 4)}` : locale === 'vi' ? `Năm ${company.establishment_date.substring(0, 4)}` : `${company.establishment_date.substring(0, 4)}年`) 
                           : t.company.unregistered}
@@ -1569,50 +1562,38 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     </div>
                   </div>
 
-                  {/* Tags (事業種目) Integrated within Spec Panel */}
-                  <div className="pt-2.5 mt-2.5 border-t border-slate-200/70 dark:border-slate-700/60 flex items-center gap-2 flex-wrap min-w-0">
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px] font-medium shrink-0">
-                      {t.company.tags}:
-                    </span>
-                    <div className="flex flex-wrap items-center gap-1.5 min-w-0">
-                      {(() => {
-                        const mediumInds = company.industries?.filter(ind => ind.classification_level === '中分類') || [];
-                        if (mediumInds.length > 0) {
-                          return mediumInds.map((ind, idx) => (
-                            <span 
-                              key={idx} 
-                              className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
-                            >
-                              {ind.industry_code}.{getIndustryName(ind.industry_name, locale)}
-                            </span>
-                          ));
-                        }
+                  {/* Secondary Tags: Max 2 most relevant tags */}
+                  {(() => {
+                    const mediumInds = company.industries?.filter(ind => ind.classification_level === '中分類') || [];
+                    const displayTags = mediumInds.length > 0 
+                      ? mediumInds.slice(0, 2).map(ind => `${ind.industry_code}.${getIndustryName(ind.industry_name, locale)}`)
+                      : (company.jigyo_shumoku ? company.jigyo_shumoku.replace(' (AI確認済)', '').split(',').slice(0, 2).map(tag => getIndustryName(tag.trim(), locale)) : []);
 
-                        const tags = company.jigyo_shumoku 
-                          ? company.jigyo_shumoku.replace(' (AI確認済)', '').split(',')
-                          : [];
-                        return tags.length > 0 ? (
-                          tags.map((tag, idx) => (
-                            <span 
-                              key={idx} 
-                              className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-white text-slate-700 dark:bg-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
-                            >
-                              {getIndustryName(tag.trim(), locale)}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-slate-400 text-xs font-medium">{t.company.unregistered}</span>
-                        );
-                      })()}
-                    </div>
-                  </div>
+                    if (displayTags.length === 0) return null;
+
+                    return (
+                      <div className="pt-2 mt-2 border-t border-slate-200/60 dark:border-slate-700/50 flex items-center gap-1.5 flex-wrap min-w-0 text-[11px]">
+                        <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">
+                          {t.company.tags}:
+                        </span>
+                        {displayTags.map((tag, idx) => (
+                          <span 
+                            key={idx} 
+                            className="font-medium px-2 py-0.2 rounded bg-white text-slate-700 dark:bg-slate-900 dark:text-slate-300 border border-slate-200 dark:border-slate-700 truncate max-w-[220px]"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 {/* 3. Footer: Contacts & Primary Action */}
-                <div className="flex flex-wrap items-center justify-between gap-3 mt-3">
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs">
-                    <span className="flex items-center gap-1.5 font-medium text-slate-700 dark:text-slate-300">
-                      <Phone className="w-3.5 h-3.5 text-slate-400" />
+                <div className="flex flex-wrap items-center justify-between gap-3 mt-3 pt-1">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-slate-600 dark:text-slate-400">
+                    <span className="inline-flex items-center gap-1 font-medium">
+                      <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                       <span>{company.phone_number ? `TEL: ${company.phone_number}` : `TEL: ${t.company.unregistered}`}</span>
                     </span>
 
@@ -1621,49 +1602,64 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                         href={company.website_url} 
                         target="_blank" 
                         rel="noopener noreferrer" 
-                        className="flex items-center gap-1 font-medium text-[#1B4F8A] hover:underline dark:text-blue-400 transition-colors"
+                        className="inline-flex items-center gap-1 text-[#1B4F8A] hover:underline dark:text-blue-400 font-medium"
                       >
-                        <Globe className="w-3.5 h-3.5" />
+                        <Globe className="w-3.5 h-3.5 shrink-0" />
                         <span>Website</span>
                         <ExternalLink className="w-3 h-3 text-slate-400" />
                       </a>
                     ) : (
-                      <span className="flex items-center gap-1.5 font-medium text-slate-400">
-                        <Globe className="w-3.5 h-3.5" />
-                        <span>Website: {t.company.none}</span>
-                      </span>
+                      <span className="text-slate-400">Website: {t.company.none}</span>
                     )}
 
                     {(company.has_contact_form || company.contact_form_url) && (
-                      <span 
-                        className="inline-flex items-center gap-1 font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200 dark:bg-emerald-950/50 dark:text-emerald-300 dark:border-emerald-800 px-2 py-0.5 rounded-md text-xs select-none"
-                        title={locale === 'en' ? "Contact form available (Outreach supported)" : locale === 'vi' ? "Có form liên hệ (Hỗ trợ gửi form tiếp thị)" : "お問い合わせフォームあり（フォーム営業代行対応）"}
-                      >
-                        <MessageSquare className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                        <span>{locale === 'en' ? 'Form Available' : locale === 'vi' ? 'Có form' : 'フォームあり'}</span>
+                      <span className="inline-flex items-center gap-1 font-medium text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 px-1.5 py-0.2 rounded text-[11px]">
+                        <span>フォームあり</span>
                       </span>
                     )}
 
                     {(company.has_email || company.email_address) && (
-                      <span 
-                        className="inline-flex items-center gap-1 font-semibold text-slate-700 bg-slate-100 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 px-2 py-0.5 rounded-md text-xs select-none"
-                        title={locale === 'en' ? "Email address registered (Available in CSV export)" : locale === 'vi' ? "Có email liên hệ (Cung cấp trong file CSV)" : "メールアドレス登録あり（CSVエクスポートで提供）"}
-                      >
-                        <Mail className="w-3 h-3 text-slate-500 dark:text-slate-400" />
-                        <span>{locale === 'en' ? 'Email Available' : locale === 'vi' ? 'Có email' : 'メールあり'}</span>
+                      <span className="inline-flex items-center gap-1 font-medium text-slate-700 bg-slate-100 dark:bg-slate-800 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-1.5 py-0.2 rounded text-[11px]">
+                        <span>メールあり</span>
                       </span>
                     )}
                   </div>
 
-                  <Link 
-                    href={`/${locale}/company/${company.corporate_number}`}
-                    className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#1B4F8A] hover:bg-[#163e6d] rounded-lg shadow-2xs transition-colors shrink-0"
-                  >
-                    <span>{locale === 'vi' ? 'Xem chi tiết' : locale === 'en' ? 'Company Details' : '詳細プロフィール'}</span>
-                    <ChevronRight className="w-3.5 h-3.5 text-blue-200" />
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!isLoggedIn) {
+                          setAuthModalOpen(true);
+                        } else {
+                          toggleSaveCompany(company.corporate_number);
+                        }
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all active:scale-[0.98] cursor-pointer ${
+                        isCompanySaved(company.corporate_number)
+                          ? "bg-amber-50 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800 shadow-2xs"
+                          : "bg-white text-slate-700 hover:text-slate-900 border-slate-200 hover:bg-slate-50 dark:bg-[#161B22] dark:text-slate-300 dark:border-slate-700 dark:hover:bg-slate-800 shadow-2xs"
+                      }`}
+                      title={locale === 'ja' ? '企業変動をウォッチ' : locale === 'vi' ? 'Theo dõi biến động' : 'Watch Company'}
+                    >
+                      <Activity className={`w-3.5 h-3.5 ${isCompanySaved(company.corporate_number) ? "text-amber-600 dark:text-amber-400" : "text-slate-400 dark:text-slate-500"}`} />
+                      <span>
+                        {isCompanySaved(company.corporate_number)
+                          ? (locale === 'ja' ? 'ウォッチ中' : locale === 'vi' ? 'Đang theo dõi' : 'Watching')
+                          : (locale === 'ja' ? 'ウォッチ' : locale === 'vi' ? 'Theo dõi' : 'Watch')}
+                      </span>
+                    </button>
+
+                    <Link 
+                      href={`/${locale}/company/${company.corporate_number}`}
+                      className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#1B4F8A] hover:bg-[#153e6d] rounded-lg shadow-2xs transition-colors shrink-0"
+                    >
+                      <span>{locale === 'vi' ? 'Xem chi tiết' : locale === 'en' ? 'Company Details' : '詳細プロフィール'}</span>
+                      <ChevronRight className="w-3.5 h-3.5 text-blue-200" />
+                    </Link>
+                  </div>
                 </div>
-              </div>
+              </article>
             ))}
             </div>
           ) : (
@@ -1774,6 +1770,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
           companyStatus
         }}
       />
+      </div>
     </div>
   );
 };
