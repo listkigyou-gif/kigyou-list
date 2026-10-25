@@ -182,19 +182,6 @@ export const Header: React.FC = () => {
             </LocaleLink>
 
             <LocaleLink
-              href="/licenses"
-              prefetch={true}
-              className={`whitespace-nowrap transition-colors py-1 flex items-center gap-1 ${
-                isNavActive("/licenses") || isNavActive("/license")
-                  ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
-                  : "text-slate-600 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400"
-              }`}
-            >
-              <span>{locale === 'en' ? "Licenses Hub" : locale === 'vi' ? "Giấy phép công" : "公的許認可"}</span>
-              <span className="text-[9px] bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold px-1 py-0.2 rounded-full leading-none">NEW</span>
-            </LocaleLink>
-
-            <LocaleLink
               href="/watchlist"
               prefetch={true}
               className={`whitespace-nowrap transition-colors py-1 ${

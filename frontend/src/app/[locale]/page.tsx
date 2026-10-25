@@ -897,6 +897,187 @@ export default async function Home({ params }: PageParams) {
         </section>
 
         {/* ========================================================
+            TẦNG 5.5: CƠ SỞ DỮ LIỆU CÔNG QUYỀN & GIẤY PHÉP QUỐC GIA (SEO Hubs)
+            ======================================================== */}
+        <section aria-labelledby="licenses-heading" className="py-14 bg-slate-50 dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 mb-6 border-b border-slate-200/80 dark:border-slate-800 gap-3">
+              <div>
+                <span className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider block mb-1">
+                  OFFICIAL LICENSES & ACCREDITATIONS
+                </span>
+                <h2 id="licenses-heading" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+                  <span>{isJa ? "公的許認可・国家資格・士業法人データベース" : isVi ? "Cơ sở dữ liệu Giấy phép Công & Pháp nhân Chuyên môn" : "Official Licenses & Professional Registrations"}</span>
+                  <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-950/70 dark:text-blue-300">
+                    51万件+
+                  </span>
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                  {isJa 
+                    ? "出入国在留管理庁、国土交通省、厚生労働省、公安委員会から認可・登録を受けた正規事業者を横断検索" 
+                    : isVi 
+                    ? "Danh bạ doanh nghiệp được cấp phép chính thức từ Cục Xuất nhập cảnh, Bộ Giao thông, Bộ Lao động và Công an" 
+                    : "Verified statutory registrations and accredited corporate entities nationwide"}
+                </p>
+              </div>
+              <Link
+                href={`/${locale}/licenses`}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1B4F8A] dark:text-blue-400 hover:underline shrink-0 px-3 py-1.5 rounded-lg border border-blue-200 dark:border-blue-900 bg-white dark:bg-[#161B22] hover:bg-blue-50/50 transition-colors shadow-2xs"
+              >
+                <span>{isJa ? "全許認可ハブ一覧を見る" : isVi ? "Xem tất cả Hub Giấy phép" : "View All License Hubs"}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+              {[
+                {
+                  slug: "tokutei",
+                  titleJa: "登録支援機関",
+                  titleVi: "Cơ quan hỗ trợ Tokutei",
+                  titleEn: "Registered Support Org",
+                  badgeJa: "出入国在留管理庁",
+                  badgeVi: "Cục Xuất nhập cảnh",
+                  badgeEn: "Immigration Agency",
+                  count: "7,731",
+                  descJa: "特定技能外国人材受入れ、対応言語・直通番号網羅",
+                  descVi: "Hỗ trợ visa đặc định, ngôn ngữ và SĐT liên hệ",
+                  descEn: "Specified skilled workers visa & foreign support"
+                },
+                {
+                  slug: "shigyo",
+                  titleJa: "士業専門職法人",
+                  titleVi: "Pháp nhân Thuế & Luật",
+                  titleEn: "Statutory Law & Accounting",
+                  badgeJa: "各士業法・官公庁",
+                  badgeVi: "Pháp lý chuyên ngành",
+                  badgeEn: "Statutory Registry",
+                  count: "635",
+                  descJa: "税理士法人・弁護士法人・社労士法人・行政書士法人",
+                  descVi: "Pháp nhân thuế, luật sư, bảo hiểm xã hội, hành chính",
+                  descEn: "Incorporated tax, legal, labor, and patent firms"
+                },
+                {
+                  slug: "takken",
+                  titleJa: "宅地建物取引業者",
+                  titleVi: "Môi giới Bất động sản",
+                  titleEn: "Real Estate Brokers",
+                  badgeJa: "国土交通省・知事",
+                  badgeVi: "Bộ Đất đai & Tỉnh",
+                  badgeEn: "MLIT / Prefectures",
+                  count: "25,913",
+                  descJa: "宅建免許番号、更新回数（業歴指標）、代表者情報",
+                  descVi: "Mã số giấy phép, thâm niên và người đại diện",
+                  descEn: "License numbers, business tenure, verified brokers"
+                },
+                {
+                  slug: "kensetsu",
+                  titleJa: "建設業許可",
+                  titleVi: "Giấy phép Xây dựng",
+                  titleEn: "Construction Licenses",
+                  badgeJa: "国交大臣・知事許可",
+                  badgeVi: "Bộ Xây dựng & Tỉnh",
+                  badgeEn: "MLIT Authority",
+                  count: "355,587",
+                  descJa: "土木・建築・管工事など29業種許可、施工能力証明",
+                  descVi: "29 phân ngành xây dựng, cấp phép thi công công trình",
+                  descEn: "29 industry categories, certified general contractors"
+                },
+                {
+                  slug: "kobutsu",
+                  titleJa: "古物商許可",
+                  titleVi: "Kinh doanh Đồ cũ",
+                  titleEn: "Secondhand Dealers",
+                  badgeJa: "公安委員会・警察署",
+                  badgeVi: "Ủy ban An toàn Công",
+                  badgeEn: "Public Safety Comm",
+                  count: "8,923",
+                  descJa: "リユース・ブランド買取・中古車輸出・質屋営業",
+                  descVi: "Mua bán đồ cũ, tái chế, xuất khẩu xe và cầm đồ",
+                  descEn: "Reuse, luxury appraisal, export, pawnshop licenses"
+                },
+                {
+                  slug: "haken",
+                  titleJa: "労働者派遣事業",
+                  titleVi: "Phái cử Lao động",
+                  titleEn: "Worker Dispatch",
+                  badgeJa: "厚生労働省 (派番号)",
+                  badgeVi: "Bộ Y tế Lao động",
+                  badgeEn: "MHLW Approved",
+                  count: "55,485",
+                  descJa: "一般派遣免許、ITエンジニア・製造・事務人材供給",
+                  descVi: "Cung ứng nhân lực IT, kỹ sư, văn phòng, sản xuất",
+                  descEn: "Temporary staffing, IT & manufacturing manpower"
+                },
+                {
+                  slug: "shokugyo",
+                  titleJa: "有料職業紹介事業",
+                  titleVi: "Giới thiệu Việc làm",
+                  titleEn: "Recruitment Agencies",
+                  badgeJa: "厚生労働省 (ユ番号)",
+                  badgeVi: "Bộ Y tế Lao động",
+                  badgeEn: "MHLW Approved",
+                  count: "36,892",
+                  descJa: "人材紹介・ヘッドハンティング・エグゼクティブサーチ",
+                  descVi: "Headhunt, tuyển dụng nhân sự cấp cao, môi giới",
+                  descEn: "Executive search, recruitment, employment placement"
+                },
+                {
+                  slug: "licenses",
+                  isAll: true,
+                  titleJa: "許認可データベース全件",
+                  titleVi: "Xem tất cả Giấy phép",
+                  titleEn: "All Licenses Directory",
+                  badgeJa: "47都道府県横断",
+                  badgeVi: "Toàn quốc 47 tỉnh",
+                  badgeEn: "All 47 Prefectures",
+                  count: "51万+",
+                  descJa: "全国の公的資格・許認可・士業登録企業を検索・CSV抽出",
+                  descVi: "Tìm kiếm và xuất CSV doanh nghiệp có giấy phép công",
+                  descEn: "Comprehensive master directory with CSV export"
+                }
+              ].map((item) => {
+                const title = isJa ? item.titleJa : isVi ? item.titleVi : item.titleEn;
+                const badge = isJa ? item.badgeJa : isVi ? item.badgeVi : item.badgeEn;
+                const desc = isJa ? item.descJa : isVi ? item.descVi : item.descEn;
+                const href = item.isAll ? `/${locale}/licenses` : `/${locale}/license/${item.slug}`;
+
+                return (
+                  <Link
+                    key={item.slug}
+                    href={href}
+                    className="p-4 rounded-xl bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 hover:border-[#1B4F8A] dark:hover:border-blue-400 transition-all flex flex-col justify-between group shadow-2xs"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                          {badge}
+                        </span>
+                        <span className="text-[11px] font-mono font-bold text-[#1B4F8A] dark:text-blue-400">
+                          {item.count} 社
+                        </span>
+                      </div>
+                      <h3 className="font-bold text-slate-900 dark:text-white text-xs mb-1 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors">
+                        {title}
+                      </h3>
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                        {desc}
+                      </p>
+                    </div>
+                    <div className="pt-2.5 mt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] font-bold text-[#1B4F8A] dark:text-blue-400">
+                      <span>{isJa ? "専用ハブを開く" : isVi ? "Xem chi tiết" : "Open Hub"}</span>
+                      <ChevronRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+
+          </div>
+        </section>
+
+        {/* ========================================================
             TẦNG 6: BẢNG SO SÁNH GIÁ TRỊ & TIẾT KIỆM CHI PHÍ (Sub-Agent 6)
             ======================================================== */}
         <section aria-labelledby="comparison-heading" className="py-16 bg-slate-50 dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">

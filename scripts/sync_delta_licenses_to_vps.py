@@ -36,7 +36,7 @@ def sync_licenses(target_types=None):
     conn_pg = psycopg2.connect(PG_URL)
     cur_pg = conn_pg.cursor()
 
-    types_list = target_types if target_types else ['宅地建物取引業', '古物商許可', '登録支援機関', '税理士法人', '監査法人', '弁護士法人', '行政書士法人', '司法書士法人', '社会保険労務士法人', '弁理士法人']
+    types_list = target_types if target_types else ['宅地建物取引業', '古物商許可', '登録支援機関', '税理士法人', '監査法人', '弁護士法人', '行政書士法人', '司法書士法人', '社会保険労務士法人', '弁理士法人', '旅館業許可', '飲食店営業許可']
     types_tuple = tuple(types_list)
 
     # 1. Check existing licenses in PG to find deltas
