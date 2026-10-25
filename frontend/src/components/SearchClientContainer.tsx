@@ -143,6 +143,11 @@ interface SearchClientContainerProps {
     hasPatent?: boolean;
     hasFinancials?: boolean;
     isListed?: boolean;
+    hasTokuteiLic?: boolean;
+    hasShigyoLic?: boolean;
+    hasRealEstateLic?: boolean;
+    hasKobutsuLic?: boolean;
+    hasConstructionLic?: boolean;
     minSales?: number;
     maxSales?: number;
     hasEmail?: boolean;
@@ -280,6 +285,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   const [hasPatent, setHasPatent] = useState(!!initialFilters.hasPatent);
   const [hasFinancials, setHasFinancials] = useState(!!initialFilters.hasFinancials);
   const [isListed, setIsListed] = useState(!!initialFilters.isListed);
+  const [hasTokuteiLic, setHasTokuteiLic] = useState(!!initialFilters.hasTokuteiLic);
+  const [hasShigyoLic, setHasShigyoLic] = useState(!!initialFilters.hasShigyoLic);
+  const [hasRealEstateLic, setHasRealEstateLic] = useState(!!initialFilters.hasRealEstateLic);
+  const [hasKobutsuLic, setHasKobutsuLic] = useState(!!initialFilters.hasKobutsuLic);
+  const [hasConstructionLic, setHasConstructionLic] = useState(!!initialFilters.hasConstructionLic);
   const [minSales, setMinSales] = useState(initialFilters.minSales);
   const [maxSales, setMaxSales] = useState(initialFilters.maxSales);
   const [hasEmail, setHasEmail] = useState(!!initialFilters.hasEmail);
@@ -360,6 +370,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     if (initialFilters.hasPatent) initialParams.set("patent", "true");
     if (initialFilters.hasFinancials) initialParams.set("financials", "true");
     if (initialFilters.isListed) initialParams.set("is_listed", "true");
+    if (initialFilters.hasTokuteiLic) initialParams.set("tokutei_lic", "true");
+    if (initialFilters.hasShigyoLic) initialParams.set("shigyo_lic", "true");
+    if (initialFilters.hasRealEstateLic) initialParams.set("real_estate_lic", "true");
+    if (initialFilters.hasKobutsuLic) initialParams.set("kobutsu_lic", "true");
+    if (initialFilters.hasConstructionLic) initialParams.set("construction_lic", "true");
     if (initialFilters.minSales != null) initialParams.set("min_sales", String(initialFilters.minSales));
     if (initialFilters.maxSales != null) initialParams.set("max_sales", String(initialFilters.maxSales));
     if (initialFilters.hasEmail) initialParams.set("email", "true");
@@ -410,6 +425,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     const newHasPatent = overrides.hasPatent !== undefined ? overrides.hasPatent : hasPatent;
     const newHasFinancials = overrides.hasFinancials !== undefined ? overrides.hasFinancials : hasFinancials;
     const newIsListed = overrides.is_listed !== undefined ? overrides.is_listed : isListed;
+    const newHasTokuteiLic = overrides.tokutei_lic !== undefined ? overrides.tokutei_lic : hasTokuteiLic;
+    const newHasShigyoLic = overrides.shigyo_lic !== undefined ? overrides.shigyo_lic : hasShigyoLic;
+    const newHasRealEstateLic = overrides.real_estate_lic !== undefined ? overrides.real_estate_lic : hasRealEstateLic;
+    const newHasKobutsuLic = overrides.kobutsu_lic !== undefined ? overrides.kobutsu_lic : hasKobutsuLic;
+    const newHasConstructionLic = overrides.construction_lic !== undefined ? overrides.construction_lic : hasConstructionLic;
     const newMinSales = overrides.minSales !== undefined ? overrides.minSales : minSales;
     const newMaxSales = overrides.maxSales !== undefined ? overrides.maxSales : maxSales;
     const newHasEmail = overrides.hasEmail !== undefined ? overrides.hasEmail : hasEmail;
@@ -449,6 +469,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     if (newHasPatent) apiParams.set("patent", "true");
     if (newHasFinancials) apiParams.set("financials", "true");
     if (newIsListed) apiParams.set("is_listed", "true");
+    if (newHasTokuteiLic) apiParams.set("tokutei_lic", "true");
+    if (newHasShigyoLic) apiParams.set("shigyo_lic", "true");
+    if (newHasRealEstateLic) apiParams.set("real_estate_lic", "true");
+    if (newHasKobutsuLic) apiParams.set("kobutsu_lic", "true");
+    if (newHasConstructionLic) apiParams.set("construction_lic", "true");
     if (newMinSales != null) apiParams.set("min_sales", String(newMinSales));
     if (newMaxSales != null) apiParams.set("max_sales", String(newMaxSales));
     if (newHasEmail) apiParams.set("email", "true");
@@ -501,6 +526,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       if (newHasPatent) browserParams.set("patent", "true");
       if (newHasFinancials) browserParams.set("financials", "true");
       if (newIsListed) browserParams.set("is_listed", "true");
+      if (newHasTokuteiLic) browserParams.set("tokutei_lic", "true");
+      if (newHasShigyoLic) browserParams.set("shigyo_lic", "true");
+      if (newHasRealEstateLic) browserParams.set("real_estate_lic", "true");
+      if (newHasKobutsuLic) browserParams.set("kobutsu_lic", "true");
+      if (newHasConstructionLic) browserParams.set("construction_lic", "true");
       if (newMinSales != null) browserParams.set("min_sales", String(newMinSales));
       if (newMaxSales != null) browserParams.set("max_sales", String(newMaxSales));
       if (newHasEmail) browserParams.set("email", "true");
@@ -697,6 +727,21 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     }
     if (updates.is_listed !== undefined) {
       setIsListed(!!updates.is_listed);
+    }
+    if (updates.tokutei_lic !== undefined) {
+      setHasTokuteiLic(!!updates.tokutei_lic);
+    }
+    if (updates.shigyo_lic !== undefined) {
+      setHasShigyoLic(!!updates.shigyo_lic);
+    }
+    if (updates.real_estate_lic !== undefined) {
+      setHasRealEstateLic(!!updates.real_estate_lic);
+    }
+    if (updates.kobutsu_lic !== undefined) {
+      setHasKobutsuLic(!!updates.kobutsu_lic);
+    }
+    if (updates.construction_lic !== undefined) {
+      setHasConstructionLic(!!updates.construction_lic);
     }
     if (updates.min_sales !== undefined) {
       setMinSales(updates.min_sales ? parseFloat(updates.min_sales) : undefined);
@@ -941,6 +986,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             hasPatent={hasPatent}
             hasFinancials={hasFinancials}
             isListed={isListed}
+            hasTokuteiLic={hasTokuteiLic}
+            hasShigyoLic={hasShigyoLic}
+            hasRealEstateLic={hasRealEstateLic}
+            hasKobutsuLic={hasKobutsuLic}
+            hasConstructionLic={hasConstructionLic}
             minSales={minSales}
             maxSales={maxSales}
             hasEmail={hasEmail}
@@ -987,6 +1037,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             hasPatent={hasPatent}
             hasFinancials={hasFinancials}
             isListed={isListed}
+            hasTokuteiLic={hasTokuteiLic}
+            hasShigyoLic={hasShigyoLic}
+            hasRealEstateLic={hasRealEstateLic}
+            hasKobutsuLic={hasKobutsuLic}
+            hasConstructionLic={hasConstructionLic}
             minSales={minSales}
             maxSales={maxSales}
             hasEmail={hasEmail}

@@ -527,3 +527,41 @@ Khi quy mô mở rộng trên 10 triệu trang, quản trị viên có thể g�
 2. Tìm kiếm API: `Web Search Indexing API` $\rightarrow$ Metric: `Publish requests per day`.
 3. Bấm **Edit Quota** và đề xuất hạn ngạch mới (1.000 hoặc 2.000 URLs/ngày) kèm giải trình: *"National Corporate B2B Directory Platform requiring continuous compliance and financial disclosure updates"*. Google thường xét duyệt tự động sau 24 - 48 giờ.
 
+---
+
+## 9. Cỗ Máy Thu Thập Giấy Phép Công & Pháp Nhân Chuyên Môn (Nhóm 1 & Nhóm 2)
+
+### 9.1. Nhóm 1: Cơ Quan Hỗ Trợ Kỹ Năng Đặc Định (登録支援機関 - ISA)
+* **Cơ quan cấp phép**: Cục Quản lý Xuất nhập cảnh & Lưu trú Nhật Bản (出入国在留管理庁 - ISA / moj.go.jp).
+* **Bộ cào tự động**: `crawlers/open_data/harvesters/isa_tokutei_harvester.py`.
+* **Cơ chế thu thập**: Tự động tải file Excel tổng bộ quốc gia từ Moj ISA (`https://www.moj.go.jp/isa/content/001473034.xlsx`), bóc tách mã số đăng ký (`19登-XXXXXX`), ngày cấp, đại diện, địa chỉ, số điện thoại trực tiếp, và ngôn ngữ hỗ trợ (Tiếng Việt, Anh, Trung, Indonesia, v.v.).
+* **Entity Resolution**: Đối soát tên doanh nghiệp và địa chỉ sạch với kho 5.2 triệu pháp nhân NTA để gán chính xác `corporate_number` 13 chữ số (tỷ lệ chuẩn hóa thành công 66% cho doanh nghiệp, loại trừ cá nhân hành nghề độc lập).
+* **Phân loại ngành JSIC**:
+  - Ngành lớn: `R` (サービス業（他に分類されないもの）)
+  - Ngành vừa: `91` (職業紹介・労働者派遣業)
+* **Đồng bộ**: Lưu vào `company_licenses` với `license_type = '登録支援機関'`, `license_category = '出入国在留管理庁'`, đồng thời tự động chèn vào bảng `company_industries` (R & 91) và cập nhật `jigyo_shumoku`.
+
+### 9.2. Nhóm 2: Pháp Nhân Chuyên Môn Luật / Thuế / Kế Toán (士業・専門職法人)
+* **Bộ cào tự động**: `crawlers/open_data/harvesters/professional_services_harvester.py`.
+* **Phạm vi pháp nhân**: Toàn bộ các pháp nhân thành lập theo luật định chuyên ngành:
+  - **税理士法人** (Pháp nhân Tư vấn Thuế): Luật Thuế lý sĩ (税理士法) $\rightarrow$ JSIC `L.724`
+  - **社会保険労務士法人** (Pháp nhân Lao động & BHXH): Luật Xã hội bảo hiểm lao vụ sĩ $\rightarrow$ JSIC `L.723`
+  - **行政書士法人** (Pháp nhân Hành chính): Luật Hành chính thư sĩ $\rightarrow$ JSIC `L.722`
+  - **司法書士法人** (Pháp nhân Tư pháp): Luật Tư pháp thư sĩ $\rightarrow$ JSIC `L.722`
+  - **弁護士法人** (Hãng luật / Pháp nhân Luật sư): Luật Luật sư $\rightarrow$ JSIC `L.721`
+  - **弁理士法人** (Pháp nhân Bằng sáng chế / Sở hữu trí tuệ): Luật Biện lý sĩ $\rightarrow$ JSIC `L.725`
+  - **監査法人** (Pháp nhân Kiểm toán độc lập): Luật Kế toán công chứng viên $\rightarrow$ JSIC `L.724`
+* **Phân loại ngành JSIC**:
+  - Ngành lớn: `L` (学術研究，専門・技術サービス業)
+  - Ngành vừa: `72` (専門サービス業（他に分類されないもの）)
+* **Đồng bộ**: Lưu vào `company_licenses` với `license_category = '士業・専門職法人'` và tự động chèn vào `company_industries` (L, 72, 721-725).
+
+### 9.3. Tự Động Hóa Gán Ngành Sau Thu Thập (Enrich & Auto-Tagging)
+* **Script cốt lõi**: `scripts/enrich_all_licensed_companies.py`.
+* Bất cứ khi nào thu thập giấy phép mới, hệ thống tự động:
+  1. Truy vấn các doanh nghiệp có giấy phép nhưng chưa có mã ngành tương ứng trong `company_industries`.
+  2. Tự động chèn bản ghi ngành lớn (major), ngành vừa (medium) và ngành nhỏ (minor).
+  3. Cập nhật `companies.major_industry_code` và `companies.primary_industry_code` nếu doanh nghiệp chưa có ngành chính.
+  4. Đồng bộ ngay lập tức sang VPS PostgreSQL qua `scripts/sync_delta_licenses_to_vps.py`.
+
+

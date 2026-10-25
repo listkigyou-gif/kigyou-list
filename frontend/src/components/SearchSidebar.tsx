@@ -53,6 +53,11 @@ interface SearchSidebarProps {
   hasPatent: boolean;
   hasFinancials: boolean;
   isListed?: boolean;
+  hasTokuteiLic?: boolean;
+  hasShigyoLic?: boolean;
+  hasRealEstateLic?: boolean;
+  hasKobutsuLic?: boolean;
+  hasConstructionLic?: boolean;
   minSales?: number;
   maxSales?: number;
   hasEmail: boolean;
@@ -95,6 +100,11 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   hasPatent,
   hasFinancials,
   isListed,
+  hasTokuteiLic,
+  hasShigyoLic,
+  hasRealEstateLic,
+  hasKobutsuLic,
+  hasConstructionLic,
   minSales,
   maxSales,
   hasEmail,
@@ -125,11 +135,13 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   const [openChannels, setOpenChannels] = useState(true);
   const [openScale, setOpenScale] = useState(true);
   const [openSignals, setOpenSignals] = useState(true);
+  const [openLicenses, setOpenLicenses] = useState(true);
 
   const activeCount = [
     prefCode, city, indCode, minEmp, maxEmp, minCap, maxCap,
     hasHiring, hasSubsidy, hasBidding, minEstYear, maxEstYear,
     hasAward, hasCertification, hasPatent, hasFinancials, isListed,
+    hasTokuteiLic, hasShigyoLic, hasRealEstateLic, hasKobutsuLic, hasConstructionLic,
     minSales, maxSales, hasEmail, hasPhone, hasWebsite, hasFax,
     hasContactForm, emailType, companyStatus, minOpIncome, maxOpIncome,
     minOrdIncome, maxOrdIncome, minNetIncome, maxNetIncome
@@ -186,6 +198,11 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         else if (key === "patent") updates.patent = val === "true";
         else if (key === "financials") updates.financials = val === "true";
         else if (key === "is_listed") updates.is_listed = val === "true";
+        else if (key === "tokutei_lic") updates.tokutei_lic = val === "true";
+        else if (key === "shigyo_lic") updates.shigyo_lic = val === "true";
+        else if (key === "real_estate_lic") updates.real_estate_lic = val === "true";
+        else if (key === "kobutsu_lic") updates.kobutsu_lic = val === "true";
+        else if (key === "construction_lic") updates.construction_lic = val === "true";
         else if (key === "min_sales") updates.min_sales = val;
         else if (key === "max_sales") updates.max_sales = val;
         else if (key === "email") updates.email = val === "true";
@@ -223,6 +240,11 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         patent: hasPatent ? "true" : undefined,
         financials: hasFinancials ? "true" : undefined,
         is_listed: isListed ? "true" : undefined,
+        tokutei_lic: hasTokuteiLic ? "true" : undefined,
+        shigyo_lic: hasShigyoLic ? "true" : undefined,
+        real_estate_lic: hasRealEstateLic ? "true" : undefined,
+        kobutsu_lic: hasKobutsuLic ? "true" : undefined,
+        construction_lic: hasConstructionLic ? "true" : undefined,
         min_sales: minSales != null ? String(minSales) : undefined,
         max_sales: maxSales != null ? String(maxSales) : undefined,
         email: hasEmail ? "true" : undefined,
@@ -268,6 +290,11 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         patent: false,
         financials: false,
         is_listed: false,
+        tokutei_lic: false,
+        shigyo_lic: false,
+        real_estate_lic: false,
+        kobutsu_lic: false,
+        construction_lic: false,
         min_sales: null,
         max_sales: null,
         email: false,
@@ -758,6 +785,94 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
                 />
                 <span>{t.search.certification}</span>
+              </label>
+            </div>
+          )}
+        </div>
+
+        {/* ========================================================
+            GROUP 5: 公的許認可・士業専門職 (Licenses & Accreditations)
+            ======================================================== */}
+        <div className="border border-slate-200/80 dark:border-slate-800 rounded-lg overflow-hidden bg-slate-50/50 dark:bg-slate-900/30">
+          <button
+            type="button"
+            onClick={() => setOpenLicenses(!openLicenses)}
+            className="w-full flex items-center justify-between p-3 text-xs font-bold text-slate-800 dark:text-slate-200 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 transition-colors cursor-pointer"
+          >
+            <span>{locale === 'ja' ? '公的許認可・士業専門職' : locale === 'vi' ? 'Giấy phép công & Văn phòng chuyên môn' : 'Licenses & Professional Corps'}</span>
+            {openLicenses ? <ChevronUp className="w-3.5 h-3.5 text-slate-400" /> : <ChevronDown className="w-3.5 h-3.5 text-slate-400" />}
+          </button>
+
+          {openLicenses && (
+            <div className="p-3 pt-0 flex flex-col gap-2">
+              {/* Tokutei Gino Support Organization */}
+              <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <input
+                  type="checkbox"
+                  checked={hasTokuteiLic}
+                  onChange={(e) => navigate({ tokutei_lic: e.target.checked ? "true" : null }, true)}
+                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                />
+                <span className="flex items-center justify-between flex-1">
+                  <span>{locale === 'ja' ? '登録支援機関 (出入国在留管理庁)' : locale === 'vi' ? 'Cơ quan hỗ trợ kỹ năng đặc định (ISA)' : 'Registered Support Org (ISA)'}</span>
+                  <span className="text-[10px] text-slate-650 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono">7,762社</span>
+                </span>
+              </label>
+
+              {/* Statutory Professional Corporations */}
+              <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <input
+                  type="checkbox"
+                  checked={hasShigyoLic}
+                  onChange={(e) => navigate({ shigyo_lic: e.target.checked ? "true" : null }, true)}
+                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                />
+                <span className="flex items-center justify-between flex-1">
+                  <span>{locale === 'ja' ? '士業専門職法人 (税理士・会計・法務)' : locale === 'vi' ? 'Pháp nhân chuyên môn (Kế toán, Thuế, Luật)' : 'Statutory Professional Corps'}</span>
+                  <span className="text-[10px] text-slate-650 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono">635社</span>
+                </span>
+              </label>
+
+              {/* Real Estate Takken */}
+              <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <input
+                  type="checkbox"
+                  checked={hasRealEstateLic}
+                  onChange={(e) => navigate({ real_estate_lic: e.target.checked ? "true" : null }, true)}
+                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                />
+                <span className="flex items-center justify-between flex-1">
+                  <span>{locale === 'ja' ? '宅地建物取引業 (不動産・国交省)' : locale === 'vi' ? 'Môi giới BĐS (MLIT)' : 'Real Estate Brokerage (MLIT)'}</span>
+                  <span className="text-[10px] text-slate-650 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono">26,035社</span>
+                </span>
+              </label>
+
+              {/* Kobutsu Dealer */}
+              <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <input
+                  type="checkbox"
+                  checked={hasKobutsuLic}
+                  onChange={(e) => navigate({ kobutsu_lic: e.target.checked ? "true" : null }, true)}
+                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                />
+                <span className="flex items-center justify-between flex-1">
+                  <span>{locale === 'ja' ? '古物商許可 (公安委員会)' : locale === 'vi' ? 'Kinh doanh đồ cũ / Cầm đồ' : 'Secondhand Dealer License'}</span>
+                  <span className="text-[10px] text-slate-650 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono">9,074社</span>
+                </span>
+              </label>
+
+              {/* Construction */}
+              <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <input
+                  type="checkbox"
+                  checked={hasConstructionLic}
+                  onChange={(e) => navigate({ construction_lic: e.target.checked ? "true" : null }, true)}
+                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                />
+                <span className="flex items-center justify-between flex-1">
+                  <span>{locale === 'ja' ? '建設業許可 (国土交通省)' : locale === 'vi' ? 'Giấy phép xây dựng (MLIT)' : 'Construction License (MLIT)'}</span>
+                  <span className="text-[10px] text-slate-650 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded font-mono">411,599社</span>
+                </span>
               </label>
             </div>
           )}

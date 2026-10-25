@@ -69,6 +69,14 @@ export async function POST(request: Request) {
       if (filters.has_award === true) sanitizedFilters.has_award = true;
       if (filters.has_certification === true) sanitizedFilters.has_certification = true;
       if (filters.has_patent === true) sanitizedFilters.has_patent = true;
+      if (filters.has_financials === true) sanitizedFilters.has_financials = true;
+      if (filters.is_listed === true) sanitizedFilters.is_listed = true;
+      if (filters.has_license === true) sanitizedFilters.has_license = true;
+      if (filters.has_tokutei_lic === true) sanitizedFilters.has_tokutei_lic = true;
+      if (filters.has_shigyo_lic === true) sanitizedFilters.has_shigyo_lic = true;
+      if (filters.has_real_estate_lic === true) sanitizedFilters.has_real_estate_lic = true;
+      if (filters.has_kobutsu_lic === true) sanitizedFilters.has_kobutsu_lic = true;
+      if (filters.has_construction_lic === true) sanitizedFilters.has_construction_lic = true;
       
       if (filters.min_establishment_year !== undefined) {
         const val = parseInt(filters.min_establishment_year, 10);

@@ -90,6 +90,12 @@ export const Footer: React.FC = () => {
                 </LocaleLink>
               </li>
               <li>
+                <LocaleLink href="/licenses" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors flex items-center gap-1">
+                  <span>{locale === "en" ? "Government Licenses Hub" : locale === "vi" ? "Hub Giấy phép Quốc gia" : "公的許認可・士業登録ハブ"}</span>
+                  <span className="text-[9px] bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-bold px-1 rounded">51万件</span>
+                </LocaleLink>
+              </li>
+              <li>
                 <LocaleLink href="/invoice" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
                   {locale === "en" ? "Batch Invoice Checker" : locale === "vi" ? "Tra cứu Invoice hàng loạt" : "インボイス一括照会"}
                 </LocaleLink>

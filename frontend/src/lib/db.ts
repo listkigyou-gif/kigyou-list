@@ -388,6 +388,8 @@ export interface SearchFilters {
   has_kobutsu_lic?: boolean;
   has_haken_lic?: boolean;
   has_shokugyo_lic?: boolean;
+  has_tokutei_lic?: boolean;
+  has_shigyo_lic?: boolean;
   has_financial_report?: boolean;
   has_public_tender?: boolean;
   is_listed?: boolean;
@@ -1253,6 +1255,12 @@ function buildSearchQuery(
   if (filters.has_shokugyo_lic === true) {
     whereClauses.push(isPG ? "c.has_shokugyo_lic = true" : "c.has_shokugyo_lic = 1");
   }
+  if (filters.has_tokutei_lic === true) {
+    whereClauses.push("(c.jigyo_shumoku LIKE '%登録支援機関%' OR EXISTS (SELECT 1 FROM company_licenses cl WHERE cl.corporate_number = c.corporate_number AND cl.license_type = '登録支援機関'))");
+  }
+  if (filters.has_shigyo_lic === true) {
+    whereClauses.push("(c.major_industry_code = 'L' AND c.primary_industry_code IN ('72', '721', '722', '723', '724', '725') OR EXISTS (SELECT 1 FROM company_licenses cl WHERE cl.corporate_number = c.corporate_number AND cl.license_category = '士業・専門職法人'))");
+  }
   if (filters.has_financial_report === true) {
     whereClauses.push(isPG ? "c.has_financial_report = true" : "c.has_financial_report = 1");
   }
@@ -1422,6 +1430,12 @@ export async function searchCompanies(
     if (filters.has_certification) activeFiltersList.push('certification');
     if (filters.has_patent) activeFiltersList.push('patent');
     if (filters.has_financials) activeFiltersList.push('financials');
+    if (filters.has_license) activeFiltersList.push('license');
+    if (filters.has_tokutei_lic) activeFiltersList.push('tokutei_lic');
+    if (filters.has_shigyo_lic) activeFiltersList.push('shigyo_lic');
+    if (filters.has_real_estate_lic) activeFiltersList.push('real_estate_lic');
+    if (filters.has_kobutsu_lic) activeFiltersList.push('kobutsu_lic');
+    if (filters.has_construction_lic) activeFiltersList.push('construction_lic');
     if (filters.min_establishment_year !== undefined || filters.max_establishment_year !== undefined) activeFiltersList.push('establishment_year');
     if (filters.min_sales !== undefined || filters.max_sales !== undefined) activeFiltersList.push('sales');
     if (filters.has_email) activeFiltersList.push('email');
@@ -3080,6 +3094,12 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
     if (filtersCopy.has_certification) activeFiltersList.push('certification');
     if (filtersCopy.has_patent) activeFiltersList.push('patent');
     if (filtersCopy.has_financials) activeFiltersList.push('financials');
+    if (filtersCopy.has_license) activeFiltersList.push('license');
+    if (filtersCopy.has_tokutei_lic) activeFiltersList.push('tokutei_lic');
+    if (filtersCopy.has_shigyo_lic) activeFiltersList.push('shigyo_lic');
+    if (filtersCopy.has_real_estate_lic) activeFiltersList.push('real_estate_lic');
+    if (filtersCopy.has_kobutsu_lic) activeFiltersList.push('kobutsu_lic');
+    if (filtersCopy.has_construction_lic) activeFiltersList.push('construction_lic');
     if (filtersCopy.min_establishment_year !== undefined || filtersCopy.max_establishment_year !== undefined) activeFiltersList.push('establishment_year');
 
     const useForcedIndex = !keyword && activeFiltersList.length <= 1;

@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 /**
- * Automated Google Search Indexing API Submitter for Kigyou-list (VPS Production / PostgreSQL)
- * Automatically distributes daily quota: 30 Data Hubs (Spider-Web crawl accelerator) + 170 Tier-0 VIP Enterprises.
- * Zero external packages needed: uses Node 22 native crypto + fetch, and existing pg pool.
+ * Automated Google Search Indexing API Multi-Key Pool Submitter for Kigyou-list (VPS Production / PostgreSQL)
+ * Features:
+ * - Multi-Key Pool: Rotates across all Service Accounts in google_keys/ (5 projects = 1,000 URLs/day).
+ * - Smart Hybrid Allocation: 80 Data Hubs (All 47 Prefectures + 5 Event Hubs + 28 Industries) + 920 Tier-0 VIP Enterprises.
+ * - Auto Key Switching: If a key hits its 200 daily limit, immediately switches to the next available key.
+ * - Zero external npm packages: pure Node 22 native crypto + fetch, and existing pg pool.
  */
 
 const path = require('path');
@@ -11,7 +14,8 @@ const crypto = require('crypto');
 
 const PROJECT_ROOT = path.resolve(__dirname, '..');
 const ENV_PATH = path.join(PROJECT_ROOT, '.env.local');
-const CREDENTIALS_PATH = process.env.GOOGLE_CREDENTIALS_PATH || path.join(PROJECT_ROOT, 'google_credentials.json');
+const KEYS_DIR = path.join(PROJECT_ROOT, 'google_keys');
+const DEFAULT_KEY_PATH = path.join(PROJECT_ROOT, 'google_credentials.json');
 const NODE_MODULES = path.join(PROJECT_ROOT, 'frontend', 'node_modules');
 
 try {
@@ -28,8 +32,7 @@ try {
 }
 
 const BASE_URL = 'https://kigyoulist.com';
-const TOTAL_DAILY_LIMIT = 200;
-const HUB_LIMIT = 30;
+const PER_KEY_LIMIT = 200;
 
 function parseArgs() {
   const args = process.argv.slice(2);
@@ -37,20 +40,78 @@ function parseArgs() {
     dryRun: args.includes('--dry-run'),
     limit: (() => {
       const idx = args.indexOf('--limit');
-      return idx !== -1 ? parseInt(args[idx + 1], 10) : TOTAL_DAILY_LIMIT;
+      return idx !== -1 ? parseInt(args[idx + 1], 10) : null;
     })(),
     hubs: (() => {
       const idx = args.indexOf('--hubs');
-      return idx !== -1 ? parseInt(args[idx + 1], 10) : HUB_LIMIT;
+      return idx !== -1 ? parseInt(args[idx + 1], 10) : null;
     })()
   };
 }
 
-async function getGoogleAccessToken(credentials) {
+function loadAllServiceAccountKeys() {
+  const keys = [];
+
+  if (fs.existsSync(KEYS_DIR)) {
+    const files = fs.readdirSync(KEYS_DIR)
+      .filter(f => f.endsWith('.json'))
+      .sort();
+
+    for (const f of files) {
+      try {
+        const fullPath = path.join(KEYS_DIR, f);
+        const data = JSON.parse(fs.readFileSync(fullPath, 'utf-8'));
+        if (data.client_email && data.private_key) {
+          keys.push({
+            id: f,
+            projectId: data.project_id || 'unknown',
+            clientEmail: data.client_email,
+            credentials: data,
+            token: null,
+            tokenExpiresAt: 0,
+            submittedCount: 0,
+            isExhausted: false
+          });
+        }
+      } catch (err) {
+        console.warn(`[-] Could not parse key file: ${f}: ${err.message}`);
+      }
+    }
+  }
+
+  // Fallback to single credentials file if pool dir empty
+  if (keys.length === 0 && fs.existsSync(DEFAULT_KEY_PATH)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(DEFAULT_KEY_PATH, 'utf-8'));
+      if (data.client_email && data.private_key) {
+        keys.push({
+          id: 'default_key',
+          projectId: data.project_id || 'unknown',
+          clientEmail: data.client_email,
+          credentials: data,
+          token: null,
+          tokenExpiresAt: 0,
+          submittedCount: 0,
+          isExhausted: false
+        });
+      }
+    } catch (err) {
+      console.warn(`[-] Could not parse default credentials: ${err.message}`);
+    }
+  }
+
+  return keys;
+}
+
+async function getGoogleAccessToken(keyObj) {
   const now = Math.floor(Date.now() / 1000);
+  if (keyObj.token && now < (keyObj.tokenExpiresAt - 300)) {
+    return keyObj.token;
+  }
+
   const header = Buffer.from(JSON.stringify({ alg: 'RS256', typ: 'JWT' })).toString('base64url');
   const claimSet = Buffer.from(JSON.stringify({
-    iss: credentials.client_email,
+    iss: keyObj.clientEmail,
     scope: 'https://www.googleapis.com/auth/indexing',
     aud: 'https://oauth2.googleapis.com/token',
     exp: now + 3600,
@@ -59,7 +120,7 @@ async function getGoogleAccessToken(credentials) {
 
   const sign = crypto.createSign('RSA-SHA256');
   sign.update(`${header}.${claimSet}`);
-  const signature = sign.sign(credentials.private_key, 'base64url');
+  const signature = sign.sign(keyObj.credentials.private_key, 'base64url');
   const jwt = `${header}.${claimSet}.${signature}`;
 
   const tokenResp = await fetch('https://oauth2.googleapis.com/token', {
@@ -73,11 +134,13 @@ async function getGoogleAccessToken(credentials) {
 
   if (!tokenResp.ok) {
     const errText = await tokenResp.text();
-    throw new Error(`Failed to obtain Google access token: ${tokenResp.status} ${errText}`);
+    throw new Error(`[${keyObj.clientEmail}] Failed to obtain Google token: ${tokenResp.status} ${errText}`);
   }
 
   const tokenData = await tokenResp.json();
-  return tokenData.access_token;
+  keyObj.token = tokenData.access_token;
+  keyObj.tokenExpiresAt = now + (tokenData.expires_in || 3600);
+  return keyObj.token;
 }
 
 async function publishUrl(accessToken, url, action = 'URL_UPDATED') {
@@ -106,29 +169,44 @@ async function initDb(pool) {
       corporate_number VARCHAR(100) PRIMARY KEY,
       url TEXT NOT NULL,
       submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      response_code INT DEFAULT 200
+      response_code INT DEFAULT 200,
+      service_account VARCHAR(150)
     );
     CREATE INDEX IF NOT EXISTS idx_g_indexing_sub_time ON google_indexing_submissions(submitted_at);
   `);
+
+  // Ensure service_account column exists
+  try {
+    await pool.query(`ALTER TABLE google_indexing_submissions ADD COLUMN IF NOT EXISTS service_account VARCHAR(150);`);
+  } catch (e) {
+    // Ignore if already exists
+  }
 }
 
 async function main() {
   const opts = parseArgs();
-  console.log(`[${new Date().toISOString()}] === BẮT ĐẦU CHU KỲ BẮN GOOGLE INDEXING API (Limit: ${opts.limit}, Hubs: ${opts.hubs}, DryRun: ${opts.dryRun}) ===`);
+  console.log(`[${new Date().toISOString()}] === BẮT ĐẦU CHU KỲ BẮN GOOGLE INDEXING API (MULTI-KEY POOL ENGINE) ===`);
 
-  if (!fs.existsSync(CREDENTIALS_PATH)) {
-    console.error(`[-] Credentials file not found at: ${CREDENTIALS_PATH}`);
+  const keys = loadAllServiceAccountKeys();
+  if (keys.length === 0) {
+    console.error(`[-] No service account keys found in ${KEYS_DIR} or ${DEFAULT_KEY_PATH}!`);
     process.exit(1);
   }
 
-  const credentials = JSON.parse(fs.readFileSync(CREDENTIALS_PATH, 'utf-8'));
-  console.log(`[+] Đã tải Service Account: ${credentials.client_email}`);
+  console.log(`[+] Đã tải ${keys.length} Google Cloud Projects vào Multi-Key Pool:`);
+  keys.forEach((k, idx) => {
+    console.log(`    [Key ${idx + 1}] ${k.projectId} -> ${k.clientEmail}`);
+  });
+
+  const totalCapacity = keys.length * PER_KEY_LIMIT;
+  const targetTotal = opts.limit !== null ? opts.limit : totalCapacity;
+  const targetHubs = opts.hubs !== null ? opts.hubs : (keys.length >= 3 ? 80 : 30);
 
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL || undefined,
     user: process.env.PGUSER || 'postgres',
     host: process.env.PGHOST || '127.0.0.1',
-    database: process.env.PGDATABASE || 'kigyou_db',
+    database: process.env.PGDATABASE || 'kigyou_list',
     password: process.env.PGPASSWORD || undefined,
     port: parseInt(process.env.PGPORT || '5432', 10),
   });
@@ -136,23 +214,46 @@ async function main() {
   try {
     await initDb(pool);
 
-    // 1. Kiểm tra số lượng đã nạp hôm nay
+    // 1. Kiểm tra số lượng đã nạp hôm nay theo từng key
     const todayRes = await pool.query(`
-      SELECT count(*) as count FROM google_indexing_submissions
+      SELECT COALESCE(service_account, 'default') as sa, count(*) as count
+      FROM google_indexing_submissions
       WHERE submitted_at::date = CURRENT_DATE
+      GROUP BY service_account
     `);
-    const todayCount = parseInt(todayRes.rows[0].count, 10);
-    const availableQuota = Math.max(0, opts.limit - todayCount);
-    console.log(`[*] Trạng thái hạn mức hôm nay: Đã gửi ${todayCount}/${opts.limit} URLs (Còn lại: ${availableQuota})`);
+
+    const subTodayMap = new Map();
+    let totalSubmittedToday = 0;
+    todayRes.rows.forEach(r => {
+      const cnt = parseInt(r.count, 10);
+      subTodayMap.set(r.sa, cnt);
+      totalSubmittedToday += cnt;
+    });
+
+    keys.forEach(k => {
+      k.submittedCount = subTodayMap.get(k.clientEmail) || 0;
+      if (k.submittedCount >= PER_KEY_LIMIT) {
+        k.isExhausted = true;
+      }
+    });
+
+    const activeKeys = keys.filter(k => !k.isExhausted);
+    const availableQuota = activeKeys.reduce((acc, k) => acc + (PER_KEY_LIMIT - k.submittedCount), 0);
+
+    console.log(`[*] Trạng thái hôm nay: Đã gửi ${totalSubmittedToday}/${totalCapacity} URLs.`);
+    keys.forEach((k, idx) => {
+      console.log(`    - Key ${idx + 1} (${k.projectId}): ${k.submittedCount}/${PER_KEY_LIMIT} URLs ${k.isExhausted ? '🔴 (Đầy)' : '🟢 (Sẵn sàng)'}`);
+    });
+    console.log(`[*] Hạn mức khả dụng cho chu kỳ này: ${availableQuota} URLs (Mục tiêu: ${targetTotal} URLs)`);
 
     if (availableQuota <= 0 && !opts.dryRun) {
-      console.log(`[*] Đã đạt hạn mức tối đa hôm nay (${todayCount}/${opts.limit}). Kết thúc chu kỳ an toàn.`);
+      console.log(`[*] Toàn bộ ${keys.length} keys đều đã đạt hạn mức tối đa 200/ngày. Kết thúc chu kỳ an toàn.`);
       return;
     }
 
-    const effectiveQuota = opts.dryRun ? opts.limit : availableQuota;
-    const hubQuota = Math.min(opts.hubs, effectiveQuota);
-    const vipQuota = effectiveQuota - hubQuota;
+    const effectiveTotal = opts.dryRun ? targetTotal : Math.min(targetTotal, availableQuota);
+    const effectiveHubs = Math.min(targetHubs, effectiveTotal);
+    const effectiveVips = effectiveTotal - effectiveHubs;
 
     const selectedItems = [];
 
@@ -164,11 +265,10 @@ async function main() {
       { id: 'hub:new-companies', url: `${BASE_URL}/ja/new-companies`, name: 'Hub: 新設法人 (New Companies)' },
       { id: 'hub:status', url: `${BASE_URL}/ja/status`, name: 'Hub: 企業ステータス・閉鎖 (Status)' }
     ];
-    selectedItems.push(...coreHubs.slice(0, hubQuota));
+    selectedItems.push(...coreHubs.slice(0, effectiveHubs));
 
-    // 3. 15 Rotating Prefecture Hubs (01 to 47)
-    if (selectedItems.length < hubQuota) {
-      const prefNeeded = Math.min(15, hubQuota - selectedItems.length);
+    // 3. 47 Prefecture Hubs (01 to 47 - All Japan Prefectures)
+    if (selectedItems.length < effectiveHubs) {
       const prefSubsRes = await pool.query(`
         SELECT corporate_number, submitted_at FROM google_indexing_submissions
         WHERE corporate_number LIKE 'hub:area:%'
@@ -183,6 +283,7 @@ async function main() {
         return timeA - timeB;
       });
 
+      const prefNeeded = Math.min(47, effectiveHubs - selectedItems.length);
       for (let i = 0; i < prefNeeded; i++) {
         const p = allPrefs[i];
         selectedItems.push({
@@ -193,9 +294,8 @@ async function main() {
       }
     }
 
-    // 4. 10 Rotating Industry Hubs
-    if (selectedItems.length < hubQuota) {
-      const indNeeded = Math.min(10, hubQuota - selectedItems.length);
+    // 4. Rotating Industry Hubs
+    if (selectedItems.length < effectiveHubs) {
       let indRows = [];
       try {
         const indQuery = await pool.query(`
@@ -204,8 +304,7 @@ async function main() {
         `);
         indRows = indQuery.rows;
       } catch (e) {
-        // Fallback standard 2-digit industry codes
-        indRows = Array.from({ length: 20 }, (_, i) => ({
+        indRows = Array.from({ length: 30 }, (_, i) => ({
           industry_code: String(i + 1).padStart(2, '0'),
           industry_name: `Category ${i + 1}`
         }));
@@ -224,7 +323,8 @@ async function main() {
         return timeA - timeB;
       });
 
-      for (let i = 0; i < Math.min(indNeeded, indRows.length); i++) {
+      const indNeeded = Math.min(indRows.length, effectiveHubs - selectedItems.length);
+      for (let i = 0; i < indNeeded; i++) {
         const ind = indRows[i];
         selectedItems.push({
           id: `hub:industry:${ind.industry_code}`,
@@ -234,8 +334,8 @@ async function main() {
       }
     }
 
-    // 5. 170 Top Tier-0 VIP Enterprises (ranked by sales & headcount)
-    const vipNeeded = Math.min(vipQuota, effectiveQuota - selectedItems.length);
+    // 5. Tier-0 VIP Enterprises (ranked by sales & headcount)
+    const vipNeeded = Math.min(effectiveVips, effectiveTotal - selectedItems.length);
     if (vipNeeded > 0) {
       const vipQuery = await pool.query(`
         SELECT f.corporate_number, c.company_name
@@ -257,8 +357,8 @@ async function main() {
       });
 
       // Fallback to sitemap_companies if needed
-      if (selectedItems.length < effectiveQuota) {
-        const rem = effectiveQuota - selectedItems.length;
+      if (selectedItems.length < effectiveTotal) {
+        const rem = effectiveTotal - selectedItems.length;
         const sitemapQuery = await pool.query(`
           SELECT s.corporate_number, s.company_name
           FROM sitemap_companies s
@@ -283,49 +383,82 @@ async function main() {
     console.log(`[+] Đã chọn lọc danh sách nạp: Tổng ${selectedItems.length} URLs (Hubs: ${hubCount}, VIP Doanh nghiệp: ${vipCount})`);
 
     if (opts.dryRun) {
-      console.log('[*] [DRY-RUN] 35 URLs mẫu đầu tiên:');
-      selectedItems.slice(0, 35).forEach((item, idx) => {
+      console.log(`[*] [DRY-RUN] Mô phỏng 50 URLs mẫu đầu tiên:`);
+      selectedItems.slice(0, 50).forEach((item, idx) => {
         console.log(`  [${idx + 1}] ${item.name} (${item.id}) -> ${item.url}`);
       });
+      console.log(`[*] [DRY-RUN] ... và ${selectedItems.length - 50} URLs tiếp theo.`);
       console.log(`[*] [DRY-RUN] Hoàn tất mô phỏng, không có yêu cầu nào được gửi lên Google.`);
       return;
     }
 
-    // 6. Lấy Google Access Token và tiến hành nạp
-    console.log(`[*] Đang xác thực với Google OAuth2...`);
-    const accessToken = await getGoogleAccessToken(credentials);
-    console.log(`[+] Xác thực Google OAuth2 thành công! Bắt đầu gửi dữ liệu...`);
-
+    // 6. Multi-Key Round-Robin Submitter
+    let activeKeyIndex = 0;
     let successCount = 0;
     let failCount = 0;
 
+    function getNextAvailableKey() {
+      for (let i = 0; i < keys.length; i++) {
+        const idx = (activeKeyIndex + i) % keys.length;
+        const k = keys[idx];
+        if (!k.isExhausted && k.submittedCount < PER_KEY_LIMIT) {
+          activeKeyIndex = idx;
+          return k;
+        }
+      }
+      return null;
+    }
+
     for (let idx = 0; idx < selectedItems.length; idx++) {
       const item = selectedItems[idx];
-      try {
-        await publishUrl(accessToken, item.url, 'URL_UPDATED');
-        await pool.query(`
-          INSERT INTO google_indexing_submissions (corporate_number, url, submitted_at, response_code)
-          VALUES ($1, $2, NOW(), 200)
-          ON CONFLICT (corporate_number) DO UPDATE SET submitted_at = NOW(), response_code = 200
-        `, [item.id, item.url]);
+      const currentKey = getNextAvailableKey();
 
+      if (!currentKey) {
+        console.warn(`[!] Toàn bộ ${keys.length} keys trong Pool đã cạn hạn mức hôm nay. Dừng nạp tại item ${idx + 1}.`);
+        break;
+      }
+
+      try {
+        const token = await getGoogleAccessToken(currentKey);
+        await publishUrl(token, item.url, 'URL_UPDATED');
+
+        await pool.query(`
+          INSERT INTO google_indexing_submissions (corporate_number, url, submitted_at, response_code, service_account)
+          VALUES ($1, $2, NOW(), 200, $3)
+          ON CONFLICT (corporate_number) DO UPDATE 
+          SET submitted_at = NOW(), response_code = 200, service_account = EXCLUDED.service_account
+        `, [item.id, item.url, currentKey.clientEmail]);
+
+        currentKey.submittedCount++;
         successCount++;
-        console.log(`  [${idx + 1}/${selectedItems.length}] ✅ ${item.name} (${item.id}) -> ${item.url}`);
+        console.log(`  [${idx + 1}/${selectedItems.length}] ✅ [${currentKey.projectId}] ${item.name} (${item.id}) -> ${item.url}`);
+
+        if (currentKey.submittedCount >= PER_KEY_LIMIT) {
+          console.log(`[*] [${currentKey.projectId}] Đã đạt đủ 200 URLs hôm nay. Chuyển sang key tiếp theo...`);
+          currentKey.isExhausted = true;
+          activeKeyIndex = (activeKeyIndex + 1) % keys.length;
+        }
+
       } catch (err) {
         failCount++;
         const errMsg = err.message || String(err);
-        console.error(`  [${idx + 1}/${selectedItems.length}] ❌ Lỗi: ${errMsg}`);
+        console.error(`  [${idx + 1}/${selectedItems.length}] ❌ [${currentKey.projectId}] Lỗi: ${errMsg}`);
+
         if (errMsg.includes('RATE_LIMIT_EXCEEDED') || errMsg.toLowerCase().includes('quota') || errMsg.includes('429')) {
-          console.warn(`[!] Đã chạm hạn mức Google Indexing hôm nay. Dừng tiến trình nạp.`);
-          break;
+          console.warn(`[!] [${currentKey.projectId}] Hết hạn mức 200/ngày. Tự động chuyển key...`);
+          currentKey.isExhausted = true;
+          activeKeyIndex = (activeKeyIndex + 1) % keys.length;
         }
       }
 
-      // Giãn cách an toàn 500ms giữa các request
-      await new Promise(r => setTimeout(r, 500));
+      // Giãn cách 400ms giữa các request
+      await new Promise(r => setTimeout(r, 400));
     }
 
-    console.log(`[${new Date().toISOString()}] === HOÀN THÀNH CHU KỲ BẮN GOOGLE INDEXING: Thành công ${successCount}, Lỗi ${failCount} ===`);
+    console.log(`[${new Date().toISOString()}] === HOÀN THÀNH CHU KỲ BẮN MULTI-KEY POOL: Thành công ${successCount}, Lỗi ${failCount} ===`);
+    keys.forEach((k, idx) => {
+      console.log(`    - Key ${idx + 1} (${k.projectId}): ${k.submittedCount}/${PER_KEY_LIMIT} URLs đã gửi.`);
+    });
 
   } finally {
     await pool.end();

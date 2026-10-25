@@ -115,6 +115,14 @@ export async function GET(request: NextRequest) {
     if (searchParams.get("patent") === "true") filters.has_patent = true;
     if (searchParams.get("financials") === "true") filters.has_financials = true;
     if (searchParams.get("is_listed") === "true" || searchParams.get("listed") === "true") filters.is_listed = true;
+    if (searchParams.get("license") === "true") filters.has_license = true;
+    if (searchParams.get("construction_lic") === "true") filters.has_construction_lic = true;
+    if (searchParams.get("real_estate_lic") === "true") filters.has_real_estate_lic = true;
+    if (searchParams.get("kobutsu_lic") === "true") filters.has_kobutsu_lic = true;
+    if (searchParams.get("haken_lic") === "true") filters.has_haken_lic = true;
+    if (searchParams.get("shokugyo_lic") === "true") filters.has_shokugyo_lic = true;
+    if (searchParams.get("tokutei_lic") === "true") filters.has_tokutei_lic = true;
+    if (searchParams.get("shigyo_lic") === "true") filters.has_shigyo_lic = true;
     
     const min_establishment_year = searchParams.get("min_establishment_year");
     if (min_establishment_year) {

@@ -187,6 +187,16 @@ export function CompanyLicensesSection({
                 if (specialtiesData && specialtiesData.区分) {
                   subSpecialtiesText = specialtiesData.区分;
                 }
+              } else if (lic.license_type === '登録支援機関') {
+                categoryLabel = '登録支援機関 (特定技能)';
+                if (specialtiesData && specialtiesData.supported_languages) {
+                  subSpecialtiesText = `対応言語: ${specialtiesData.supported_languages}`;
+                }
+              } else if (['税理士法人', '監査法人', '弁護士法人', '行政書士法人', '司法書士法人', '社会保険労務士法人', '弁理士法人'].includes(lic.license_type)) {
+                categoryLabel = `${lic.license_type} (法定資格)`;
+                if (specialtiesData && specialtiesData.statutory_act) {
+                  subSpecialtiesText = specialtiesData.statutory_act;
+                }
               }
 
               return (

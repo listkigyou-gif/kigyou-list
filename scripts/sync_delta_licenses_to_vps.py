@@ -21,11 +21,13 @@ SQLITE_DB = "kigyou-list.db"
 PG_URL = "postgresql://postgres:Hrptlcct6789%40@160.251.203.84:5432/kigyou_list"
 BATCH_SIZE = 2000
 
-def sync_licenses():
+def sync_licenses(target_types=None):
     t0 = time.time()
     print("=" * 75)
     print("KIGYOU-LIST: BULK SYNCING LICENSES TO VPS POSTGRESQL PRODUCTION")
     print(f"Target VPS: 160.251.203.84:5432/kigyou_list")
+    if target_types:
+        print(f"Target Types: {target_types}")
     print("=" * 75)
 
     conn_sq = sqlite3.connect(SQLITE_DB)
@@ -34,20 +36,23 @@ def sync_licenses():
     conn_pg = psycopg2.connect(PG_URL)
     cur_pg = conn_pg.cursor()
 
+    types_list = target_types if target_types else ['宅地建物取引業', '古物商許可', '登録支援機関', '税理士法人', '監査法人', '弁護士法人', '行政書士法人', '司法書士法人', '社会保険労務士法人', '弁理士法人']
+    types_tuple = tuple(types_list)
+
     # 1. Check existing licenses in PG to find deltas
-    cur_pg.execute("SELECT corporate_number, license_number FROM company_licenses WHERE license_type IN ('宅地建物取引業', '古物商許可');")
+    cur_pg.execute("SELECT corporate_number, license_number FROM company_licenses WHERE license_type IN %s;", (types_tuple,))
     existing_pg = set(cur_pg.fetchall())
-    print(f"[*] Current existing licenses in VPS PostgreSQL: {len(existing_pg):,}")
+    print(f"[*] Current existing licenses in VPS PostgreSQL for target types: {len(existing_pg):,}")
 
     # 2. Fetch all from SQLite
-    cur_sq.execute("""
+    cur_sq.execute(f"""
         SELECT corporate_number, license_type, license_category, license_number,
                issuing_authority, prefecture_code, representative_name, office_phone,
                office_fax, registered_address, issue_date, valid_until, license_status,
                specialties_json, source_url
         FROM company_licenses
-        WHERE license_type IN ('宅地建物取引業', '古物商許可');
-    """)
+        WHERE license_type IN ({','.join(['?']*len(types_list))});
+    """, types_list)
     sqlite_rows = cur_sq.fetchall()
     print(f"[*] Total licenses in SQLite for target types: {len(sqlite_rows):,}")
 
@@ -119,7 +124,8 @@ def sync_licenses():
     try:
         from scripts.enrich_all_licensed_companies import run_enrichment
         print("\n[*] Triggering automated license-to-industry tagging on VPS...")
-        run_enrichment(target_types=['古物商許可', '宅地建物取引業'])
+        enrich_targets = target_types if target_types else ['古物商許可', '宅地建物取引業', '登録支援機関', '税理士法人', '監査法人', '弁護士法人', '行政書士法人', '司法書士法人', '社会保険労務士法人', '弁理士法人']
+        run_enrichment(target_types=enrich_targets)
     except Exception as e:
         print(f"[!] Warning: Auto-tagging hook failed: {e}")
 

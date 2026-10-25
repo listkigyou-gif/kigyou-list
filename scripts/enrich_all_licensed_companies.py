@@ -67,6 +67,26 @@ MAPPING_CONFIGS = [
         "medium_path": "D.06",
         "shumoku_label": "総合工事業",
         "flag_column": "has_construction_lic"
+    },
+    {
+        "name": "登録支援機関 (Registered Support Organization for Tokutei Gino)",
+        "license_types": ["登録支援機関"],
+        "major_code": "R",
+        "major_path": "R",
+        "medium_code": "91",
+        "medium_path": "R.91",
+        "shumoku_label": "登録支援機関",
+        "flag_column": None
+    },
+    {
+        "name": "士業・専門職法人 (Professional Legal & Accounting Corporations)",
+        "license_types": ["税理士法人", "監査法人", "弁護士法人", "行政書士法人", "司法書士法人", "社会保険労務士法人", "弁理士法人", "士業・専門職法人"],
+        "major_code": "L",
+        "major_path": "L",
+        "medium_code": "72",
+        "medium_path": "L.72",
+        "shumoku_label": "専門サービス業",
+        "flag_column": None
     }
 ]
 

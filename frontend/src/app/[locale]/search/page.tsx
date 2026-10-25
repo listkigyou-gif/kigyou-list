@@ -93,6 +93,11 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
   const hasAward = searchParamsVal.award === 'true';
   const hasCertification = searchParamsVal.certification === 'true';
   const hasPatent = searchParamsVal.patent === 'true';
+  const hasTokuteiLic = searchParamsVal.tokutei_lic === 'true';
+  const hasShigyoLic = searchParamsVal.shigyo_lic === 'true';
+  const hasRealEstateLic = searchParamsVal.real_estate_lic === 'true';
+  const hasKobutsuLic = searchParamsVal.kobutsu_lic === 'true';
+  const hasConstructionLic = searchParamsVal.construction_lic === 'true';
 
   let minSales: number | undefined;
   if (searchParamsVal.min_sales) {
@@ -175,6 +180,11 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
     has_award: hasAward,
     has_certification: hasCertification,
     has_patent: hasPatent,
+    has_tokutei_lic: hasTokuteiLic ? true : undefined,
+    has_shigyo_lic: hasShigyoLic ? true : undefined,
+    has_real_estate_lic: hasRealEstateLic ? true : undefined,
+    has_kobutsu_lic: hasKobutsuLic ? true : undefined,
+    has_construction_lic: hasConstructionLic ? true : undefined,
     has_financials: hasFinancials,
     is_listed: isListed ? true : undefined,
     min_establishment_year: minEstYear,
@@ -262,6 +272,11 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
     hasBidding,
     hasFinancials,
     isListed,
+    hasTokuteiLic,
+    hasShigyoLic,
+    hasRealEstateLic,
+    hasKobutsuLic,
+    hasConstructionLic,
     minEstYear,
     maxEstYear,
     hasAward,

@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getSitemapCompanies, getSitemapCompaniesCount, getActiveIndustryPrefecturePairs } from '@/lib/db';
 import { PREFECTURES } from '@/lib/hubUtils';
+import { LICENSE_HUBS, JAPAN_PREFECTURES } from '@/lib/licenseHubs';
 
 export const revalidate = 86400; // Cache sitemap for 24 hours, rebuild in background
 
@@ -152,6 +153,34 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
           changeFrequency: 'weekly',
           priority: 0.85,
         });
+      }
+
+      // Public Licenses & Professional Registrations Hubs (公的許認可・士業登録ハブ)
+      corePages.push({
+        url: `${baseUrl}/${loc}/licenses`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.95,
+      });
+
+      for (const hub of Object.values(LICENSE_HUBS)) {
+        // National Hub Overview
+        corePages.push({
+          url: `${baseUrl}/${loc}/license/${hub.slug}`,
+          lastModified: new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.92,
+        });
+
+        // 47 Prefecture Sub-Hubs
+        for (const pref of JAPAN_PREFECTURES) {
+          corePages.push({
+            url: `${baseUrl}/${loc}/license/${hub.slug}/${pref.code}`,
+            lastModified: new Date(),
+            changeFrequency: 'weekly',
+            priority: 0.88,
+          });
+        }
       }
       corePages.push({
         url: `${baseUrl}/${loc}/contact`,

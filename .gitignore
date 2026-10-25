@@ -18,6 +18,7 @@ out/
 .env*
 *credentials*.json
 google_credentials.json
+google_keys/
 .DS_Store
 Thumbs.db
 importdata/
