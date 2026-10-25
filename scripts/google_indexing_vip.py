@@ -25,36 +25,85 @@ SCOPES = ['https://www.googleapis.com/auth/indexing']
 BASE_URL = "https://kigyoulist.com"
 DB_PATH = os.getenv("SQLITE_DB_PATH", str(PROJECT_ROOT / "kigyou-list.db"))
 
+KEYS_DIR = os.getenv("GOOGLE_KEYS_DIR", str(PROJECT_ROOT / "google_keys"))
+
 class GoogleIndexingClient:
-    def __init__(self, key_file: str = KEY_FILE):
-        self.key_file = key_file
-        if not os.path.exists(self.key_file):
-            raise FileNotFoundError(f"Key file not found: {self.key_file}")
-        self.creds = service_account.Credentials.from_service_account_file(self.key_file, scopes=SCOPES)
-        self.service = build('indexing', 'v3', credentials=self.creds)
+    def __init__(self, key_file: Optional[str] = None):
+        self.key_paths = []
+        if key_file and os.path.exists(key_file):
+            self.key_paths.append(key_file)
+        elif os.path.exists(KEYS_DIR):
+            for f in sorted(os.listdir(KEYS_DIR)):
+                if f.endswith('.json'):
+                    self.key_paths.append(os.path.join(KEYS_DIR, f))
+        
+        if not self.key_paths and os.path.exists(KEY_FILE):
+            self.key_paths.append(KEY_FILE)
+
+        if not self.key_paths:
+            raise FileNotFoundError(f"No key files found in {KEYS_DIR} or {KEY_FILE}")
+
+        self.services = []
+        for kp in self.key_paths:
+            try:
+                creds = service_account.Credentials.from_service_account_file(kp, scopes=SCOPES)
+                svc = build('indexing', 'v3', credentials=creds)
+                with open(kp, 'r', encoding='utf-8') as jf:
+                    data = json.load(jf)
+                self.services.append({
+                    "path": kp,
+                    "project_id": data.get("project_id", "unknown"),
+                    "client_email": data.get("client_email", "unknown"),
+                    "service": svc,
+                    "submitted_today": 0,
+                    "exhausted": False
+                })
+            except Exception as e:
+                print(f"[-] Warning: Failed to load key {kp}: {e}")
+
+        if not self.services:
+            raise RuntimeError("No valid Google service accounts could be loaded.")
+
+        self.active_index = 0
+
+    def get_active_service(self) -> Dict[str, Any]:
+        """Lấy service account còn hạn mức"""
+        for i in range(len(self.services)):
+            idx = (self.active_index + i) % len(self.services)
+            svc_obj = self.services[idx]
+            if not svc_obj["exhausted"] and svc_obj["submitted_today"] < 200:
+                self.active_index = idx
+                return svc_obj
+        return None
 
     def publish_url(self, url: str, action: str = "URL_UPDATED") -> Dict[str, Any]:
-        """Gửi 1 URL lên Google Indexing API"""
+        """Gửi 1 URL lên Google Indexing API sử dụng key xoay vòng"""
+        svc_obj = self.get_active_service()
+        if not svc_obj:
+            raise RuntimeError("Toàn bộ các Google Service Accounts trong pool đều đã hết hạn mức hôm nay.")
+
         body = {
             "url": url,
             "type": action
         }
         try:
-            resp = self.service.urlNotifications().publish(body=body).execute()
+            resp = svc_obj["service"].urlNotifications().publish(body=body).execute()
+            svc_obj["submitted_today"] += 1
+            if svc_obj["submitted_today"] >= 200:
+                svc_obj["exhausted"] = True
+                self.active_index = (self.active_index + 1) % len(self.services)
             return resp
         except HttpError as e:
-            if "SERVICE_DISABLED" in str(e):
-                raise RuntimeError(
-                    "Google Web Search Indexing API is disabled on Google Cloud Console.\n"
-                    "👉 Vui lòng truy cập đường link sau và bấm 'ENABLE':\n"
-                    "https://console.developers.google.com/apis/api/indexing.googleapis.com/overview?project=165334338797"
-                )
+            if "RATE_LIMIT_EXCEEDED" in str(e) or "quota" in str(e).lower() or "429" in str(e):
+                svc_obj["exhausted"] = True
+                self.active_index = (self.active_index + 1) % len(self.services)
             raise e
 
     def get_url_status(self, url: str) -> Dict[str, Any]:
         """Kiểm tra trạng thái nạp của 1 URL trên Google Indexing API"""
+        svc_obj = self.services[0]
         try:
-            resp = self.service.urlNotifications().getMetadata(url=url).execute()
+            resp = svc_obj["service"].urlNotifications().getMetadata(url=url).execute()
             return resp
         except HttpError as e:
             if "SERVICE_DISABLED" in str(e):

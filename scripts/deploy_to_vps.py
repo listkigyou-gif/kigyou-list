@@ -89,9 +89,9 @@ def main():
         print("\n--- STEP 5: Verify Live Endpoints ---")
         verify_cmd = (
             "curl -s -o /dev/null -w 'Localhost 3000 -> HTTP Code: %{http_code}\\n' http://127.0.0.1:3000/ja && "
-            "curl -s -o /dev/null -w 'Localhost Developer -> HTTP Code: %{http_code}\\n' http://127.0.0.1:3000/ja/developer && "
             "curl -s -o /dev/null -w 'Public https://kigyoulist.com/ja -> HTTP Code: %{http_code}\\n' https://kigyoulist.com/ja && "
-            "curl -s -o /dev/null -w 'Public Developer -> HTTP Code: %{http_code}\\n' https://kigyoulist.com/ja/developer"
+            "curl -s -o /dev/null -w 'Public Licenses Portal -> HTTP Code: %{http_code}\\n' https://kigyoulist.com/ja/licenses && "
+            "curl -s -o /dev/null -w 'Public License Hub Tokutei -> HTTP Code: %{http_code}\\n' https://kigyoulist.com/ja/license/tokutei"
         )
         run_ssh_command(client, verify_cmd)
 
