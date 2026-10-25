@@ -87,7 +87,7 @@ RYOKAN_SOURCES = [
     {
         "id": "shizuoka",
         "url": "https://data.bodik.jp/dataset/e5c122bd-4195-4909-b5f5-11b023144a28/resource/f6ddbc17-3b7e-41e8-8677-7a3e1741bed3/download/ryokan20260331.csv",
-        "encoding": "shift_jis",
+        "encoding": "utf-8-sig",
         "delimiter": ",",
         "pref_code": "22",
         "authority": "静岡市保健所"
@@ -95,7 +95,7 @@ RYOKAN_SOURCES = [
     {
         "id": "tokyo_minato",
         "url": "https://opendata.city.minato.tokyo.jp/dataset/6adb6ec4-6cf8-4d4c-b68a-96c095728b0b/resource/71b05077-1f8c-459e-a17a-3789273bca08/download/ryokan.csv",
-        "encoding": "shift_jis",
+        "encoding": "utf-8-sig",
         "delimiter": ",",
         "pref_code": "13",
         "authority": "東京都港区みなと保健所"
@@ -103,7 +103,7 @@ RYOKAN_SOURCES = [
     {
         "id": "tokyo_meguro",
         "url": "https://data.bodik.jp/dataset/800b5b11-f0ad-42e1-92d0-e05ca81bf2be/resource/12b6d43c-cb1e-4dcb-97ff-a85fb0905a5e/download/131105_ryokan_20260331.csv",
-        "encoding": "utf-8",
+        "encoding": "utf-8-sig",
         "delimiter": "\t",
         "pref_code": "13",
         "authority": "東京都目黒区保健所"
@@ -111,7 +111,7 @@ RYOKAN_SOURCES = [
     {
         "id": "otsu",
         "url": "https://data.bodik.jp/dataset/c91532cc-8c4e-406b-9f81-6196a92d4fc9/resource/1a588093-ddae-4453-9c11-d9e5e213575e/download/260930ryokan.csv",
-        "encoding": "shift_jis",
+        "encoding": "utf-8-sig",
         "delimiter": ",",
         "pref_code": "25",
         "authority": "大津市保健所"
@@ -184,10 +184,13 @@ def harvest_ryokan_hotels():
                         facility_type = row[8] if len(row) > 8 else "旅館・ホテル"
 
                     elif src["id"] == "otsu":
-                        facility_name = row[2] if len(row) > 2 else ""
+                        facility_name = row[0] if len(row) > 0 else ""
                         address = row[1] if len(row) > 1 else ""
+                        phone = row[2] if len(row) > 2 else ""
+                        facility_type = row[3] if len(row) > 3 else "旅館・ホテル"
                         corp_name = row[4] if len(row) > 4 else facility_name
-                        lic_num = row[0] if len(row) > 0 else ""
+                        issue_date = row[5] if len(row) > 5 else ""
+                        lic_num = row[6] if len(row) > 6 else ""
 
                     if not corp_name:
                         corp_name = facility_name

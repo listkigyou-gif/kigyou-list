@@ -15,7 +15,7 @@ export interface LicenseHubConfig {
   authority: { ja: string; en: string; vi: string };
   statutoryAct: { ja: string; en: string; vi: string };
   description: { ja: string; en: string; vi: string };
-  filterKey: 'has_tokutei_lic' | 'has_shigyo_lic' | 'has_real_estate_lic' | 'has_kobutsu_lic' | 'has_construction_lic' | 'has_haken_lic' | 'has_shokugyo_lic';
+  filterKey: 'has_tokutei_lic' | 'has_shigyo_lic' | 'has_real_estate_lic' | 'has_kobutsu_lic' | 'has_construction_lic' | 'has_haken_lic' | 'has_shokugyo_lic' | 'has_license';
   licenseTypeClause: string; // for SQL matching in company_licenses
   iconColor: string;
   badgeBg: string;
@@ -506,6 +506,118 @@ export const LICENSE_HUBS: Record<string, LicenseHubConfig> = {
         }
       }
     ]
+  },
+  'ryokan': {
+    slug: 'ryokan',
+    badge: {
+      ja: '旅館業法 許可施設',
+      en: 'Inns & Hotels Act Licensed',
+      vi: 'Giấy phép Kinh doanh Khách sạn / Nhà nghỉ'
+    },
+    title: {
+      ja: '旅館・ホテル営業許可企業一覧データベース',
+      en: 'Licensed Hotels & Ryokans Business Directory',
+      vi: 'Danh bạ Khách sạn & Nhà nghỉ (旅館業許可)'
+    },
+    shortName: {
+      ja: '旅館・ホテル営業',
+      en: 'Hotels & Ryokans',
+      vi: 'Khách sạn & Nhà nghỉ'
+    },
+    category: {
+      ja: '宿泊・ホテル・観光産業',
+      en: 'Hospitality & Tourism',
+      vi: 'Lưu trú, Khách sạn & Du lịch'
+    },
+    authority: {
+      ja: '各都道府県・保健所設置市（厚生労働省）',
+      en: 'Prefectures & Public Health Centers (MHLW)',
+      vi: 'UBND Tỉnh & Trung tâm Y tế Công cộng (Bộ Y tế)'
+    },
+    statutoryAct: {
+      ja: '旅館業法 第3条',
+      en: 'Inns and Hotels Act Art. 3',
+      vi: 'Luật Kinh doanh Khách sạn & Nhà nghỉ Điều 3'
+    },
+    description: {
+      ja: '旅館業法に基づき都道府県知事等から営業許可を受けた全国のホテル、旅館、簡易宿所運営企業のデータベース。直通電話番号、施設所在地、代表者名を網羅。',
+      en: 'Official database of hotel, ryokan, and accommodation operators licensed under the Inns and Hotels Act. Filter by prefecture with direct phone numbers.',
+      vi: 'Cơ sở dữ liệu các doanh nghiệp vận hành khách sạn, nhà nghỉ ryokan và cơ sở lưu trú được cấp phép chính thức theo Luật Khách sạn Nhật Bản.'
+    },
+    filterKey: 'has_license',
+    licenseTypeClause: "license_type = '旅館業許可'",
+    iconColor: 'text-amber-600 dark:text-amber-400',
+    badgeBg: 'bg-amber-50 border-amber-200/80 text-amber-700 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300',
+    faqs: [
+      {
+        question: {
+          ja: '旅館業法の許可にはどのような種別がありますか？',
+          en: 'What categories exist under the Inns and Hotels Act?',
+          vi: 'Giấy phép Luật Khách sạn gồm những phân loại nào?'
+        },
+        answer: {
+          ja: '「旅館・ホテル営業」「簡易宿所営業（カプセルホテル・ゲストハウス等）」「下宿営業」の3種別があります。法令基準を満たした正規施設のみ掲載しています。',
+          en: 'Categories include Hotel/Ryokan, Budget Accommodation (Hostels/Capsules), and Boarding houses.',
+          vi: 'Bao gồm Khách sạn / Ryokan truyền thống, Nhà nghỉ đơn giản (Capsule/Guesthouse) và Nhà trọ theo tháng.'
+        }
+      }
+    ]
+  },
+  'inshoku': {
+    slug: 'inshoku',
+    badge: {
+      ja: '食品衛生法 営業許可施設',
+      en: 'Food Sanitation Act Licensed',
+      vi: 'Giấy phép An toàn Vệ sinh Thực phẩm & Ăn uống'
+    },
+    title: {
+      ja: '飲食店営業許可企業一覧データベース',
+      en: 'Licensed Restaurants & Food Chains Directory',
+      vi: 'Danh bạ Nhà hàng & Chuỗi Ăn uống (飲食店営業許可)'
+    },
+    shortName: {
+      ja: '飲食店営業許可',
+      en: 'Restaurants & Eateries',
+      vi: 'Nhà hàng & Quán ăn'
+    },
+    category: {
+      ja: '飲食・外食・フードサービス',
+      en: 'Restaurants & Foodservice',
+      vi: 'Ẩm thực & Dịch vụ ăn uống'
+    },
+    authority: {
+      ja: '各自治体保健所（厚生労働省）',
+      en: 'Municipal Public Health Centers (MHLW)',
+      vi: 'Trung tâm Y tế Công cộng các Quận/Tỉnh (Bộ Y tế)'
+    },
+    statutoryAct: {
+      ja: '食品衛生法 第55条',
+      en: 'Food Sanitation Act Art. 55',
+      vi: 'Luật Vệ sinh Thực phẩm Điều 55'
+    },
+    description: {
+      ja: '食品衛生法に基づき保健所から飲食店営業許可を取得した全国のレストラン、居酒屋、カフェ、外食チェーン運営企業の公式データベース。店舗名、法人番号、直通番号を網羅。',
+      en: 'Comprehensive directory of licensed restaurant operators, catering firms, and dining chains certified under the Food Sanitation Act.',
+      vi: 'Cơ sở dữ liệu các công ty vận hành chuỗi nhà hàng, quán ăn, quán cà phê được cấp phép kinh doanh vệ sinh an toàn thực phẩm trên toàn nước Nhật.'
+    },
+    filterKey: 'has_license',
+    licenseTypeClause: "license_type = '飲食店営業許可'",
+    iconColor: 'text-rose-600 dark:text-rose-400',
+    badgeBg: 'bg-rose-50 border-rose-200/80 text-rose-700 dark:bg-rose-950/40 dark:border-rose-800 dark:text-rose-300',
+    faqs: [
+      {
+        question: {
+          ja: '飲食店営業許可データにはどのような企業が含まれますか？',
+          en: 'What types of businesses are included in the restaurant registry?',
+          vi: 'Dữ liệu giấy phép ăn uống bao gồm các loại hình nào?'
+        },
+        answer: {
+          ja: '一般食堂、レストラン、居酒屋、カフェ、給食施設、ファストフードチェーンなど、食品衛生法に基づく施設検査に合格した正規の法人運営店舗が網羅されています。',
+          en: 'Includes certified dining establishments, izakayas, cafes, corporate caterers, and fast food chains complying with sanitary standards.',
+          vi: 'Bao gồm các nhà hàng, quán ăn gia đình, quán nhậu izakaya, quán cà phê, đơn vị suất ăn công nghiệp đã vượt qua kiểm định an toàn thực phẩm.'
+        }
+      }
+    ]
   }
 };
 
@@ -571,14 +683,43 @@ export async function getLicenseHubCompanies(
   }
 
   try {
-    const filters: any = {
-      [config.filterKey]: true
-    };
-    if (prefCode) {
-      filters.prefecture_code = prefCode;
-    }
+    let companies: any[] = [];
+    let totalCount = 0;
 
-    const { companies, totalCount } = await searchCompanies('', filters, limit, offset);
+    if (config.filterKey === 'has_license') {
+      const countSql = prefCode
+        ? `SELECT COUNT(DISTINCT corporate_number) as cnt FROM company_licenses WHERE ${config.licenseTypeClause} AND prefecture_code = ?`
+        : `SELECT COUNT(DISTINCT corporate_number) as cnt FROM company_licenses WHERE ${config.licenseTypeClause}`;
+      const countRes = await runQuery(countSql, prefCode ? [prefCode] : []);
+      totalCount = Number(countRes[0]?.cnt || 0);
+
+      if (totalCount === 0) {
+        return { companies: [], totalCount: 0 };
+      }
+
+      const corpsSql = prefCode
+        ? `SELECT DISTINCT corporate_number FROM company_licenses WHERE ${config.licenseTypeClause} AND prefecture_code = ? LIMIT ? OFFSET ?`
+        : `SELECT DISTINCT corporate_number FROM company_licenses WHERE ${config.licenseTypeClause} LIMIT ? OFFSET ?`;
+      const corpsRes = await runQuery(corpsSql, prefCode ? [prefCode, limit, offset] : [limit, offset]);
+      const corpNumbers = corpsRes.map((r: any) => r.corporate_number);
+
+      if (corpNumbers.length > 0) {
+        const placeholders = corpNumbers.map(() => '?').join(',');
+        const compSql = `SELECT * FROM companies WHERE corporate_number IN (${placeholders})`;
+        companies = await runQuery(compSql, corpNumbers);
+      }
+    } else {
+      const filters: any = {
+        [config.filterKey]: true
+      };
+      if (prefCode) {
+        filters.prefecture_code = prefCode;
+      }
+
+      const searchRes = await searchCompanies('', filters, limit, offset);
+      companies = searchRes.companies;
+      totalCount = searchRes.totalCount;
+    }
 
     if (companies.length === 0) {
       return { companies: [], totalCount };
@@ -588,7 +729,7 @@ export async function getLicenseHubCompanies(
     const corpNumbers = companies.map(c => c.corporate_number);
     const placeholders = corpNumbers.map(() => '?').join(',');
     const licenseSql = `
-      SELECT corporate_number, license_type, license_number, license_authority, specialties_json, source_url, issue_date
+      SELECT corporate_number, license_type, license_number, issuing_authority as license_authority, specialties_json, source_url, issue_date
       FROM company_licenses
       WHERE corporate_number IN (${placeholders}) AND ${config.licenseTypeClause}
     `;

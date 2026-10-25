@@ -16,7 +16,7 @@ KEY = "0a1fbe0a7866441bb57817e0bf538068"
 KEY_LOCATION = f"https://{HOST}/0a1fbe0a7866441bb57817e0bf538068.txt"
 INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow"
 
-HUBS = ['tokutei', 'shigyo', 'takken', 'kensetsu', 'kobutsu', 'haken', 'shokugyo']
+HUBS = ['tokutei', 'shigyo', 'takken', 'kensetsu', 'kobutsu', 'haken', 'shokugyo', 'ryokan', 'inshoku']
 PREF_CODES = [f"{p:02d}" for p in range(1, 48)]
 
 def generate_hub_urls():
