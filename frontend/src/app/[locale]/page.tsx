@@ -1031,7 +1031,7 @@ export default async function Home({ params }: PageParams) {
                   badgeJa: "食品衛生法・保健所",
                   badgeVi: "Luật Vệ sinh Thực phẩm",
                   badgeEn: "Food Sanitation Act",
-                  count: "5,711",
+                  count: "29,956",
                   descJa: "外食チェーン・居酒屋・カフェ、直通連絡先と店舗情報",
                   descVi: "Chuỗi nhà hàng, quán ăn, cafe, số điện thoại trực tiếp",
                   descEn: "Dining chains, izakayas, certified culinary operators"
@@ -1044,7 +1044,7 @@ export default async function Home({ params }: PageParams) {
                   badgeJa: "旅館業法・各自治体",
                   badgeVi: "Luật Khách sạn",
                   badgeEn: "Inns & Hotels Act",
-                  count: "184",
+                  count: "2,137",
                   descJa: "全国ホテル、旅館、簡易宿所運営企業、客室規模網羅",
                   descVi: "Khách sạn, ryokan, homestay, thông tin phòng ốc",
                   descEn: "Hotels, traditional ryokans, licensed lodgings"
