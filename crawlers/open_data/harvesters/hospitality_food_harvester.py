@@ -400,7 +400,7 @@ def resolve_and_persist(all_records):
         registered_address TEXT,
         issue_date TEXT,
         valid_until TEXT,
-        license_status TEXT DEFAULT 'VALID',
+        license_status TEXT DEFAULT '有効',
         specialties_json TEXT,
         source_url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
