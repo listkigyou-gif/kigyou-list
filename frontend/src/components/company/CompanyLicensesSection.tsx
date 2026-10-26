@@ -40,43 +40,34 @@ export function CompanyLicensesSection({
   };
 
   /**
-   * Tính toán ngày hết hạn (満了日) theo luật Nhật Bản:
-   * - 建設業法 第3条第3項 & 宅建業法: 有効期間は5年間（許可日の5年後の前日）
-   * - 労働者派遣法 / 職業安定法: 初回3年、更新後5年
+   * Hiển thị ngày hết hạn (満了日) & trạng thái giấy phép:
+   * CHỈ sử dụng dữ liệu chính thức do API / cơ quan hành chính cung cấp trong lic.valid_until.
+   * Tuyệt đối không tự suy đoán ngày từ issue_date vì mỗi ngành nghề có luật định thời hạn khác nhau (ví dụ: Ryokan là vô thời hạn).
    */
   const resolveExpiration = (lic: CompanyLicense) => {
-    if (lic.valid_until) {
+    if (lic.valid_until && lic.valid_until.trim() !== '') {
       const parts = lic.valid_until.split('-');
       if (parts.length === 3) {
         const expDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
         const isExpired = expDate.getTime() < currentTime;
-        return { displayDate: `${parts[0]}/${parts[1]}/${parts[2]}`, isExpired };
+        return { 
+          displayDate: `${parts[0]}/${parts[1]}/${parts[2]}`, 
+          isExpired,
+          statusLabel: isExpired ? (lic.license_status || '満了') : (lic.license_status || '有効')
+        };
       }
-      return { displayDate: lic.valid_until, isExpired: false };
+      return { 
+        displayDate: lic.valid_until, 
+        isExpired: false, 
+        statusLabel: lic.license_status || '有効' 
+      };
     }
 
-    if (lic.issue_date) {
-      const parts = lic.issue_date.split('-');
-      if (parts.length === 3) {
-        const year = parseInt(parts[0], 10);
-        const month = parseInt(parts[1], 10);
-        const day = parseInt(parts[2], 10);
-
-        const targetDate = new Date(year + 5, month - 1, day);
-        targetDate.setDate(targetDate.getDate() - 1);
-
-        const expYear = targetDate.getFullYear();
-        const expMonth = String(targetDate.getMonth() + 1).padStart(2, '0');
-        const expDay = String(targetDate.getDate()).padStart(2, '0');
-
-        const isExpired = targetDate.getTime() < currentTime;
-        return { displayDate: `${expYear}/${expMonth}/${expDay}`, isExpired };
-      }
-    }
-
+    // Nếu cơ quan nhà nước không cấp valid_until (giấy phép vô thời hạn / duy trì theo điều kiện hoạt động):
     return { 
       displayDate: null, 
-      isExpired: lic.license_status === '失効' || lic.license_status === '取消'
+      isExpired: lic.license_status === '失効' || lic.license_status === '取消',
+      statusLabel: lic.license_status || '有効'
     };
   };
 
@@ -260,21 +251,20 @@ export function CompanyLicensesSection({
                       const exp = resolveExpiration(lic);
                       if (exp.displayDate) {
                         return (
-                          <div className="flex flex-col items-center">
-                            <span className={exp.isExpired ? "text-slate-400 line-through" : "text-slate-700 dark:text-slate-200"}>
-                              {exp.displayDate}
-                            </span>
-                            {exp.isExpired && (
-                              <span className="text-[10px] text-amber-600 dark:text-amber-400 font-sans mt-0.5">
-                                要更新確認
-                              </span>
-                            )}
-                          </div>
+                          <span className={exp.isExpired ? "text-slate-400 line-through" : "text-slate-700 dark:text-slate-200"}>
+                            {exp.displayDate}
+                          </span>
                         );
                       }
+                      const status = exp.statusLabel || '有効';
+                      const isNormal = status === '有効';
                       return (
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">
-                          有効
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium ${
+                          isNormal 
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50"
+                            : "bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50"
+                        }`}>
+                          {status}
                         </span>
                       );
                     })()}
