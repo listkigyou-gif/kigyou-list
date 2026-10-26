@@ -483,7 +483,12 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   const legalHistory = mergedLegalHistory;
 
   // 1.2 Dedicated Hiring Signals: Merge and display up to 10 latest recruitment events
-  const hiringFromHub: BusinessSignal[] = (recentHubEvents || [])
+  const nonHiringSignals = (rawSignals || []).filter(s => s.signal_type !== '求人あり');
+  const existingHiringSignals = (rawSignals || []).filter(s => s.signal_type === '求人あり');
+
+  // If detailed HelloWork job postings exist (with wages, location, holidays), prioritize them.
+  // Only fallback to the generic hub alert if no detailed job postings exist.
+  const hiringFromHub: BusinessSignal[] = (existingHiringSignals.length === 0 ? (recentHubEvents || []) : [])
     .filter(e => e.event_category === 'hiring')
     .map((e, idx) => ({
       id: typeof e.id === 'number' ? e.id : (parseInt(String(e.id), 10) || (900000000 + idx)),
@@ -495,10 +500,6 @@ export default async function CompanyDetailPage({ params }: PageProps) {
       details: e.description_ja,
       total_count: 1
     }));
-
-  // Combine and sort hiring signals (latest first, max 10 jobs)
-  const nonHiringSignals = (rawSignals || []).filter(s => s.signal_type !== '求人あり');
-  const existingHiringSignals = (rawSignals || []).filter(s => s.signal_type === '求人あり');
 
   const mergedHiringSignals = [...existingHiringSignals];
   for (const h of hiringFromHub) {
