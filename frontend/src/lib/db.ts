@@ -592,11 +592,6 @@ function mapSignalRow(row: any): BusinessSignal {
 
 export async function getCompanySignals(corpNum: string): Promise<BusinessSignal[]> {
   try {
-    const isPG = !!DATABASE_URL;
-    const hiringDateCondition = isPG
-      ? "(signal_date IS NOT NULL AND signal_date >= CURRENT_DATE - INTERVAL '90 days')"
-      : "(signal_date IS NOT NULL AND signal_date >= date('now', '-90 days'))";
-
     const rows = await runQuery(`
       SELECT id, corporate_number, signal_type, signal_title, signal_date, source_url, details, total_count
       FROM (
@@ -605,10 +600,6 @@ export async function getCompanySignals(corpNum: string): Promise<BusinessSignal
                COUNT(*) OVER (PARTITION BY signal_type) as total_count
         FROM business_signals 
         WHERE corporate_number = ?
-          AND (
-            signal_type != '求人あり' 
-            OR ${hiringDateCondition}
-          )
       ) t
       WHERE rn <= 10
       ORDER BY signal_date DESC, id DESC

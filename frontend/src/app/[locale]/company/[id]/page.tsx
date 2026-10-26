@@ -505,13 +505,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
       total_count: 1
     }));
 
-  // Combine and enforce 90 days + max 10 jobs
+  // Combine and sort hiring signals (latest first, max 10 jobs)
   const nonHiringSignals = (rawSignals || []).filter(s => s.signal_type !== '求人あり');
-  const existingHiringSignals = (rawSignals || []).filter(s => {
-    if (s.signal_type !== '求人あり') return false;
-    if (!s.signal_date) return false;
-    return s.signal_date >= ninetyDaysIso;
-  });
+  const existingHiringSignals = (rawSignals || []).filter(s => s.signal_type === '求人あり');
 
   const mergedHiringSignals = [...existingHiringSignals];
   for (const h of hiringFromHub) {
