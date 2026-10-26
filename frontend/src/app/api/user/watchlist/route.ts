@@ -83,10 +83,73 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 3. Fetch real hiring job postings from business_signals (with accurate release date, salary & location)
+    let hiringSignals: any[] = [];
+    try {
+      const hiringSql = `
+        SELECT id, corporate_number, signal_title, signal_date, details, source_url
+        FROM (
+          SELECT *, ROW_NUMBER() OVER (PARTITION BY corporate_number ORDER BY signal_date DESC, id DESC) as rn
+          FROM business_signals
+          WHERE corporate_number IN (${placeholders}) AND signal_type = '求人あり'
+        ) t
+        WHERE rn <= 3
+        ORDER BY signal_date DESC, id DESC
+      `;
+      hiringSignals = await runQuery(hiringSql, corporateNumbers);
+    } catch (err) {
+      console.warn("Could not query hiring business_signals:", err);
+    }
+
+    const companyNameMap = new Map<string, string>();
+    (companies || []).forEach((c: any) => {
+      companyNameMap.set(c.corporate_number, c.company_name);
+    });
+
+    const realHiringEvents = (hiringSignals || []).map((h: any) => {
+      let desc = "";
+      if (h.details) {
+        try {
+          const d = JSON.parse(h.details);
+          const parts: string[] = [];
+          if (d.wages) parts.push(`【賃金】${d.wages.replace(/\n/g, ' ')}`);
+          if (d.work_location) parts.push(`【就業場所】${d.work_location.replace(/\n/g, ' ')}`);
+          if (d.holidays) parts.push(`【休日】${d.holidays.replace(/\n/g, ' ')}`);
+          desc = parts.join(" ");
+        } catch {
+          desc = h.details;
+        }
+      }
+      return {
+        id: typeof h.id === 'number' ? h.id : parseInt(String(h.id), 10),
+        corporate_number: h.corporate_number,
+        company_name: companyNameMap.get(h.corporate_number) || "",
+        event_category: "hiring",
+        event_date: h.signal_date || "",
+        title_ja: h.signal_title,
+        description_ja: desc,
+        old_value: null,
+        new_value: null,
+        source: "ハローワーク"
+      };
+    });
+
+    const corpsWithRealJobs = new Set(realHiringEvents.map((r: any) => r.corporate_number));
+    const nonGenericEvents = (events || []).filter((e: any) => {
+      if (e.event_category === 'hiring' && corpsWithRealJobs.has(e.corporate_number)) {
+        return false;
+      }
+      return true;
+    });
+
+    const mergedEvents = [...nonGenericEvents, ...realHiringEvents].sort(
+      (a: any, b: any) => (b.event_date || "").localeCompare(a.event_date || "")
+    ).slice(0, 30);
+
     return NextResponse.json({
       success: true,
       companies: companies || [],
-      events: events || []
+      events: mergedEvents
     });
   } catch (error: any) {
     console.error("Error in /api/user/watchlist:", error);
