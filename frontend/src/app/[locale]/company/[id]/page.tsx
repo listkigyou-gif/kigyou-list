@@ -482,18 +482,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   mergedLegalHistory.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
   const legalHistory = mergedLegalHistory;
 
-  // 1.2 Dedicated Hiring Signals (新着求人): Stays in Hiring Signal block only, strictly <= 90 days (3 months), max 10 items
-  const ninetyDaysAgo = new Date();
-  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
-  const ninetyDaysIso = ninetyDaysAgo.toISOString().split('T')[0];
-
-  // Additional hiring events from hub_dynamic_events if any
+  // 1.2 Dedicated Hiring Signals: Merge and display up to 10 latest recruitment events
   const hiringFromHub: BusinessSignal[] = (recentHubEvents || [])
     .filter(e => e.event_category === 'hiring')
-    .filter(e => {
-      const d = e.event_date ? (e.event_date.includes('T') ? e.event_date.split('T')[0] : e.event_date) : '';
-      return !d || d >= ninetyDaysIso;
-    })
     .map((e, idx) => ({
       id: typeof e.id === 'number' ? e.id : (parseInt(String(e.id), 10) || (900000000 + idx)),
       corporate_number: e.corporate_number,
