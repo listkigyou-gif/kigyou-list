@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
-import { saveMagicLinkToken, checkMagicLinkRateLimit } from "@/lib/db";
+import { saveMagicLinkToken, checkMagicLinkRateLimit, updateUserLoginIp } from "@/lib/db";
+import { verifyClientIp, isSuspiciousEmail } from "@/lib/securityGuard";
 import crypto from "crypto";
 
 export async function POST(request: Request) {
@@ -8,6 +9,29 @@ export async function POST(request: Request) {
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return NextResponse.json({ error: "Invalid email address" }, { status: 400 });
     }
+
+    // 0. Fraud & Security Check (Email domain & IP)
+    if (isSuspiciousEmail(email)) {
+      console.warn(`[Security Guard] Blocked disposable/fraudulent email: ${email}`);
+      return NextResponse.json({ 
+        error: locale === "vi" 
+          ? "Địa chỉ email không hợp lệ hoặc không được hỗ trợ." 
+          : locale === "en" 
+          ? "Invalid or unsupported email address." 
+          : "無効またはサポートされていないメールアドレスです。" 
+      }, { status: 400 });
+    }
+
+    // Record Client IP for registration/login audit
+    const clientIp = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "127.0.0.1";
+    
+    const ipCheck = await verifyClientIp(clientIp);
+    if (ipCheck.blocked) {
+      console.warn(`[Security Guard] Blocked magic link request from banned IP: ${clientIp} (${ipCheck.reason})`);
+      return NextResponse.json({ error: "Access Denied: Banned IP" }, { status: 403 });
+    }
+
+    await updateUserLoginIp(email, clientIp);
 
     // Verify Cloudflare Turnstile CAPTCHA if configured
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;

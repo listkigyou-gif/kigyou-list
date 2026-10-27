@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserQuota, isFirstTimeSubscriber, isFirstTimeFormBuyer } from "@/lib/db";
+import { verifyClientIp, isSuspiciousEmail } from "@/lib/securityGuard";
 import { auth } from "@/auth";
 
 
@@ -13,8 +14,20 @@ export async function POST(request: Request) {
     const { planId, packId, formPlanId, couponCode, couponDiscount } = await request.json();
     
     // Extract IP and UA for logging in payment history
-    const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "127.0.0.1";
+    const ipAddress = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "127.0.0.1";
     const userAgent = request.headers.get("user-agent") || "";
+
+    // Security Check: Fraudulent email domain or IP blacklist
+    if (isSuspiciousEmail(email)) {
+      console.warn(`[Security Guard] Blocked checkout creation for suspicious email: ${email}`);
+      return NextResponse.json({ error: "不正なアカウントまたは利用できないメールアドレスです。" }, { status: 403 });
+    }
+
+    const ipCheck = await verifyClientIp(ipAddress);
+    if (ipCheck.blocked) {
+      console.warn(`[Security Guard] Blocked checkout creation from banned IP: ${ipAddress} (${ipCheck.reason}) for email: ${email}`);
+      return NextResponse.json({ error: "セキュリティ上の理由により、このIPからの決済手続きは制限されています。" }, { status: 403 });
+    }
 
     if (!planId && !packId && !formPlanId) {
       return NextResponse.json({ error: "Plan ID, Pack ID, or Form Plan ID is required" }, { status: 400 });
@@ -197,6 +210,11 @@ export async function POST(request: Request) {
 
       const sessionData: any = {
         payment_method_types: ["card"],
+        payment_method_options: {
+          card: {
+            request_three_d_secure: "any",
+          },
+        },
         line_items: [
           {
             price_data: {

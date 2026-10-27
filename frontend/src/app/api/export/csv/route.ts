@@ -7,6 +7,7 @@ import {
 import { uploadFileToR2 } from "@/lib/r2";
 import JSZip from "jszip";
 import { auth } from "@/auth";
+import { verifyClientIp, isSuspiciousEmail } from "@/lib/securityGuard";
 
 // Helper to escape CSV cell contents safely
 function escapeCSVField(val: any): string {
@@ -28,8 +29,20 @@ export async function POST(request: Request) {
     const { keyword = "", filters = {}, totalCount } = await request.json();
     
     // Extract Client IP and User Agent for audit logging/dispute proof
-    const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "127.0.0.1";
+    const ipAddress = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "127.0.0.1";
     const userAgent = request.headers.get("user-agent") || "";
+
+    // Security Check: Fraudulent email domain or IP blacklist
+    if (isSuspiciousEmail(email)) {
+      console.warn(`[Security Guard] Blocked CSV export for suspicious email: ${email}`);
+      return NextResponse.json({ error: "Access Denied: Suspicious account" }, { status: 403 });
+    }
+
+    const ipCheck = await verifyClientIp(ipAddress);
+    if (ipCheck.blocked) {
+      console.warn(`[Security Guard] Blocked CSV export from banned IP: ${ipAddress} (${ipCheck.reason})`);
+      return NextResponse.json({ error: "Access Denied: Banned IP" }, { status: 403 });
+    }
 
     if (totalCount === undefined || typeof totalCount !== "number" || totalCount <= 0) {
       return NextResponse.json({ error: "Invalid totalCount parameter" }, { status: 400 });
@@ -242,6 +255,10 @@ export async function POST(request: Request) {
         await updateExportJobStatus(jobId, "processing", null, null);
 
         const companies = await searchCompaniesAll(keyword, sanitizedFilters);
+
+        if (!companies || (companies.length === 0 && totalCount > 0)) {
+          throw new Error("検索条件に合致する企業データが取得できませんでした。");
+        }
 
         const csvHeader = headers.map(escapeCSVField).join(",") + "\n";
         let csvBody = "";
