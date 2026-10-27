@@ -450,8 +450,13 @@ export default async function LicenseHubPage({ params }: PageProps) {
             <div className="divide-y divide-slate-100 dark:divide-slate-800/80">
               {companies.map((c) => {
                 const lic = c.license_detail;
-                const supportedLangs = lic?.specialties?.supported_languages as string[] | undefined;
-                const statutoryAct = lic?.specialties?.statutory_act as string | undefined;
+                const rawLangs = lic?.specialties?.supported_languages;
+                const supportedLangs: string[] = Array.isArray(rawLangs)
+                  ? rawLangs
+                  : typeof rawLangs === 'string'
+                  ? rawLangs.split(/[・,、\s]+/).map((s: string) => s.trim()).filter(Boolean)
+                  : [];
+                const statutoryAct = typeof lic?.specialties?.statutory_act === 'string' ? lic.specialties.statutory_act : undefined;
 
                 return (
                   <div key={c.corporate_number} className="py-5 hover:bg-slate-50/50 dark:hover:bg-slate-800/20 px-2 rounded-xl transition-colors">
@@ -508,7 +513,7 @@ export default async function LicenseHubPage({ params }: PageProps) {
                         </div>
 
                         {/* Supported Languages tags (for Tokutei Gino) */}
-                        {supportedLangs && supportedLangs.length > 0 && (
+                        {supportedLangs.length > 0 && (
                           <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
                             <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1">
                               <Languages className="w-3 h-3" />
