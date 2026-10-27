@@ -87,6 +87,26 @@ MAPPING_CONFIGS = [
         "medium_path": "L.72",
         "shumoku_label": "専門サービス業",
         "flag_column": None
+    },
+    {
+        "name": "飲食店営業許可 (Food Sanitation & Restaurants)",
+        "license_types": ["飲食店営業許可"],
+        "major_code": "M",
+        "major_path": "M",
+        "medium_code": "76",
+        "medium_path": "M.76",
+        "shumoku_label": "飲食店, 飲食サービス業",
+        "flag_column": None
+    },
+    {
+        "name": "旅館業許可 (Hotels & Ryokans)",
+        "license_types": ["旅館業許可"],
+        "major_code": "M",
+        "major_path": "M",
+        "medium_code": "75",
+        "medium_path": "M.75",
+        "shumoku_label": "旅館・ホテル, 宿泊業",
+        "flag_column": None
     }
 ]
 

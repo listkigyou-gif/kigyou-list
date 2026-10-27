@@ -69,6 +69,15 @@ def post_thread_browser(tweets: List[str], image_path: Optional[str] = None, hea
         page.goto("https://x.com/home", wait_until="domcontentloaded")
         time.sleep(4)
         
+        # Xử lý nếu gặp màn hình xác thực bảo mật Cloudflare Turnstile (account/access)
+        for _ in range(8):
+            if "account/access" in page.url:
+                print("  -> Đang chờ Cloudflare Turnstile xác thực và chuyển hướng về trang chủ...")
+                time.sleep(3)
+            else:
+                break
+        time.sleep(2)
+
         if "login" in page.url:
             print("[-] Session expired or not logged in.")
             context.close()

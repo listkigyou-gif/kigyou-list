@@ -29,14 +29,14 @@ export default function FormMarketingPage() {
   const getSimPricing = (vol: number) => {
     switch (vol) {
       case 1000:
-        return { listPrice: 28000, campaignPrice: 8400, taxIncl: 9240, unitRate: 8.4, planName: isJa ? "1,000 件プラン" : isVi ? "Gói 1.000 Form" : "1,000 Forms" };
+        return { listPrice: 28000, campaignPrice: 8400, taxIncl: 8400, taxExcl: 7636, unitRate: 8.4, planName: isJa ? "1,000 件プラン" : isVi ? "Gói 1.000 Form" : "1,000 Forms" };
       case 3000:
-        return { listPrice: 69000, campaignPrice: 20700, taxIncl: 22770, unitRate: 6.9, planName: isJa ? "3,000 件プラン" : isVi ? "Gói 3.000 Form" : "3,000 Forms" };
+        return { listPrice: 69000, campaignPrice: 20700, taxIncl: 20700, taxExcl: 18818, unitRate: 6.9, planName: isJa ? "3,000 件プラン" : isVi ? "Gói 3.000 Form" : "3,000 Forms" };
       case 5000:
-        return { listPrice: 99000, campaignPrice: 29700, taxIncl: 32670, unitRate: 5.9, planName: isJa ? "5,000 件プラン" : isVi ? "Gói 5.000 Form" : "5,000 Forms" };
+        return { listPrice: 99000, campaignPrice: 29700, taxIncl: 29700, taxExcl: 27000, unitRate: 5.9, planName: isJa ? "5,000 件プラン" : isVi ? "Gói 5.000 Form" : "5,000 Forms" };
       case 10000:
       default:
-        return { listPrice: 180000, campaignPrice: 54000, taxIncl: 59400, unitRate: 5.4, planName: isJa ? "10,000 件プラン" : isVi ? "Gói 10.000 Form" : "10,000 Forms" };
+        return { listPrice: 180000, campaignPrice: 54000, taxIncl: 54000, taxExcl: 49091, unitRate: 5.4, planName: isJa ? "10,000 件プラン" : isVi ? "Gói 10.000 Form" : "10,000 Forms" };
     }
   };
 
@@ -607,7 +607,7 @@ ${message || "未入力"}`
 
                 <div className="flex items-baseline gap-1.5 mb-1">
                   <span className="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums font-mono">¥8,400</span>
-                  <span className="text-xs text-slate-400">({isJa ? "税抜" : isVi ? "chưa VAT" : "excl. tax"})</span>
+                  <span className="text-xs text-slate-500 font-normal">({isJa ? "税込" : isVi ? "gồm thuế" : "tax incl."})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="line-through text-slate-400 text-xs tabular-nums font-mono">¥28,000</span>
@@ -616,10 +616,10 @@ ${message || "未入力"}`
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums font-mono mb-2">
-                  <span>税込 ¥9,240</span>
+                  <span>税抜 ¥7,636</span>
                 </div>
                 <div className="text-xs text-slate-600 dark:text-slate-300 font-semibold mb-6 tabular-nums font-mono">
-                  {isJa ? "単価: 8.4円（税込 9.24円）/ 送信完了" : isVi ? "Đơn giá: 8.4 JPY (gồm thuế 9.24 JPY) / lượt" : "8.4 JPY (tax incl. 9.24 JPY) / form"}
+                  {isJa ? "単価: 8.4円（税込）/ 送信完了" : isVi ? "Đơn giá: 8.4 JPY (đã gồm thuế) / lượt" : "8.4 JPY (tax incl.) / form"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5 font-normal">
@@ -671,7 +671,7 @@ ${message || "未入力"}`
 
                 <div className="flex items-baseline gap-1.5 mb-1">
                   <span className="text-3xl font-extrabold text-[#1B4F8A] dark:text-blue-300 tabular-nums font-mono">¥20,700</span>
-                  <span className="text-xs text-slate-400">({isJa ? "税抜" : isVi ? "chưa VAT" : "excl. tax"})</span>
+                  <span className="text-xs text-slate-500 font-normal">({isJa ? "税込" : isVi ? "gồm thuế" : "tax incl."})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="line-through text-slate-400 text-xs tabular-nums font-mono">¥69,000</span>
@@ -680,10 +680,10 @@ ${message || "未入力"}`
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums font-mono mb-2">
-                  <span>税込 ¥22,770</span>
+                  <span>税抜 ¥18,818</span>
                 </div>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6 tabular-nums font-mono">
-                  {isJa ? "単価: 6.9円（税込 7.59円）/ 送信完了 (業界最安級)" : isVi ? "Đơn giá: 6.9 JPY (gồm thuế 7.59 JPY) / lượt" : "6.9 JPY (tax incl. 7.59 JPY) / form"}
+                  {isJa ? "単価: 6.9円（税込）/ 送信完了 (業界最安級)" : isVi ? "Đơn giá: 6.9 JPY (đã gồm thuế) / lượt" : "6.9 JPY (tax incl.) / form"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5 font-normal">
@@ -732,7 +732,7 @@ ${message || "未入力"}`
 
                 <div className="flex items-baseline gap-1.5 mb-1">
                   <span className="text-3xl font-extrabold text-slate-900 dark:text-white tabular-nums font-mono">¥29,700</span>
-                  <span className="text-xs text-slate-400">({isJa ? "税抜" : isVi ? "chưa VAT" : "excl. tax"})</span>
+                  <span className="text-xs text-slate-500 font-normal">({isJa ? "税込" : isVi ? "gồm thuế" : "tax incl."})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="line-through text-slate-400 text-xs tabular-nums font-mono">¥99,000</span>
@@ -741,10 +741,10 @@ ${message || "未入力"}`
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums font-mono mb-2">
-                  <span>税込 ¥32,670</span>
+                  <span>税抜 ¥27,000</span>
                 </div>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6 tabular-nums font-mono">
-                  {isJa ? "単価: 5.9円（税込 6.49円）/ 送信完了 (最安値レート)" : isVi ? "Đơn giá: 5.9 JPY (gồm thuế 6.49 JPY) / lượt" : "5.9 JPY (tax incl. 6.49 JPY) / form"}
+                  {isJa ? "単価: 5.9円（税込）/ 送信完了 (最安値レート)" : isVi ? "Đơn giá: 5.9 JPY (đã gồm thuế) / lượt" : "5.9 JPY (tax incl.) / form"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-350 border-t border-slate-100 dark:border-slate-800 pt-5 font-normal">
@@ -883,7 +883,7 @@ ${message || "未入力"}`
                         ¥{pricing.taxIncl.toLocaleString()}
                       </div>
                       <span className="text-[10px] text-slate-400 tabular-nums font-mono">
-                        (税抜 ¥{pricing.campaignPrice.toLocaleString()} / {pricing.unitRate}円/件)
+                        (税抜 ¥{pricing.taxExcl.toLocaleString()} / {pricing.unitRate}円/件)
                       </span>
                     </div>
                   </div>
@@ -936,7 +936,7 @@ ${message || "未入力"}`
                 <div className="flex flex-col sm:flex-row items-center justify-between gap-3 p-3.5 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg border border-blue-200/50 dark:border-blue-900/30 mt-1">
                   <span className="text-xs text-slate-600 dark:text-slate-300">
                     <strong className="text-slate-900 dark:text-white font-bold">{pricing.planName}</strong>
-                    {" "}(¥{pricing.campaignPrice.toLocaleString()} 税抜) {isJa ? "でこの効果を今すぐ管理画面で検証できます。" : isVi ? "để kiểm chứng hiệu quả ngay trên hệ thống." : "can be launched directly on dashboard."}
+                    {" "}(¥{pricing.campaignPrice.toLocaleString()} 税込) {isJa ? "でこの効果を今すぐ管理画面で検証できます。" : isVi ? "để kiểm chứng hiệu quả ngay trên hệ thống." : "can be launched directly on dashboard."}
                   </span>
                   <Link
                     href={`/${locale}/dashboard?tab=formCampaigns`}

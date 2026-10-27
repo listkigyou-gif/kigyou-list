@@ -81,6 +81,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
       });
       refreshQuota(email);
+
+      // Auto-sync watchlist bi-directionally with server database
+      try {
+        const localSaved = JSON.parse(localStorage.getItem("kigyou_saved") || "[]");
+        fetch("/api/user/watchlist/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ corporateNumbers: localSaved }),
+        })
+          .then(res => res.json())
+          .then(data => {
+            if (data?.success && Array.isArray(data.watchlist)) {
+              setSavedCompanies(data.watchlist);
+              localStorage.setItem("kigyou_saved", JSON.stringify(data.watchlist));
+            }
+          })
+          .catch(() => {});
+      } catch {}
     } else if (status === "unauthenticated" && mounted) {
       setUser(null);
       setQuota(null);
@@ -146,7 +164,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!mounted) return;
     localStorage.setItem("kigyou_saved", JSON.stringify(savedCompanies));
-  }, [savedCompanies, mounted]);
+    if (user?.email) {
+      fetch("/api/user/watchlist/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ corporateNumbers: savedCompanies }),
+      }).catch(() => {});
+    }
+  }, [savedCompanies, mounted, user?.email]);
 
   useEffect(() => {
     if (!mounted) return;

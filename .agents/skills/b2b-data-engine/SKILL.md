@@ -506,13 +506,9 @@ flowchart TD
 ```
 
 1. **Tầng 1: Hàng Đợi Ưu Tiên VIP (Google API Priority Queue)**:
-   - Dành trọn vẹn 200 quota quý giá nhất cho các trang có giá trị chuyển đổi cao nhất:
-     + Doanh nghiệp có Báo cáo kiểm toán mới từ **FSA EDINET**.
-     + Doanh nghiệp có biến động pháp lý nóng từ **NTA** (M&A, đổi tên, dời trụ sở).
-     + Các trang Hubs / Landing pages ngành vừa tạo mới.
-   - Bảng `google_indexing_submissions` tự động kiểm soát ngưỡng `WHERE date(submitted_at) = date('now') < 200`. Các doanh nghiệp vượt quá quota sẽ được giữ trong hàng đợi và tự động nộp vào ngày kế tiếp.
+   - Dành trọn vẹn 1.000 quota quý giá nhất cho các trang có dữ liệu biến động mới trong 48 giờ.
 2. **Tầng 2: Đòn Bẩy IndexNow & Tác Động Cào Chéo (IndexNow Cross-Engine Leverage)**:
-   - Tận dụng hạn mức 10.000 URLs/ngày của giao thức IndexNow.
+   - Tận dụng hạn mức 3.000 – 5.000 URLs/ngày của giao thức IndexNow.
    - Khi bot Bing/Yandex/Naver vào lập chỉ mục và người dùng bắt đầu có lượt truy cập (traffic signals), Googlebot sẽ tự động phát hiện và ghé thăm cào các URL này mà không làm hao tốn quota API.
 3. **Tầng 3: Dynamic Sitemap Phân Mảnh (`sitemap_recent_updates.xml`)**:
    - Tách riêng sitemap chứa các URL có thay đổi trong 24-48h với thẻ `<lastmod>` thời gian thực.
@@ -563,5 +559,114 @@ Khi quy mô mở rộng trên 10 triệu trang, quản trị viên có thể g�
   2. Tự động chèn bản ghi ngành lớn (major), ngành vừa (medium) và ngành nhỏ (minor).
   3. Cập nhật `companies.major_industry_code` và `companies.primary_industry_code` nếu doanh nghiệp chưa có ngành chính.
   4. Đồng bộ ngay lập tức sang VPS PostgreSQL qua `scripts/sync_delta_licenses_to_vps.py`.
+
+---
+
+## 10. Kiến Trúc Vận Hành Phân Tách 2 Thành Phần (Two-Engine Split Architecture)
+
+Nhằm tối ưu hóa triệt để tài nguyên, bảo vệ phần cứng máy tính người dùng không phải bật 24/7 nhưng vẫn đảm bảo dữ liệu quốc gia được làm mới liên tục từng ngày, Kigyou-list áp dụng mô hình phân tách 2 thành phần độc lập:
+
+```mermaid
+flowchart TD
+    subgraph CLOUD["THÀNH PHẦN 1: CLOUD VPS LIGHTWEIGHT DAEMON (24/7 Tự Động 100%)"]
+        PM2["PM2 Service: kigyoulist-api-daemon<br>(scripts/vps_api_daemon.py - RAM: ~9MB)"]
+        NTA["1. NTA MyNumber & Invoice API<br>(Đổi tên, dời trụ sở, T-Number)"]
+        GBIZ["2. METI gBizINFO API<br>(Vốn, nhân sự, trợ cấp subsidy)"]
+        EDINET["3. FSA EDINET v2 REST API<br>(Tài chính, doanh thu, thu nhập bình quân)"]
+        GEPS["4. GEPS Tender Registry<br>(Trúng thầu chính phủ, phân hạng A/B/C/D)"]
+        INDEXNOW["5. Instant IndexNow Auto-Ping<br>(Bắn index Bing, Naver, Yandex)"]
+        VPS_DB[("PostgreSQL Production VPS<br>(kigyou_list)")]
+
+        PM2 --> NTA & GBIZ & EDINET & GEPS & INDEXNOW
+        NTA & GBIZ & EDINET & GEPS -->|Cập nhật trực tiếp| VPS_DB
+        VPS_DB -->|Bắn URL mới| INDEXNOW
+    end
+
+    subgraph LOCAL["THÀNH PHẦN 2: LOCAL PC SEQUENTIAL ROLL-FORWARD ENGINE (Theo Đợt Cuốn Chiếu)"]
+        CMD["Lệnh vận hành: python master_orchestrator.py --roll-forward<br>(Chu kỳ: 1 tuần - 1 tháng / lần khi PC bật)"]
+        S1["Bước 1: National Licenses<br>(MLIT, NPA Kobutsu, ISA Tokutei, Professional, Food/Hotel)"]
+        S2["Bước 2: Yahoo & Deep Web<br>(Domain, Email, Phone, Tech Stack)"]
+        S3["Bước 3: HelloWork Jobs<br>(Tuyển dụng, mức lương)"]
+        S4["Bước 4: Bulk Delta Sync<br>(Đẩy toàn bộ dữ liệu sạch lên VPS)"]
+        S5["Bước 5: Auto JSIC Tagging<br>(Gán mã ngành chuẩn hóa trên VPS)"]
+        STATE[("Checkpoint Bền Vững<br>(orchestrator_state.json)")]
+
+        CMD --> S1 --> S2 --> S3 --> S4 --> S5
+        S1 -.->|Lưu checkpoint| STATE
+        S2 -.->|Lưu checkpoint| STATE
+        S3 -.->|Lưu checkpoint| STATE
+        S4 -.->|Lưu checkpoint| STATE
+        S4 -->|Đồng bộ delta| VPS_DB
+    end
+```
+
+### 10.1. Thành Phần 1: Cloud VPS Lightweight API Daemon (`scripts/vps_api_daemon.py`)
+- **Môi trường**: Trực tiếp trên Ubuntu VPS (`160.251.203.84`), chạy nền bằng **PM2** dưới tên service `kigyoulist-api-daemon`.
+- **Mức tiêu thụ tài nguyên**: **Chỉ ~9MB RAM, 0% CPU**. Hoàn toàn không tốn tài nguyên server.
+- **Tính tự lập (Zero PC Dependency)**: Hoạt động liên tục 24/7/365 ngay cả khi PC của quản trị viên tắt hoàn toàn.
+- **Nhiệm vụ 24h/lần**:
+  1. Kiểm tra biến động pháp lý doanh nghiệp qua NTA MyNumber Web-API.
+  2. Đồng bộ hóa trạng thái hóa đơn điện tử T-Number qua NTA Invoice API.
+  3. Cập nhật vốn điều lệ và trợ cấp METI qua gBizINFO API.
+  4. Tải và xử lý báo cáo tài chính/thu nhập bình quân từ FSA EDINET v2 API.
+  5. Đối soát gói thầu công từ GEPS.
+  6. Tự động bắn tín hiệu IndexNow tới các công cụ tìm kiếm cho các doanh nghiệp vừa cập nhật.
+
+### 10.2. Thành Phần 2: Local PC Sequential Roll-Forward Pipeline (`master_orchestrator.py --roll-forward`)
+- **Môi trường**: Máy tính trạm Local PC (chứa SQLite 5.07M doanh nghiệp).
+- **Cơ chế cuốn chiếu (Sequential Roll-Forward)**:
+  - Hệ thống không bắt buộc chạy song song tất cả các tác vụ nặng cùng lúc.
+  - Quá trình chạy tuần tự từng bước: **Bước 1 (Giấy phép)** $\rightarrow$ **Bước 2 (Yahoo & Deep Web)** $\rightarrow$ **Bước 3 (Tuyển dụng)** $\rightarrow$ **Bước 4 (Đồng bộ Bulk Delta lên VPS)** $\rightarrow$ **Bước 5 (Gán ngành JSIC)**.
+- **Khả năng ghi nhớ Checkpoint bền vững**:
+  - Từng bước hoàn thành đều được ghi nhận vào `orchestrator_state.json` (`state['roll_forward']['current_step']`).
+  - Nếu người dùng tắt máy giữa chừng, lần kế tiếp chạy lại với `--roll-forward` hệ thống sẽ **tự động resume đúng ngay bước đang dở dang** mà không làm lặp lại công việc đã hoàn tất.
+  - Khi cần reset để chạy lại từ Bước 1: sử dụng cờ `--reset-roll`.
+- **Lợi ích**:
+  - Tiết kiệm 100% điện năng và phần cứng của người dùng (chỉ bật khi rảnh, 1 tuần - 1 tháng chạy 1 lần).
+---
+
+## 11. Quy Chuẩn Phân Phối Indexing & Phòng Vệ Hàng Đợi (Indexing Distribution & Queue Defense)
+
+### 11.1. Chiến Lược 100% Google Indexing VIP Cho Biến Động Nóng
+* Hạn mức: **1.000 URLs/ngày** (thông qua Multi-Key Pool 5 Service Accounts Google Cloud).
+* **Quy tắc bất di bất dịch**: Toàn bộ hạn mức VIP được ưu tiên cho các công ty **thực sự có dữ liệu mới trong 48 giờ qua** (thay vì lãng phí vào các công ty tĩnh).
+* **Thang điểm chấm ưu tiên (VIP Scoring)**:
+  * FSA EDINET (Báo cáo tài chính, doanh thu, thu nhập): **100 điểm**
+  * GEPS (Trúng thầu chính phủ): **80 điểm**
+  * NTA Legal (Thay đổi tên, đại diện pháp lý, sáp nhập): **60 điểm**
+  * Cấp phép kinh doanh (Kobutsu, Takken, Ryokan, Tokutei): **50 điểm**
+  * NTA Địa chỉ & Hồ sơ chung: **40 điểm**
+
+### 11.2. Cơ Chế Xử Lý Vượt Tải Hạn Mức (Spillover & Carry-over Queue)
+Khi một ngày có trên 1.000 công ty biến động:
+1. **Top 1.000 công ty điểm cao nhất**: Được nạp ngay cho Google Indexing API VIP trong ngày.
+2. **Số công ty dôi dư (từ URL 1.001 trở đi)**:
+   - Tự động nạp vào bảng `google_vip_queue` trên PostgreSQL với trạng thái `PENDING`.
+   - Đúng **00:05 sáng hôm sau**, hệ thống tự động bốc các URL này ra nộp cho Google đầu tiên ngay khi vừa mở lại quota mới.
+   - Toàn bộ danh sách dôi dư này đồng thời được đẩy ngay sang **IndexNow Fast Track** cho Bing và Yahoo Japan cào trước.
+
+### 11.3. Chuẩn Hóa IndexNow Ban Đêm (2h Sáng) Cho Microsoft Bing
+* Tần suất: Chạy lúc **02:00 sáng hàng ngày** qua script `scripts/auto_indexnow_submitter_pg.js`.
+* **Hạn mức chuẩn hóa**: Chốt đúng **3.000 URLs/đêm** (giảm từ mức trần lý thuyết 50.000).
+  * Đảm bảo vừa vặn 100% với khả năng cào thực tế của Bingbot (2.000 - 5.000 URLs/ngày).
+  * Giữ cho hàng đợi của Bing luôn sạch sẽ và thông thoáng, không bị ứ đọng backlog.
+* **Cơ chế tự dọn dẹp hàng tháng (Auto Rolling Clean)**:
+  * Tự động xóa các bản ghi lịch sử gửi cũ hơn 30 ngày trong bảng `indexnow_submissions` để cho phép các URL được cào xoay vòng định kỳ (healthy cyclic re-crawling).
+
+### 11.4. Mô Hình Trục Bánh Xe (Hub & Spoke Pattern) Trong Phân Bổ Indexing
+* **Nguyên lý kiến trúc**: Khi một doanh nghiệp có biến động (Spoke - Nan hoa), danh sách hiển thị trên các trang danh mục chuyên đề (Hub - Trục trung tâm) cũng tự động nhảy công ty đó lên đầu bảng. Do đó, việc nộp đồng thời cả Trang Hub mẹ và Trang Công ty con là **100% "Làm thật ăn thật" và tuân thủ tuyệt đối quy chuẩn Google/Bing**.
+* **Cơ chế tự động trích xuất Parent Hubs**:
+  - Doanh nghiệp có giấy phép (`has_license`): Kèm Hub Chuyên đề `/ja/licenses`.
+  - Doanh nghiệp có hóa đơn (`has_invoice`): Kèm Hub Invoice `/ja/invoice`.
+  - Doanh nghiệp có tài chính (`has_financial_report`): Kèm Hub Tài chính `/ja/status/bankruptcies`.
+  - Phân vùng địa lý (`prefecture_code`): Kèm Hub Tỉnh thành `/ja/area/{prefecture_code}` (Ví dụ `/ja/area/13` cho Tokyo).
+  - Phân ngành kinh tế (`primary_industry_code`): Kèm Hub Ngành `/ja/industry/{code}`.
+* **Tỷ lệ phân bổ tối ưu**:
+  - Dành **~5% - 10% hạn mức** (khoảng 30 – 50 URLs) cho các **Parent Hubs mẹ**.
+  - Dành **~90% - 95% hạn mức** (khoảng 950 URLs) cho các **Trang công ty lá (Spokes)**.
+* **Lợi ích kép vượt trội**:
+  1. Đưa các trang danh mục tổng lên **TOP 1 Google cho các từ khóa ngành có lưu lượng tìm kiếm khổng lồ** (`官公庁 入札 企業 一覧`, `IT 補助金 採択企業 一覧`).
+  2. Tạo **Đòn bẩy cào chéo (Crawl Amplification)**: Googlebot ghé vào trang Hub mẹ sẽ tự động lần theo internal links để cào luôn cả chùm công ty con xung quanh mà không làm tốn thêm quota API!
+
 
 

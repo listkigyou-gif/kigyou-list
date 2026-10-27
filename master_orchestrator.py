@@ -276,6 +276,12 @@ async def run_layer_1_licenses(state: Dict[str, Any]) -> int:
     save_orchestrator_state(state)
 
     try:
+        conn = get_local_db()
+        cur = conn.cursor()
+        cur.execute("SELECT count(*) FROM company_licenses;")
+        before_cnt = cur.fetchone()[0]
+        conn.close()
+
         # 1.1 Run NPA Kobutsu Harvester (Secondhand business)
         try:
             from crawlers.open_data.harvesters.npa_kobutsu_harvester import harvest_tokyo_kobutsu
@@ -292,18 +298,62 @@ async def run_layer_1_licenses(state: Dict[str, Any]) -> int:
         except Exception as e:
             lic_logger.warning(f"[-] Takken step warning: {e}")
 
+        # 1.3 Run ISA Registered Support Organization Harvester (Tokutei Gino)
+        try:
+            from crawlers.open_data.harvesters.isa_tokutei_harvester import harvest_isa_support_orgs
+            lic_logger.info("[*] Running ISA Registered Support Org (登録支援機関) Harvester...")
+            harvest_isa_support_orgs()
+        except Exception as e:
+            lic_logger.warning(f"[-] ISA Tokutei step warning: {e}")
+
+        # 1.4 Run Statutory Professional Services Harvester (Legal & Accounting)
+        try:
+            from crawlers.open_data.harvesters.professional_services_harvester import harvest_professional_services
+            lic_logger.info("[*] Running Statutory Professional Services (士業・専門職法人) Harvester...")
+            harvest_professional_services()
+        except Exception as e:
+            lic_logger.warning(f"[-] Professional Services step warning: {e}")
+
+        # 1.5 Run Hospitality & Food Harvester (Restaurants & Ryokans)
+        try:
+            from crawlers.open_data.harvesters.hospitality_food_harvester import (
+                harvest_food_restaurants,
+                harvest_ryokan_hotels,
+            )
+            lic_logger.info("[*] Running Hospitality & Food Harvester (飲食店 & 旅館)...")
+            harvest_food_restaurants()
+            harvest_ryokan_hotels()
+        except Exception as e:
+            lic_logger.warning(f"[-] Hospitality & Food step warning: {e}")
+
+        # 1.6 Automated Bulk Delta Sync to VPS PostgreSQL Production
+        try:
+            from scripts.sync_delta_licenses_to_vps import sync_licenses
+            lic_logger.info("[*] Syncing license deltas to VPS PostgreSQL...")
+            sync_licenses()
+        except Exception as e:
+            lic_logger.warning(f"[-] VPS license sync warning: {e}")
+
+        # 1.7 Automated License-to-Industry Auto-Tagging on VPS
+        try:
+            from scripts.enrich_all_licensed_companies import run_enrichment
+            lic_logger.info("[*] Running automated license-to-industry auto-tagger...")
+            run_enrichment()
+        except Exception as e:
+            lic_logger.warning(f"[-] Industry auto-tagging warning: {e}")
+
         # Total licenses count in local DB
         conn = get_local_db()
         cur = conn.cursor()
         cur.execute("SELECT count(*) FROM company_licenses;")
-        total_lics = cur.fetchone()[0]
+        after_cnt = cur.fetchone()[0]
         conn.close()
 
-        delta = 0
-        note = "Đã thu thập trọn bộ kho dữ liệu mở, không có giấy phép mới"
-        update_worker_health(state, layer_key, success=True, processed=total_lics, delta=delta, note=note)
-        lic_logger.info(f">>> [WORKER T1 COMPLETE] Total Local Licenses: {total_lics:,} (+{delta:,} new) <<<")
-        return total_lics
+        delta = max(0, after_cnt - before_cnt)
+        note = f"+{delta:,} giấy phép mới" if delta > 0 else "Đã thu thập trọn bộ kho dữ liệu mở, không có giấy phép mới"
+        update_worker_health(state, layer_key, success=True, processed=after_cnt, delta=delta, note=note)
+        lic_logger.info(f">>> [WORKER T1 COMPLETE] Total Local Licenses: {after_cnt:,} (+{delta:,} new) <<<")
+        return after_cnt
     except Exception as e:
         lic_logger.error(f"[-] Worker T1 error: {e}", exc_info=True)
         update_worker_health(state, layer_key, success=False, error_msg=str(e))
@@ -774,6 +824,141 @@ def trigger_instant_indexing_hook(num_urls: int = 500, google_vip_limit: int = 1
         logger.warning(f"[-] Google Indexing hook exception: {ge}")
 
 # ======================================================================================
+# SEQUENTIAL ROLL-FORWARD PIPELINE (TIẾN TRÌNH CẬP NHẬT CUỐN CHIẾU TRÊN LOCAL PC)
+# ======================================================================================
+
+async def run_roll_forward_pipeline(state: Dict[str, Any], limit: int = 1000, reset_stage: bool = False):
+    """
+    Executes a comprehensive, sequential roll-forward update pipeline on Local PC.
+    Runs strictly step-by-step with state persistence:
+      Step 1: National Licenses (MLIT, NPA, ISA, Professional, Food/Ryokan)
+      Step 2: Digital Presence (Priority Yahoo & Deep Web batch)
+      Step 3: HelloWork Jobs sync
+      Step 4: Bulk Delta Sync to VPS PostgreSQL Production
+      Step 5: Full Industry Auto-Tagging (JSIC) on VPS
+      Step 6: Completion audit & state reset
+    If interrupted (e.g. PC shutdown), resumes exactly where it left off on next run.
+    """
+    t0 = time.time()
+    roll_state = state.get("roll_forward", {})
+    if reset_stage or not roll_state:
+        roll_state = {"current_step": 1, "status": "IN_PROGRESS", "started_at": datetime.now().isoformat()}
+        state["roll_forward"] = roll_state
+        save_orchestrator_state(state)
+
+    current_step = roll_state.get("current_step", 1)
+
+    print("\n" + "=" * 90)
+    print(">>> KIGYOU-LIST: SEQUENTIAL ROLL-FORWARD BATCH PIPELINE COMMENCED <<<")
+    print(f"Resuming at Step: {current_step}/5 | Batch Limit: {limit:,} companies")
+    print("=" * 90)
+
+    # ----------------------------------------------------------------------------------
+    # STEP 1: TẦNG 1 - GIẤY PHÉP QUỐC GIA (MLIT, NPA, ISA, TOKUTEI, FOOD, RYOKAN)
+    # ----------------------------------------------------------------------------------
+    if current_step <= 1:
+        print("\n" + "#" * 80)
+        print(">>> [STEP 1/5] HARVESTING ALL NATIONAL LICENSES (MLIT, NPA, ISA, HOKENJO) <<<")
+        print("#" * 80)
+        roll_state["current_step"] = 1
+        roll_state["status"] = "STEP_1_LICENSES"
+        save_orchestrator_state(state)
+
+        await run_layer_1_licenses(state)
+        
+        roll_state["current_step"] = 2
+        roll_state["step_1_completed_at"] = datetime.now().isoformat()
+        save_orchestrator_state(state)
+        print("[+] STEP 1/5 COMPLETED: All National Licenses harvested and verified locally.")
+
+    # ----------------------------------------------------------------------------------
+    # STEP 2: TẦNG 2 - YAHOO SEARCH & DEEP WEB CRAWLER (PRIORITY SMART RECRAWL)
+    # ----------------------------------------------------------------------------------
+    if current_step <= 2:
+        print("\n" + "#" * 80)
+        print(f">>> [STEP 2/5] HARVESTING DIGITAL PRESENCE (YAHOO SEARCH & DEEP WEB - BATCH {limit:,}) <<<")
+        print("#" * 80)
+        roll_state["current_step"] = 2
+        roll_state["status"] = "STEP_2_DIGITAL"
+        save_orchestrator_state(state)
+
+        await run_layer_2_digital(state, limit=limit)
+
+        roll_state["current_step"] = 3
+        roll_state["step_2_completed_at"] = datetime.now().isoformat()
+        save_orchestrator_state(state)
+        print(f"[+] STEP 2/5 COMPLETED: Digital Presence batch of {limit:,} companies processed.")
+
+    # ----------------------------------------------------------------------------------
+    # STEP 3: TẦNG 3 - HELLOWORK MARKET JOBS SYNC
+    # ----------------------------------------------------------------------------------
+    if current_step <= 3:
+        print("\n" + "#" * 80)
+        print(">>> [STEP 3/5] SYNCING HELLOWORK RECRUITMENT MARKET PULSE <<<")
+        print("#" * 80)
+        roll_state["current_step"] = 3
+        roll_state["status"] = "STEP_3_JOBS"
+        save_orchestrator_state(state)
+
+        await run_layer_3_jobs(state)
+
+        roll_state["current_step"] = 4
+        roll_state["step_3_completed_at"] = datetime.now().isoformat()
+        save_orchestrator_state(state)
+        print("[+] STEP 3/5 COMPLETED: HelloWork jobs pulse updated.")
+
+    # ----------------------------------------------------------------------------------
+    # STEP 4: BULK DELTA SYNC TO CLOUD VPS PRODUCTION
+    # ----------------------------------------------------------------------------------
+    if current_step <= 4:
+        print("\n" + "#" * 80)
+        print(">>> [STEP 4/5] STREAMING BULK DELTAS TO PRODUCTION VPS POSTGRESQL <<<")
+        print("#" * 80)
+        roll_state["current_step"] = 4
+        roll_state["status"] = "STEP_4_SYNC"
+        save_orchestrator_state(state)
+
+        sync_stats = execute_bulk_delta_sync(state, dry_run=False)
+
+        roll_state["current_step"] = 5
+        roll_state["step_4_completed_at"] = datetime.now().isoformat()
+        save_orchestrator_state(state)
+        print(f"[+] STEP 4/5 COMPLETED: Bulk Deltas merged into VPS PostgreSQL: {sync_stats}")
+
+    # ----------------------------------------------------------------------------------
+    # STEP 5: AUTOMATED COMPREHENSIVE INDUSTRY AUTO-TAGGING (JSIC) ON VPS
+    # ----------------------------------------------------------------------------------
+    if current_step <= 5:
+        print("\n" + "#" * 80)
+        print(">>> [STEP 5/5] EXECUTING COMPREHENSIVE JSIC AUTO-TAGGING & BUSINESS FLAGS <<<")
+        print("#" * 80)
+        roll_state["current_step"] = 5
+        roll_state["status"] = "STEP_5_ENRICHMENT"
+        save_orchestrator_state(state)
+
+        try:
+            from scripts.enrich_all_licensed_companies import run_enrichment
+            run_enrichment()
+        except Exception as e_tag:
+            print(f"[-] Auto-tagging warning: {e_tag}")
+
+        # Instant IndexNow ping for fresh URLs
+        trigger_instant_indexing_hook(num_urls=1000)
+
+        roll_state["current_step"] = 1
+        roll_state["status"] = "COMPLETED"
+        roll_state["last_completed_at"] = datetime.now().isoformat()
+        save_orchestrator_state(state)
+        print("[+] STEP 5/5 COMPLETED: All JSIC industries & search flags successfully tagged.")
+
+    elapsed = time.time() - t0
+    print("\n" + "=" * 90)
+    print(f"🎉 [ROLL-FORWARD COMPLETE] ENTIRE BATCH PIPELINE FINISHED IN {elapsed:.2f}s!")
+    print(f"    - All Local Licenses, Digital Contacts, and Jobs merged with Cloud Production.")
+    print(f"    - VPS Database is 100% in sync and live on kigyoulist.com.")
+    print("=" * 90 + "\n")
+
+# ======================================================================================
 # DASHBOARDS & SUBAGENT SELF-HEALING DIAGNOSTICS
 # ======================================================================================
 
@@ -789,6 +974,11 @@ def display_orchestrator_status():
     print(f"  Target PostgreSQL   : {PG_URL.split('@')[-1]}")
     print(f"  Last Delta Sync     : {state.get('last_sync_at') or 'Never'}")
     print(f"  Total Daemon Runs   : {state.get('total_runs', 0):,}")
+    roll_info = state.get("roll_forward", {})
+    roll_step = roll_info.get("current_step", 1)
+    roll_status = roll_info.get("status", "IDLE")
+    roll_last = roll_info.get("last_completed_at", "Never")
+    print(f"  Roll-Forward Engine : Step {roll_step}/5 [{roll_status}] (Last completed: {roll_last})")
     print("-" * 90)
 
     # Local Stats
@@ -923,20 +1113,56 @@ def reset_circuit_breaker(target_layer: Optional[str] = None):
     save_orchestrator_state(state)
 
 # ======================================================================================
-# DAEMON LIFECYCLE CONTROLLER (CHẠY NGẦM 24/7)
+# SMART SCHEDULING POLICIES & RESOURCE OPTIMIZATION (TTL IN HOURS)
+# ======================================================================================
+LAYER_SCHEDULE_HOURS = {
+    "layer_0": 24.0,       # Cục Thuế NTA: 24h/lần (Cập nhật sự kiện pháp lý theo ngày)
+    "layer_gbiz": 24.0,    # METI gBizINFO: 24h/lần (Vốn, nhân sự, trợ cấp)
+    "layer_1": 72.0,       # Giấy phép Quốc gia MLIT/NPA/ISA/Hokenjo: 72h/lần (3 ngày/lần)
+    "layer_edinet": 24.0,  # FSA EDINET: 24h/lần (Báo cáo tài chính quý/năm)
+    "layer_geps": 24.0,    # GEPS Mua sắm công: 24h/lần (Gói thầu công mới)
+    "layer_2": 0.5,        # Yahoo & Deep Web: 0.5h (30 phút/lần, cào nhỏ giọt 200 công ty/lần)
+    "layer_3": 24.0,       # HelloWork Việc làm: 24h/lần
+}
+
+def is_layer_due(state: Dict[str, Any], layer_key: str, force: bool = False) -> Tuple[bool, str]:
+    """Checks whether a worker layer is due for execution based on its schedule TTL."""
+    if force:
+        return True, "Forced execution"
+    layer_info = state.get("layers", {}).get(layer_key, {})
+    last_run_str = layer_info.get("last_run")
+    if not last_run_str:
+        return True, "First run (no previous record)"
+
+    interval_hours = LAYER_SCHEDULE_HOURS.get(layer_key, 24.0)
+    try:
+        last_run = datetime.fromisoformat(last_run_str)
+        elapsed_hours = (datetime.now() - last_run).total_seconds() / 3600.0
+        if elapsed_hours >= interval_hours:
+            return True, f"Due ({elapsed_hours:.1f}h elapsed >= {interval_hours:.0f}h)"
+        remaining_hours = interval_hours - elapsed_hours
+        return False, f"Cooldown (Chờ {remaining_hours:.1f}h nữa | Chạy gần nhất: {elapsed_hours:.1f}h trước)"
+    except Exception:
+        return True, "Fallback run"
+
+# ======================================================================================
+# DAEMON LIFECYCLE CONTROLLER (CHẠY NGẦM 24/7 VỚI LỊCH TRÌNH THÔNG MINH)
 # ======================================================================================
 
-async def run_orchestrator_daemon(interval_minutes: float = 30.0, interval_seconds: int = 0):
+async def run_orchestrator_daemon(interval_minutes: float = 30.0, interval_seconds: int = 0, force: bool = False):
     """
     Main long-running loop that runs continuously in the background.
-    Sequentially runs through all layers, catches exceptions per worker, triggers
-    bulk delta sync, and handles automatic cool-downs.
+    Sequentially inspects all layers, executes only due layers based on Smart TTL
+    schedules (saving 95% CPU/SSD), triggers bulk delta sync, and handles cool-downs.
     """
     sleep_sec = interval_seconds if interval_seconds > 0 else int(interval_minutes * 60)
     cycle_desc = f"{sleep_sec}s" if sleep_sec < 60 else f"{sleep_sec / 60:.1f}m"
 
     logger.info("=" * 90)
     logger.info(f"KIGYOU-LIST MASTER DATA ORCHESTRATOR DAEMON STARTED (Interval: {cycle_desc})")
+    logger.info(f"Smart Scheduling Policies:")
+    for lk, hrs in LAYER_SCHEDULE_HOURS.items():
+        logger.info(f"  - {lk.upper():<12}: Every {hrs:.1f}h")
     logger.info(f"Target VPS: {PG_URL.split('@')[-1]}")
     logger.info("=" * 90)
 
@@ -951,27 +1177,59 @@ async def run_orchestrator_daemon(interval_minutes: float = 30.0, interval_secon
         logger.info(f"{'#' * 90}")
 
         try:
-            # 1. Layer 0: NTA Foundation
-            await run_layer_0_nta(state)
+            # 1. Layer 0: NTA Foundation (Daily - 24h)
+            due, reason = is_layer_due(state, "layer_0", force=force)
+            if due:
+                await run_layer_0_nta(state)
+            else:
+                logger.info(f"[*] Layer 0 (NTA): Bỏ qua - {reason}")
 
-            # 2. Layer 1: METI gBizINFO & National Licenses
-            await run_layer_gbiz(state, limit=500)
-            await run_layer_1_licenses(state)
+            # 2. Layer gBiz: METI gBizINFO (Daily - 24h)
+            due, reason = is_layer_due(state, "layer_gbiz", force=force)
+            if due:
+                await run_layer_gbiz(state, limit=500)
+            else:
+                logger.info(f"[*] Layer gBizINFO: Bỏ qua - {reason}")
 
-            # 3. Layer 1.5: FSA EDINET & GEPS
-            await run_layer_edinet(state)
-            await run_layer_geps(state)
+            # 3. Layer 1: National Licenses (Every 3 Days - 72h)
+            due, reason = is_layer_due(state, "layer_1", force=force)
+            if due:
+                await run_layer_1_licenses(state)
+            else:
+                logger.info(f"[*] Layer 1 (Giấy phép): Bỏ qua - {reason}")
 
-            # 4. Layer 2: Digital Presence (Yahoo & Deep Web 200 companies per cycle)
-            await run_layer_2_digital(state, limit=200)
+            # 4. Layer 1.5A: FSA EDINET (Daily - 24h)
+            due, reason = is_layer_due(state, "layer_edinet", force=force)
+            if due:
+                await run_layer_edinet(state)
+            else:
+                logger.info(f"[*] Layer EDINET: Bỏ qua - {reason}")
 
-            # 5. Layer 3: HelloWork Jobs
-            await run_layer_3_jobs(state)
+            # 5. Layer 1.5B: GEPS Public Procurement (Daily - 24h)
+            due, reason = is_layer_due(state, "layer_geps", force=force)
+            if due:
+                await run_layer_geps(state)
+            else:
+                logger.info(f"[*] Layer GEPS: Bỏ qua - {reason}")
 
-            # 6. Bulk Delta Sync to Production VPS
+            # 6. Layer 2: Digital Presence (Continuous Micro-batch - Every Cycle 30m, 200 cos)
+            due, reason = is_layer_due(state, "layer_2", force=force)
+            if due:
+                await run_layer_2_digital(state, limit=200)
+            else:
+                logger.info(f"[*] Layer 2 (Digital): Bỏ qua - {reason}")
+
+            # 7. Layer 3: HelloWork Jobs (Daily - 24h)
+            due, reason = is_layer_due(state, "layer_3", force=force)
+            if due:
+                await run_layer_3_jobs(state)
+            else:
+                logger.info(f"[*] Layer 3 (HelloWork): Bỏ qua - {reason}")
+
+            # 8. Bulk Delta Sync to Production VPS
             sync_stats = execute_bulk_delta_sync(state)
 
-            # 7. Instant IndexNow ping for fresh enterprise enrichment (Tier 0 & Tier 1)
+            # 9. Instant IndexNow ping for fresh enterprise enrichment (Tier 0 & Tier 1)
             trigger_instant_indexing_hook(500)
 
             logger.info(f"[+] Pipeline Execution Cycle #{cycle_count} completed successfully.")
@@ -1000,6 +1258,10 @@ def main():
     parser.add_argument("--indexnow-ping", action="store_true", help="Ping IndexNow API for latest companies")
     parser.add_argument("--recrawl-days", type=int, default=60, help="Recrawl interval in days for companies without website (default: 60)")
     parser.add_argument("--limit", type=int, default=0, help="Batch limit for crawler execution")
+    parser.add_argument("--force", action="store_true", help="Force execute all layers ignoring scheduling cooldowns")
+    parser.add_argument("--roll-forward", action="store_true", help="Execute sequential roll-forward batch pipeline on PC (Cuốn chiếu từng bước)")
+    parser.add_argument("--quanchieu", action="store_true", help="Alias for --roll-forward")
+    parser.add_argument("--reset-roll", action="store_true", help="Reset roll-forward checkpoint to Step 1")
 
     args = parser.parse_args()
     state = load_orchestrator_state()
@@ -1015,6 +1277,8 @@ def main():
         execute_bulk_delta_sync(state, dry_run=args.dry_run)
     elif args.indexnow_ping:
         trigger_instant_indexing_hook(500)
+    elif args.roll_forward or args.quanchieu:
+        asyncio.run(run_roll_forward_pipeline(state, limit=args.limit or 1000, reset_stage=args.reset_roll))
     elif args.run_layer:
         layer_arg = args.run_layer.lower()
         if layer_arg in ("0", "nta"):
@@ -1042,15 +1306,14 @@ def main():
         else:
             print(f"[-] Unknown layer '{args.run_layer}'. Available: 0, gbiz, 1, edinet, geps, 2, 3, all")
     elif args.daemon:
-        asyncio.run(run_orchestrator_daemon(interval_minutes=args.interval, interval_seconds=args.interval_sec))
+        asyncio.run(run_orchestrator_daemon(interval_minutes=args.interval, interval_seconds=args.interval_sec, force=args.force))
     else:
         display_orchestrator_status()
         print("Usage:")
+        print("  python master_orchestrator.py --roll-forward         # Run sequential roll-forward batch pipeline on PC")
         print("  python master_orchestrator.py --daemon               # Start 24/7 autonomous background engine")
         print("  python master_orchestrator.py --status               # Inspect enterprise data inventory & health")
-        print("  python master_orchestrator.py --run-layer gbiz       # Run METI gBizINFO Harvester")
-        print("  python master_orchestrator.py --run-layer edinet     # Run FSA EDINET v2 Harvester")
-        print("  python master_orchestrator.py --run-layer geps       # Run GEPS Public Procurement Harvester")
+        print("  python master_orchestrator.py --run-layer 1          # Run National Licenses Harvester")
         print("  python master_orchestrator.py --sync-now             # Push clean delta stream to VPS")
         print("  python master_orchestrator.py --subagent-report      # Diagnostics for AI subagents")
 

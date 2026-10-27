@@ -336,9 +336,43 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const ogLocale = locale === 'en' ? 'en_US' : locale === 'vi' ? 'vi_VN' : 'ja_JP';
 
+  // Thin Content Guard (Standard from coreyhaines31/marketingskills)
+  // Tính điểm phong phú thực thể (Entity Richness Score) để bảo vệ toàn sàn khỏi Google Helpful Content Penalty
+  let richnessScore = 0;
+  if (company.phone_number && company.phone_number.trim()) richnessScore += 2;
+  if (company.website_url && company.website_url.trim() && !company.website_url.includes('なし')) richnessScore += 2;
+  if (company.has_license || company.has_financials || company.has_financial_report || company.has_public_tender || company.has_bidding) richnessScore += 3;
+  if (company.capital_amount) richnessScore += 1;
+  if (company.employee_count) richnessScore += 1;
+  if (company.representative_name && company.representative_name.trim()) richnessScore += 1;
+  if (primaryIndustry) richnessScore += 1;
+  if (company.has_invoice) richnessScore += 1;
+
+  // Rich Entity (>= 3 điểm) -> index: true, follow: true (Đạt chuẩn giá trị B2B từ Phone, Web, Vốn, Giấy phép)
+  // Thin Entity (< 3 điểm) -> index: false, follow: true (Giữ luồng cào liên kết nội bộ nhưng không rác Google index)
+  const isIndexable = richnessScore >= 3;
+
   return {
     title: pageTitle,
     description: summary,
+    robots: isIndexable ? {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    } : {
+      index: false,
+      follow: true,
+      googleBot: {
+        index: false,
+        follow: true,
+      },
+    },
     alternates: {
       canonical: `/${locale}/company/${companyId}`,
       languages: {
@@ -2010,6 +2044,28 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 {prefName} × {ind.industry_name}
               </Link>
             ))}
+
+            {/* License Hub Link (Cross-Entity Sideways Linking) */}
+            {licenses && licenses.length > 0 && (
+              <Link
+                href={`/${locale}/licenses`}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100/80 text-emerald-800 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40 transition-colors inline-flex items-center gap-1.5"
+              >
+                <Award className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>{locale === 'en' ? `${prefName} Licensed Companies` : locale === 'vi' ? `Doanh nghiệp có giấy phép tại ${prefName}` : `${prefName}の許認可取得企業一覧`}</span>
+              </Link>
+            )}
+
+            {/* Invoice Registered Issuer Link */}
+            {company.has_invoice && (
+              <Link
+                href={`/${locale}/invoice`}
+                className="text-xs font-medium px-3 py-1.5 rounded-lg bg-indigo-50 hover:bg-indigo-100/80 text-indigo-800 dark:bg-indigo-950/40 dark:hover:bg-indigo-900/40 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/40 transition-colors inline-flex items-center gap-1.5"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
+                <span>{locale === 'en' ? 'Invoice Registered Issuers' : locale === 'vi' ? 'Doanh nghiệp đăng ký Invoice' : 'インボイス適格請求書発行事業者一覧'}</span>
+              </Link>
+            )}
 
             {/* Global Directory Link */}
             <Link

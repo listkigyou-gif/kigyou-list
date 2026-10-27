@@ -5,11 +5,12 @@ import {
   Users, Search, Filter, RefreshCcw, Download, 
   ShieldAlert, ShieldCheck, Edit3, Loader2, Phone, UserCheck,
   Send, Database, Plus, CheckCircle2, Sparkles, MessageSquare,
-  Calendar, Clock, CreditCard
+  Calendar, Clock, CreditCard, Activity, Globe
 } from "lucide-react";
 import { parseUTCDate } from "@/lib/dateUtils";
 import { useAdminToast } from "../AdminToast";
 import { AdminConfirmModal } from "../AdminConfirmModal";
+import { UserWatchlistModal } from "../UserWatchlistModal";
 
 export interface UserAdminView {
   user_email: string;
@@ -28,6 +29,10 @@ export interface UserAdminView {
   plan_expires_at?: string | null;
   stripe_subscription_id?: string | null;
   last_reset_date?: string | null;
+  registration_ip?: string | null;
+  last_login_ip?: string | null;
+  last_login_at?: string | null;
+  watchlist_count?: number;
 }
 
 interface UsersTabProps {
@@ -72,6 +77,9 @@ export const UsersTab: React.FC<UsersTabProps> = ({
   const [formDirectBalance, setFormDirectBalance] = useState<number>(0);
   const [formReason, setFormReason] = useState<string>("");
   const [updatingFormCredits, setUpdatingFormCredits] = useState(false);
+
+  // Watchlist Detail Modal
+  const [watchlistModalEmail, setWatchlistModalEmail] = useState<string | null>(null);
 
   // Confirm Modal
   const [confirmConfig, setConfirmConfig] = useState<{
@@ -257,6 +265,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
       "Email", "Plan", "Status", "Contract Type", "Plan Expiration", 
       "Monthly CSV Allowance", "Monthly CSV Used", "CSV Add-on Balance", 
       "Form Credits Balance", "Form Credits Used", "Form Credits Total Granted",
+      "Registration IP", "Last Login IP", "Watchlist Count",
       "Contact Person", "Phone", "Updated At"
     ];
     const rows = filteredUsers.map(u => {
@@ -279,6 +288,9 @@ export const UsersTab: React.FC<UsersTabProps> = ({
         u.form_credits_balance ?? 0,
         u.form_credits_used ?? 0,
         u.form_credits_purchased ?? 0,
+        `"${u.registration_ip || ""}"`,
+        `"${u.last_login_ip || ""}"`,
+        u.watchlist_count || 0,
         `"${u.contact_person || ""}"`,
         `"${u.contact_phone || ""}"`,
         `"${u.updated_at}"`,
@@ -428,6 +440,8 @@ export const UsersTab: React.FC<UsersTabProps> = ({
               <th className="px-4 py-3">プラン</th>
               <th className="px-4 py-3">担当者 / 連絡先</th>
               <th className="px-4 py-3">ステータス</th>
+              <th className="px-4 py-3">登録 / 接続IP</th>
+              <th className="px-4 py-3 text-center">企業監視</th>
               <th className="px-4 py-3 text-center border-l border-slate-200 dark:border-slate-800 bg-blue-50/30 dark:bg-blue-950/10" colSpan={3}>
                 CSV出力枠 (ダウンロード)
               </th>
@@ -438,7 +452,7 @@ export const UsersTab: React.FC<UsersTabProps> = ({
               <th className="px-4 py-3 text-right">操作</th>
             </tr>
             <tr className="text-[10px] text-slate-400 bg-slate-50/80 dark:bg-slate-800/80 border-b border-slate-200/60 dark:border-slate-800">
-              <th colSpan={4}></th>
+              <th colSpan={6}></th>
               <th className="px-3 py-1 font-semibold border-l border-slate-200 dark:border-slate-800">基本枠</th>
               <th className="px-3 py-1 font-semibold">使用済</th>
               <th className="px-3 py-1 font-semibold">追加枠</th>
@@ -450,14 +464,14 @@ export const UsersTab: React.FC<UsersTabProps> = ({
           <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
             {loading && paginatedUsers.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-4 py-12 text-center text-slate-400">
+                <td colSpan={13} className="px-4 py-12 text-center text-slate-400">
                   <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-primary" />
                   読み込み中...
                 </td>
               </tr>
             ) : paginatedUsers.length === 0 ? (
               <tr>
-                <td colSpan={11} className="px-4 py-12 text-center text-slate-400">
+                <td colSpan={13} className="px-4 py-12 text-center text-slate-400">
                   該当するユーザーはいません。
                 </td>
               </tr>
@@ -591,6 +605,39 @@ export const UsersTab: React.FC<UsersTabProps> = ({
                         <ShieldCheck className="w-3 h-3" /> 有効
                       </span>
                     )}
+                  </td>
+
+                  {/* IP Tracking */}
+                  <td className="px-4 py-3">
+                    <div className="flex flex-col gap-0.5 font-mono text-[11px]">
+                      {usr.registration_ip ? (
+                        <div className="flex items-center gap-1 text-slate-700 dark:text-slate-300">
+                          <span className="text-[9px] px-1 py-0.2 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded font-sans">登録</span>
+                          <span>{usr.registration_ip}</span>
+                        </div>
+                      ) : (
+                        <span className="text-slate-400 text-[10px]">登録: —</span>
+                      )}
+                      {usr.last_login_ip && usr.last_login_ip !== usr.registration_ip && (
+                        <div className="flex items-center gap-1 text-slate-500 dark:text-slate-400 text-[10px]">
+                          <span className="text-[9px] px-1 py-0.2 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded font-sans">接続</span>
+                          <span>{usr.last_login_ip}</span>
+                        </div>
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Watchlist Count & Inspect */}
+                  <td className="px-4 py-3 text-center">
+                    <button
+                      onClick={() => setWatchlistModalEmail(usr.user_email)}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 shadow-2xs hover:shadow-xs active:scale-97"
+                      title="このユーザーが監視している企業一覧を表示"
+                    >
+                      <Activity className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+                      <span className="font-mono">{(usr.watchlist_count || 0).toLocaleString()}</span>
+                      <span className="text-[10px] font-medium text-slate-500">社</span>
+                    </button>
                   </td>
 
                   {/* CSV Export Quota Columns */}
@@ -1040,6 +1087,16 @@ export const UsersTab: React.FC<UsersTabProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Watchlist Details Modal */}
+      {watchlistModalEmail && (
+        <UserWatchlistModal
+          isOpen={Boolean(watchlistModalEmail)}
+          onClose={() => setWatchlistModalEmail(null)}
+          userEmail={watchlistModalEmail}
+          getAdminHeaders={getAdminHeaders}
+        />
       )}
     </section>
   );

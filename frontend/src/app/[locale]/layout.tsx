@@ -3,7 +3,6 @@ import { Noto_Sans_JP } from "next/font/google";
 import "../globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { AuthModal } from "@/components/AuthModal";
-import { CookieBanner } from "@/components/CookieBanner";
 import { SessionProvider } from "next-auth/react";
 import { auth } from "@/auth";
 import { getTranslations } from "@/lib/i18n";
@@ -209,7 +208,6 @@ export default async function LocalizedLayout({
             <AuthProvider>
               {children}
               <AuthModal />
-              <CookieBanner />
             </AuthProvider>
           </LanguageProvider>
         </SessionProvider>

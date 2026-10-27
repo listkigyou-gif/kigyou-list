@@ -173,6 +173,16 @@ async function initDb(pool) {
       service_account VARCHAR(150)
     );
     CREATE INDEX IF NOT EXISTS idx_g_indexing_sub_time ON google_indexing_submissions(submitted_at);
+
+    CREATE TABLE IF NOT EXISTS google_vip_queue (
+      corporate_number VARCHAR(100) PRIMARY KEY,
+      url TEXT NOT NULL,
+      priority_score INT DEFAULT 50,
+      reason TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      status VARCHAR(20) DEFAULT 'PENDING'
+    );
+    CREATE INDEX IF NOT EXISTS idx_g_vip_queue_score ON google_vip_queue(status, priority_score DESC, created_at ASC);
   `);
 
   // Ensure service_account column exists
@@ -252,127 +262,185 @@ async function main() {
     }
 
     const effectiveTotal = opts.dryRun ? targetTotal : Math.min(targetTotal, availableQuota);
-    const effectiveHubs = Math.min(targetHubs, effectiveTotal);
-    const effectiveVips = effectiveTotal - effectiveHubs;
-
     const selectedItems = [];
 
-    // 2. 5 Core Statutory Event Hubs
-    const coreHubs = [
-      { id: 'hub:changes', url: `${BASE_URL}/ja/changes`, name: 'Hub: 登記・変更履歴 (Changes)' },
-      { id: 'hub:invoice', url: `${BASE_URL}/ja/invoice`, name: 'Hub: インボイス制度 (Invoice)' },
-      { id: 'hub:jobs', url: `${BASE_URL}/ja/jobs`, name: 'Hub: 求人・採用シグナル (Jobs)' },
-      { id: 'hub:new-companies', url: `${BASE_URL}/ja/new-companies`, name: 'Hub: 新設法人 (New Companies)' },
-      { id: 'hub:status', url: `${BASE_URL}/ja/status`, name: 'Hub: 企業ステータス・閉鎖 (Status)' }
-    ];
-    selectedItems.push(...coreHubs.slice(0, effectiveHubs));
+    // =========================================================================
+    // TẦNG 1: HÀNG ĐỢI CUỐN CHIẾU TỪ NGÀY HÔM TRƯỚC (CARRY-OVER VIP QUEUE)
+    // =========================================================================
+    const queueRes = await pool.query(`
+      SELECT corporate_number, url, priority_score, reason
+      FROM google_vip_queue
+      WHERE status = 'PENDING'
+      ORDER BY priority_score DESC, created_at ASC
+      LIMIT $1
+    `, [effectiveTotal]);
 
-    // 3. 47 Prefecture Hubs (01 to 47 - All Japan Prefectures)
-    if (selectedItems.length < effectiveHubs) {
-      const prefSubsRes = await pool.query(`
-        SELECT corporate_number, submitted_at FROM google_indexing_submissions
-        WHERE corporate_number LIKE 'hub:area:%'
-      `);
-      const prefSubMap = new Map();
-      prefSubsRes.rows.forEach(r => prefSubMap.set(r.corporate_number, new Date(r.submitted_at).getTime()));
-
-      const allPrefs = Array.from({ length: 47 }, (_, i) => String(i + 1).padStart(2, '0'));
-      allPrefs.sort((a, b) => {
-        const timeA = prefSubMap.get(`hub:area:${a}`) || 0;
-        const timeB = prefSubMap.get(`hub:area:${b}`) || 0;
-        return timeA - timeB;
+    queueRes.rows.forEach(r => {
+      selectedItems.push({
+        id: r.corporate_number,
+        url: r.url,
+        name: `[Queue VIP - ${r.priority_score}đ] ${r.reason || r.corporate_number}`,
+        isFromQueue: true
       });
+    });
 
-      const prefNeeded = Math.min(47, effectiveHubs - selectedItems.length);
-      for (let i = 0; i < prefNeeded; i++) {
-        const p = allPrefs[i];
-        selectedItems.push({
-          id: `hub:area:${p}`,
-          url: `${BASE_URL}/ja/area/${p}`,
-          name: `Hub: 都道府県エリア (${p})`
-        });
-      }
+    if (queueRes.rows.length > 0) {
+      console.log(`[+] Đã lấy ${queueRes.rows.length} URLs từ hàng đợi cuốn chiếu hôm trước (Carry-over VIP Queue).`);
     }
 
-    // 4. Rotating Industry Hubs
-    if (selectedItems.length < effectiveHubs) {
-      let indRows = [];
-      try {
-        const indQuery = await pool.query(`
-          SELECT industry_code, industry_name FROM m_industries
-          ORDER BY industry_code ASC LIMIT 100
-        `);
-        indRows = indQuery.rows;
-      } catch (e) {
-        indRows = Array.from({ length: 30 }, (_, i) => ({
-          industry_code: String(i + 1).padStart(2, '0'),
-          industry_name: `Category ${i + 1}`
-        }));
-      }
-
-      const indSubsRes = await pool.query(`
-        SELECT corporate_number, submitted_at FROM google_indexing_submissions
-        WHERE corporate_number LIKE 'hub:industry:%'
+    // =========================================================================
+    // TẦNG 2: 100% CÔNG TY CÓ BIẾN ĐỘNG NÓNG TRONG 48H QUA (HOT DELTA DETECTOR)
+    //         KÈM MÔ HÌNH TRỤC BÁNH XE (HUB & SPOKE PATTERN)
+    // =========================================================================
+    if (selectedItems.length < effectiveTotal) {
+      const quotaRemaining = effectiveTotal - selectedItems.length;
+      const deltaQuery = await pool.query(`
+        SELECT 
+          c.corporate_number, 
+          c.company_name,
+          c.has_financial_report,
+          c.has_public_tender,
+          c.has_license,
+          c.has_invoice,
+          c.prefecture_code,
+          c.primary_industry_code,
+          c.major_industry_code,
+          c.updated_at,
+          (
+            CASE 
+              WHEN c.has_financial_report = true THEN 100
+              WHEN c.has_public_tender = true THEN 80
+              WHEN c.has_license = true THEN 60
+              ELSE 40
+            END
+          ) AS priority_score,
+          (
+            CASE 
+              WHEN c.has_financial_report = true THEN 'EDINET Báo cáo tài chính mới'
+              WHEN c.has_public_tender = true THEN 'GEPS Trúng thầu công mới'
+              WHEN c.has_license = true THEN 'Cấp phép kinh doanh mới'
+              ELSE 'Thay đổi pháp lý NTA / Thông tin doanh nghiệp'
+            END
+          ) AS reason
+        FROM companies c
+        LEFT JOIN google_indexing_submissions sub ON c.corporate_number = sub.corporate_number
+        WHERE c.updated_at >= NOW() - INTERVAL '48 hours'
+          AND (sub.submitted_at IS NULL OR sub.submitted_at < NOW() - INTERVAL '24 hours')
+        ORDER BY priority_score DESC, c.updated_at DESC
+        LIMIT 2500
       `);
-      const indSubMap = new Map();
-      indSubsRes.rows.forEach(r => indSubMap.set(r.corporate_number, new Date(r.submitted_at).getTime()));
 
-      indRows.sort((a, b) => {
-        const timeA = indSubMap.get(`hub:industry:${a.industry_code}`) || 0;
-        const timeB = indSubMap.get(`hub:industry:${b.industry_code}`) || 0;
-        return timeA - timeB;
+      const alreadySelected = new Set(selectedItems.map(x => x.id));
+      const validDeltas = deltaQuery.rows.filter(r => !alreadySelected.has(r.corporate_number));
+
+      console.log(`[+] Phát hiện ${validDeltas.length} công ty có biến động thực tế trong 48h qua.`);
+
+      // -----------------------------------------------------------------------
+      // MÔ HÌNH HUB & SPOKE: Tự động trích xuất Parent Hubs tương ứng với biến động
+      // -----------------------------------------------------------------------
+      const associatedHubsMap = new Map();
+      validDeltas.forEach(r => {
+        if (r.has_license) {
+          associatedHubsMap.set('hub:licenses', { id: 'hub:licenses', url: `${BASE_URL}/ja/licenses`, name: 'Hub: 許認可・国家資格 (Licenses)', isFromQueue: false });
+        }
+        if (r.has_invoice) {
+          associatedHubsMap.set('hub:invoice', { id: 'hub:invoice', url: `${BASE_URL}/ja/invoice`, name: 'Hub: インボイス制度 (Invoice)', isFromQueue: false });
+        }
+        if (r.has_financial_report) {
+          associatedHubsMap.set('hub:status', { id: 'hub:status', url: `${BASE_URL}/ja/status/bankruptcies`, name: 'Hub: 決算・財務開示 (Financials)', isFromQueue: false });
+        }
+        if (r.prefecture_code) {
+          const pCode = String(r.prefecture_code).padStart(2, '0');
+          associatedHubsMap.set(`hub:area:${pCode}`, { id: `hub:area:${pCode}`, url: `${BASE_URL}/ja/area/${pCode}`, name: `Hub: 都道府県エリア (${pCode})`, isFromQueue: false });
+        }
+        if (r.primary_industry_code) {
+          associatedHubsMap.set(`hub:industry:${r.primary_industry_code}`, { id: `hub:industry:${r.primary_industry_code}`, url: `${BASE_URL}/ja/industry/${r.primary_industry_code}`, name: `Hub: 業種コード (${r.primary_industry_code})`, isFromQueue: false });
+        }
       });
 
-      const indNeeded = Math.min(indRows.length, effectiveHubs - selectedItems.length);
-      for (let i = 0; i < indNeeded; i++) {
-        const ind = indRows[i];
-        selectedItems.push({
-          id: `hub:industry:${ind.industry_code}`,
-          url: `${BASE_URL}/ja/industry/${ind.industry_code}`,
-          name: `Hub: 業種 (${ind.industry_code} - ${ind.industry_name})`
-        });
+      // Lấy tối đa 50 Parent Hubs liên quan để nạp kèm (chiếm ~5% quota)
+      const hubsToInject = Array.from(associatedHubsMap.values())
+        .filter(h => !alreadySelected.has(h.id))
+        .slice(0, 50);
+
+      hubsToInject.forEach(h => {
+        selectedItems.push(h);
+        alreadySelected.add(h.id);
+      });
+
+      if (hubsToInject.length > 0) {
+        console.log(`  [+] [Hub & Spoke] Tự động kích hoạt ${hubsToInject.length} Parent Hubs mẹ liên quan đến biến động hôm nay.`);
       }
-    }
 
-    // 5. Tier-0 VIP Enterprises (ranked by sales & headcount)
-    const vipNeeded = Math.min(effectiveVips, effectiveTotal - selectedItems.length);
-    if (vipNeeded > 0) {
-      const vipQuery = await pool.query(`
-        SELECT f.corporate_number, c.company_name
-        FROM company_financials f
-        JOIN companies c ON f.corporate_number = c.corporate_number
-        LEFT JOIN google_indexing_submissions sub ON f.corporate_number = sub.corporate_number
-        WHERE sub.corporate_number IS NULL
-        GROUP BY f.corporate_number, c.company_name, c.sales_amount, c.employee_count
-        ORDER BY COALESCE(c.sales_amount, 0) DESC, COALESCE(c.employee_count, 0) DESC
-        LIMIT $1
-      `, [vipNeeded]);
-
-      vipQuery.rows.forEach(r => {
+      // Lấy số lượng công ty con (Spokes) còn lại cho quota hôm nay
+      const quotaForDeltas = Math.max(0, effectiveTotal - selectedItems.length);
+      const deltasToSubmit = validDeltas.slice(0, quotaForDeltas);
+      deltasToSubmit.forEach(r => {
         selectedItems.push({
           id: r.corporate_number,
           url: `${BASE_URL}/ja/company/${r.corporate_number}`,
-          name: r.company_name
+          name: `[Biến động ${r.priority_score}đ - ${r.reason}] ${r.company_name || r.corporate_number}`,
+          isFromQueue: false
         });
       });
 
-      // Fallback to sitemap_companies if needed
-      if (selectedItems.length < effectiveTotal) {
-        const rem = effectiveTotal - selectedItems.length;
-        const sitemapQuery = await pool.query(`
-          SELECT s.corporate_number, s.company_name
-          FROM sitemap_companies s
-          LEFT JOIN google_indexing_submissions sub ON s.corporate_number = sub.corporate_number
-          WHERE sub.corporate_number IS NULL
-          ORDER BY s.employee_count DESC NULLS LAST, s.corporate_number ASC
-          LIMIT $1
-        `, [rem]);
+      // Nếu có biến động dôi dư vượt quá hạn mức: LƯU VÀO HÀNG ĐỢI CUỐN CHIẾU HÔM SAU
+      const spillover = validDeltas.slice(quotaForDeltas);
+      if (spillover.length > 0) {
+        console.log(`[*] [SPILLOVER] Có ${spillover.length} công ty biến động vượt hạn mức hôm nay. Đang đưa vào hàng đợi VIP cuốn chiếu hôm sau...`);
+        for (const item of spillover) {
+          await pool.query(`
+            INSERT INTO google_vip_queue (corporate_number, url, priority_score, reason, created_at, status)
+            VALUES ($1, $2, $3, $4, NOW(), 'PENDING')
+            ON CONFLICT (corporate_number) DO UPDATE
+            SET priority_score = EXCLUDED.priority_score,
+                reason = EXCLUDED.reason,
+                status = 'PENDING';
+          `, [item.corporate_number, `${BASE_URL}/ja/company/${item.corporate_number}`, item.priority_score, item.reason]);
+        }
+      }
+    }
 
-        sitemapQuery.rows.forEach(r => {
+    // =========================================================================
+    // TẦNG 3: NẾU VẪN CÒN DƯ QUOTA (< 1.000 BIẾN ĐỘNG), PHÂN BỔ CHO HUBS & ENTERPRISES
+    // =========================================================================
+    if (selectedItems.length < effectiveTotal) {
+      const remainingQuota = effectiveTotal - selectedItems.length;
+      console.log(`[*] Còn dư ${remainingQuota} quota Google VIP. Đang phân bổ cho Core Hubs & Tier-0 VIP Enterprises...`);
+
+      // Core Statutory Event Hubs
+      const coreHubs = [
+        { id: 'hub:changes:relocation', url: `${BASE_URL}/ja/changes/relocation`, name: 'Hub: 本店移転・所在地変更 (Relocation)' },
+        { id: 'hub:changes:merger', url: `${BASE_URL}/ja/changes/merger`, name: 'Hub: 吸収合併・組織再編 (Merger)' },
+        { id: 'hub:invoice', url: `${BASE_URL}/ja/invoice`, name: 'Hub: インボイス制度 (Invoice)' },
+        { id: 'hub:jobs', url: `${BASE_URL}/ja/jobs/latest`, name: 'Hub: 求人・採用シグナル (Jobs)' },
+        { id: 'hub:new-companies', url: `${BASE_URL}/ja/new-companies`, name: 'Hub: 新設法人 (New Companies)' },
+        { id: 'hub:status', url: `${BASE_URL}/ja/status/bankruptcies`, name: 'Hub: 倒産・企業ステータス (Status)' },
+        { id: 'hub:licenses', url: `${BASE_URL}/ja/licenses`, name: 'Hub: 許認可・国家資格 (Licenses)' }
+      ];
+      const hubsToAdd = Math.min(coreHubs.length, Math.floor(remainingQuota * 0.1));
+      selectedItems.push(...coreHubs.slice(0, hubsToAdd));
+
+      // Tier-0 VIP Enterprises (ranked by sales & headcount)
+      if (selectedItems.length < effectiveTotal) {
+        const vipNeeded = effectiveTotal - selectedItems.length;
+        const vipQuery = await pool.query(`
+          SELECT f.corporate_number, c.company_name
+          FROM company_financials f
+          JOIN companies c ON f.corporate_number = c.corporate_number
+          LEFT JOIN google_indexing_submissions sub ON f.corporate_number = sub.corporate_number
+          WHERE sub.corporate_number IS NULL
+          GROUP BY f.corporate_number, c.company_name, c.sales_amount, c.employee_count
+          ORDER BY COALESCE(c.sales_amount, 0) DESC, COALESCE(c.employee_count, 0) DESC
+          LIMIT $1
+        `, [vipNeeded]);
+
+        vipQuery.rows.forEach(r => {
           selectedItems.push({
             id: r.corporate_number,
             url: `${BASE_URL}/ja/company/${r.corporate_number}`,
-            name: r.company_name
+            name: `[Enterprise Tier-0] ${r.company_name}`,
+            isFromQueue: false
           });
         });
       }
@@ -428,6 +496,10 @@ async function main() {
           ON CONFLICT (corporate_number) DO UPDATE 
           SET submitted_at = NOW(), response_code = 200, service_account = EXCLUDED.service_account
         `, [item.id, item.url, currentKey.clientEmail]);
+
+        if (item.isFromQueue) {
+          await pool.query(`UPDATE google_vip_queue SET status = 'SUBMITTED' WHERE corporate_number = $1`, [item.id]);
+        }
 
         currentKey.submittedCount++;
         successCount++;

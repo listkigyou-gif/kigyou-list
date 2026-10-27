@@ -509,7 +509,9 @@ def harvest_all_available_kobutsu():
 
     print("\n" + "=" * 80)
     print(f"ALL CONFIGURED PREFECTURES COMPLETED! Total New Licenses Added: {total_new:,}")
-    print("=" * 80)
+def harvest_tokyo_kobutsu():
+    """Alias for harvesting Tokyo prefecture (13) secondhand dealer registry."""
+    return harvest_prefecture("13")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Nationwide NPA Kobutsu License Harvester")

@@ -28,7 +28,12 @@ const KEY_LOCATION = `https://${HOST}/0a1fbe0a7866441bb57817e0bf538068.txt`;
 const INDEXNOW_ENDPOINT = 'https://api.indexnow.org/indexnow';
 
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL || 'postgresql://postgres:Hrptlcct6789@127.0.0.1:5432/kigyou_list',
+  connectionString: process.env.DATABASE_URL || undefined,
+  user: process.env.PGUSER || 'postgres',
+  host: process.env.PGHOST || '127.0.0.1',
+  database: process.env.PGDATABASE || 'kigyou_list',
+  password: process.env.PGPASSWORD || undefined,
+  port: parseInt(process.env.PGPORT || '5432', 10),
   max: 5,
   idleTimeoutMillis: 10000,
 });
@@ -45,6 +50,12 @@ async function initDb(client) {
     );
     CREATE INDEX IF NOT EXISTS idx_indexnow_submitted_at ON indexnow_submissions(submitted_at);
   `);
+
+  // Auto-clean records older than 30 days to allow healthy cyclic re-crawling
+  const cleanRes = await client.query("DELETE FROM indexnow_submissions WHERE submitted_at < NOW() - INTERVAL '30 days';");
+  if (cleanRes.rowCount > 0) {
+    console.log(`[*] [IndexNow Clean] Đã dọn dẹp ${cleanRes.rowCount.toLocaleString()} bản ghi cũ hơn 30 ngày để giải phóng hàng đợi.`);
+  }
 }
 
 async function getStats(client) {
@@ -72,17 +83,129 @@ async function getStats(client) {
   };
 }
 
-async function fetchTargets(client, limit = 1000) {
-  const query = `
-    SELECT c.corporate_number
+async function fetchTargets(client, limit = 3000) {
+  const selectedCorps = [];
+  const selectedHubsMap = new Map();
+  const seenCorpSet = new Set();
+
+  // =========================================================================
+  // TẦNG 1: 100% CÔNG TY CÓ BIẾN ĐỘNG NÓNG TRONG 48H (HOT DELTA DETECTOR)
+  //         KÈM MÔ HÌNH TRỤC BÁNH XE (HUB & SPOKE PATTERN)
+  // =========================================================================
+  const deltaQuery = `
+    SELECT 
+      c.corporate_number, 
+      c.company_name,
+      c.has_financial_report,
+      c.has_financials,
+      c.has_public_tender,
+      c.has_bidding,
+      c.has_license,
+      c.has_invoice,
+      c.prefecture_code,
+      c.primary_industry_code,
+      c.updated_at,
+      (
+        CASE 
+          WHEN c.has_financial_report = true OR c.has_financials = true THEN 100
+          WHEN c.has_public_tender = true OR c.has_bidding = true THEN 80
+          WHEN c.has_license = true THEN 60
+          ELSE 40
+        END
+      ) AS priority_score,
+      (
+        CASE 
+          WHEN c.has_financial_report = true OR c.has_financials = true THEN 'EDINET Báo cáo tài chính mới'
+          WHEN c.has_public_tender = true OR c.has_bidding = true THEN 'GEPS Trúng thầu công mới'
+          WHEN c.has_license = true THEN 'Cấp phép kinh doanh mới'
+          ELSE 'Thay đổi pháp lý NTA / Dữ liệu doanh nghiệp'
+        END
+      ) AS reason
     FROM companies c
     LEFT JOIN indexnow_submissions sub ON c.corporate_number = sub.corporate_number
-    WHERE sub.corporate_number IS NULL
-    ORDER BY c.employee_count DESC NULLS LAST, c.corporate_number ASC
+    WHERE c.updated_at >= NOW() - INTERVAL '48 hours'
+      AND (sub.submitted_at IS NULL OR sub.submitted_at < NOW() - INTERVAL '24 hours')
+    ORDER BY priority_score DESC, c.updated_at DESC
     LIMIT $1
   `;
-  const res = await client.query(query, [limit]);
-  return res.rows.map(r => r.corporate_number);
+  const deltaRes = await client.query(deltaQuery, [limit]);
+
+  deltaRes.rows.forEach(r => {
+    selectedCorps.push(r.corporate_number);
+    seenCorpSet.add(r.corporate_number);
+
+    // Gom Parent Hubs tương ứng với biến động thực tế
+    if (r.has_license) {
+      selectedHubsMap.set('hub:licenses', `${BASE_URL}/ja/licenses`);
+    }
+    if (r.has_invoice) {
+      selectedHubsMap.set('hub:invoice', `${BASE_URL}/ja/invoice`);
+    }
+    if (r.has_financial_report || r.has_financials) {
+      selectedHubsMap.set('hub:status', `${BASE_URL}/ja/status/bankruptcies`);
+    }
+    if (r.has_public_tender || r.has_bidding) {
+      selectedHubsMap.set('hub:bidding', `${BASE_URL}/ja/search?subsidy=true&bidding=true`);
+    }
+    if (r.prefecture_code) {
+      const p = String(r.prefecture_code).padStart(2, '0');
+      selectedHubsMap.set(`hub:area:${p}`, `${BASE_URL}/ja/area/${p}`);
+    }
+    if (r.primary_industry_code) {
+      selectedHubsMap.set(`hub:industry:${r.primary_industry_code}`, `${BASE_URL}/ja/industry/${r.primary_industry_code}`);
+    }
+  });
+
+  if (deltaRes.rows.length > 0) {
+    console.log(`[+] [Tầng 1 - Hot Delta] Đã bắt được ${deltaRes.rows.length} doanh nghiệp biến động thực tế trong 48h qua cho IndexNow.`);
+  }
+
+  // =========================================================================
+  // TẦNG 2: PHỦ MỚI DẦN ĐỀU (BACKLOG COVERAGE) CHO ĐỦ CHỈ TIÊU BATCH SIZE
+  // =========================================================================
+  const quotaRemaining = limit - selectedCorps.length;
+  if (quotaRemaining > 0) {
+    const backlogQuery = `
+      SELECT c.corporate_number, c.prefecture_code, c.primary_industry_code, c.has_license, c.has_invoice, c.has_financials
+      FROM companies c
+      WHERE NOT EXISTS (
+        SELECT 1 FROM indexnow_submissions sub WHERE sub.corporate_number = c.corporate_number
+      )
+      ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC
+      LIMIT $1
+    `;
+    const backlogRes = await client.query(backlogQuery, [quotaRemaining]);
+
+    backlogRes.rows.forEach(r => {
+      if (!seenCorpSet.has(r.corporate_number)) {
+        selectedCorps.push(r.corporate_number);
+        seenCorpSet.add(r.corporate_number);
+
+        if (r.has_license) selectedHubsMap.set('hub:licenses', `${BASE_URL}/ja/licenses`);
+        if (r.has_invoice) selectedHubsMap.set('hub:invoice', `${BASE_URL}/ja/invoice`);
+        if (r.has_financials) selectedHubsMap.set('hub:status', `${BASE_URL}/ja/status/bankruptcies`);
+        if (r.prefecture_code) {
+          const p = String(r.prefecture_code).padStart(2, '0');
+          selectedHubsMap.set(`hub:area:${p}`, `${BASE_URL}/ja/area/${p}`);
+        }
+        if (r.primary_industry_code) {
+          selectedHubsMap.set(`hub:industry:${r.primary_industry_code}`, `${BASE_URL}/ja/industry/${r.primary_industry_code}`);
+        }
+      }
+    });
+
+    if (backlogRes.rows.length > 0) {
+      console.log(`[+] [Tầng 2 - Backlog] Bổ sung ${backlogRes.rows.length} doanh nghiệp chưa từng nộp IndexNow để phủ dần chỉ mục.`);
+    }
+  }
+
+  // Giới hạn tối đa 50 Hub mẹ mỗi chu kỳ (~1.6% quota)
+  const parentHubs = Array.from(selectedHubsMap.values()).slice(0, 50);
+
+  return {
+    parentHubUrls: parentHubs,
+    companyCorps: selectedCorps
+  };
 }
 
 async function submitToIndexNow(urls) {
@@ -110,10 +233,10 @@ async function run() {
   const dryRun = args.includes('--dry-run');
   const showStats = args.includes('--stats');
   
-  let batchSize = 1000;
+  let batchSize = 3000;
   const batchIdx = args.indexOf('--batch-size');
   if (batchIdx !== -1 && args[batchIdx + 1]) {
-    batchSize = parseInt(args[batchIdx + 1], 10) || 1000;
+    batchSize = parseInt(args[batchIdx + 1], 10) || 3000;
   }
 
   const client = await pool.connect();
@@ -138,40 +261,44 @@ async function run() {
     console.log(`[*] [${now.toISOString()}] Bắt đầu lấy mục tiêu IndexNow (Batch size: ${batchSize}, Dry run: ${dryRun})...`);
 
     const targets = await fetchTargets(client, batchSize);
-    if (targets.length === 0) {
+    if (targets.companyCorps.length === 0 && targets.parentHubUrls.length === 0) {
       console.log('[*] Không còn công ty nào chưa nộp.');
       return;
     }
 
+    const companyUrls = targets.companyCorps.map(corp => `${BASE_URL}/ja/company/${corp}`);
+    const allUrlsToSubmit = [...targets.parentHubUrls, ...companyUrls];
+
+    console.log(`[+] [Hub & Spoke] Đã gom ${targets.parentHubUrls.length} Parent Hubs mẹ + ${companyUrls.length} Trang công ty lá = Tổng ${allUrlsToSubmit.length} URLs.`);
+
     const CHUNK_SIZE = 10000;
     const chunks = [];
-    for (let i = 0; i < targets.length; i += CHUNK_SIZE) {
-      chunks.push(targets.slice(i, i + CHUNK_SIZE));
+    for (let i = 0; i < allUrlsToSubmit.length; i += CHUNK_SIZE) {
+      chunks.push(allUrlsToSubmit.slice(i, i + CHUNK_SIZE));
     }
-    console.log(`[*] Chia ${targets.length.toLocaleString()} URLs thành ${chunks.length} gói nộp (tối đa ${CHUNK_SIZE.toLocaleString()} URLs/gói theo chuẩn IndexNow)...`);
+    console.log(`[*] Chia ${allUrlsToSubmit.length.toLocaleString()} URLs thành ${chunks.length} gói nộp (tối đa ${CHUNK_SIZE.toLocaleString()} URLs/gói theo chuẩn IndexNow)...`);
 
     if (dryRun) {
-      console.log(`[*] Chạy thử (Dry Run): Tìm thấy ${targets.length} URLs hợp lệ chưa nộp:`);
-      targets.slice(0, 5).forEach(corp => console.log('  -', `${BASE_URL}/ja/company/${corp}`));
+      console.log(`[*] Chạy thử (Dry Run): Tìm thấy ${allUrlsToSubmit.length} URLs hợp lệ chưa nộp:`);
+      allUrlsToSubmit.slice(0, 5).forEach(u => console.log('  -', u));
       return;
     }
 
     let totalSaved = 0;
 
     for (let idx = 0; idx < chunks.length; idx++) {
-      const chunkTargets = chunks[idx];
-      const chunkUrls = chunkTargets.map(corp => `${BASE_URL}/ja/company/${corp}`);
+      const chunkUrls = chunks[idx];
       console.log(`[*] [Gói ${idx + 1}/${chunks.length}] Đang nộp ${chunkUrls.length.toLocaleString()} URLs lên IndexNow...`);
 
       const res = await submitToIndexNow(chunkUrls);
       console.log(`    ↳ Phản hồi IndexNow: HTTP ${res.status} ${res.statusText}`);
 
       if (res.status === 200 || res.status === 202) {
-        // Fast batch insert into PostgreSQL (in sub-batches of 1000)
+        // Fast batch insert company records into PostgreSQL
         await client.query('BEGIN');
         const DB_SUB_BATCH = 1000;
-        for (let j = 0; j < chunkTargets.length; j += DB_SUB_BATCH) {
-          const sub = chunkTargets.slice(j, j + DB_SUB_BATCH);
+        for (let j = 0; j < targets.companyCorps.length; j += DB_SUB_BATCH) {
+          const sub = targets.companyCorps.slice(j, j + DB_SUB_BATCH);
           const values = [];
           const params = [batchId, res.status];
           sub.forEach((corp) => {
@@ -182,13 +309,17 @@ async function run() {
           const insertSql = `
             INSERT INTO indexnow_submissions (corporate_number, url, submitted_at, batch_id, response_code, priority_level)
             VALUES ${values.join(', ')}
-            ON CONFLICT (corporate_number) DO NOTHING
+            ON CONFLICT (corporate_number) DO UPDATE SET
+              submitted_at = NOW(),
+              batch_id = EXCLUDED.batch_id,
+              response_code = EXCLUDED.response_code,
+              priority_level = EXCLUDED.priority_level
           `;
           await client.query(insertSql, params);
         }
         await client.query('COMMIT');
-        totalSaved += chunkTargets.length;
-        console.log(`    ↳ [OK] Đã lưu thành công ${chunkTargets.length.toLocaleString()} URLs vào PostgreSQL.`);
+        totalSaved += targets.companyCorps.length;
+        console.log(`    ↳ [OK] Đã lưu thành công ${targets.companyCorps.length.toLocaleString()} URLs công ty vào PostgreSQL.`);
 
         // Nghỉ 2 giây giữa các gói để tránh dồn dập
         if (idx < chunks.length - 1) {
@@ -211,4 +342,9 @@ async function run() {
   }
 }
 
-run();
+run()
+  .then(() => process.exit(0))
+  .catch(err => {
+    console.error('[FATAL ERROR]:', err);
+    process.exit(1);
+  });

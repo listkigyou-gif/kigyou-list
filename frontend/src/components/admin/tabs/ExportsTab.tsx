@@ -77,6 +77,36 @@ export const ExportsTab: React.FC<ExportsTabProps> = ({
     return filteredJobs.slice(start, start + pageSize);
   }, [filteredJobs, currentPage, pageSize]);
 
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownload = async (job: ExportJobAdminView) => {
+    setDownloadingId(job.id);
+    try {
+      const res = await fetch(`/api/export/download?id=${job.id}&email=${encodeURIComponent(job.user_email)}`, {
+        headers: getAdminHeaders(),
+      });
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        toast.error(errData.error || "ファイルのダウンロードに失敗しました。");
+        return;
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `kigyou_list_${job.id}.zip`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      toast.success("CSVファイルのダウンロードを開始しました。");
+    } catch {
+      toast.error("ダウンロード中に通信エラーが発生しました。");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   return (
     <section className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xs animate-in fade-in duration-200">
       {/* Controls */}
@@ -143,7 +173,7 @@ export const ExportsTab: React.FC<ExportsTabProps> = ({
               <th className="px-4 py-3">実行日時 (JST)</th>
               <th className="px-4 py-3">出力ユーザー</th>
               <th className="px-4 py-3">件数</th>
-              <th className="px-4 py-3 min-w-[240px]">適用検索条件</th>
+              <th className="px-4 py-3 min-w-[260px]">適用検索条件</th>
               <th className="px-4 py-3">ステータス</th>
               <th className="px-4 py-3 text-right">ファイル</th>
             </tr>
@@ -181,7 +211,7 @@ export const ExportsTab: React.FC<ExportsTabProps> = ({
                   <td className="px-4 py-3 font-mono font-bold text-primary dark:text-secondary">
                     {job.records_count.toLocaleString()} 件
                   </td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-300 whitespace-normal min-w-[240px]">
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-300 whitespace-normal min-w-[260px]">
                     {formatFilters(job.filters_json)}
                   </td>
                   <td className="px-4 py-3">
@@ -205,15 +235,19 @@ export const ExportsTab: React.FC<ExportsTabProps> = ({
                   </td>
                   <td className="px-4 py-3 text-right">
                     {job.file_path && job.status === "completed" ? (
-                      <a
-                        href={job.file_path}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-lg transition-colors inline-flex items-center gap-1"
+                      <button
+                        onClick={() => handleDownload(job)}
+                        disabled={downloadingId === job.id}
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold rounded-lg transition-colors inline-flex items-center gap-1 cursor-pointer disabled:opacity-50"
+                        title="CSVファイルをダウンロード"
                       >
-                        <Download className="w-3 h-3 text-slate-400" />
+                        {downloadingId === job.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
+                        ) : (
+                          <Download className="w-3 h-3 text-slate-400" />
+                        )}
                         <span>DL</span>
-                      </a>
+                      </button>
                     ) : job.error_message ? (
                       <span className="text-rose-500 text-[10px] truncate max-w-[150px] inline-block" title={job.error_message}>
                         {job.error_message}
@@ -260,18 +294,80 @@ export const ExportsTab: React.FC<ExportsTabProps> = ({
   );
 };
 
+const PREF_NAMES: Record<string, string> = {
+  "01": "北海道", "02": "青森県", "03": "岩手県", "04": "宮城県", "05": "秋田県",
+  "06": "山形県", "07": "福島県", "08": "茨城県", "09": "栃木県", "10": "群馬県",
+  "11": "埼玉県", "12": "千葉県", "13": "東京都", "14": "神奈川県", "15": "新潟県",
+  "16": "富山県", "17": "石川県", "18": "福井県", "19": "山梨県", "20": "長野県",
+  "21": "岐阜県", "22": "静岡県", "23": "愛知県", "24": "三重県", "25": "滋賀県",
+  "26": "京都府", "27": "大阪府", "28": "兵庫県", "29": "奈良県", "30": "和歌山県",
+  "31": "鳥取県", "32": "島根県", "33": "岡山県", "34": "広島県", "35": "山口県",
+  "36": "徳島県", "37": "香川県", "38": "愛媛県", "39": "高知県", "40": "福岡県",
+  "41": "佐賀県", "42": "長崎県", "43": "熊本県", "44": "大分県", "45": "宮崎県",
+  "46": "鹿児島県", "47": "沖縄県"
+};
+
 const formatFilters = (filtersJson: string | null) => {
   if (!filtersJson) return "条件指定なし (全件)";
   try {
     const f = JSON.parse(filtersJson);
     const parts: string[] = [];
-    if (f.query) parts.push(`キーワード: ${f.query}`);
-    if (f.pref) parts.push(`地域: ${f.pref}`);
-    if (f.industry_code) parts.push(`業種: ${f.industry_code}`);
-    if (f.has_hiring) parts.push("求人あり");
-    if (f.has_subsidy) parts.push("助成金あり");
-    if (f.has_bidding) parts.push("入札あり");
-    return parts.join(", ") || "デフォルト検索";
+
+    // Keywords
+    const kw = f.keyword || f.query;
+    if (kw && String(kw).trim()) {
+      parts.push(`キーワード: "${String(kw).trim()}"`);
+    }
+
+    // Contact info filters
+    if (f.has_email === true) parts.push("Emailあり");
+    if (f.has_phone === true) parts.push("電話番号あり");
+    if (f.has_contact_form === true) parts.push("フォームあり");
+    if (f.has_website === true) parts.push("HPあり");
+    if (f.has_fax === true) parts.push("FAXあり");
+
+    // Location
+    const prefCode = f.prefecture_code || f.pref;
+    if (prefCode) {
+      const prefName = PREF_NAMES[String(prefCode).padStart(2, "0")] || `都道府県:${prefCode}`;
+      parts.push(prefName);
+    }
+    if (f.city_name) {
+      parts.push(`市区町村:${f.city_name}`);
+    }
+
+    // Industry
+    if (f.industry_code) parts.push(`業種:${f.industry_code}`);
+
+    // Scale / Financial
+    if (f.min_employees !== undefined && f.min_employees !== null && f.min_employees > 0) {
+      parts.push(`従業員:${Number(f.min_employees).toLocaleString()}人以上`);
+    }
+    if (f.max_employees !== undefined && f.max_employees !== null) {
+      parts.push(`従業員:${Number(f.max_employees).toLocaleString()}人以下`);
+    }
+    if (f.min_capital !== undefined && f.min_capital !== null && f.min_capital > 0) {
+      parts.push(`資本金:${Number(f.min_capital).toLocaleString()}万円以上`);
+    }
+    if (f.max_capital !== undefined && f.max_capital !== null) {
+      parts.push(`資本金:${Number(f.max_capital).toLocaleString()}万円以下`);
+    }
+    if (f.min_sales !== undefined && f.min_sales !== null && f.min_sales > 0) {
+      parts.push(`売上高:${Number(f.min_sales).toLocaleString()}百万円以上`);
+    }
+
+    // Business flags
+    if (f.has_financials === true) parts.push("決算情報あり");
+    if (f.is_listed === true) parts.push("上場企業");
+    if (f.has_hiring === true) parts.push("求人あり");
+    if (f.has_subsidy === true) parts.push("助成金あり");
+    if (f.has_bidding === true) parts.push("入札実績あり");
+    if (f.has_award === true) parts.push("表彰あり");
+    if (f.has_certification === true) parts.push("認証あり");
+    if (f.has_patent === true) parts.push("特許あり");
+    if (f.has_license === true) parts.push("許認可あり");
+
+    return parts.length > 0 ? parts.join(", ") : "条件指定なし (全件)";
   } catch {
     return filtersJson;
   }

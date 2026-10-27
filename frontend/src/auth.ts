@@ -1,7 +1,8 @@
 import NextAuth from "next-auth";
 import Google from "next-auth/providers/google";
 import Credentials from "next-auth/providers/credentials";
-import { getUserQuota, verifyAndConsumeMagicLinkToken } from "@/lib/db";
+import { getUserQuota, verifyAndConsumeMagicLinkToken, updateUserLoginIp } from "@/lib/db";
+import { headers } from "next/headers";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -37,6 +38,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // Automatically check/create user quota in database on sign in
         try {
           await getUserQuota(user.email);
+          try {
+            const reqHeaders = await headers();
+            const ip = reqHeaders.get("cf-connecting-ip") || reqHeaders.get("x-forwarded-for")?.split(",")[0].trim() || reqHeaders.get("x-real-ip") || "127.0.0.1";
+            await updateUserLoginIp(user.email, ip);
+          } catch {}
         } catch (error) {
           console.error("Error in signIn callback (getUserQuota):", error);
         }

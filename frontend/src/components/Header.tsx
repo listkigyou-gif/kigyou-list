@@ -14,8 +14,8 @@ import {
   FileSpreadsheet,
   SendHorizontal,
   CreditCard,
-  Bookmark,
-  Kanban,
+  Code2,
+  Settings,
   ShieldCheck,
   Building2,
   ArrowUpRight,
@@ -303,19 +303,18 @@ export const Header: React.FC = () => {
                       <div className="px-4 pb-3 border-b border-slate-100 dark:border-slate-800/80">
                         <div className="flex items-center gap-3">
                           <div className="relative shrink-0">
-                            <div className="w-10 h-10 rounded-full bg-[#1B4F8A] text-white flex items-center justify-center font-black text-sm shadow-xs">
+                            <div className="w-10 h-10 rounded-full bg-[#1B4F8A] text-white flex items-center justify-center font-bold text-sm shadow-xs">
                               {user?.name ? user.name.trim().charAt(0).toUpperCase() : <User className="w-5 h-5" />}
                             </div>
-                            <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-[#1C2128]" />
                           </div>
                           <div className="flex flex-col min-w-0 flex-1">
                             <div className="flex items-center gap-1.5">
-                              <span className="text-xs font-black text-slate-900 dark:text-white truncate">
+                              <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
                                 {user?.name || "User"}{locale === "ja" ? " 様" : ""}
                               </span>
                               {isUserAdmin && (
-                                <span className="inline-flex items-center gap-0.5 text-[9px] font-bold bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/50 dark:text-amber-300 dark:border-amber-800 px-1.5 py-0.2 rounded-md shrink-0">
-                                  <ShieldCheck className="w-2.5 h-2.5 text-amber-600" /> ADMIN
+                                <span className="inline-flex items-center gap-0.5 text-[9px] font-semibold bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700 px-1.5 py-0.2 rounded shrink-0">
+                                  <ShieldCheck className="w-2.5 h-2.5 text-slate-600 dark:text-slate-400" /> ADMIN
                                 </span>
                               )}
                             </div>
@@ -327,52 +326,52 @@ export const Header: React.FC = () => {
 
                         {/* Plan Badge */}
                         <div className="flex items-center justify-between gap-1.5 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800/60 text-[10px]">
-                          <span className="text-slate-400 font-medium">
+                          <span className="text-slate-500 dark:text-slate-400 font-medium">
                             {locale === "en" ? "Subscription Plan" : locale === "vi" ? "Gói đăng ký" : "契約プラン"}
                           </span>
-                          <span className={`px-2 py-0.5 rounded-md font-black uppercase text-[10px] tracking-wider ${
+                          <span className={`px-2 py-0.5 rounded font-bold uppercase text-[10px] tracking-wide border ${
                             user?.role === "pro" 
-                              ? "bg-amber-100 text-amber-900 border border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900/50" 
+                              ? "bg-blue-50 text-[#1B4F8A] border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-900/50" 
                               : user?.role === "business"
-                              ? "bg-teal-100 text-teal-900 border border-teal-300 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-900/50"
+                              ? "bg-sky-50 text-sky-800 border-sky-200 dark:bg-sky-950/40 dark:text-sky-300 dark:border-sky-900/50"
                               : user?.role === "enterprise"
-                              ? "bg-purple-100 text-purple-900 border border-purple-300 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-900/50"
-                              : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
+                              ? "bg-indigo-50 text-indigo-800 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-900/50"
+                              : "bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
                           }`}>
                             {user?.role ? user.role.toUpperCase() : "FREE"} PLAN
                           </span>
                         </div>
 
                         {/* Resource Quotas Box */}
-                        <div className="mt-3 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-800/80 rounded-xl p-2.5">
-                          <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
+                        <div className="mt-3 bg-slate-50/80 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 rounded-lg p-2.5">
+                          <div className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center justify-between">
                             <span>{locale === "en" ? "Resources & Balances" : locale === "vi" ? "Hạn ngạch & Số dư" : "利用枠・残高ステータス"}</span>
                             <LocaleLink
                               href="/pricing"
                               onClick={() => setUserDropdownOpen(false)}
-                              className="text-[#1B4F8A] hover:underline dark:text-blue-400 flex items-center gap-0.5 text-[9px] font-bold capitalize"
+                              className="text-[#1B4F8A] hover:underline dark:text-blue-400 flex items-center gap-0.5 text-[9px] font-medium"
                             >
                               <span>{locale === "en" ? "Upgrade" : locale === "vi" ? "Nâng cấp" : "増枠・変更"}</span>
                               <ArrowUpRight className="w-2.5 h-2.5" />
                             </LocaleLink>
                           </div>
                           <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-white dark:bg-[#151B22] p-2 rounded-lg border border-slate-200/60 dark:border-slate-800 flex flex-col">
+                            <div className="bg-white dark:bg-[#151B22] p-2 rounded border border-slate-200/70 dark:border-slate-800 flex flex-col">
                               <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
-                                <Download className="w-3 h-3 text-blue-600" />
+                                <Download className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                                 <span>{locale === "en" ? "CSV Export" : locale === "vi" ? "Xuất CSV" : "CSV出力枠"}</span>
                               </div>
-                              <span className="text-xs font-black text-slate-900 dark:text-white mt-1">
+                              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 mt-1 font-mono tabular-nums">
                                 {quotaRemaining !== null ? `${quotaRemaining.toLocaleString()}行` : "—"}
                               </span>
                             </div>
 
-                            <div className="bg-white dark:bg-[#151B22] p-2 rounded-lg border border-slate-200/60 dark:border-slate-800 flex flex-col">
+                            <div className="bg-white dark:bg-[#151B22] p-2 rounded border border-slate-200/70 dark:border-slate-800 flex flex-col">
                               <div className="flex items-center gap-1 text-[10px] text-slate-500 dark:text-slate-400">
-                                <SendHorizontal className="w-3 h-3 text-indigo-600" />
+                                <SendHorizontal className="w-3 h-3 text-slate-500 dark:text-slate-400" />
                                 <span>{locale === "en" ? "Form DM" : locale === "vi" ? "Gửi Form DM" : "フォーム営業枠"}</span>
                               </div>
-                              <span className="text-xs font-black text-slate-900 dark:text-white mt-1">
+                              <span className="text-xs font-bold text-slate-900 dark:text-slate-100 mt-1 font-mono tabular-nums">
                                 {formCreditsBalance !== null ? `${formCreditsBalance.toLocaleString()}件` : "0件"}
                               </span>
                             </div>
@@ -381,102 +380,98 @@ export const Header: React.FC = () => {
                       </div>
 
                       {/* Quick Navigation Links */}
-                      <div className="pt-2 px-2 flex flex-col gap-0.5 text-xs font-semibold">
+                      <div className="pt-2 px-2 flex flex-col gap-0.5 text-xs font-medium">
                         {isUserAdmin && (
                           <LocaleLink
                             href="/admin"
                             onClick={() => setUserDropdownOpen(false)}
-                            className="flex items-center justify-between px-3 py-2 text-amber-900 dark:text-amber-300 bg-amber-50 hover:bg-amber-100/80 dark:bg-amber-950/30 dark:hover:bg-amber-950/50 rounded-xl transition-colors cursor-pointer border border-amber-200/80 dark:border-amber-800/60 font-bold mb-1 shadow-2xs"
+                            className="flex items-center justify-between px-3 py-2 text-slate-800 dark:text-slate-200 bg-slate-50 hover:bg-slate-100/90 dark:bg-slate-900/60 dark:hover:bg-slate-800/80 rounded-lg transition-colors cursor-pointer border border-slate-200 dark:border-slate-800 font-semibold mb-1"
                           >
                             <div className="flex items-center gap-2">
-                              <ShieldCheck className="w-4 h-4 text-amber-600" />
+                              <ShieldCheck className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                               <span>統括管理コンソール (Admin)</span>
                             </div>
-                            <ArrowUpRight className="w-3.5 h-3.5 text-amber-600" />
+                            <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
                           </LocaleLink>
                         )}
 
-                        <div className="px-2 pt-1 pb-0.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                        <div className="px-2 pt-1 pb-0.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                           {locale === "en" ? "ABM Workspace" : locale === "vi" ? "Không gian bán hàng ABM" : "ABM営業ワークスペース"}
                         </div>
 
                         <LocaleLink
                           href="/dashboard"
                           onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors cursor-pointer"
+                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
                         >
-                          <LayoutDashboard className="w-4 h-4 text-slate-500" />
+                          <LayoutDashboard className="w-4 h-4 text-slate-400" />
                           <span>{t.header.mypage} ({locale === "en" ? "Overview" : locale === "vi" ? "Tổng quan" : "概要"})</span>
                         </LocaleLink>
 
                         <LocaleLink
                           href="/dashboard?tab=watchlist"
                           onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors cursor-pointer"
+                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
                         >
-                          <Activity className="w-4 h-4 text-amber-500" />
+                          <Activity className="w-4 h-4 text-slate-400" />
                           <span>{locale === "en" ? "Company Watchlist & Alerts" : locale === "vi" ? "Theo dõi & Cảnh báo biến động" : "監視リスト・変動アラート"}</span>
-                          <span className="text-[9px] bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 font-bold px-1.5 py-0.2 rounded-full ml-auto">NEW</span>
-                        </LocaleLink>
-
-                        <LocaleLink
-                          href="/dashboard?tab=list"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors cursor-pointer"
-                        >
-                          <Bookmark className="w-4 h-4 text-slate-500" />
-                          <span>{locale === "en" ? "Saved Companies (MyList)" : locale === "vi" ? "Doanh nghiệp đã lưu (MyList)" : "保存企業リスト (MyList)"}</span>
-                        </LocaleLink>
-
-                        <LocaleLink
-                          href="/dashboard?tab=kanban"
-                          onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors cursor-pointer"
-                        >
-                          <Kanban className="w-4 h-4 text-slate-500" />
-                          <span>{locale === "en" ? "Sales Kanban Pipeline" : locale === "vi" ? "Bảng Kanban tiếp cận" : "かんばん営業管理ボード"}</span>
                         </LocaleLink>
 
                         <LocaleLink
                           href="/dashboard?tab=formCampaigns"
                           onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center justify-between px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors cursor-pointer"
+                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
                         >
-                          <div className="flex items-center gap-2.5">
-                            <SendHorizontal className="w-4 h-4 text-indigo-500" />
-                            <span>{locale === "en" ? "Form DM Outreach" : locale === "vi" ? "Chiến dịch gửi Form DM" : "フォーム営業・配信管理"}</span>
-                          </div>
-                          <span className="text-[9px] bg-indigo-600 text-white font-bold px-1.5 py-0.2 rounded-full uppercase">NEW</span>
+                          <SendHorizontal className="w-4 h-4 text-slate-400" />
+                          <span>{locale === "en" ? "Form DM Outreach" : locale === "vi" ? "Chiến dịch gửi Form DM" : "フォーム営業・配信管理"}</span>
                         </LocaleLink>
 
                         <LocaleLink
                           href="/dashboard?tab=exports"
                           onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors cursor-pointer"
+                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
                         >
-                          <FileSpreadsheet className="w-4 h-4 text-slate-500" />
+                          <FileSpreadsheet className="w-4 h-4 text-slate-400" />
                           <span>{locale === "en" ? "CSV Export History" : locale === "vi" ? "Lịch sử tải CSV" : "CSVダウンロード履歴"}</span>
                         </LocaleLink>
 
-                        <div className="px-2 pt-2 pb-0.5 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-t border-slate-100 dark:border-slate-800/60 mt-1">
+                        <LocaleLink
+                          href="/dashboard?tab=developer"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Code2 className="w-4 h-4 text-slate-400" />
+                          <span>{locale === "en" ? "API & Developer Keys" : locale === "vi" ? "Kết nối API & Quản lý Key" : "API連携・APIキー管理"}</span>
+                        </LocaleLink>
+
+                        <div className="px-2 pt-2 pb-0.5 text-[10px] font-semibold text-slate-400 uppercase tracking-wider border-t border-slate-100 dark:border-slate-800/60 mt-1">
                           {locale === "en" ? "Billing & Organization" : locale === "vi" ? "Hợp đồng & Thanh toán" : "契約・インボイス設定"}
                         </div>
 
                         <LocaleLink
                           href="/dashboard?tab=payments"
                           onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors cursor-pointer"
+                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
                         >
-                          <CreditCard className="w-4 h-4 text-slate-500" />
+                          <CreditCard className="w-4 h-4 text-slate-400" />
                           <span>{locale === "en" ? "Billing & Tax Invoices" : locale === "vi" ? "Lịch sử mua & Hóa đơn Invoice" : "購入履歴・インボイス領収書"}</span>
+                        </LocaleLink>
+
+                        <LocaleLink
+                          href="/dashboard?tab=settings"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Settings className="w-4 h-4 text-slate-400" />
+                          <span>{locale === "en" ? "Invoice & Billing Settings" : locale === "vi" ? "Cài đặt tên xuất hóa đơn" : "領収書宛名・インボイス設定"}</span>
                         </LocaleLink>
 
                         <LocaleLink
                           href="/dashboard?tab=companies"
                           onClick={() => setUserDropdownOpen(false)}
-                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-xl transition-colors cursor-pointer"
+                          className="flex items-center gap-2.5 px-3 py-1.5 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-lg transition-colors cursor-pointer"
                         >
-                          <Building2 className="w-4 h-4 text-slate-500" />
+                          <Building2 className="w-4 h-4 text-slate-400" />
                           <span>{locale === "en" ? "Official Company Profile" : locale === "vi" ? "Quản lý chủ sở hữu công ty" : "企業公式オーナー管理"}</span>
                         </LocaleLink>
 
@@ -486,9 +481,9 @@ export const Header: React.FC = () => {
                               setUserDropdownOpen(false);
                               handleLogout();
                             }}
-                            className="flex items-center gap-2.5 w-full text-left px-3 py-2 text-xs font-bold text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 rounded-xl transition-colors cursor-pointer"
+                            className="flex items-center gap-2.5 w-full text-left px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50/50 dark:hover:bg-red-950/20 rounded-lg transition-colors cursor-pointer"
                           >
-                            <LogOut className="w-4 h-4 text-red-500" />
+                            <LogOut className="w-4 h-4 text-slate-400" />
                             <span>{t.header.logout}</span>
                           </button>
                         </div>
@@ -646,10 +641,10 @@ export const Header: React.FC = () => {
                       <span className="font-bold text-slate-900 dark:text-white text-xs truncate">
                         {user?.name || "User"}{locale === "ja" ? " 様" : ""}
                       </span>
-                      <span className={`text-[9px] font-black uppercase px-2 py-0.5 rounded ${
+                      <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${
                         user?.role === "pro" 
-                          ? "bg-amber-100 text-amber-900 border border-amber-300" 
-                          : "bg-slate-200 text-slate-800"
+                          ? "bg-blue-50 text-[#1B4F8A] border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800" 
+                          : "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700"
                       }`}>
                         {isUserAdmin ? "ADMIN" : user?.role ? user.role.toUpperCase() : "FREE"}
                       </span>
@@ -659,11 +654,11 @@ export const Header: React.FC = () => {
                     <div className="grid grid-cols-2 gap-1.5 pt-1 text-[10px]">
                       <div className="bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700">
                         <span className="text-slate-400 block">CSV出力残枠</span>
-                        <strong className="text-slate-900 dark:text-white font-bold">{quotaRemaining !== null ? `${quotaRemaining.toLocaleString()}行` : "—"}</strong>
+                        <strong className="text-slate-900 dark:text-white font-bold font-mono tabular-nums">{quotaRemaining !== null ? `${quotaRemaining.toLocaleString()}行` : "—"}</strong>
                       </div>
                       <div className="bg-white dark:bg-slate-800 p-2 rounded-lg border border-slate-200/60 dark:border-slate-700">
                         <span className="text-slate-400 block">フォーム営業枠</span>
-                        <strong className="text-indigo-600 dark:text-indigo-400 font-bold">{formCreditsBalance !== null ? `${formCreditsBalance.toLocaleString()}件` : "0件"}</strong>
+                        <strong className="text-slate-900 dark:text-white font-bold font-mono tabular-nums">{formCreditsBalance !== null ? `${formCreditsBalance.toLocaleString()}件` : "0件"}</strong>
                       </div>
                     </div>
                   </div>
@@ -672,7 +667,7 @@ export const Header: React.FC = () => {
                     <LocaleLink
                       href="/admin"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="w-full py-2.5 text-center text-xs font-bold text-amber-900 bg-amber-100 hover:bg-amber-200 rounded-xl border border-amber-300 block shadow-2xs"
+                      className="w-full py-2.5 text-center text-xs font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 rounded-xl border border-slate-300 dark:border-slate-700 block transition-colors"
                     >
                       統括管理コンソール (Admin)
                     </LocaleLink>

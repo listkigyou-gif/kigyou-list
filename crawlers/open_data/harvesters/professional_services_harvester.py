@@ -308,5 +308,7 @@ def harvest_professional_services():
     print("=" * 80)
     return pg_total_inserted
 
+harvest_all_professionals = harvest_professional_services
+
 if __name__ == "__main__":
     harvest_professional_services()

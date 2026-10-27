@@ -50,10 +50,28 @@ interface FormPlanDetails {
 }
 
 export default function PricingPage() {
-  const { isLoggedIn, user, setAuthModalOpen } = useAuth();
+  const { isLoggedIn, user, quota, setAuthModalOpen } = useAuth();
   const { locale, t } = useLanguage();
   const isEn = locale === "en";
   const isVi = locale === "vi";
+  const isJa = locale === "ja";
+
+  const userCurrentPlanId = (
+    quota?.plan && quota.plan !== "trial"
+      ? quota.plan
+      : user?.role && user.role !== "admin" && user.role !== "trial"
+      ? user.role
+      : quota?.plan || (isLoggedIn ? "free" : null)
+  )?.toLowerCase() || (isLoggedIn ? "free" : null);
+
+  const planRanks: Record<string, number> = {
+    free: 0,
+    trial: 0,
+    pro: 1,
+    business: 2,
+    enterprise: 3
+  };
+  const currentRank = userCurrentPlanId ? (planRanks[userCurrentPlanId] ?? 0) : -1;
   
   const discountType = "campaign";
   const [showCheckoutModal, setShowCheckoutModal] = useState<PlanDetails | null>(null);
@@ -142,14 +160,14 @@ export default function PricingPage() {
   const getSimPricing = (vol: number) => {
     switch (vol) {
       case 1000:
-        return { listPrice: 28000, campaignPrice: 8400, taxIncl: 9240, unitRate: 8.4, plan: formPlans[0] };
+        return { listPrice: 28000, campaignPrice: 8400, taxIncl: 8400, taxExcl: 7636, unitRate: 8.4, plan: formPlans[0] };
       case 3000:
-        return { listPrice: 69000, campaignPrice: 20700, taxIncl: 22770, unitRate: 6.9, plan: formPlans[1] };
+        return { listPrice: 69000, campaignPrice: 20700, taxIncl: 20700, taxExcl: 18818, unitRate: 6.9, plan: formPlans[1] };
       case 5000:
-        return { listPrice: 99000, campaignPrice: 29700, taxIncl: 32670, unitRate: 5.9, plan: formPlans[2] };
+        return { listPrice: 99000, campaignPrice: 29700, taxIncl: 29700, taxExcl: 27000, unitRate: 5.9, plan: formPlans[2] };
       case 10000:
       default:
-        return { listPrice: 180000, campaignPrice: 54000, taxIncl: 59400, unitRate: 5.4, plan: null };
+        return { listPrice: 180000, campaignPrice: 54000, taxIncl: 54000, taxExcl: 49091, unitRate: 5.4, plan: null };
     }
   };
 
@@ -473,6 +491,9 @@ https://kigyoulist.com/contact
   ];
 
   const handleCheckoutClick = (plan: PlanDetails) => {
+    if (isLoggedIn && userCurrentPlanId === plan.id) {
+      return;
+    }
     if (plan.id === "free") {
       if (!isLoggedIn) {
         setAuthModalOpen(true);
@@ -808,24 +829,34 @@ https://kigyoulist.com/contact
               currentPrice = Math.floor(listPrice * (1 - couponDiscount / 100));
             }
 
-            const currentPriceWithTax = Math.floor(currentPrice * 1.1);
-            const listPriceWithTax = Math.floor(listPrice * 1.1);
+            const currentPriceTaxExcl = Math.round(currentPrice / 1.1);
+            const listPriceTaxExcl = Math.round(listPrice / 1.1);
+            
+            const thisRank = planRanks[plan.id] ?? 0;
+            const isCurrentPlan = isLoggedIn && userCurrentPlanId === plan.id;
             
             return (
               <div 
                 key={plan.id}
                 className={`rounded-xl border flex flex-col justify-between transition-all duration-200 relative ${
-                  plan.recommended
+                  isCurrentPlan
+                    ? "bg-white border-2 border-emerald-600 shadow-xs dark:bg-[#151B22] dark:border-emerald-500 z-10"
+                    : plan.recommended
                     ? "bg-white border-2 border-[#1B4F8A] shadow-xs dark:bg-[#151B22] dark:border-blue-500 z-10"
                     : "bg-white border border-slate-200/90 hover:border-slate-300 dark:bg-[#151B22] dark:border-slate-800 dark:hover:border-slate-700 shadow-2xs"
                 }`}
               >
-                {plan.recommended && (
+                {isCurrentPlan ? (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-md bg-emerald-600 text-[10px] font-bold text-white uppercase tracking-wider shadow-2xs flex items-center gap-1.5 border border-white/20 whitespace-nowrap z-20">
+                    <CheckCircle2 className="w-3 h-3 text-white" />
+                    <span>{isEn ? "Current Active Plan" : isVi ? "Gói đang sử dụng" : "現在のご契約プラン"}</span>
+                  </div>
+                ) : plan.recommended ? (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-md bg-[#1B4F8A] text-[10px] font-bold text-white uppercase tracking-wider shadow-2xs flex items-center gap-1.5 border border-white/20 whitespace-nowrap">
                     <CheckCircle2 className="w-3 h-3 text-white" />
                     {t.pricing.bestValue}
                   </div>
-                )}
+                ) : null}
 
                 {/* Plan Header */}
                 <div className="p-5 sm:p-6 flex flex-col border-b border-slate-100 dark:border-slate-800/80">
@@ -841,7 +872,7 @@ https://kigyoulist.com/contact
                     {plan.id !== "free" && (
                       <span className="text-xs text-rose-600 font-bold">
                         / {isEn ? "1st mo" : isVi ? "tháng đầu" : "初月"}
-                        <span className="text-[10px] font-normal text-slate-400 ml-1">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
+                        <span className="text-[10px] font-normal text-slate-500 ml-1">({isEn ? "tax incl." : isVi ? "gồm thuế" : "税込"})</span>
                       </span>
                     )}
                   </div>
@@ -857,15 +888,15 @@ https://kigyoulist.com/contact
                         </span>
                       </div>
                       <div className="flex flex-col gap-0.5 text-[11px] text-slate-500 dark:text-slate-400 tabular-nums font-mono">
-                        <span className="text-slate-600 dark:text-slate-300 font-semibold">
-                          {isEn ? `Incl. Tax: ¥${currentPriceWithTax.toLocaleString()}` : isVi ? `Đã gồm thuế: ¥${currentPriceWithTax.toLocaleString()}` : `税込 ¥${currentPriceWithTax.toLocaleString()} / 初月`}
+                        <span className="text-slate-600 dark:text-slate-300 font-medium">
+                          {isEn ? `Excl. Tax: ¥${currentPriceTaxExcl.toLocaleString()} / 1st mo` : isVi ? `Chưa VAT: ¥${currentPriceTaxExcl.toLocaleString()} / tháng đầu` : `税抜 ¥${currentPriceTaxExcl.toLocaleString()} / 初月`}
                         </span>
                         <span className="text-[10px] text-slate-400 dark:text-slate-500">
                           {isEn 
-                            ? `2nd mo+: ¥${listPrice.toLocaleString()} (incl. tax ¥${listPriceWithTax.toLocaleString()})/mo` 
+                            ? `2nd mo+: ¥${listPrice.toLocaleString()}/mo (tax incl.)` 
                             : isVi 
-                            ? `Từ tháng 2: ¥${listPrice.toLocaleString()} (gồm thuế ¥${listPriceWithTax.toLocaleString()})/tháng` 
-                            : `2ヶ月目以降: ¥${listPrice.toLocaleString()}（税込 ¥${listPriceWithTax.toLocaleString()}）/月`}
+                            ? `Từ tháng 2: ¥${listPrice.toLocaleString()}/tháng (gồm thuế)` 
+                            : `2ヶ月目以降: 通常 ¥${listPrice.toLocaleString()}（税込）/月`}
                         </span>
                       </div>
                     </div>
@@ -920,29 +951,56 @@ https://kigyoulist.com/contact
 
                 {/* Action CTA */}
                 <div className="p-5 sm:p-6 pt-0 mt-auto">
-                  <button
-                    onClick={() => handleCheckoutClick(plan)}
-                    disabled={plan.id === "free" && isLoggedIn}
-                    className={`w-full py-2.5 px-4 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
-                      plan.id === "free" && isLoggedIn
-                        ? "bg-slate-50 text-slate-400 border border-slate-200 dark:bg-slate-900/10 dark:border-slate-800 dark:text-slate-500 cursor-default shadow-none"
-                        : plan.recommended
-                        ? "bg-[#1B4F8A] hover:bg-[#143D6C] text-white shadow-2xs cursor-pointer active:scale-[0.99]"
-                        : plan.id === "pro"
-                        ? "bg-[#1B4F8A] hover:bg-[#143D6C] text-white dark:bg-[#1f6feb] dark:hover:bg-[#388bfd] dark:text-white shadow-2xs cursor-pointer active:scale-[0.99]"
-                        : "border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-[#151B22] dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-2xs cursor-pointer active:scale-[0.99]"
-                    }`}
-                  >
-                    <span>
-                      {plan.id === "free" 
-                        ? (isLoggedIn ? t.pricing.applyBtnFreeLoggedIn : t.pricing.applyBtnFreeNotLoggedIn) 
-                        : t.pricing.applyBtnPaid}
-                    </span>
-                    {!(plan.id === "free" && isLoggedIn) && <ArrowRight className="w-3.5 h-3.5" />}
-                  </button>
+                  {isCurrentPlan ? (
+                    <button
+                      disabled
+                      className="w-full py-2.5 px-4 rounded-lg font-bold text-xs bg-emerald-50 text-emerald-700 border border-emerald-300 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-400 cursor-default flex items-center justify-center gap-1.5 shadow-none"
+                    >
+                      <Check className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>
+                        {isEn ? "Current Plan (Active)" : isVi ? "Đang áp dụng (Gói hiện tại)" : "適用中（現在のプラン）"}
+                      </span>
+                    </button>
+                  ) : plan.id === "free" ? (
+                    <button
+                      onClick={() => handleCheckoutClick(plan)}
+                      disabled={isLoggedIn}
+                      className={`w-full py-2.5 px-4 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
+                        isLoggedIn
+                          ? "border border-slate-200 bg-slate-50 text-slate-400 dark:bg-slate-900/20 dark:border-slate-800 dark:text-slate-500 cursor-default"
+                          : "border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-[#151B22] dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-2xs cursor-pointer active:scale-[0.99]"
+                      }`}
+                    >
+                      <span>{isLoggedIn ? (isEn ? "Free Plan" : isVi ? "Gói Miễn phí" : "フリープラン") : t.pricing.applyBtnFreeNotLoggedIn}</span>
+                      {!isLoggedIn && <ArrowRight className="w-3.5 h-3.5" />}
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleCheckoutClick(plan)}
+                      className={`w-full py-2.5 px-4 rounded-lg font-bold text-xs transition-all flex items-center justify-center gap-1.5 ${
+                        plan.recommended || thisRank > currentRank
+                          ? "bg-[#1B4F8A] hover:bg-[#143D6C] text-white shadow-2xs cursor-pointer active:scale-[0.99]"
+                          : "border border-slate-300 dark:border-slate-700 bg-white hover:bg-slate-50 dark:bg-[#151B22] dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 shadow-2xs cursor-pointer active:scale-[0.99]"
+                      }`}
+                    >
+                      <span>
+                        {isLoggedIn && currentRank > 0 && thisRank > currentRank
+                          ? (isEn ? "Upgrade to this Plan" : isVi ? "Nâng cấp lên gói này" : "このプランにアップグレード")
+                          : isLoggedIn && currentRank > 0 && thisRank < currentRank
+                          ? (isEn ? "Switch to this Plan" : isVi ? "Đổi sang gói này" : "このプランに変更")
+                          : t.pricing.applyBtnPaid}
+                      </span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+
                   <span className="text-[10px] text-slate-400 text-center block mt-2">
-                    {plan.id === "free" 
-                      ? t.pricing.noticeFree
+                    {isCurrentPlan
+                      ? (isEn ? "※ Your currently active subscription plan." : isVi ? "※ Gói dịch vụ hiện tại bạn đang sử dụng." : "※ 現在ご利用中のご契約プランです。")
+                      : plan.id === "free"
+                      ? (isLoggedIn && currentRank > 0 
+                          ? (isEn ? "※ Downgrade anytime via Dashboard settings." : isVi ? "※ Có thể hủy/hạ cấp trong Cài đặt thanh toán." : "※ プラン変更・解約は管理画面よりお手続きいただけます。")
+                          : t.pricing.noticeFree)
                       : t.pricing.noticePaid}
                   </span>
                 </div>
@@ -1170,7 +1228,7 @@ https://kigyoulist.com/contact
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch w-full mt-2">
             {packs.map((pack) => {
-              const packPriceWithTax = Math.floor(pack.price * 1.1);
+              const packPriceTaxExcl = Math.round(pack.price / 1.1);
               return (
                 <div 
                   key={pack.id}
@@ -1204,13 +1262,13 @@ https://kigyoulist.com/contact
                         <span className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight tabular-nums font-mono">
                           ¥{pack.price.toLocaleString()}
                         </span>
-                        <span className="text-xs text-slate-400 font-normal">
-                          ({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})
+                        <span className="text-xs text-slate-500 font-normal">
+                          ({isEn ? "tax incl." : isVi ? "gồm thuế" : "税込"})
                         </span>
                         <span className="text-xs text-slate-500 font-medium">/ {t.pricing.packPricingSuffix}</span>
                       </div>
                       <span className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums font-mono">
-                        {isEn ? `Incl. Tax: ¥${packPriceWithTax.toLocaleString()}` : isVi ? `Đã gồm thuế: ¥${packPriceWithTax.toLocaleString()}` : `税込 ¥${packPriceWithTax.toLocaleString()}`}
+                        {isEn ? `Excl. Tax: ¥${packPriceTaxExcl.toLocaleString()}` : isVi ? `Chưa VAT: ¥${packPriceTaxExcl.toLocaleString()}` : `税抜 ¥${packPriceTaxExcl.toLocaleString()}`}
                       </span>
                     </div>
 
@@ -1290,14 +1348,14 @@ https://kigyoulist.com/contact
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <span className="font-extrabold text-sm text-rose-600 dark:text-rose-400 tabular-nums font-mono">
-                          {isEn ? "1st mo ¥1,260 (tax incl. ¥1,386)" : isVi ? "Tháng đầu ¥1.260 (gồm thuế ¥1.386)" : "初月 ¥1,260 (税込 ¥1,386)"}
+                          {isEn ? "1st mo ¥1,260 (tax incl.)" : isVi ? "Tháng đầu ¥1.260 (gồm thuế)" : "初月 ¥1,260（税込）"}
                         </span>
                         <span className="bg-rose-100 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400 text-[10px] font-bold px-1.5 py-0.5 rounded tabular-nums font-mono">
                           70% OFF
                         </span>
                       </div>
                       <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium tabular-nums font-mono">
-                        {isEn ? "(2nd mo+: ¥4,200 / tax incl. ¥4,620/mo)" : isVi ? "(Từ tháng 2: ¥4.200 / gồm thuế ¥4.620/tháng)" : "（2ヶ月目以降: 通常 ¥4,200 / 税込 ¥4,620/月）"}
+                        {isEn ? "(2nd mo+: ¥4,200/mo tax incl.)" : isVi ? "(Từ tháng 2: ¥4.200/tháng gồm thuế)" : "（2ヶ月目以降: 通常 ¥4,200 / 税込/月）"}
                       </span>
                     </div>
                   </td>
@@ -1608,7 +1666,7 @@ https://kigyoulist.com/contact
 
                 <div className="flex items-baseline gap-1.5 mb-1">
                   <span className="text-3xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">¥8,400</span>
-                  <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
+                  <span className="text-xs text-slate-500 font-normal">({isEn ? "tax incl." : isVi ? "gồm thuế" : "税込"})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="line-through text-slate-400 font-mono text-xs tabular-nums">¥28,000</span>
@@ -1617,10 +1675,10 @@ https://kigyoulist.com/contact
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums font-mono mb-2">
-                  <span>税込 ¥9,240</span>
+                  <span>税抜 ¥7,636</span>
                 </div>
                 <div className="text-xs text-slate-600 dark:text-slate-300 font-semibold mb-6 tabular-nums font-mono">
-                  {isEn ? "Unit rate: 8.4 JPY / form (tax incl. 9.24 JPY)" : isVi ? "Đơn giá: 8.4 JPY / form (gồm thuế 9.24 JPY)" : "単価: 8.4円（税込 9.24円）/ 送信完了"}
+                  {isEn ? "Unit rate: 8.4 JPY / form (tax incl.)" : isVi ? "Đơn giá: 8.4 JPY / form (đã gồm thuế)" : "単価: 8.4円（税込）/ 送信完了"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -1674,7 +1732,7 @@ https://kigyoulist.com/contact
 
                 <div className="flex items-baseline gap-1.5 mb-1">
                   <span className="text-3xl font-bold font-mono tabular-nums text-[#1B4F8A] dark:text-blue-300">¥20,700</span>
-                  <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
+                  <span className="text-xs text-slate-500 font-normal">({isEn ? "tax incl." : isVi ? "gồm thuế" : "税込"})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="line-through text-slate-400 font-mono text-xs tabular-nums">¥69,000</span>
@@ -1683,10 +1741,10 @@ https://kigyoulist.com/contact
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums font-mono mb-2">
-                  <span>税込 ¥22,770</span>
+                  <span>税抜 ¥18,818</span>
                 </div>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6 tabular-nums font-mono">
-                  {isEn ? "Unit rate: 6.9 JPY / form (tax incl. 7.59 JPY)" : isVi ? "Đơn giá: 6.9 JPY / form (gồm thuế 7.59 JPY)" : "単価: 6.9円（税込 7.59円）/ 送信完了 (業界最安級)"}
+                  {isEn ? "Unit rate: 6.9 JPY / form (tax incl.)" : isVi ? "Đơn giá: 6.9 JPY / form (đã gồm thuế)" : "単価: 6.9円（税込）/ 送信完了 (業界最安級)"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -1737,7 +1795,7 @@ https://kigyoulist.com/contact
 
                 <div className="flex items-baseline gap-1.5 mb-1">
                   <span className="text-3xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">¥29,700</span>
-                  <span className="text-xs text-slate-400">({isEn ? "excl. tax" : isVi ? "chưa VAT" : "税抜"})</span>
+                  <span className="text-xs text-slate-500 font-normal">({isEn ? "tax incl." : isVi ? "gồm thuế" : "税込"})</span>
                 </div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="line-through text-slate-400 font-mono text-xs tabular-nums">¥99,000</span>
@@ -1746,10 +1804,10 @@ https://kigyoulist.com/contact
                   </span>
                 </div>
                 <div className="text-[11px] text-slate-500 dark:text-slate-400 tabular-nums font-mono mb-2">
-                  <span>税込 ¥32,670</span>
+                  <span>税抜 ¥27,000</span>
                 </div>
                 <div className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mb-6 tabular-nums font-mono">
-                  {isEn ? "Unit rate: 5.9 JPY / form (tax incl. 6.49 JPY)" : isVi ? "Đơn giá: 5.9 JPY / form (gồm thuế 6.49 JPY)" : "単価: 5.9円（税込 6.49円）/ 送信完了 (最安値レート)"}
+                  {isEn ? "Unit rate: 5.9 JPY / form (tax incl.)" : isVi ? "Đơn giá: 5.9 JPY / form (đã gồm thuế)" : "単価: 5.9円（税込）/ 送信完了 (最安値レート)"}
                 </div>
 
                 <ul className="space-y-2.5 text-xs text-slate-600 dark:text-slate-300 border-t border-slate-100 dark:border-slate-800 pt-5">
@@ -1905,7 +1963,7 @@ https://kigyoulist.com/contact
                         ¥{pricing.taxIncl.toLocaleString()}
                       </div>
                       <span className="text-[10px] text-slate-400 tabular-nums font-mono">
-                        (税抜 ¥{pricing.campaignPrice.toLocaleString()} / {pricing.unitRate}円/件)
+                        (税抜 ¥{pricing.taxExcl.toLocaleString()} / {pricing.unitRate}円/件)
                       </span>
                     </div>
                   </div>
@@ -1960,7 +2018,7 @@ https://kigyoulist.com/contact
                     {pricing.plan ? (
                       <>
                         <strong className="text-slate-900 dark:text-white font-bold">{pricing.plan.name}</strong>
-                        {" "}(¥{pricing.campaignPrice.toLocaleString()} 税抜) でこの効果を今すぐ検証できます。
+                        {" "}(¥{pricing.campaignPrice.toLocaleString()} 税込) でこの効果を今すぐ検証できます。
                       </>
                     ) : (
                       <>

@@ -10,7 +10,7 @@ import {
   ShieldAlert, ShieldCheck, RefreshCcw, Users, MessageSquareWarning, 
   CreditCard, History, Building2, Terminal, Database, Mail, 
   Send, Ticket, Download, LayoutDashboard, KeyRound, Loader2, ExternalLink,
-  Radio, Activity, Search
+  Radio, Activity, Search, Eye, FileSpreadsheet
 } from "lucide-react";
 
 // Toast Provider
@@ -30,6 +30,8 @@ import { BackupsTab } from "@/components/admin/tabs/BackupsTab";
 import { PartnersTab } from "@/components/admin/tabs/PartnersTab";
 import { WebhooksAdminTab } from "@/components/admin/tabs/WebhooksAdminTab";
 import { OptOutAdminTab } from "@/components/admin/tabs/OptOutAdminTab";
+import { WatchlistAuditTab } from "@/components/admin/tabs/WatchlistAuditTab";
+import { FormOutreachAuditTab } from "@/components/admin/tabs/FormOutreachAuditTab";
 
 // Existing Admin Tabs
 import { MarketingTab } from "@/components/admin/MarketingTab";
@@ -51,7 +53,9 @@ export type AdminTab =
   | "webhooks"
   | "optOuts"
   | "backups"
-  | "partners";
+  | "partners"
+  | "watchlistAudit"
+  | "formOutreachLogs";
 
 function AdminContent() {
   const { isLoggedIn, user, setAuthModalOpen } = useAuth();
@@ -163,6 +167,8 @@ function AdminContent() {
       case "apiKeys": return "B2B APIキー管理";
       case "backups": return "データベース・バックアップ履歴";
       case "partners": return "パートナーロゴ管理";
+      case "watchlistAudit": return "企業監視・検知 追跡監査 (Watchlist Audit)";
+      case "formOutreachLogs": return "フォーム営業 送信履歴・監査ログ";
     }
   };
 
@@ -181,6 +187,8 @@ function AdminContent() {
       case "apiKeys": return "外部連携用APIキーのアクティブ状態および接続ログの管理を行います。";
       case "backups": return "PostgreSQLユーザー・決済データの日次自動バックアップおよびCloudflare R2オフサイト保全状況を管理します。";
       case "partners": return "トップページに掲載するパートナー企業ロゴの審査・公開設定を行います。";
+      case "watchlistAudit": return "登録ユーザーごとの企業監視・検知リストの登録状況、追跡企業数、対象企業一覧の確認およびCSVエクスポートを行います。";
+      case "formOutreachLogs": return "ユーザーが実行した問い合わせフォーム営業の送信履歴、企業別送信結果（成功・失敗・除外）の確認および詳細CSVレポートの出力を行います。";
     }
   };
 
@@ -472,6 +480,28 @@ function AdminContent() {
                     <span>操作監査ログ</span>
                   </div>
                 </button>
+
+                {/* Form Outreach Audit */}
+                <button
+                  onClick={() => switchTab("formOutreachLogs")}
+                  className={getTabClass("formOutreachLogs")}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <FileSpreadsheet className={`w-4 h-4 shrink-0 ${activeTab === "formOutreachLogs" ? "text-white" : "text-slate-500"}`} />
+                    <span>フォーム営業配信監査</span>
+                  </div>
+                </button>
+
+                {/* Watchlist Audit */}
+                <button
+                  onClick={() => switchTab("watchlistAudit")}
+                  className={getTabClass("watchlistAudit")}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Activity className={`w-4 h-4 shrink-0 ${activeTab === "watchlistAudit" ? "text-white" : "text-slate-500"}`} />
+                    <span>企業監視・検知監査</span>
+                  </div>
+                </button>
               </div>
 
               {/* Group 4: AI Sales & Compliance */}
@@ -684,6 +714,20 @@ function AdminContent() {
 
           {activeTab === "optOuts" && (
             <OptOutAdminTab
+              adminEmail={user?.email || ""}
+              getAdminHeaders={getAdminHeaders}
+            />
+          )}
+
+          {activeTab === "formOutreachLogs" && (
+            <FormOutreachAuditTab
+              adminEmail={user?.email || ""}
+              getAdminHeaders={getAdminHeaders}
+            />
+          )}
+
+          {activeTab === "watchlistAudit" && (
+            <WatchlistAuditTab
               adminEmail={user?.email || ""}
               getAdminHeaders={getAdminHeaders}
             />

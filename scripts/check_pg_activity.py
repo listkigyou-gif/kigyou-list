@@ -1,21 +1,12 @@
-import sys
-import psycopg2
+import os, sys
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from vps_remote_exec import run_command
 
-sys.stdout.reconfigure(encoding='utf-8')
-sys.path.insert(0, '.')
-from crawlers.nta.sync_nta_invoices_to_vps import PG_URL
+cmd = "sudo -u postgres psql -d kigyou_list -c \"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE state != 'idle' AND query LIKE '%indexnow_submissions%' AND pid != pg_backend_pid();\" "
+out, err = run_command(cmd)
+print("TERMINATED:", out)
 
-conn = psycopg2.connect(PG_URL)
-cur = conn.cursor()
-
-cur.execute("""
-    SELECT pid, usename, state, query_start, query 
-    FROM pg_stat_activity 
-    WHERE state != 'idle' AND query NOT LIKE '%pg_stat_activity%';
-""")
-rows = cur.fetchall()
-print(f"Active queries ({len(rows)}):")
-for pid, user, state, start, query in rows:
-    print(f"PID: {pid} | State: {state} | Start: {start} | Query: {query[:100]}")
-
-conn.close()
+cmd2 = "cd /var/www/kigyou-list && node scripts/auto_indexnow_submitter_pg.js --dry-run --batch-size 10"
+out2, err2 = run_command(cmd2)
+print("INDEXNOW TEST OUTPUT:\n", out2)
+print("INDEXNOW TEST ERR:\n", err2)
