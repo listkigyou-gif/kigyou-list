@@ -50,7 +50,16 @@ export async function GET(request: Request) {
       pool.query(`SELECT plan, count(1) as count FROM user_export_quotas GROUP BY plan`),
       pool.query(`SELECT count(1) as count FROM user_export_quotas`),
       pool.query(`SELECT COALESCE(SUM(balance), 0) as balance, COALESCE(SUM(total_used), 0) as used FROM user_form_credits`),
-      pool.query(`SELECT count(1) as count, COALESCE(SUM(amount_jpy), 0) as revenue FROM deposit_history WHERE status IN ('succeeded', 'completed')`),
+      pool.query(`
+        SELECT 
+          COUNT(CASE WHEN status IN ('succeeded', 'completed') THEN 1 END) as valid_count,
+          COALESCE(SUM(CASE WHEN status IN ('succeeded', 'completed') THEN amount_jpy ELSE 0 END), 0) as net_revenue,
+          COUNT(CASE WHEN status = 'refunded' THEN 1 END) as refunded_count,
+          COALESCE(SUM(CASE WHEN status = 'refunded' THEN amount_jpy ELSE 0 END), 0) as refunded_amount,
+          COUNT(1) as total_count,
+          COALESCE(SUM(amount_jpy), 0) as gross_revenue
+        FROM deposit_history
+      `),
       pool.query(`SELECT count(1) as total, COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending FROM inquiries`),
       pool.query(`SELECT count(1) as count FROM company_claim_requests WHERE status = 'pending'`),
       pool.query(`SELECT count(1) as count FROM user_form_campaigns WHERE status = 'pending_approval'`),
@@ -72,8 +81,11 @@ export async function GET(request: Request) {
     const stats = {
       usersCount: parseInt(usersCountRes.rows[0]?.count || "0", 10),
       planBreakdown: plans,
-      totalRevenueJpy: parseInt(revenueRes.rows[0]?.revenue || "0", 10),
-      paymentsCount: parseInt(revenueRes.rows[0]?.count || "0", 10),
+      totalRevenueJpy: parseInt(revenueRes.rows[0]?.net_revenue || "0", 10),
+      grossRevenueJpy: parseInt(revenueRes.rows[0]?.gross_revenue || "0", 10),
+      refundedRevenueJpy: parseInt(revenueRes.rows[0]?.refunded_amount || "0", 10),
+      paymentsCount: parseInt(revenueRes.rows[0]?.valid_count || "0", 10),
+      refundedPaymentsCount: parseInt(revenueRes.rows[0]?.refunded_count || "0", 10),
       pendingInquiriesCount: parseInt(inquiriesSummaryRes.rows[0]?.pending || "0", 10),
       pendingClaimsCount: parseInt(claimsRes.rows[0]?.count || "0", 10),
       pendingFormCampaignsCount: parseInt(campaignsRes.rows[0]?.count || "0", 10),

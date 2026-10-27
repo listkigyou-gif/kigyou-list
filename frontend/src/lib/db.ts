@@ -206,6 +206,30 @@ export async function runQuery(sql: string, params: any[] = []): Promise<any[]> 
 }
 
 /**
+ * Executes long-running queries (such as bulk CSV exports) with an extended statement_timeout (300s).
+ */
+export async function runQueryLongRunning(sql: string, params: any[] = []): Promise<any[]> {
+  if (!allTablesInitialized) {
+    ensureAllTablesInitialized().catch(err => console.error("Background table init error:", err));
+  }
+  const isPG = !!DATABASE_URL;
+  if (isPG) {
+    const pool = getPGPool();
+    const client = await pool.connect();
+    try {
+      await client.query("SET statement_timeout = '300s'");
+      const convertedSql = convertSqlForPG(sql);
+      const result = await client.query(convertedSql, params);
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  } else {
+    return runQuery(sql, params);
+  }
+}
+
+/**
  * Executes a SELECT query returning a single row, supporting both PostgreSQL and SQLite.
  */
 export async function runGetQuery(sql: string, params: any[] = []): Promise<any | null> {
@@ -291,6 +315,10 @@ export interface Company {
   has_website?: boolean;
   has_fax?: boolean;
   has_contact_form?: boolean;
+  has_license?: boolean;
+  has_invoice?: boolean;
+  has_financial_report?: boolean;
+  has_public_tender?: boolean;
   industry_name?: string | null;
   is_listed?: boolean | null;
   listing_market?: string | null;
@@ -454,7 +482,11 @@ function mapCompanyRow(row: any): Company {
     is_detailed: !!row.is_detailed,
     created_at: row.created_at ? String(row.created_at) : '',
     updated_at: row.updated_at ? String(row.updated_at) : '',
-    has_financials: row.has_financials != null ? true : false,
+    has_financials: Boolean(row.has_financials),
+    has_license: Boolean(row.has_license),
+    has_invoice: Boolean(row.has_invoice),
+    has_bidding: Boolean(row.has_bidding),
+    has_subsidy: Boolean(row.has_subsidy),
     sns_links: row.sns_links || null,
     logo_url: row.logo_url || null,
     contact_form_url: row.contact_form_url || null,
@@ -1920,6 +1952,7 @@ export interface DepositRecord {
   invoice_url: string | null;
   ip_address?: string | null;
   user_agent?: string | null;
+  refunded_at?: string | null;
   created_at: string;
 }
 
@@ -1966,10 +1999,35 @@ async function initQuotaTables(): Promise<void> {
         await client.query(`ALTER TABLE user_export_quotas ADD COLUMN stripe_customer_id VARCHAR(255);`);
       } catch {}
       try {
-        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN subscription_status VARCHAR(50) DEFAULT 'inactive';`);
+        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(50) DEFAULT 'inactive';`);
       } catch {}
       try {
-        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN plan_expires_at TIMESTAMP;`);
+        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS plan_expires_at TIMESTAMP;`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS registration_ip VARCHAR(50);`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS last_login_ip VARCHAR(50);`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP;`);
+      } catch {}
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS user_watchlist (
+          id SERIAL PRIMARY KEY,
+          user_email VARCHAR(255) NOT NULL,
+          corporate_number VARCHAR(13) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(user_email, corporate_number)
+        );
+      `);
+      try {
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_user_watchlist_email ON user_watchlist(user_email);`);
+      } catch {}
+      try {
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_user_watchlist_corp ON user_watchlist(corporate_number);`);
       } catch {}
 
       await client.query(`
@@ -2012,6 +2070,9 @@ async function initQuotaTables(): Promise<void> {
       } catch {}
       try {
         await client.query(`ALTER TABLE deposit_history ADD COLUMN user_agent TEXT;`);
+      } catch {}
+      try {
+        await client.query(`ALTER TABLE deposit_history ADD COLUMN refunded_at TIMESTAMP WITH TIME ZONE;`);
       } catch {}
 
       await client.query(`
@@ -2150,6 +2211,26 @@ async function initQuotaTables(): Promise<void> {
       try {
         db.exec(`ALTER TABLE user_export_quotas ADD COLUMN plan_expires_at TEXT;`);
       } catch {}
+      try {
+        db.exec(`ALTER TABLE user_export_quotas ADD COLUMN registration_ip TEXT;`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE user_export_quotas ADD COLUMN last_login_ip TEXT;`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE user_export_quotas ADD COLUMN last_login_at TIMESTAMP;`);
+      } catch {}
+      try {
+        db.exec(`
+          CREATE TABLE IF NOT EXISTS user_watchlist (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_email TEXT NOT NULL,
+            corporate_number TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(user_email, corporate_number)
+          );
+        `);
+      } catch {}
 
       db.exec(`
         CREATE TABLE IF NOT EXISTS export_jobs (
@@ -2191,6 +2272,9 @@ async function initQuotaTables(): Promise<void> {
       } catch {}
       try {
         db.exec(`ALTER TABLE deposit_history ADD COLUMN user_agent TEXT;`);
+      } catch {}
+      try {
+        db.exec(`ALTER TABLE deposit_history ADD COLUMN refunded_at TEXT;`);
       } catch {}
 
       db.exec(`
@@ -2969,6 +3053,7 @@ export async function getPaymentHistory(email: string): Promise<DepositRecord[]>
       invoice_url: r.invoice_url,
       ip_address: r.ip_address || null,
       user_agent: r.user_agent || null,
+      refunded_at: r.refunded_at ? String(r.refunded_at) : null,
       created_at: String(r.created_at)
     })) : [];
   } catch (error) {
@@ -2995,6 +3080,7 @@ export async function getAllPayments(limit: number = 100): Promise<DepositRecord
       invoice_url: r.invoice_url,
       ip_address: r.ip_address || null,
       user_agent: r.user_agent || null,
+      refunded_at: r.refunded_at ? String(r.refunded_at) : null,
       created_at: String(r.created_at)
     })) : [];
   } catch (error) {
@@ -3050,11 +3136,66 @@ export async function getPaymentRecordById(id: string): Promise<DepositRecord | 
       invoice_url: r.invoice_url,
       ip_address: r.ip_address || null,
       user_agent: r.user_agent || null,
+      refunded_at: r.refunded_at ? String(r.refunded_at) : null,
       created_at: String(r.created_at)
     };
   } catch (error) {
     console.error(`Error in getPaymentRecordById(${id}):`, error);
     return null;
+  }
+}
+
+/**
+ * Mark a payment record as refunded
+ */
+export async function markPaymentRecordRefunded(
+  paymentIdOrEmail: string,
+  amountJpy?: number
+): Promise<boolean> {
+  await initQuotaTables();
+  try {
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      let res;
+      if (amountJpy) {
+        res = await pool.query(
+          `UPDATE deposit_history 
+           SET status = 'refunded', refunded_at = NOW() 
+           WHERE (id = $1 OR user_email = $1) AND amount_jpy = $2 AND status != 'refunded'`,
+          [paymentIdOrEmail, amountJpy]
+        );
+      } else {
+        res = await pool.query(
+          `UPDATE deposit_history 
+           SET status = 'refunded', refunded_at = NOW() 
+           WHERE (id = $1 OR user_email = $1) AND status != 'refunded'`,
+          [paymentIdOrEmail]
+        );
+      }
+      return (res.rowCount || 0) > 0;
+    } else {
+      const db = getSQLiteDB();
+      if (amountJpy) {
+        const stmt = db.prepare(
+          `UPDATE deposit_history 
+           SET status = 'refunded', refunded_at = CURRENT_TIMESTAMP 
+           WHERE (id = ? OR user_email = ?) AND amount_jpy = ? AND status != 'refunded'`
+        );
+        const info = stmt.run(paymentIdOrEmail, paymentIdOrEmail, amountJpy);
+        return info.changes > 0;
+      } else {
+        const stmt = db.prepare(
+          `UPDATE deposit_history 
+           SET status = 'refunded', refunded_at = CURRENT_TIMESTAMP 
+           WHERE (id = ? OR user_email = ?) AND status != 'refunded'`
+        );
+        const info = stmt.run(paymentIdOrEmail, paymentIdOrEmail);
+        return info.changes > 0;
+      }
+    }
+  } catch (err) {
+    console.error(`Error in markPaymentRecordRefunded(${paymentIdOrEmail}):`, err);
+    return false;
   }
 }
 
@@ -3105,11 +3246,11 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
       sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
     }
     
-    const results = await runQuery(sql, dataQuery.params);
+    const results = await runQueryLongRunning(sql, dataQuery.params);
     return results.map(mapCompanyRow);
   } catch (error) {
     console.error('Error in searchCompaniesAll:', error);
-    return [];
+    throw error;
   }
 }
 
@@ -3743,6 +3884,10 @@ export interface UserAdminView {
   plan_expires_at?: string | null;
   stripe_subscription_id?: string | null;
   last_reset_date?: string | null;
+  registration_ip?: string | null;
+  last_login_ip?: string | null;
+  last_login_at?: string | null;
+  watchlist_count?: number;
 }
 
 let adminTablesInitialized = false;
@@ -3879,7 +4024,11 @@ export async function getAllUsers(): Promise<UserAdminView[]> {
   try {
     const [rows, formCreditsMap] = await Promise.all([
       runQuery(`
-        SELECT ueq.*, ubi.contact_person, ubi.contact_phone 
+        SELECT 
+          ueq.*, 
+          ubi.contact_person, 
+          ubi.contact_phone,
+          (SELECT COUNT(*) FROM user_watchlist uw WHERE uw.user_email = ueq.user_email) as watchlist_count
         FROM user_export_quotas ueq
         LEFT JOIN user_billing_info ubi ON ueq.user_email = ubi.user_email
         ORDER BY ueq.updated_at DESC
@@ -3909,10 +4058,187 @@ export async function getAllUsers(): Promise<UserAdminView[]> {
         plan_expires_at: r.plan_expires_at ? String(r.plan_expires_at) : null,
         stripe_subscription_id: r.stripe_subscription_id ? String(r.stripe_subscription_id) : null,
         last_reset_date: r.last_reset_date ? String(r.last_reset_date) : null,
+        registration_ip: r.registration_ip ? String(r.registration_ip) : null,
+        last_login_ip: r.last_login_ip ? String(r.last_login_ip) : null,
+        last_login_at: r.last_login_at ? String(r.last_login_at) : null,
+        watchlist_count: Number(r.watchlist_count || 0),
       };
     }) : [];
   } catch (error) {
     console.error('Error in getAllUsers:', error);
+    return [];
+  }
+}
+
+/**
+ * Record or update User login/signup IP
+ */
+export async function updateUserLoginIp(email: string, ip: string): Promise<void> {
+  if (!email || !ip) return;
+  await initQuotaTables();
+  try {
+    const cleanIp = ip.split(',')[0].trim().slice(0, 50);
+    const sql = `
+      UPDATE user_export_quotas 
+      SET 
+        registration_ip = COALESCE(registration_ip, ?),
+        last_login_ip = ?,
+        last_login_at = CURRENT_TIMESTAMP
+      WHERE user_email = ?
+    `;
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      await pool.query(convertSqlForPG(sql), [cleanIp, cleanIp, email]);
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(sql).run(cleanIp, cleanIp, email);
+    }
+  } catch (err) {
+    console.error(`Error in updateUserLoginIp(${email}):`, err);
+  }
+}
+
+/**
+ * Get list of corporate numbers watched by user from server DB
+ */
+export async function getUserWatchlist(email: string): Promise<string[]> {
+  if (!email) return [];
+  await initQuotaTables();
+  try {
+    const rows = await runQuery(
+      `SELECT corporate_number FROM user_watchlist WHERE user_email = ? ORDER BY created_at DESC`,
+      [email]
+    );
+    return rows ? rows.map(r => String(r.corporate_number)) : [];
+  } catch (err) {
+    console.error(`Error in getUserWatchlist(${email}):`, err);
+    return [];
+  }
+}
+
+/**
+ * Sync (bi-directional merge) user watchlist between client localStorage and server DB
+ */
+export async function syncUserWatchlist(email: string, clientList: string[]): Promise<string[]> {
+  if (!email) return [];
+  await initQuotaTables();
+  try {
+    const validClientNumbers = (Array.isArray(clientList) ? clientList : [])
+      .filter(n => typeof n === 'string' && /^\d{13}$/.test(n));
+
+    // 1. Insert any new ones from client
+    for (const corpNo of validClientNumbers) {
+      try {
+        if (DATABASE_URL) {
+          const pool = getPGPool();
+          await pool.query(
+            `INSERT INTO user_watchlist (user_email, corporate_number, created_at)
+             VALUES ($1, $2, CURRENT_TIMESTAMP)
+             ON CONFLICT (user_email, corporate_number) DO NOTHING`,
+            [email, corpNo]
+          );
+        } else {
+          const db = getSQLiteDB();
+          db.prepare(
+            `INSERT OR IGNORE INTO user_watchlist (user_email, corporate_number, created_at)
+             VALUES (?, ?, CURRENT_TIMESTAMP)`
+          ).run(email, corpNo);
+        }
+      } catch {}
+    }
+
+    // 2. Return full merged list
+    return await getUserWatchlist(email);
+  } catch (err) {
+    console.error(`Error in syncUserWatchlist(${email}):`, err);
+    return [];
+  }
+}
+
+/**
+ * Add a single company to user watchlist on DB
+ */
+export async function addUserWatchlistCompany(email: string, corporateNumber: string): Promise<boolean> {
+  if (!email || !corporateNumber || !/^\d{13}$/.test(corporateNumber)) return false;
+  await initQuotaTables();
+  try {
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      await pool.query(
+        `INSERT INTO user_watchlist (user_email, corporate_number, created_at)
+         VALUES ($1, $2, CURRENT_TIMESTAMP)
+         ON CONFLICT (user_email, corporate_number) DO NOTHING`,
+        [email, corporateNumber]
+      );
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(
+        `INSERT OR IGNORE INTO user_watchlist (user_email, corporate_number, created_at)
+         VALUES (?, ?, CURRENT_TIMESTAMP)`
+      ).run(email, corporateNumber);
+    }
+    return true;
+  } catch (err) {
+    console.error(`Error in addUserWatchlistCompany(${email}, ${corporateNumber}):`, err);
+    return false;
+  }
+}
+
+/**
+ * Remove a company from user watchlist on DB
+ */
+export async function removeUserWatchlistCompany(email: string, corporateNumber: string): Promise<boolean> {
+  if (!email || !corporateNumber) return false;
+  await initQuotaTables();
+  try {
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      await pool.query(
+        `DELETE FROM user_watchlist WHERE user_email = $1 AND corporate_number = $2`,
+        [email, corporateNumber]
+      );
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(
+        `DELETE FROM user_watchlist WHERE user_email = ? AND corporate_number = ?`
+      ).run(email, corporateNumber);
+    }
+    return true;
+  } catch (err) {
+    console.error(`Error in removeUserWatchlistCompany(${email}, ${corporateNumber}):`, err);
+    return false;
+  }
+}
+
+/**
+ * Admin: Get detailed list of companies watched by a specific user
+ */
+export async function adminGetUserWatchlistDetailed(email: string): Promise<any[]> {
+  if (!email) return [];
+  await initQuotaTables();
+  try {
+    const sql = `
+      SELECT 
+        uw.corporate_number,
+        uw.created_at as watched_since,
+        c.company_name,
+        c.prefecture_name,
+        c.city_name,
+        c.representative_name,
+        c.primary_industry,
+        c.phone_number,
+        c.website_url,
+        c.status
+      FROM user_watchlist uw
+      LEFT JOIN companies c ON uw.corporate_number = c.corporate_number
+      WHERE uw.user_email = ?
+      ORDER BY uw.created_at DESC
+      LIMIT 200
+    `;
+    const rows = await runQuery(sql, [email]);
+    return rows || [];
+  } catch (err) {
+    console.error(`Error in adminGetUserWatchlistDetailed(${email}):`, err);
     return [];
   }
 }

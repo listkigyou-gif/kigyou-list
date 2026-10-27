@@ -8,7 +8,8 @@ import {
   cancelUserSubscriptionBySubId,
   suspendUserQuotaInDb,
   getUserBillingInfo,
-  redeemCoupon
+  redeemCoupon,
+  markPaymentRecordRefunded
 } from "@/lib/db";
 import { addFormCredits } from "@/lib/formCampaigns";
 import { uploadFileToR2 } from "@/lib/r2";
@@ -354,7 +355,8 @@ export async function POST(request: Request) {
     else if (event.type === "charge.refunded") {
       const charge = event.data.object;
       const paymentIntentId = charge.payment_intent as string;
-      console.log(`[Stripe Webhook] charge.refunded event received for charge ${charge.id}`);
+      const amountJpy = charge.amount;
+      console.log(`[Stripe Webhook] charge.refunded event received for charge ${charge.id}, amount: ${amountJpy}`);
       
       let userEmail = charge.billing_details?.email || charge.metadata?.email;
       
@@ -367,7 +369,29 @@ export async function POST(request: Request) {
           console.error(`Failed to retrieve payment intent ${paymentIntentId} metadata:`, err);
         }
       }
+
+      // Also try to find associated Checkout Session ID if available
+      let checkoutSessionId: string | null = null;
+      if (paymentIntentId) {
+        try {
+          const sessions = await stripe.checkout.sessions.list({ payment_intent: paymentIntentId, limit: 1 });
+          if (sessions.data.length > 0) {
+            checkoutSessionId = sessions.data[0].id;
+          }
+        } catch (sessErr) {
+          console.warn(`Could not lookup checkout session for payment intent ${paymentIntentId}:`, sessErr);
+        }
+      }
       
+      // 1. Mark payment record in deposit_history as refunded
+      if (checkoutSessionId) {
+        await markPaymentRecordRefunded(checkoutSessionId);
+      }
+      if (userEmail) {
+        await markPaymentRecordRefunded(userEmail, amountJpy);
+      }
+      
+      // 2. Suspend user quota in DB
       if (userEmail) {
         console.log(`[Stripe Webhook] Suspending user ${userEmail} due to refund.`);
         await suspendUserQuotaInDb(userEmail);

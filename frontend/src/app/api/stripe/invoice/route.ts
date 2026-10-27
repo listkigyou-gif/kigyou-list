@@ -60,6 +60,11 @@ export async function GET(request: Request) {
 
       // Convert DB date (which might be standard string) into Japanese Date format
       const formattedDate = new Intl.DateTimeFormat('ja-JP', { dateStyle: 'long' }).format(new Date(record.created_at));
+      const isRefunded = record.status === "refunded";
+      const refundedAtFormatted = record.refunded_at 
+        ? new Intl.DateTimeFormat('ja-JP', { dateStyle: 'long', timeStyle: 'short' }).format(new Date(record.refunded_at))
+        : undefined;
+
       const taxExclusivePrice = Math.round(record.amount_jpy / 1.1);
       const taxAmount = record.amount_jpy - taxExclusivePrice;
 
@@ -75,7 +80,9 @@ export async function GET(request: Request) {
         billingName: billing?.billing_name || undefined,
         billingAddress: billing?.billing_address || undefined,
         billingTaxId: billing?.billing_tax_id || undefined,
-        billingPhone: billing?.billing_phone || undefined
+        billingPhone: billing?.billing_phone || undefined,
+        isRefunded,
+        refundedAtFormatted
       });
 
       return new Response(htmlInvoice, {
