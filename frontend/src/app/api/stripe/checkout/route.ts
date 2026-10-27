@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserQuota, isFirstTimeSubscriber, isFirstTimeFormBuyer } from "@/lib/db";
-import { verifyClientIp, verifyClientEmail } from "@/lib/securityGuard";
+import { verifyClientIp, verifyClientEmail, isPaymentInCooldown } from "@/lib/securityGuard";
 import { auth } from "@/auth";
 
 
@@ -28,6 +28,14 @@ export async function POST(request: Request) {
     if (ipCheck.blocked) {
       console.warn(`[Security Guard] Blocked checkout creation from banned IP: ${ipAddress} (${ipCheck.reason}) for email: ${email}`);
       return NextResponse.json({ error: "セキュリティ上の理由により、このIPからの決済手続きは制限されています。" }, { status: 403 });
+    }
+
+    // Cooldown Check: Repeated failure on single card / account
+    const cooldownCheck = isPaymentInCooldown(email);
+    if (cooldownCheck.inCooldown) {
+      return NextResponse.json({ 
+        error: `決済の試行回数が一時的に上限に達しました。セキュリティ保護のため、約 ${cooldownCheck.remainingMinutes} 分後に再度お試しいただくか、カード会社にお問い合わせください。` 
+      }, { status: 429 });
     }
 
     if (!planId && !packId && !formPlanId) {
@@ -254,16 +262,34 @@ export async function POST(request: Request) {
         sessionData.line_items[0].price_data.recurring = {
           interval: "month",
         };
+        sessionData.subscription_data = {
+          metadata: {
+            ip_address: ipAddress,
+            email: email,
+          },
+        };
         sessionData.metadata.planId = planId;
         sessionData.metadata.couponCode = couponCode || "";
         if (activeCouponId) {
           sessionData.discounts = [{ coupon: activeCouponId }];
         }
       } else if (formPlanId) {
+        sessionData.payment_intent_data = {
+          metadata: {
+            ip_address: ipAddress,
+            email: email,
+          },
+        };
         sessionData.metadata.formPlanId = formPlanId;
         sessionData.metadata.formAllowance = String(allowance);
         sessionData.metadata.isFirstTime = String(isFirstTimeForm);
       } else {
+        sessionData.payment_intent_data = {
+          metadata: {
+            ip_address: ipAddress,
+            email: email,
+          },
+        };
         sessionData.metadata.packId = packId;
         sessionData.metadata.amount = String(allowance);
       }

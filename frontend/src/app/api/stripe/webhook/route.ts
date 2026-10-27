@@ -14,6 +14,7 @@ import {
 import { addFormCredits } from "@/lib/formCampaigns";
 import { uploadFileToR2 } from "@/lib/r2";
 import { generateInvoiceHtml } from "@/lib/invoice";
+import { recordPaymentFailure } from "@/lib/securityGuard";
 
 export async function POST(request: Request) {
   try {
@@ -488,6 +489,44 @@ export async function POST(request: Request) {
       if (stripeSubscriptionId) {
         console.log(`[Stripe Webhook] Subscription deleted. Downgrading sub ID: ${stripeSubscriptionId}`);
         await cancelUserSubscriptionBySubId(stripeSubscriptionId);
+      }
+    }
+    // Handle payment failures to detect Card Hopping & automated Card Testing Attacks
+    else if (event.type === "payment_intent.payment_failed" || event.type === "charge.failed") {
+      const obj = event.data.object as any;
+      const ipAddress = obj.metadata?.ip_address || 
+                        obj.charges?.data?.[0]?.metadata?.ip_address || 
+                        "";
+      const userEmail = obj.metadata?.email || obj.receipt_email || obj.customer_email || "";
+      
+      // Extract unique card identifier (fingerprint if available, or brand_last4)
+      const cardFingerprint = obj.last_payment_error?.payment_method?.card?.fingerprint ||
+                              obj.payment_method_details?.card?.fingerprint ||
+                              "";
+      const cardBrand = obj.last_payment_error?.payment_method?.card?.brand ||
+                        obj.payment_method_details?.card?.brand || "";
+      const cardLast4 = obj.last_payment_error?.payment_method?.card?.last4 ||
+                        obj.payment_method_details?.card?.last4 || "";
+      
+      const cardId = cardFingerprint || (cardBrand && cardLast4 ? `${cardBrand}_${cardLast4}` : "unknown_card");
+      const failureCode = obj.last_payment_error?.code || obj.failure_code || "";
+      const declineCode = obj.last_payment_error?.decline_code || obj.failure_message || "";
+
+      console.warn(`[Stripe Webhook] Payment failed: IP=${ipAddress || 'N/A'}, Email=${userEmail || 'N/A'}, Card=${cardId}, Code=${failureCode}, Decline=${declineCode}`);
+
+      if (ipAddress && ipAddress !== "127.0.0.1" && ipAddress !== "::1") {
+        const result = await recordPaymentFailure(ipAddress, {
+          cardId,
+          failureCode,
+          declineCode,
+          email: userEmail
+        });
+
+        if (result.action === "auto_ban") {
+          console.error(`[Security Guard Alert] AUTO-BANNED IP ${ipAddress} for 48h! Reason: ${result.reason}`);
+        } else if (result.action === "card_cooldown") {
+          console.warn(`[Security Guard Alert] Customer cooldown applied for ${userEmail || cardId}: ${result.reason}`);
+        }
       }
     }
 

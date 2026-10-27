@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { 
   ShieldAlert, ShieldCheck, Ban, Plus, Trash2, RefreshCcw, 
-  Search, Loader2, Clock, Globe, Mail, AlertTriangle, CheckCircle2 
+  Search, Loader2, Clock, Globe, Mail, AlertTriangle, CheckCircle2, Zap, Bot 
 } from "lucide-react";
 import { parseUTCDate } from "@/lib/dateUtils";
 import { useAdminToast } from "../AdminToast";
@@ -387,8 +387,20 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-slate-600 dark:text-slate-300 max-w-[200px] truncate" title={item.reason || ""}>
-                    {item.reason || "—"}
+                  <td className="px-4 py-3 text-slate-600 dark:text-slate-300 max-w-[240px]" title={item.reason || ""}>
+                    <div className="flex flex-col gap-1">
+                      {item.created_by === "system_guard" || item.reason?.toLowerCase().includes("auto-ban") ? (
+                        <span className="w-fit px-1.5 py-0.5 rounded text-[9px] font-bold bg-cyan-50 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300 border border-cyan-200 dark:border-cyan-800 flex items-center gap-1">
+                          <Bot className="w-3 h-3 text-cyan-600 dark:text-cyan-400" />
+                          <span>自動検知 (Auto-Ban)</span>
+                        </span>
+                      ) : (
+                        <span className="w-fit px-1.5 py-0.5 rounded text-[9px] font-bold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                          管理者手動
+                        </span>
+                      )}
+                      <span className="truncate text-xs font-medium">{item.reason || "—"}</span>
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-slate-500 text-[11px]">
                     {parseUTCDate(item.created_at).toLocaleString("ja-JP", {

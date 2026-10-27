@@ -12,7 +12,7 @@ import {
 } from "@/lib/db";
 import { isAdmin, isAdminEmail } from "@/lib/adminAuth";
 import { revalidatePath } from "next/cache";
-import { verifyClientIp, verifyClientEmail } from "@/lib/securityGuard";
+import { verifyClientIp, verifyClientEmail, autoBanIp } from "@/lib/securityGuard";
 
 async function sendNotificationEmail(
   toEmail: string, 
@@ -62,8 +62,18 @@ export async function POST(request: Request) {
       turnstileToken 
     } = body;
 
-    // 1. Honeypot check
+    // Extract Client IP using standard Cloudflare and proxy headers
+    const ip = request.headers.get("cf-connecting-ip") || 
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() || 
+      request.headers.get("x-real-ip") || 
+      "unknown_ip";
+
+    // 1. Honeypot check: If bot fills hidden bot_trap input, Auto-Ban IP for 48h immediately!
     if (bot_trap) {
+      if (ip !== "unknown_ip" && ip !== "127.0.0.1" && ip !== "::1") {
+        console.warn(`[Security Guard] Honeypot bot trap triggered by IP: ${ip}. Auto-banning 48h.`);
+        await autoBanIp(ip, "Auto-ban: Honeypot bot trap triggered", 48, "system_guard");
+      }
       return NextResponse.json({ success: true, message: "お問い合わせの送信が完了しました。" });
     }
 
@@ -72,12 +82,6 @@ export async function POST(request: Request) {
       isAdmin(request) || 
       isAdminEmail(requester_email) || 
       isAdminEmail(request.headers.get("x-admin-email"));
-
-    // 2. Extract Client IP using standard Cloudflare and proxy headers
-    const ip = request.headers.get("cf-connecting-ip") || 
-      request.headers.get("x-forwarded-for")?.split(",")[0].trim() || 
-      request.headers.get("x-real-ip") || 
-      "unknown_ip";
     
     // 2a. Dynamic IP Blacklist (48h temporary blocks or permanent)
     if (!isRequestAdmin && ip !== "unknown_ip") {
