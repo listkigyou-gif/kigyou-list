@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { useLanguage } from "@/context/LanguageContext";
@@ -10,7 +10,8 @@ import {
   ArrowRight, FileText, Phone, Mail, Building2, User, 
   ChevronDown, Check, Zap, Target, BarChart3, ChevronRight,
   ExternalLink, Loader2, AlertCircle, Award, Layers,
-  Calculator, Copy, Receipt, Lock, Banknote, TrendingUp, Coins, CreditCard
+  Calculator, Copy, Receipt, Lock, Banknote, TrendingUp, Coins, CreditCard,
+  ShieldAlert
 } from "lucide-react";
 import Link from "next/link";
 
@@ -168,6 +169,60 @@ https://kigyoulist.com/contact
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [botTrap, setBotTrap] = useState("");
+  const turnstileContainerId = "form-marketing-turnstile-container";
+
+  // Cloudflare Turnstile Widget Initialization
+  useEffect(() => {
+    let widgetId: string | null = null;
+    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAADokowo7EluaA6K4";
+
+    const renderWidget = () => {
+      const container = document.getElementById(turnstileContainerId);
+      if (container && (window as any).turnstile) {
+        try {
+          container.innerHTML = "";
+          widgetId = (window as any).turnstile.render(`#${turnstileContainerId}`, {
+            sitekey: siteKey,
+            language: locale,
+            callback: (token: string) => {
+              setTurnstileToken(token);
+            },
+            "error-callback": () => {
+              setTurnstileToken("");
+            },
+            "expired-callback": () => {
+              setTurnstileToken("");
+            }
+          });
+        } catch (err) {
+          console.error("Turnstile render error:", err);
+        }
+      }
+    };
+
+    const scriptId = "cloudflare-turnstile-script";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadFmTurnstileCallback";
+      script.async = true;
+      script.defer = true;
+      (window as any).onloadFmTurnstileCallback = renderWidget;
+      document.head.appendChild(script);
+    } else {
+      renderWidget();
+    }
+
+    return () => {
+      if (widgetId !== null && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.remove(widgetId);
+        } catch {}
+      }
+    };
+  }, [locale]);
 
   // FAQ state
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -206,6 +261,8 @@ https://kigyoulist.com/contact
           requester_email: email,
           mobile_number: phone,
           locale,
+          bot_trap: botTrap,
+          turnstileToken,
           message: `【フォーム営業代行 大口・エンタープライズご相談】
 ■ 希望ボリューム: ${volumeLabels[selectedVolume]}
 ■ 相談内容・商材概要:
@@ -213,16 +270,23 @@ ${message || "未入力"}`
         })
       });
 
-      if (!res.ok) throw new Error("Failed to submit inquiry");
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error || "Failed to submit inquiry");
+      }
       setSubmitted(true);
+      setTurnstileToken("");
+      setBotTrap("");
     } catch (err: any) {
       console.error(err);
       setErrorMsg(
-        isJa
-          ? "送信に失敗しました。時間をおいて再試行してください。"
-          : isVi
-          ? "Gửi yêu cầu thất bại. Vui lòng thử lại sau."
-          : "Submission failed. Please try again."
+        err.message || (
+          isJa
+            ? "送信に失敗しました。時間をおいて再試行してください。"
+            : isVi
+            ? "Gửi yêu cầu thất bại. Vui lòng thử lại sau."
+            : "Submission failed. Please try again."
+        )
       );
     } finally {
       setLoading(false);
@@ -1365,6 +1429,38 @@ ${message || "未入力"}`
                     onChange={(e) => setMessage(e.target.value)}
                     className="w-full text-xs font-medium p-3 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A]"
                   />
+                </div>
+
+                {/* Sales Outreach Rejection Notice */}
+                <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <p className="font-semibold text-slate-700 dark:text-slate-300 mb-0.5 flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span>{isJa ? "営業・セールス目的のご連絡に関するお願い" : isVi ? "Lưu ý về email chào hàng & quảng cáo" : "Notice on Sales Outreach"}</span>
+                  </p>
+                  <p>
+                    {isJa
+                      ? "※ 当フォームを利用した営業メール・協業を装った一方的な売り込み・ダイレクトセールスは一切お断りしております。送信された場合でも返信・対応はいたしかねます。"
+                      : isVi
+                      ? "※ Chúng tôi từ chối tiếp nhận mọi hình thức chào hàng, quảng cáo dịch vụ qua biểu mẫu này. Mọi tin nhắn chào hàng sẽ không được phản hồi."
+                      : "※ Unsolicited sales pitches and promotional outreach sent via this form will be strictly ignored and not replied to."}
+                  </p>
+                </div>
+
+                {/* Honeypot field for bot suppression */}
+                <div className="hidden" aria-hidden="true" style={{ display: "none" }}>
+                  <input
+                    type="text"
+                    name="bot_trap"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={botTrap}
+                    onChange={(e) => setBotTrap(e.target.value)}
+                  />
+                </div>
+
+                {/* Cloudflare Turnstile CAPTCHA Widget */}
+                <div className="flex justify-center my-2 min-h-[65px]">
+                  <div id={turnstileContainerId}></div>
                 </div>
 
                 <button

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCompaniesByNumbers } from "@/lib/db";
+import { verifyClientIp } from "@/lib/securityGuard";
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +26,20 @@ interface InvoiceBatchItem {
  */
 export async function POST(request: Request) {
   try {
+    const clientIp = request.headers.get("cf-connecting-ip") ||
+                     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+                     request.headers.get("x-real-ip") ||
+                     "127.0.0.1";
+    const ipCheck = await verifyClientIp(clientIp);
+    if (ipCheck.blocked) {
+      return NextResponse.json({
+        success: false,
+        message: "Access Denied: Banned IP",
+        summary: { total: 0, valid: 0, invalid: 0, unregistered: 0 },
+        results: []
+      }, { status: 403 });
+    }
+
     const body = await request.json().catch(() => ({}));
     let rawInputList: string[] = [];
 
