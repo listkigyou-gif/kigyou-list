@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { saveMagicLinkToken, checkMagicLinkRateLimit, updateUserLoginIp } from "@/lib/db";
-import { verifyClientIp, isSuspiciousEmail } from "@/lib/securityGuard";
+import { verifyClientIp, verifyClientEmail } from "@/lib/securityGuard";
 import crypto from "crypto";
 
 export async function POST(request: Request) {
@@ -11,8 +11,9 @@ export async function POST(request: Request) {
     }
 
     // 0. Fraud & Security Check (Email domain & IP)
-    if (isSuspiciousEmail(email)) {
-      console.warn(`[Security Guard] Blocked disposable/fraudulent email: ${email}`);
+    const emailCheck = await verifyClientEmail(email);
+    if (emailCheck.blocked) {
+      console.warn(`[Security Guard] Blocked disposable/fraudulent email: ${email} (${emailCheck.reason})`);
       return NextResponse.json({ 
         error: locale === "vi" 
           ? "Địa chỉ email không hợp lệ hoặc không được hỗ trợ." 

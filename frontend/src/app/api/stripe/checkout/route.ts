@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserQuota, isFirstTimeSubscriber, isFirstTimeFormBuyer } from "@/lib/db";
-import { verifyClientIp, isSuspiciousEmail } from "@/lib/securityGuard";
+import { verifyClientIp, verifyClientEmail } from "@/lib/securityGuard";
 import { auth } from "@/auth";
 
 
@@ -18,8 +18,9 @@ export async function POST(request: Request) {
     const userAgent = request.headers.get("user-agent") || "";
 
     // Security Check: Fraudulent email domain or IP blacklist
-    if (isSuspiciousEmail(email)) {
-      console.warn(`[Security Guard] Blocked checkout creation for suspicious email: ${email}`);
+    const emailCheck = await verifyClientEmail(email);
+    if (emailCheck.blocked) {
+      console.warn(`[Security Guard] Blocked checkout creation for suspicious email: ${email} (${emailCheck.reason})`);
       return NextResponse.json({ error: "不正なアカウントまたは利用できないメールアドレスです。" }, { status: 403 });
     }
 

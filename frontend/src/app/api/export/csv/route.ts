@@ -5,9 +5,9 @@ import {
   getRecentExportJobs
 } from "@/lib/db";
 import { uploadFileToR2 } from "@/lib/r2";
-import JSZip from "jszip";
 import { auth } from "@/auth";
-import { verifyClientIp, isSuspiciousEmail } from "@/lib/securityGuard";
+import { verifyClientIp, verifyClientEmail } from "@/lib/securityGuard";
+import JSZip from "jszip";
 
 // Helper to escape CSV cell contents safely
 function escapeCSVField(val: any): string {
@@ -33,8 +33,9 @@ export async function POST(request: Request) {
     const userAgent = request.headers.get("user-agent") || "";
 
     // Security Check: Fraudulent email domain or IP blacklist
-    if (isSuspiciousEmail(email)) {
-      console.warn(`[Security Guard] Blocked CSV export for suspicious email: ${email}`);
+    const emailCheck = await verifyClientEmail(email);
+    if (emailCheck.blocked) {
+      console.warn(`[Security Guard] Blocked CSV export for suspicious email: ${email} (${emailCheck.reason})`);
       return NextResponse.json({ error: "Access Denied: Suspicious account" }, { status: 403 });
     }
 

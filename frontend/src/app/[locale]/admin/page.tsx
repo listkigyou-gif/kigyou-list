@@ -10,7 +10,7 @@ import {
   ShieldAlert, ShieldCheck, RefreshCcw, Users, MessageSquareWarning, 
   CreditCard, History, Building2, Terminal, Database, Mail, 
   Send, Ticket, Download, LayoutDashboard, KeyRound, Loader2, ExternalLink,
-  Radio, Activity, Search, Eye, FileSpreadsheet
+  Radio, Activity, Search, Eye, FileSpreadsheet, Ban
 } from "lucide-react";
 
 // Toast Provider
@@ -32,6 +32,7 @@ import { WebhooksAdminTab } from "@/components/admin/tabs/WebhooksAdminTab";
 import { OptOutAdminTab } from "@/components/admin/tabs/OptOutAdminTab";
 import { WatchlistAuditTab } from "@/components/admin/tabs/WatchlistAuditTab";
 import { FormOutreachAuditTab } from "@/components/admin/tabs/FormOutreachAuditTab";
+import { SecurityTab } from "@/components/admin/tabs/SecurityTab";
 
 // Existing Admin Tabs
 import { MarketingTab } from "@/components/admin/MarketingTab";
@@ -55,7 +56,8 @@ export type AdminTab =
   | "backups"
   | "partners"
   | "watchlistAudit"
-  | "formOutreachLogs";
+  | "formOutreachLogs"
+  | "security";
 
 function AdminContent() {
   const { isLoggedIn, user, setAuthModalOpen } = useAuth();
@@ -531,6 +533,17 @@ function AdminContent() {
                     <span>特定電子メール法 除外先</span>
                   </div>
                 </button>
+
+                {/* Security Blacklist (IP / Disposable Domain) */}
+                <button
+                  onClick={() => switchTab("security")}
+                  className={getTabClass("security")}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Ban className={`w-4 h-4 shrink-0 ${activeTab === "security" ? "text-white" : "text-rose-500"}`} />
+                    <span>不正遮断 (IP/ドメイン)</span>
+                  </div>
+                </button>
               </div>
             </nav>
           </div>
@@ -728,6 +741,13 @@ function AdminContent() {
 
           {activeTab === "watchlistAudit" && (
             <WatchlistAuditTab
+              adminEmail={user?.email || ""}
+              getAdminHeaders={getAdminHeaders}
+            />
+          )}
+
+          {activeTab === "security" && (
+            <SecurityTab
               adminEmail={user?.email || ""}
               getAdminHeaders={getAdminHeaders}
             />

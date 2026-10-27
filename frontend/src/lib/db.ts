@@ -1956,6 +1956,16 @@ export interface DepositRecord {
   created_at: string;
 }
 
+export interface BlacklistRecord {
+  id: number;
+  type: 'ip' | 'email_domain' | 'email';
+  target: string;
+  reason?: string | null;
+  expires_at?: string | null;
+  created_by?: string | null;
+  created_at: string;
+}
+
 let tablesInitialized = false;
 
 /**
@@ -2149,6 +2159,22 @@ async function initQuotaTables(): Promise<void> {
       } catch {}
       try {
         await client.query(`CREATE INDEX IF NOT EXISTS idx_magic_link_tokens_email ON magic_link_tokens(email);`);
+      } catch {}
+
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS system_blacklists (
+          id SERIAL PRIMARY KEY,
+          type VARCHAR(50) NOT NULL,
+          target VARCHAR(255) NOT NULL UNIQUE,
+          reason TEXT,
+          expires_at TIMESTAMP WITH TIME ZONE,
+          created_by VARCHAR(255) DEFAULT 'system',
+          created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      try {
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_blacklists_target ON system_blacklists(target);`);
+        await client.query(`CREATE INDEX IF NOT EXISTS idx_blacklists_expires ON system_blacklists(expires_at);`);
       } catch {}
 
       } finally {
@@ -2355,6 +2381,22 @@ async function initQuotaTables(): Promise<void> {
       }
       try {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_magic_link_tokens_email ON magic_link_tokens(email);`);
+      } catch {}
+
+      // System Blacklists Table for SQLite
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS system_blacklists (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          type TEXT NOT NULL,
+          target TEXT NOT NULL UNIQUE,
+          reason TEXT,
+          expires_at TEXT,
+          created_by TEXT DEFAULT 'system',
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      try {
+        db.exec(`CREATE INDEX IF NOT EXISTS idx_blacklists_target ON system_blacklists(target);`);
       } catch {}
 
     } catch (e) {
@@ -6156,3 +6198,135 @@ export async function getRecentHubEventsForCompany(
     return [];
   }
 }
+
+/**
+ * Fetch all system blacklist rules (active & expired) for Admin
+ */
+export async function getAllBlacklists(): Promise<BlacklistRecord[]> {
+  await initQuotaTables();
+  try {
+    const sql = 'SELECT * FROM system_blacklists ORDER BY created_at DESC';
+    const rows = await runQuery(sql, []);
+    return rows ? rows.map((r: any) => ({
+      id: Number(r.id),
+      type: r.type,
+      target: r.target,
+      reason: r.reason || null,
+      expires_at: r.expires_at ? String(r.expires_at) : null,
+      created_by: r.created_by || null,
+      created_at: String(r.created_at),
+    })) : [];
+  } catch (err) {
+    console.error('Error in getAllBlacklists:', err);
+    return [];
+  }
+}
+
+/**
+ * Fetch active system blacklist rules (expires_at is null or in the future)
+ */
+export async function getActiveBlacklists(): Promise<BlacklistRecord[]> {
+  await initQuotaTables();
+  try {
+    const isPG = !!DATABASE_URL;
+    const sql = isPG
+      ? "SELECT * FROM system_blacklists WHERE expires_at IS NULL OR expires_at > CURRENT_TIMESTAMP ORDER BY id DESC"
+      : "SELECT * FROM system_blacklists WHERE expires_at IS NULL OR expires_at > datetime('now') ORDER BY id DESC";
+    const rows = await runQuery(sql, []);
+    return rows ? rows.map((r: any) => ({
+      id: Number(r.id),
+      type: r.type,
+      target: r.target,
+      reason: r.reason || null,
+      expires_at: r.expires_at ? String(r.expires_at) : null,
+      created_by: r.created_by || null,
+      created_at: String(r.created_at),
+    })) : [];
+  } catch (err) {
+    console.error('Error in getActiveBlacklists:', err);
+    return [];
+  }
+}
+
+/**
+ * Add or update a blacklist entry with optional duration (e.g. 48 hours)
+ */
+export async function addBlacklistEntry(
+  type: 'ip' | 'email_domain' | 'email',
+  target: string,
+  reason?: string,
+  durationHours?: number,
+  createdBy: string = 'admin'
+): Promise<boolean> {
+  await initQuotaTables();
+  const cleanTarget = target.trim().toLowerCase();
+  const cleanReason = (reason || '').trim();
+
+  try {
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      if (durationHours && durationHours > 0) {
+        await pool.query(
+          `INSERT INTO system_blacklists (type, target, reason, expires_at, created_by)
+           VALUES ($1, $2, $3, NOW() + ($4 || ' hours')::INTERVAL, $5)
+           ON CONFLICT (target) DO UPDATE 
+           SET type = EXCLUDED.type, reason = EXCLUDED.reason, expires_at = EXCLUDED.expires_at, created_by = EXCLUDED.created_by, created_at = CURRENT_TIMESTAMP`,
+          [type, cleanTarget, cleanReason, String(durationHours), createdBy]
+        );
+      } else {
+        await pool.query(
+          `INSERT INTO system_blacklists (type, target, reason, expires_at, created_by)
+           VALUES ($1, $2, $3, NULL, $4)
+           ON CONFLICT (target) DO UPDATE 
+           SET type = EXCLUDED.type, reason = EXCLUDED.reason, expires_at = NULL, created_by = EXCLUDED.created_by, created_at = CURRENT_TIMESTAMP`,
+          [type, cleanTarget, cleanReason, createdBy]
+        );
+      }
+    } else {
+      const db = getSQLiteDB();
+      if (durationHours && durationHours > 0) {
+        const stmt = db.prepare(
+          `INSERT INTO system_blacklists (type, target, reason, expires_at, created_by)
+           VALUES (?, ?, ?, datetime('now', '+' || ? || ' hours'), ?)
+           ON CONFLICT (target) DO UPDATE 
+           SET type = EXCLUDED.type, reason = EXCLUDED.reason, expires_at = EXCLUDED.expires_at, created_by = EXCLUDED.created_by, created_at = CURRENT_TIMESTAMP`
+        );
+        stmt.run(type, cleanTarget, cleanReason, durationHours, createdBy);
+      } else {
+        const stmt = db.prepare(
+          `INSERT INTO system_blacklists (type, target, reason, expires_at, created_by)
+           VALUES (?, ?, ?, NULL, ?)
+           ON CONFLICT (target) DO UPDATE 
+           SET type = EXCLUDED.type, reason = EXCLUDED.reason, expires_at = NULL, created_by = EXCLUDED.created_by, created_at = CURRENT_TIMESTAMP`
+        );
+        stmt.run(type, cleanTarget, cleanReason, createdBy);
+      }
+    }
+    return true;
+  } catch (err) {
+    console.error('Error in addBlacklistEntry:', err);
+    return false;
+  }
+}
+
+/**
+ * Remove/unblock a blacklist entry by ID
+ */
+export async function deleteBlacklistEntry(id: number): Promise<boolean> {
+  await initQuotaTables();
+  try {
+    if (DATABASE_URL) {
+      const pool = getPGPool();
+      const res = await pool.query('DELETE FROM system_blacklists WHERE id = $1', [id]);
+      return (res.rowCount || 0) > 0;
+    } else {
+      const db = getSQLiteDB();
+      const info = db.prepare('DELETE FROM system_blacklists WHERE id = ?').run(id);
+      return info.changes > 0;
+    }
+  } catch (err) {
+    console.error(`Error in deleteBlacklistEntry(${id}):`, err);
+    return false;
+  }
+}
+
