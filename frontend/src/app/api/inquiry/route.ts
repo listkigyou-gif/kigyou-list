@@ -12,6 +12,7 @@ import {
 } from "@/lib/db";
 import { isAdmin, isAdminEmail } from "@/lib/adminAuth";
 import { revalidatePath } from "next/cache";
+import { verifyClientIp, verifyClientEmail } from "@/lib/securityGuard";
 
 async function sendNotificationEmail(
   toEmail: string, 
@@ -72,10 +73,33 @@ export async function POST(request: Request) {
       isAdminEmail(requester_email) || 
       isAdminEmail(request.headers.get("x-admin-email"));
 
-    // 2. Extract IP and Rate Limit (Skip for admin)
-    const forwardedFor = request.headers.get("x-forwarded-for");
-    const ip = forwardedFor ? forwardedFor.split(",")[0] : "unknown_ip";
+    // 2. Extract Client IP using standard Cloudflare and proxy headers
+    const ip = request.headers.get("cf-connecting-ip") || 
+      request.headers.get("x-forwarded-for")?.split(",")[0].trim() || 
+      request.headers.get("x-real-ip") || 
+      "unknown_ip";
     
+    // 2a. Dynamic IP Blacklist (48h temporary blocks or permanent)
+    if (!isRequestAdmin && ip !== "unknown_ip") {
+      const ipCheck = await verifyClientIp(ip);
+      if (ipCheck.blocked) {
+        return NextResponse.json({ error: "Access Denied: Banned IP" }, { status: 403 });
+      }
+    }
+
+    // 2b. Disposable / Fraudulent Email Domain Check
+    if (!isRequestAdmin && requester_email) {
+      const emailCheck = await verifyClientEmail(requester_email);
+      if (emailCheck.blocked) {
+        return NextResponse.json({ 
+          error: locale === "vi" 
+            ? "Tên miền email không được chấp nhận. Vui lòng sử dụng email công ty hoặc email chính thức." 
+            : "このメールアドレスはご利用いただけません。企業メールアドレス等をご利用ください。" 
+        }, { status: 400 });
+      }
+    }
+
+    // 2c. Rate Limit (Skip for admin)
     if (!isRequestAdmin && ip !== "unknown_ip") {
       const allowed = await checkRateLimit(ip);
       if (!allowed) {
@@ -84,6 +108,38 @@ export async function POST(request: Request) {
             ? "Bạn đã vượt quá giới hạn gửi trong 24 giờ. Vui lòng thử lại sau." 
             : "24時間以内に送信できる上限数を超えました。しばらく経ってから再度お試しください。" 
         }, { status: 429 });
+      }
+    }
+
+    // 2d. Cloudflare Turnstile Verification (Universal for all contact & inquiry submissions)
+    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
+    if (!isRequestAdmin && turnstileSecret) {
+      if (!turnstileToken) {
+        return NextResponse.json({ 
+          error: locale === "vi" 
+            ? "Vui lòng hoàn tất xác thực bảo mật Cloudflare Turnstile." 
+            : "セキュリティ認証（Cloudflare Turnstile）を完了してください。" 
+        }, { status: 400 });
+      }
+      try {
+        const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({
+            secret: turnstileSecret,
+            response: turnstileToken,
+          }),
+        });
+        const verifyData = await verifyRes.json();
+        if (!verifyData.success) {
+          return NextResponse.json({ 
+            error: locale === "vi" 
+              ? "Xác minh bảo mật thất bại. Vui lòng tải lại trang và thử lại." 
+              : "スパム対策の認証に失敗しました。ページを更新して再度お試しください。" 
+          }, { status: 400 });
+        }
+      } catch (tErr) {
+        console.error("Turnstile verification error:", tErr);
       }
     }
 
@@ -186,26 +242,7 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
 
-    // Verify Turnstile CAPTCHA if configured (Skip for admin)
-    const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
-    if (!isRequestAdmin && turnstileSecret && turnstileToken) {
-      const verifyRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          secret: turnstileSecret,
-          response: turnstileToken,
-        }),
-      });
-      const verifyData = await verifyRes.json();
-      if (!verifyData.success) {
-        return NextResponse.json({ 
-          error: locale === "vi" 
-            ? "Xác minh CAPTCHA thất bại. Vui lòng thử lại." 
-            : "スパム対策の認証に失敗しました。ページを更新して再度お試しください。" 
-        }, { status: 400 });
-      }
-    }
+
 
     // -------------------------------------------------------------
     // CASE A: UNPUBLISH / HIDE REQUEST (Auto-Approved with Rollback)

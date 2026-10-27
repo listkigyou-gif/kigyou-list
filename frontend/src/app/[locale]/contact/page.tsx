@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -14,6 +14,7 @@ import {
   Loader2, 
   AlertCircle, 
   ShieldCheck, 
+  ShieldAlert,
   Search, 
   Mail, 
   Phone, 
@@ -40,7 +41,10 @@ export default function ContactPage() {
   const isVi = locale === "vi";
   const isJa = locale === "ja";
 
-  const [activeCategory, setActiveCategory] = useState<InquiryCategory>("form_marketing");
+  const [activeCategory, setActiveCategory] = useState<InquiryCategory>("general_partner");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [botTrap, setBotTrap] = useState("");
+  const turnstileContainerId = "contact-turnstile-container";
 
   // Category: Company Lookup States
   const [lookupCorpNum, setLookupCorpNum] = useState("");
@@ -79,6 +83,57 @@ export default function ContactPage() {
   const toggleFaq = (idx: number) => {
     setOpenFaqIndex(openFaqIndex === idx ? null : idx);
   };
+
+  // Cloudflare Turnstile Widget Initialization
+  useEffect(() => {
+    let widgetId: string | null = null;
+    const siteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAADokowo7EluaA6K4";
+
+    const renderWidget = () => {
+      const container = document.getElementById(turnstileContainerId);
+      if (container && (window as any).turnstile) {
+        try {
+          container.innerHTML = "";
+          widgetId = (window as any).turnstile.render(`#${turnstileContainerId}`, {
+            sitekey: siteKey,
+            language: locale,
+            callback: (token: string) => {
+              setTurnstileToken(token);
+            },
+            "error-callback": () => {
+              setTurnstileToken("");
+            },
+            "expired-callback": () => {
+              setTurnstileToken("");
+            }
+          });
+        } catch (err) {
+          console.error("Turnstile render error:", err);
+        }
+      }
+    };
+
+    const scriptId = "cloudflare-turnstile-script";
+    if (!document.getElementById(scriptId)) {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onloadContactTurnstileCallback";
+      script.async = true;
+      script.defer = true;
+      (window as any).onloadContactTurnstileCallback = renderWidget;
+      document.head.appendChild(script);
+    } else {
+      renderWidget();
+    }
+
+    return () => {
+      if (widgetId !== null && (window as any).turnstile) {
+        try {
+          (window as any).turnstile.remove(widgetId);
+        } catch {}
+      }
+    };
+  }, [locale, activeCategory]);
 
   // Company Lookup for Category: company_manage
   const handleLookupCompany = async (e: React.FormEvent) => {
@@ -212,6 +267,8 @@ export default function ContactPage() {
           requester_email: formData.email.trim(),
           mobile_number: formData.phone.trim(),
           message: compiledMessage,
+          bot_trap: botTrap,
+          turnstileToken,
           locale,
         }),
       });
@@ -445,24 +502,54 @@ export default function ContactPage() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
               
-              {/* Tab 1: Form Marketing (NEW / HIGHLIGHT) */}
+              {/* Tab 1: General & Partnerships (DEFAULT & FIRST) */}
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveCategory("general_partner");
+                  setResultMsg(null);
+                }}
+                className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
+                  activeCategory === "general_partner"
+                    ? "border-[#1B4F8A] bg-[#1B4F8A]/5 dark:bg-blue-950/30 shadow-xs ring-2 ring-[#1B4F8A]/20"
+                    : "border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#161B22] hover:border-slate-300 dark:hover:border-slate-700"
+                }`}
+              >
+                <div>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${
+                    activeCategory === "general_partner"
+                      ? "bg-[#1B4F8A] text-white"
+                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+                  }`}>
+                    <Handshake className="w-4 h-4" />
+                  </div>
+                  <h3 className="font-bold text-xs text-slate-900 dark:text-white leading-snug">
+                    {isJa ? "業務提携・ご意見・その他窓口" : isVi ? "Hợp tác, Góp ý & Yêu cầu khác" : "Partner & General"}
+                  </h3>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug line-clamp-2">
+                    {isJa ? "ご意見・サービス要望・苦情・B2B協業・一般相談" : isVi ? "Góp ý, khiếu nại, phản hồi, hợp tác B2B & hỗ trợ" : "Feedback, complaints, strategic alliance & general support"}
+                  </p>
+                </div>
+                <span className={`text-[11px] font-bold mt-2.5 inline-flex items-center gap-1 ${
+                  activeCategory === "general_partner" ? "text-[#1B4F8A] dark:text-blue-400" : "text-slate-400"
+                }`}>
+                  {isJa ? "選択中" : "Select"} <ArrowRight className="w-3 h-3" />
+                </span>
+              </button>
+
+              {/* Tab 2: Form Marketing (Clean without HOT/NEW badge) */}
               <button
                 type="button"
                 onClick={() => {
                   setActiveCategory("form_marketing");
                   setResultMsg(null);
                 }}
-                className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer relative ${
+                className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
                   activeCategory === "form_marketing"
                     ? "border-[#1B4F8A] bg-[#1B4F8A]/5 dark:bg-blue-950/30 shadow-xs ring-2 ring-[#1B4F8A]/20"
                     : "border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#161B22] hover:border-slate-300 dark:hover:border-slate-700"
                 }`}
               >
-                <div className="absolute top-2.5 right-2.5">
-                  <span className="text-[9px] bg-indigo-600 text-white font-black px-1.5 py-0.5 rounded uppercase tracking-wider">
-                    {isJa ? "人気 / NEW" : "HOT"}
-                  </span>
-                </div>
                 <div>
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${
                     activeCategory === "form_marketing"
@@ -485,7 +572,7 @@ export default function ContactPage() {
                 </span>
               </button>
 
-              {/* Tab 2: API & Bulk Data */}
+              {/* Tab 3: API & Bulk Data */}
               <button
                 type="button"
                 onClick={() => {
@@ -520,7 +607,7 @@ export default function ContactPage() {
                 </span>
               </button>
 
-              {/* Tab 3: Company Ownership & Opt-out */}
+              {/* Tab 4: Company Ownership & Opt-out */}
               <button
                 type="button"
                 onClick={() => {
@@ -555,7 +642,7 @@ export default function ContactPage() {
                 </span>
               </button>
 
-              {/* Tab 4: Pricing & Enterprise Billing */}
+              {/* Tab 5: Pricing & Enterprise Billing */}
               <button
                 type="button"
                 onClick={() => {
@@ -585,41 +672,6 @@ export default function ContactPage() {
                 </div>
                 <span className={`text-[11px] font-bold mt-2.5 inline-flex items-center gap-1 ${
                   activeCategory === "billing_enterprise" ? "text-[#1B4F8A] dark:text-blue-400" : "text-slate-400"
-                }`}>
-                  {isJa ? "選択中" : "Select"} <ArrowRight className="w-3 h-3" />
-                </span>
-              </button>
-
-              {/* Tab 5: General & Partnerships */}
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveCategory("general_partner");
-                  setResultMsg(null);
-                }}
-                className={`p-3.5 rounded-xl border text-left transition-all flex flex-col justify-between cursor-pointer ${
-                  activeCategory === "general_partner"
-                    ? "border-[#1B4F8A] bg-[#1B4F8A]/5 dark:bg-blue-950/30 shadow-xs ring-2 ring-[#1B4F8A]/20"
-                    : "border-slate-200/90 dark:border-slate-800 bg-white dark:bg-[#161B22] hover:border-slate-300 dark:hover:border-slate-700"
-                }`}
-              >
-                <div>
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center mb-2.5 ${
-                    activeCategory === "general_partner"
-                      ? "bg-[#1B4F8A] text-white"
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300"
-                  }`}>
-                    <Handshake className="w-4 h-4" />
-                  </div>
-                  <h3 className="font-bold text-xs text-slate-900 dark:text-white leading-snug">
-                    {isJa ? "業務提携・その他窓口" : isVi ? "Hợp tác & Yêu cầu khác" : "Partner & General"}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug line-clamp-2">
-                    {isJa ? "B2B協業・広告掲載・サービス要望" : isVi ? "Hợp tác kinh doanh, báo chí, hỗ trợ kỹ thuật" : "Strategic alliance & general support"}
-                  </p>
-                </div>
-                <span className={`text-[11px] font-bold mt-2.5 inline-flex items-center gap-1 ${
-                  activeCategory === "general_partner" ? "text-[#1B4F8A] dark:text-blue-400" : "text-slate-400"
                 }`}>
                   {isJa ? "選択中" : "Select"} <ArrowRight className="w-3 h-3" />
                 </span>
@@ -831,21 +883,27 @@ export default function ContactPage() {
                     {activeCategory === "form_marketing" && (isJa ? "セルフ型フォーム営業・配信代行のご相談" : "Form Marketing Consultation")}
                     {activeCategory === "api_data" && (isJa ? "法人API・データ一括購入・抽出のご相談" : "Corporate API & Data Purchase")}
                     {activeCategory === "billing_enterprise" && (isJa ? "料金プラン・お見積り・請求書払いのご相談" : "Pricing, Quotation & Enterprise Billing")}
-                    {activeCategory === "general_partner" && (isJa ? "業務提携・サービス要望・その他のお問い合わせ" : "Partnerships & General Support")}
+                    {activeCategory === "general_partner" && (isJa ? "業務提携・ご意見・その他窓口" : "General Inquiries, Feedback & Partnerships")}
                   </div>
 
                   <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
                     {activeCategory === "form_marketing" && (isJa ? "フォーム営業・配信代行のお問い合わせ" : "B2B Form Outreach Advisory")}
                     {activeCategory === "api_data" && (isJa ? "法人API・データ抽出・連携のお問い合わせ" : "Enterprise API & Data Advisory")}
                     {activeCategory === "billing_enterprise" && (isJa ? "料金プラン・お見積り・請求書払いのお問い合わせ" : "Enterprise Quotation & Invoicing")}
-                    {activeCategory === "general_partner" && (isJa ? "業務提携・広告・一般お問い合わせ" : "Partnerships & General Inquiry")}
+                    {activeCategory === "general_partner" && (isJa ? "業務提携・ご意見・一般お問い合わせ" : "General Inquiries & Partnerships")}
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1.5 leading-relaxed">
-                    {isJa
-                      ? "必要事項をご記入の上、送信してください。専任の担当者より1〜2営業日以内に詳細資料・お見積り等をご連絡申し上げます。"
-                      : isVi
-                      ? "Vui lòng điền thông tin bên dưới. Đội ngũ chuyên môn sẽ liên hệ lại kèm tài liệu và báo giá trong 1-2 ngày làm việc."
-                      : "Please provide the details below. Our team will get back to you with documentation and quotation within 1-2 business days."}
+                    {activeCategory === "general_partner"
+                      ? (isJa
+                          ? "サービスへのご意見・ご要望・苦情・取材・業務提携・その他のお問い合わせを承ります。専任担当者より原則1〜2営業日以内にご連絡差し上げます。"
+                          : isVi
+                          ? "Tiếp nhận ý kiến đóng góp, khiếu nại, phản hồi, hợp tác truyền thông và các yêu cầu khác. Đội ngũ chuyên môn sẽ phản hồi trong 1-2 ngày làm việc."
+                          : "We welcome feedback, complaints, press inquiries, partnerships, and general requests. Our team will get back to you within 1-2 business days.")
+                      : (isJa
+                          ? "必要事項をご記入の上、送信してください。専任の担当者より1〜2営業日以内に詳細資料・お見積り等をご連絡申し上げます。"
+                          : isVi
+                          ? "Vui lòng điền thông tin bên dưới. Đội ngũ chuyên môn sẽ liên hệ lại kèm tài liệu và báo giá trong 1-2 ngày làm việc."
+                          : "Please provide the details below. Our team will get back to you with documentation and quotation within 1-2 business days.")}
                   </p>
                 </div>
 
@@ -853,7 +911,7 @@ export default function ContactPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="flex items-center justify-between text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                      <span>{isJa ? "貴社名 / 組織名" : isVi ? "Tên công ty / Tổ chức" : "Company Name"}</span>
+                      <span>{isJa ? "貴社名 / 組織名（個人の場合は「個人」と入力）" : isVi ? "Tên công ty / Cá nhân" : "Company / Organization Name"}</span>
                       <span className="text-[10px] bg-rose-50 text-rose-700 border border-rose-200 font-bold px-1.5 py-0.2 rounded">
                         {isJa ? "必須" : "Required"}
                       </span>
@@ -1111,6 +1169,38 @@ export default function ContactPage() {
                     }
                     className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-300/80 dark:border-slate-700 rounded-lg text-xs leading-relaxed font-medium focus:ring-2 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] focus:bg-white dark:focus:bg-slate-900 transition-colors"
                   />
+                </div>
+
+                {/* Sales Outreach Rejection Notice */}
+                <div className="p-3.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <p className="font-semibold text-slate-700 dark:text-slate-300 mb-0.5 flex items-center gap-1.5">
+                    <ShieldAlert className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                    <span>{isJa ? "営業・セールス目的のご連絡に関するお願い" : isVi ? "Lưu ý về email chào hàng & quảng cáo" : "Notice on Sales Outreach"}</span>
+                  </p>
+                  <p>
+                    {isJa
+                      ? "※ 当フォームを利用した営業メール・協業を装った一方的な売り込み・ダイレクトセールスは一切お断りしております。送信された場合でも返信・対応はいたしかねます。"
+                      : isVi
+                      ? "※ Chúng tôi từ chối tiếp nhận mọi hình thức chào hàng, quảng cáo dịch vụ qua biểu mẫu này. Mọi tin nhắn chào hàng sẽ không được phản hồi."
+                      : "※ Unsolicited sales pitches and promotional outreach sent via this form will be strictly ignored and not replied to."}
+                  </p>
+                </div>
+
+                {/* Honeypot field (hidden from real users, caught by bots) */}
+                <div className="hidden" aria-hidden="true" style={{ display: "none" }}>
+                  <input
+                    type="text"
+                    name="bot_trap"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    value={botTrap}
+                    onChange={(e) => setBotTrap(e.target.value)}
+                  />
+                </div>
+
+                {/* Cloudflare Turnstile CAPTCHA Widget */}
+                <div className="flex justify-center my-2 min-h-[65px]">
+                  <div id={turnstileContainerId}></div>
                 </div>
 
                 {/* Japanese B2B Privacy Agreement Checkbox */}
