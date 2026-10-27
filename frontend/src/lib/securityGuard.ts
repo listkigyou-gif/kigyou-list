@@ -49,6 +49,42 @@ const BUILTIN_DISPOSABLE_PATTERNS = [
   /@.*dispostable\.com$/i,
 ];
 
+function ipToInt(ip: string): number | null {
+  const parts = ip.split('.').map(p => parseInt(p, 10));
+  if (parts.length !== 4 || parts.some(p => isNaN(p) || p < 0 || p > 255)) return null;
+  return ((parts[0] << 24) | (parts[1] << 16) | (parts[2] << 8) | parts[3]) >>> 0;
+}
+
+export function matchIpOrCidr(clientIp: string, target: string): boolean {
+  const cleanIp = clientIp.trim();
+  const cleanTarget = target.trim();
+
+  // 1. Exact match
+  if (cleanIp === cleanTarget) return true;
+
+  // 2. Full bitwise CIDR match (e.g. '8.216.49.0/24', '8.0.0.0/8', etc.)
+  if (cleanTarget.includes('/')) {
+    const [rangeIp, bitsStr] = cleanTarget.split('/');
+    const bits = parseInt(bitsStr, 10);
+    if (isNaN(bits) || bits < 0 || bits > 32) return false;
+    if (bits === 0) return true;
+
+    const ipInt = ipToInt(cleanIp);
+    const rangeInt = ipToInt(rangeIp);
+    if (ipInt === null || rangeInt === null) return false;
+
+    const mask = ((0xFFFFFFFF << (32 - bits)) >>> 0);
+    return (ipInt & mask) === (rangeInt & mask);
+  }
+
+  // 3. Trailing dot prefix match (e.g. '8.216.49.')
+  if (cleanTarget.endsWith('.')) {
+    return cleanIp.startsWith(cleanTarget);
+  }
+
+  return false;
+}
+
 /**
  * Validates if an IP address is blocked by any active rule
  */
@@ -64,23 +100,8 @@ export async function verifyClientIp(ip: string): Promise<{ blocked: boolean; re
   for (const item of blacklists) {
     if (item.type !== "ip") continue;
 
-    const target = item.target.trim();
-
-    // Exact match
-    if (cleanIp === target) {
+    if (matchIpOrCidr(cleanIp, item.target)) {
       return { blocked: true, reason: item.reason || "Banned IP (Active Rule)" };
-    }
-
-    // CIDR / Prefix match (e.g. '8.216.49.0/24' or '8.216.49.')
-    if (target.endsWith("/24")) {
-      const prefix = target.replace(/\.0\/24$/, "");
-      if (cleanIp.startsWith(prefix + ".")) {
-        return { blocked: true, reason: item.reason || "Banned Subnet (/24)" };
-      }
-    } else if (target.endsWith(".")) {
-      if (cleanIp.startsWith(target)) {
-        return { blocked: true, reason: item.reason || "Banned IP Range" };
-      }
     }
   }
 

@@ -33,12 +33,6 @@ function getLocale(request: NextRequest): string {
 }
 
 export function middleware(request: NextRequest) {
-  // 0. High-risk Carding Fraud IP Block
-  const clientIp = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "";
-  if (clientIp === "8.216.49.100" || clientIp.startsWith("8.216.49.")) {
-    return new NextResponse("Access Denied: Banned IP", { status: 403 });
-  }
-
   const host = request.headers.get("host") || "";
   const { pathname, search } = request.nextUrl;
 

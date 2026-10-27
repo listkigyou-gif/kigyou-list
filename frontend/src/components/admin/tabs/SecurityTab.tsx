@@ -154,11 +154,11 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
   }, [items, searchTerm]);
 
   return (
-    <section className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xs animate-in fade-in duration-200">
+    <section className="bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-800 rounded-xl p-6 shadow-xs animate-in fade-in duration-200">
       {/* Top summary stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {/* Active IPs */}
-        <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40">
+        <div className="p-4 rounded-lg bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300">
               一時遮断中IP (48h / 動的制限)
@@ -174,7 +174,7 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
         </div>
 
         {/* Permanent Domains */}
-        <div className="p-4 rounded-2xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/40">
+        <div className="p-4 rounded-lg bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200/80 dark:border-rose-900/40">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[11px] font-bold text-rose-800 dark:text-rose-300">
               永久遮断ドメイン (不正メール)
@@ -190,7 +190,7 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
         </div>
 
         {/* Total Rules */}
-        <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+        <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
           <div className="flex items-center justify-between mb-1">
             <span className="text-[11px] font-bold text-slate-500">
               登録ルール総数
@@ -207,7 +207,7 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
       </div>
 
       {/* Quick Add Block Form */}
-      <div className="mb-8 p-5 bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-2xl">
+      <div className="mb-8 p-5 bg-slate-50/80 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 rounded-lg">
         <h3 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-3">
           <Plus className="w-4 h-4 text-primary" />
           <span>新規遮断ルールの追加</span>
@@ -225,7 +225,7 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
               value={target}
               onChange={(e) => setTarget(e.target.value)}
               required
-              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 font-mono"
             />
           </div>
 
@@ -237,7 +237,7 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
             <select
               value={type}
               onChange={(e) => handleTypeChange(e.target.value as any)}
-              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
               <option value="ip">IPアドレス / CIDR</option>
               <option value="email_domain">メール・ドメイン</option>
@@ -253,7 +253,7 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
             <select
               value={durationHours}
               onChange={(e) => setDurationHours(Number(e.target.value))}
-              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
             >
               <option value={48}>48時間 (推奨 - 一時的ブロック)</option>
               <option value={168}>7日間 (1週間)</option>
@@ -272,7 +272,7 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
               placeholder="例: カード不正 (Jack last)"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+              className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -281,7 +281,7 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
             <button
               type="submit"
               disabled={submitting}
-              className="w-full py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition-colors flex items-center justify-center gap-1 shadow-xs cursor-pointer"
+              className="w-full py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-1 shadow-xs cursor-pointer"
             >
               {submitting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "遮断"}
             </button>
@@ -309,14 +309,14 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
               placeholder="IP / ドメイン / 理由検索..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 w-48 sm:w-60"
+              className="pl-8 pr-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-primary/20 w-48 sm:w-60"
             />
           </div>
 
           <button
             onClick={fetchBlacklists}
             disabled={loading}
-            className="p-2 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            className="p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
             title="再読み込み"
           >
             <RefreshCcw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
@@ -325,7 +325,7 @@ export const SecurityTab: React.FC<SecurityTabProps> = ({
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-2xl border border-slate-200/90 dark:border-slate-800">
+      <div className="overflow-x-auto rounded-lg border border-slate-200/90 dark:border-slate-800">
         <table className="w-full text-left text-xs whitespace-nowrap">
           <thead className="bg-slate-50 dark:bg-slate-800/60 text-slate-500 dark:text-slate-400 font-bold border-b border-slate-200/80 dark:border-slate-800">
             <tr>
