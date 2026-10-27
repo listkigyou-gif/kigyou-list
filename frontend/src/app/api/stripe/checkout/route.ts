@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserQuota, isFirstTimeSubscriber, isFirstTimeFormBuyer } from "@/lib/db";
-import { verifyClientIp, verifyClientEmail, isPaymentInCooldown } from "@/lib/securityGuard";
+import { verifyClientIp, verifyClientEmail, isPaymentInCooldown, isDatacenterIp, autoBanIp } from "@/lib/securityGuard";
 import { auth } from "@/auth";
 
 
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     const ipAddress = request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "127.0.0.1";
     const userAgent = request.headers.get("user-agent") || "";
 
-    // Security Check: Fraudulent email domain or IP blacklist
+    // Security Check 1: Fraudulent email domain or IP blacklist
     const emailCheck = await verifyClientEmail(email);
     if (emailCheck.blocked) {
       console.warn(`[Security Guard] Blocked checkout creation for suspicious email: ${email} (${emailCheck.reason})`);
@@ -28,6 +28,16 @@ export async function POST(request: Request) {
     if (ipCheck.blocked) {
       console.warn(`[Security Guard] Blocked checkout creation from banned IP: ${ipAddress} (${ipCheck.reason}) for email: ${email}`);
       return NextResponse.json({ error: "セキュリティ上の理由により、このIPからの決済手続きは制限されています。" }, { status: 403 });
+    }
+
+    // Security Check 2: Datacenter / Proxy / VPN IP Detection (Blocks server farm scraping tools)
+    const dcCheck = await isDatacenterIp(ipAddress);
+    if (dcCheck.isDatacenter) {
+      console.warn(`[Security Guard] Blocked checkout from Datacenter/Proxy IP: ${ipAddress} (${dcCheck.org}) for email: ${email}`);
+      await autoBanIp(ipAddress, `Auto-ban: Datacenter/Proxy IP detected on checkout (${dcCheck.org || 'Hosting network'})`, 48, "system_guard");
+      return NextResponse.json({ 
+        error: "セキュリティ保護のため、データセンター・VPN・プロキシ経由からの決済手続きは制限されています。通常回線（家庭用Wi-Fi・モバイル回線）からご利用ください。" 
+      }, { status: 403 });
     }
 
     // Cooldown Check: Repeated failure on single card / account
@@ -221,7 +231,7 @@ export async function POST(request: Request) {
         payment_method_types: ["card"],
         payment_method_options: {
           card: {
-            request_three_d_secure: "any",
+            request_three_d_secure: "challenge",
           },
         },
         line_items: [

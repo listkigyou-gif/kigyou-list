@@ -330,3 +330,65 @@ export function isPaymentInCooldown(identifier: string): { inCooldown: boolean; 
   const remainingMinutes = Math.ceil((expireTime - now) / 60000);
   return { inCooldown: true, remainingMinutes };
 }
+
+// =========================================================================
+// REAL-TIME DATACENTER / PROXY / VPN CLASSIFICATION
+// =========================================================================
+
+const datacenterIpCache = new Map<string, { isDatacenter: boolean; org?: string; timestamp: number }>();
+const DATACENTER_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+const KNOWN_DATACENTER_KEYWORDS = [
+  'datacamp', 'cdnext', 'corenet', 'alibaba', 'aliyun', 'tencent',
+  'digitalocean', 'amazon', 'aws', 'ovh', 'hetzner', 'linode',
+  'vultr', 'choopa', 'm247', 'hostinger', 'leaseweb', 'cogent',
+  'ucloud', 'zenlayer', 'kamatera', 'scaleway', 'contabo'
+];
+
+/**
+ * Checks whether an IP address belongs to a Datacenter, Hosting, or Proxy network.
+ * Uses 24h in-memory cache and 1.2s timeout. Never blocks if the lookup fails or times out.
+ */
+export async function isDatacenterIp(ip: string): Promise<{ isDatacenter: boolean; org?: string }> {
+  if (!ip || ip === "127.0.0.1" || ip === "::1" || ip === "unknown_ip") {
+    return { isDatacenter: false };
+  }
+  const cleanIp = ip.trim();
+
+  // 1. Check in-memory cache
+  const cached = datacenterIpCache.get(cleanIp);
+  if (cached && Date.now() - cached.timestamp < DATACENTER_CACHE_TTL_MS) {
+    return { isDatacenter: cached.isDatacenter, org: cached.org };
+  }
+
+  // 2. Query ASN & Hosting status via IP intelligence API
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 1200);
+    const res = await fetch(`http://ip-api.com/json/${cleanIp}?fields=status,hosting,proxy,org,as,isp`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeout);
+
+    if (res.ok) {
+      const data = await res.json();
+      if (data.status === "success") {
+        const orgInfo = `${data.org || ''} ${data.as || ''} ${data.isp || ''}`.toLowerCase();
+        const matchesKeyword = KNOWN_DATACENTER_KEYWORDS.some(kw => orgInfo.includes(kw));
+        const isDc = Boolean(data.hosting || data.proxy || matchesKeyword);
+
+        datacenterIpCache.set(cleanIp, { 
+          isDatacenter: isDc, 
+          org: data.org || data.as || (isDc ? "Datacenter/Hosting" : undefined), 
+          timestamp: Date.now() 
+        });
+        return { isDatacenter: isDc, org: data.org || data.as };
+      }
+    }
+  } catch (err) {
+    // Fail-safe: do not block legitimate users if external lookup times out
+  }
+
+  return { isDatacenter: false };
+}
+
