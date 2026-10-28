@@ -1,5 +1,6 @@
 import React from "react";
 import Link from "next/link";
+import type { Metadata } from "next";
 import { 
   Search, 
   Building2, 
@@ -37,6 +38,15 @@ export const revalidate = 3600; // 1-hour ISR cache for fast sub-50ms TTFB
 
 interface PageParams {
   params: Promise<{ locale: string }>;
+}
+
+export async function generateMetadata({ params }: PageParams): Promise<Metadata> {
+  const { locale } = await params;
+  return {
+    alternates: {
+      canonical: `/${locale}`,
+    },
+  };
 }
 
 export default async function Home({ params }: PageParams) {
