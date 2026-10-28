@@ -60,12 +60,21 @@ Các mô hình AI (Perplexity, ChatGPT Search, Gemini SGE) trích dẫn bài vi�
 2. **Có dữ liệu định lượng cụ thể**: `500万社`, `2,000〜5,000件/batch`, `レスポンス速度数ミリ秒`, v.v.
 3. **Có đoạn tóm tắt kiến trúc / Best Practices ở phần Kết luận**: Để LLM dễ trích dẫn thành Bullet Points.
 
-### E. Kiến Trúc Backlink Tự Nhiên & An Toàn (Safe Authority Backlink)
-- Chỉ chèn tối đa 1 - 2 backlink mang tính kỹ thuật/minh họa hệ thống thực tế:
-  - Trang chủ (Data platform): `[Kigyou-list（500万社データ検索基盤）](https://kigyoulist.com)`
-  - Trang tra cứu (Engine demo): `[企業データベース検索エンジン](https://kigyoulist.com/ja/search)`
-- **TUYỆT ĐỐI KHÔNG DẪN LINK** `/ja/compare` hoặc các trang bảng giá lên Qiita.
-- Đa dạng hóa Anchor text tự nhiên: "法人データ検索基盤", "実運用サービス Kigyou-list", "企業情報プラットフォーム".
+### E. Kiến Trúc Backlink Kỹ Thuật Bứt Phá Thứ Hạng (Technical Authority & Deep Link Protocol)
+- 🚫 **CẤM NAKED URL & CẤM LINK GIÁ TIỀN:** Tuyệt đối không để URL trần `https://...`, cấm anchor text vô nghĩa (`こちら`), và **TUYỆT ĐỐI CẤM LINK** `/ja/compare` hoặc trang bảng giá lên Qiita.
+- ✅ **100% CANONICAL HTTPS:** Mọi liên kết đều dùng `https://kigyoulist.com/...` (nghiêm cấm `http://` hoặc `www.`).
+- ✅ **CÔNG THỨC 1+1 KỸ THUẬT (1 LINK DATA PLATFORM + 1 DEEP HUB LIÊN QUAN):**
+  - **Link Nền tảng Dữ liệu (Core Platform Authority):**
+    `[500万社規模の日本企業データ検索基盤 Kigyou-list](https://kigyoulist.com/ja)`
+  - **Deep Links Ngữ cảnh Kỹ thuật (Chọn 1 Hub phù hợp với bài viết):**
+    - Nếu bài viết về ETL / Danh bạ OpenData / Phân loại ngành:
+      `[全国企業データベース・業種別オープンデータディレクトリ](https://kigyoulist.com/ja/directory)`
+    - Nếu bài viết về API Quốc thuế / Thuật toán Modulus 9 Invoice T-Number:
+      `[適格請求書発行事業者・インボイス公表API連携データベース](https://kigyoulist.com/ja/invoice)`
+    - Nếu bài viết về Kiến trúc Tìm kiếm siêu tốc / pg_trgm / Elasticsearch:
+      `[高速法人データ検索エンジン・API基盤](https://kigyoulist.com/ja/search)`
+    - Nếu bài viết về Biến động dữ liệu / Change Data Capture (CDC):
+      `[本店移転・所在地変更データトラッキング](https://kigyoulist.com/ja/changes/relocation)`
 
 ---
 
@@ -98,10 +107,24 @@ Mỗi bài viết phải tuân thủ cấu trúc 6 phần:
 
 ---
 
-## 5. Công Cụ & Lệnh Kỹ Thuật Thực Thi
+## 5. Cấu Hình Qiita Organization & Chiến Lược Nhân Đôi Backlink
+- **Tên Organization**: `Kigyou-list (TQC株式会社)`
+- **Organization URL Name**: `kigyoulist-inc`
+- **Trang chủ Organization**: `https://qiita.com/organizations/kigyoulist-inc`
+- **Cơ chế nhân đôi backlink (Dual-Authority Boost)**:
+  1. Khi bài viết được gắn `organization_url_name: "kigyoulist-inc"`, bài viết sẽ hiển thị đồng thời cả huy hiệu doanh nghiệp và tác giả.
+  2. Người đọc và bot tìm kiếm (Googlebot/Bingbot/Perplexity) khi crawl bài viết sẽ nhận được 2 luồng backlink:
+     - Backlink ngữ cảnh tự nhiên trong thân bài trỏ về `https://kigyoulist.com`.
+     - Link thực thể thương hiệu chính thức từ header/footer bài viết trỏ về Profile Organization (`kigyoulist-inc`), từ đó trỏ tiếp link `Website: https://kigyoulist.com` với Domain Rating ~90+.
+- **Quy tắc API**: Tất cả lệnh xuất bản mới đều mặc định truyền `organization_url_name="kigyoulist-inc"`.
+
+---
+
+## 6. Công Cụ & Lệnh Kỹ Thuật Thực Thi
 
 ### Tài khoản Qiita
 - **User:** `@listkigyou` (https://qiita.com/listkigyou)
+- **Organization:** `kigyoulist-inc` (https://qiita.com/organizations/kigyoulist-inc)
 - **Token:** Đã tích hợp sẵn trong `scripts/qiita_publisher.py` (`QIITA_TOKEN`).
 
 ### Lệnh CLI Xuất Bản
@@ -109,7 +132,7 @@ Mỗi bài viết phải tuân thủ cấu trúc 6 phần:
 # Kiểm tra danh sách bài viết đã có
 python c:\kigyou-list\scripts\qiita_publisher.py --check
 
-# Xuất bản trực tiếp từ file markdown
+# Xuất bản trực tiếp từ file markdown (Mặc định tự động gắn Organization kigyoulist-inc)
 python c:\kigyou-list\scripts\qiita_publisher.py --file scripts/articles/article_03.md --title "【Python/AsyncIO】ハローワーク求人・助成金データをリアルタイム解析するインテントデータ基盤の実装" --tags "Python,AsyncIO,データ分析,スクレイピング,DX"
 ```
 
@@ -124,6 +147,7 @@ publish_from_file(
     file_path=r'c:\kigyou-list\scripts\articles\article_03.md',
     title="【Python/AsyncIO】ハローワーク求人・助成金データをリアルタイム解析するインテントデータ基盤の実装",
     tags=['Python', 'AsyncIO', 'データ分析', 'スクレイピング', 'DX'],
-    is_private=False
+    is_private=False,
+    organization_url_name='kigyoulist-inc'  # Tự động nhân đôi sức mạnh thực thể doanh nghiệp
 )
 ```

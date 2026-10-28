@@ -20,6 +20,11 @@ Khi người dùng ra lệnh:
    - `title`: Tiêu đề giật tít báo chí chứa từ khóa Bing & Google TOP (`国内最大級500万件超`, `企業リスト`, `ダウンロード`).
    - `lead`: Đoạn mở đầu chuẩn mực báo chí Nhật Bản, định vị thương hiệu Kigyou-list và pháp nhân TQC株式会社.
    - `heading_1`, `body_1`, `heading_2`, `body_2`, `heading_3`, `body_3`: Cấu trúc 3 đoạn logic chặt chẽ.
+     - **Quy chuẩn Backlink & Deep Link**:
+       - `body_3` luôn chèn đầy đủ URL chính thức và Deep Link Hub:
+         `・公式サイト：https://kigyoulist.com/ja`
+         `・料金比較・機能一覧：https://kigyoulist.com/ja/compare`
+         `・全国企業データベース・業種一覧：https://kigyoulist.com/ja/directory`
    - `category`: `service` (サービス紹介).
    - `industry`: `g_net` (ネットサービス).
    - `company_name`: `TQC株式会社`
@@ -29,7 +34,7 @@ Khi người dùng ra lệnh:
    - `prefecture`: `tr13` (東京都)
    - `address`: `豊島区南池袋２丁目３３－６ 佐藤ビル３F`
    - `phone`: `03-6907-1219`
-   - `url`: `https://kigyoulist.com/`
+   - `url`: `https://kigyoulist.com/ja`
    - `under_5_this_month`: `sv010` (いいえ - Miễn phí)
    - `sns_option`: `sv02` (利用しない - 0 Yên)
    - `share_agreement`: `わかりました` (Đồng ý chia sẻ)
@@ -58,4 +63,4 @@ Khi người dùng ra lệnh:
 - **Điện thoại:** `03-6907-1219` (Giải quyết truy vấn GSC `03-6907-1219`, `0369071219`)
 - **Mã số hóa đơn (Invoice):** `T4013301048678`
 - **Đại diện / Liên hệ:** `キム　バン　チュン`
-- **Domain chính thức:** `https://kigyoulist.com/`
+- **Domain chính thức:** `https://kigyoulist.com/ja` (100% Canonical HTTPS Non-WWW)

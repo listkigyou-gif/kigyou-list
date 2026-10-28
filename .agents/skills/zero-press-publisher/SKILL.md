@@ -19,8 +19,13 @@ Khi người dùng ra lệnh:
 1. **Chuẩn bị payload bài viết JSON**:
    - `title`: Tiêu đề giật tít chuẩn phong cách báo chí B2B Nhật Bản, có con số định lượng (`500万社`, `初月1,260円`, `1日20件CSV永久無料`).
    - `summary`: Tóm tắt mở đầu súc tích (150 - 250 ký tự), nêu rõ tên pháp nhân vận hành **TQC株式会社** và thương hiệu **Kigyou-list**.
-   - `body_html`: Nội dung chuẩn HTML (thẻ `<p>`, `<h2>`, `<h3>`, `<strong>`, `<a>`, `<br>`). Luôn gắn link chính thức kèm UTM tracking:
-     `https://kigyoulist.com/?utm_source=zeropress&utm_medium=pr&utm_campaign=...`
+   - `body_html`: Nội dung chuẩn HTML (thẻ `<p>`, `<h2>`, `<h3>`, `<strong>`, `<a>`, `<br>`).
+     - **Quy chuẩn Backlink & Deep Link Bứt Phá Thứ Hạng**:
+       - 100% Canonical HTTPS (`https://kigyoulist.com/...`, cấm `http://` hoặc `www.`).
+       - Luôn chèn đồng thời Link chính thức `https://kigyoulist.com/ja` và 1-2 Deep Links Hub (`/ja/compare`, `/ja/directory`, `/ja/invoice`):
+         `<p>■ 企業リスト・法人データベース公式サイト：<a href="https://kigyoulist.com/ja?utm_source=zeropress&utm_medium=pr">https://kigyoulist.com/ja</a></p>`
+         `<p>■ 料金プラン比較表（初月1,260円）：<a href="https://kigyoulist.com/ja/compare?utm_source=zeropress&utm_medium=pr">https://kigyoulist.com/ja/compare</a></p>`
+         `<p>■ 全国企業データベース・業種一覧：<a href="https://kigyoulist.com/ja/directory?utm_source=zeropress&utm_medium=pr">https://kigyoulist.com/ja/directory</a></p>`
    - `category`: `tech`, `product`, `business`, hoặc `research`.
    - `delivery`: `published` (phát hành ngay), `scheduled` (hẹn giờ), hoặc `draft` (lưu nháp).
    - `image_path`: Banner 16:9 lưu tại `scripts/press_releases/eyecatch_01.jpg`.
@@ -63,6 +68,6 @@ Khi người dùng ra lệnh:
   "category": "tech",
   "delivery": "published",
   "image_path": "c:\\kigyou-list\\scripts\\press_releases\\eyecatch_01.jpg",
-  "body_html": "<p>TQC株式会社（本社：東京都豊島区）は、国内最大級500万社超の法人データベース...</p>"
+  "body_html": "<p>TQC株式会社（本社：東京都豊島区）は、国内最大級500万社超の法人データベース...</p><p>■ 企業リスト・法人データベース公式サイト: <a href=\"https://kigyoulist.com/ja?utm_source=zeropress&utm_medium=pr\">https://kigyoulist.com/ja</a></p><p>■ 料金プラン比較表: <a href=\"https://kigyoulist.com/ja/compare?utm_source=zeropress&utm_medium=pr\">https://kigyoulist.com/ja/compare</a></p><p>■ 全国企業データベース・業種一覧: <a href=\"https://kigyoulist.com/ja/directory?utm_source=zeropress&utm_medium=pr\">https://kigyoulist.com/ja/directory</a></p>"
 }
 ```

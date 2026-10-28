@@ -37,11 +37,55 @@ Không chia lẻ kênh, mỗi ngày Agent sẽ lấy **1 Chủ Đề Cốt Lõi 
 
 *(Quy tắc ngoại lệ: **ValuePress** bắt buộc giãn cách tối thiểu 30 ngày/bài. Bài trước đăng ngày 11/10/2026, do đó **TẠM KHÓA ĐẾN SAU 13/11/2026**).*
 *(Tạm thời bỏ qua **LinkedIn** cho đến khi kích hoạt lại. Đã loại trừ vĩnh viễn Yahoo! Chiebukuro).*
+---
 
-> [!WARNING]
-> **QUY TẮC PHÂN TÁCH NỘI DUNG TUYỆT ĐỐI (PLATFORM BOUNDARY ENFORCEMENT):**
-> * **Note.com:** Kênh dành cho Giới kinh doanh, Founder, SME, Marketing. Thoải mái phân tích ROI, case study tiếp cận khách hàng, so sánh chi phí và giới thiệu gói 1,260¥.
-> * **Qiita & Zenn:** Kênh thuần túy dành cho Kỹ sư & Lập trình viên. **TUYỆT ĐỐI CẤM** viết về bảng giá, tiền tệ (`¥`, `円`), so sánh đối thủ, cấm link `/ja/compare`, cấm chủ đề cào form gửi thư bán hàng (Inquiry form sales spam). Qiita sẽ gắn cờ và ẩn bài ngay lập tức nếu phát hiện yếu tố tiếp thị / sales pitch! Mọi bài viết Qiita/Zenn chỉ được tập trung 100% vào: Code, Thuật toán, Kiến trúc DB, Big Data 5 triệu records, Performance tuning.
+## 2.1. Quy Chuẩn Chiến Lược Bứt Phá Thứ Hạng SEO (SEO Ranking Breakthrough Protocol)
+
+Để đưa Kigyou-list bứt phá TOP 1–3 Google Nhật Bản cho toàn bộ từ khóa thương mại B2B cốt lõi (`企業リスト`, `法人データベース`, `営業リスト`, `インボイス事業者検索`), toàn bộ các Sub-Agent xuất bản nội dung **BẮT BUỘC** tuân thủ triệt để 3 quy tắc sống còn sau:
+
+### A. Quy Tắc 1: 100% Canonical HTTPS Non-WWW Clean URLs
+- **Định dạng duy nhất được phép:** `https://kigyoulist.com/...` (Canonical tuyệt đối).
+- 🚫 **TUYỆT ĐỐI CẤM:** Không bao giờ xuất bản URL dạng `http://` (gây chia rẽ tín hiệu PageRank) hoặc `www.kigyoulist.com` (gây chuyển hướng redirect 301 hao tổn crawl budget).
+- Mọi link trang chủ trỏ về bản tiếng Nhật phải chuẩn hóa: `https://kigyoulist.com/ja` (hoặc `https://kigyoulist.com/` có canonical trỏ về `/ja`).
+
+### B. Quy Tắc 2: Giao Thức Mạng Nhện Liên Kết Sâu (Deep Linking Hub & Spoke Protocol)
+- 🚫 **CẤM 100% LINK DỒN VỀ TRANG CHỦ:** Không bao giờ chỉ chèn 1 link duy nhất về trang chủ.
+- ✅ **CÔNG THỨC 1+2 BẮT BUỘC CHO MỌI BÀI VIẾT / THÔNG CÁO BÁO CHÍ:**
+  1. **1 Link Cốt Lõi (Primary Link):** Trỏ về Trang chủ `https://kigyoulist.com/ja` HOẶC Trang So sánh Bảng giá `https://kigyoulist.com/ja/compare` (Ngoại trừ Qiita/Zenn cấm link compare).
+  2. **1–2 Deep Links Ngữ Cảnh (Contextual Deep Hub Links):** Trỏ trực tiếp vào các Hub chuyên đề liên quan mật thiết tới chủ đề bài viết để truyền trực tiếp PageRank vào các trang chuyên mục:
+     - **Danh mục Doanh nghiệp Tổng:** `https://kigyoulist.com/ja/directory`
+     - **Hub Ngành nghề cụ thể:** `https://kigyoulist.com/ja/industry/{code}` (ví dụ: `IT`, `kensetsu`, `fudousan`, `seizou`, `iryocare`, `unyu`, `insyoku`, ...)
+     - **Hub Địa phương 47 tỉnh thành:** `https://kigyoulist.com/ja/area/{prefectureCode}` (ví dụ: `tokyo`, `osaka`, `aichi`, `fukuoka`, ...)
+     - **Hub Tra cứu Ngành nghề x Địa phương:** `https://kigyoulist.com/ja/industry/{ind}/location/{pref}`
+     - **Hub Tra cứu Hóa đơn Invoice (T-Number):** `https://kigyoulist.com/ja/invoice`
+     - **Hub Doanh nghiệp Thay đổi Trụ sở / Pháp lý:** `https://kigyoulist.com/ja/changes/relocation`, `https://kigyoulist.com/ja/changes/merger`
+     - **Hub Doanh nghiệp Phá sản / Giải thể:** `https://kigyoulist.com/ja/status/bankruptcies`
+     - **Hub Tự động hóa Form Marketing:** `https://kigyoulist.com/ja/form-marketing`
+
+### C. Quy Tắc 3: Mỏ Neo Từ Khóa Vàng Tiếng Nhật (Commercial Anchor Text Protocol)
+- 🚫 **CẤM TUYỆT ĐỐI NAKED URLS & ANCHOR TEXT CHUNG CHUNG:** Không bao giờ để link trần dạng `https://...` hoặc dùng các từ vô nghĩa như `こちら`, `リンク`, `詳細`, `公式`, `Webサイト`.
+- ✅ **BẮT BUỘC DÙNG ANCHOR TEXT CHỨA TỪ KHÓA TÌM KIẾM B2B CAO CẤP:**
+  - **Trang chủ / Brand Entity:**
+    - `[企業リスト・法人データベースならKigyou-list](https://kigyoulist.com/ja)`
+    - `[日本全国500万社の営業リスト作成ならKigyou-list](https://kigyoulist.com/ja)`
+    - `[国内最大級500万件の企業情報プラットフォーム Kigyou-list](https://kigyoulist.com/ja)`
+  - **Trang So sánh Bảng giá (Note/PR/Social):**
+    - `[企業リストツールの料金比較・初期費用0円プラン](https://kigyoulist.com/ja/compare)`
+  - **Trang Directory / Ngành nghề:**
+    - `[全国企業データベース・業種一覧](https://kigyoulist.com/ja/directory)`
+    - `[IT・通信業界の企業一覧・営業リスト](https://kigyoulist.com/ja/industry/IT)`
+    - `[建設業界の企業データベース・取引先開拓](https://kigyoulist.com/ja/industry/kensetsu)`
+    - `[製造業の企業一覧・調達先リスト](https://kigyoulist.com/ja/industry/seizou)`
+  - **Trang Địa phương:**
+    - `[東京都の企業一覧・法人データベース](https://kigyoulist.com/ja/area/tokyo)`
+    - `[大阪府の企業一覧・営業リスト作成](https://kigyoulist.com/ja/area/osaka)`
+  - **Trang Invoice & Biến động pháp lý:**
+    - `[適格請求書発行事業者・インボイス登録番号検索](https://kigyoulist.com/ja/invoice)`
+    - `[本店移転・所在地変更の最新企業一覧](https://kigyoulist.com/ja/changes/relocation)`
+  - **Kênh Kỹ thuật (Qiita & Zenn - Safe Technical Anchors):**
+    - `[500万社規模の日本企業データ検索基盤 Kigyou-list](https://kigyoulist.com/ja)`
+    - `[全国法人データ・企業ディレクトリ](https://kigyoulist.com/ja/directory)`
+    - `[適格請求書公表API連携データベース](https://kigyoulist.com/ja/invoice)`
 
 ---
 

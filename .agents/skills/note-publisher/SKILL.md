@@ -32,9 +32,23 @@ Mỗi bài viết phải luôn tuân thủ cấu trúc 6 phần:
    - Dữ liệu ý định mua hàng (Intent Data: Hello Work, trợ cấp chính phủ, trúng thầu công).
    - Gửi Form tự động thông minh bằng AI: **1 thông điệp chỉ từ 5.9円〜 (祝祭 70% OFF / thường 19.8円)** kèm AI lọc từ chối chào hàng.
 5. **Mục FAQ (Câu hỏi thường gặp):** 3 cặp Q&A ngắn gọn nhằm kích hoạt AI trích dẫn câu trả lời trực tiếp.
-6. **CTA & Backlinks:** Luôn chèn link:
-   - `https://kigyoulist.com/ja/compare`
-   - `https://kigyoulist.com`
+6. **CTA & Quy Chuẩn Backlink Bứt Phá Thứ Hạng (Hub & Spoke Protocol):**
+   - 🚫 **TUYỆT ĐỐI CẤM NAKED URL:** Không bao giờ để link trần dạng `https://kigyoulist.com` hoặc dùng anchor text generic (`こちら`, `詳細`).
+   - ✅ **100% CANONICAL HTTPS:** Mọi liên kết đều dùng `https://kigyoulist.com/...` (nghiêm cấm `http://` hoặc `www.`).
+   - ✅ **CÔNG THỨC BẮT BUỘC (1 LINK CỐT LÕI + 1-2 DEEP LINKS CHUYÊN MỤC):**
+     1. **Link So sánh & Bảng giá:**
+        `[企業リストツールの料金比較・機能一覧はこちら（初月1,260円・年縛りなし）](https://kigyoulist.com/ja/compare)`
+     2. **Link Trang chủ Brand Authority:**
+        `[500万社を網羅する企業データベース・営業リスト作成ならKigyou-list](https://kigyoulist.com/ja)`
+     3. **1-2 Deep Links Ngữ Cảnh (Chọn theo chủ đề bài viết):**
+        - Nếu bài viết về ngành cụ thể (IT, Xây dựng, BĐS...):
+          `[【業種別】全国企業データベース・一覧検索](https://kigyoulist.com/ja/directory)` hoặc `[IT・通信業界の企業一覧・営業リスト](https://kigyoulist.com/ja/industry/IT)`
+        - Nếu bài viết về tiếp cận theo khu vực:
+          `[東京都の企業一覧・法人データベース](https://kigyoulist.com/ja/area/tokyo)`
+        - Nếu bài viết về pháp lý / Invoice / Biến động trụ sở:
+          `[適格請求書発行事業者・インボイス登録番号検索](https://kigyoulist.com/ja/invoice)` hoặc `[本店移転・所在地変更企業一覧](https://kigyoulist.com/ja/changes/relocation)`
+        - Nếu bài viết về tiếp cận Form:
+          `[問い合わせフォーム自動営業・送信代行ツール](https://kigyoulist.com/ja/form-marketing)`
 
 ---
 

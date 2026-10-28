@@ -19,7 +19,13 @@ Khi người dùng ra lệnh:
 1. **Sinh nội dung PR tiếng Nhật chuẩn quy chuẩn ValuePress Free Plan**:
    - **Tiêu đề (`title`)**: Tối đa **80 ký tự** (Quy định cứng của ValuePress Free Plan). Có số liệu định lượng + tên thương hiệu `Kigyou-list`.
    - **Tóm tắt (`summary`)**: Tối đa **400 ký tự** (Quy định cứng của ValuePress Free Plan). Trả lời 5W1H (Ai, làm gì, khi nào, vì sao, giá bao nhiêu).
-   - **Thân bài (`body`)**: Định dạng HTML với các thẻ `<p>`, `<br>`. Có 3 ưu thế cạnh tranh, bảng giá `初月1,260円（通常4,200円）・年縛りなし（他社の1/25〜1/80の圧倒的低価格）`, và link chính thức có gắn tracking `https://kigyoulist.com/?utm_source=valuepress&utm_medium=pr`.
+   - **Thân bài (`body`)**: Định dạng HTML với các thẻ `<p>`, `<br>`. Có 3 ưu thế cạnh tranh, bảng giá `初月1,260円（通常4,200円）・年縛りなし（他社の1/25〜1/80の圧倒的低価格）`.
+   - **Quy chuẩn Backlink & Deep Link Bứt Phá Thứ Hạng**:
+     - 100% Canonical HTTPS (`https://kigyoulist.com/...`, nghiêm cấm `http://` hoặc `www.`).
+     - Chèn đồng thời Link chính thức `https://kigyoulist.com/ja` và 1-2 Deep Links Hub chuyên mục (`/ja/compare`, `/ja/directory`, `/ja/invoice`):
+       `<p>■ 公式サイト：<a href="https://kigyoulist.com/ja?utm_source=valuepress&utm_medium=pr">https://kigyoulist.com/ja</a></p>`
+       `<p>■ 料金プラン比較表：<a href="https://kigyoulist.com/ja/compare?utm_source=valuepress&utm_medium=pr">https://kigyoulist.com/ja/compare</a></p>`
+       `<p>■ 全国企業一覧・業種別ディレクトリ：<a href="https://kigyoulist.com/ja/directory?utm_source=valuepress&utm_medium=pr">https://kigyoulist.com/ja/directory</a></p>`
 2. **Banner thương hiệu (`eyecatch`)**:
    - Sử dụng ảnh Banner chuẩn tỉ lệ 16:9 lưu tại `scripts/press_releases/eyecatch_01.jpg` (Chứa logo và tên miền **`kigyoulist.com`**).
    - Nếu cần ảnh mới cho chủ đề đặc biệt, gọi `generate_image` với text bắt buộc là `kigyoulist.com` (tuyệt đối không viết `企業リスト.com` làm tên miền chính).
@@ -89,7 +95,7 @@ Khi cần xuất bản bài mới, chỉ cần tạo file JSON theo mẫu:
 {
   "title": "【国内最大級500万社】法人DB『Kigyou-list』、地域別・業種別詳細フィルター機能を強化",
   "summary": "国内最大級500万件超の法人データを網羅する『Kigyou-list（kigyoulist.com）』が検索機能をアップデート。全国47都道府県・細分類業種での高精度ターゲティングに対応し、初月1,260円（通常4,200円）・年縛りなし・他社の1/25〜1/80の圧倒的低価格で新規営業の無駄打ちをゼロにします。",
-  "body": "<p>■ アップデートの背景...</p><p>■ 主な機能と特徴...</p><p>■ サービス公式サイト: https://kigyoulist.com/?utm_source=valuepress&utm_medium=pr</p>",
+  "body": "<p>■ アップデートの背景...</p><p>■ 主な機能と特徴...</p><p>■ サービス公式サイト: <a href=\"https://kigyoulist.com/ja?utm_source=valuepress&utm_medium=pr\">https://kigyoulist.com/ja</a></p><p>■ 料金比較・プラン詳細: <a href=\"https://kigyoulist.com/ja/compare?utm_source=valuepress&utm_medium=pr\">https://kigyoulist.com/ja/compare</a></p><p>■ 全国企業一覧・業種別ディレクトリ: <a href=\"https://kigyoulist.com/ja/directory?utm_source=valuepress&utm_medium=pr\">https://kigyoulist.com/ja/directory</a></p>",
   "eyecatch": "c:\\kigyou-list\\scripts\\press_releases\\eyecatch_01.jpg"
 }
 ```

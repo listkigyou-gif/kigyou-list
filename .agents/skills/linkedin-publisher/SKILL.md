@@ -46,19 +46,26 @@ Khi người dùng đưa ra các câu lệnh như:
 
 ### Trụ cột 3: AI Form Marketing & Tự động hóa Outbound
 - Đánh giá hiệu quả form sales (16.1 JPY/lượt gửi thành công), tỷ lệ mở cao hơn email marketing 3 lần.
-- Link First Comment: `https://kigyoulist.com?utm_source=linkedin&utm_medium=social`
+- Link First Comment: `https://kigyoulist.com/ja/form-marketing?utm_source=linkedin&utm_medium=social`
 
 ### Trụ cột 4: B2B Growth Hacks & Lead Gen Playbooks
 - Chia sẻ framework, checklist xây dựng danh sách khách hàng doanh nghiệp cho SDR và RevOps.
-- Link First Comment: `https://kigyoulist.com/ja/compare?utm_source=linkedin&utm_medium=social`
+- Link First Comment: `https://kigyoulist.com/ja/directory?utm_source=linkedin&utm_medium=social`
 
 ---
 
-## 3. Quy Tắc Kỹ Thuật Chống Bóp Reach Của LinkedIn
+## 3. Quy Tắc Kỹ Thuật Chống Bóp Reach & Mạng Nhện Backlink LinkedIn
 
 - **KHÔNG BAO GIỜ** dán trực tiếp đường link website vào phần caption bài viết (LinkedIn sẽ bóp 50-70% impressions).
-- Luôn luôn đặt link trong **First Comment** kèm lời nhắn ngắn gọn:
-  `詳細・無料トライアルはこちらから：\n<URL>`
+- **100% CANONICAL HTTPS:** Luôn sử dụng tiền tố `https://kigyoulist.com/ja/...` (tuyệt đối không dùng `http://` hoặc `www.`).
+- **First Comment có cấu trúc tiêu đề tiếng Nhật & Deep Link Hub:**
+  ```text
+  ▼ 日本全国500万社の企業データベース・詳細比較はこちら：
+  https://kigyoulist.com/ja/compare?utm_source=linkedin&utm_medium=social
+
+  ▼ 業種別・地域別の企業一覧ディレクトリ：
+  https://kigyoulist.com/ja/directory?utm_source=linkedin&utm_medium=social
+  ```
 
 ---
 

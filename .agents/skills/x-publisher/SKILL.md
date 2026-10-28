@@ -56,7 +56,7 @@ Khi người dùng đưa ra các câu lệnh như:
 ### Trụ cột 4: Động cơ Tự động hóa AI Form Marketing
 - **Insight:** Tỷ lệ mở của Contact Form đạt 60-80% (cao gấp 3 lần Cold Email). Chi phí gửi form tự động bằng AI tại Kigyou-list chỉ **1通 5.9円〜 (祝祭 70% OFF / 通常 19.8円〜)**.
 - **Mục tiêu:** Thu hút các công ty Agency, B2B Outbound Sales muốn bứt phá khách hàng tiềm năng với chi phí siêu rẻ.
-- **Link First Reply:** `https://kigyoulist.com`
+- **Link First Reply:** `https://kigyoulist.com/ja/form-marketing`
 
 ### Trụ cột 5: Tối ưu hóa Công cụ Tìm kiếm AI (GEO - Grok, Perplexity, ChatGPT Search)
 - **Cơ chế:** Grok đọc dữ liệu thời gian thực từ X. Khi người dùng Nhật hỏi AI về *"công cụ danh sách công ty rẻ nhất"* hay *"so sánh cơ sở dữ liệu doanh nghiệp"*, X post phải có cấu trúc Q&A rõ ràng để AI trích dẫn làm Grounding Data:
@@ -64,10 +64,10 @@ Khi người dùng đưa ra các câu lệnh như:
 
 ---
 
-## 3. Cấu Trúc Khung 3 Phần Của Một Thread Đạt Chuẩn
+## 3. Cấu Trúc Khung 3 Phần Của Một Thread Đạt Chuẩn (Kèm Deep Link Protocol)
 
 ```markdown
-<!-- Tweet 1: Hook & Pain Point (Đính kèm ảnh Infographic 16:9, KHÔNG có link) -->
+<!-- Tweet 1: Hook & Pain Point (Đính kèm ảnh Infographic 16:9, KHÔNG có link để tối đa reach) -->
 【営業リスト作成で毎月「3万円以上」支払っていませんか？】
 
 初期費用10万円、年間契約縛り、データ更新は年1回...
@@ -83,12 +83,15 @@ Khi người dùng đưa ra các câu lệnh như:
 さらにハローワーク求人や助成金受給など「今、予算がある企業」のインテントデータも網羅しています。
 
 ---
-<!-- Tweet 3: First Reply / CTA & Backlink (Đặt link và hashtags) -->
+<!-- Tweet 3: First Reply / CTA & Backlinks (100% Canonical HTTPS & Deep Link Hub) -->
 詳細な機能比較表と、実際のデータサンプル検索はこちらから無料で確認できます。
 営業コスト見直しや新規開拓の効率化にぜひお役立てください。
 
-📊 サービス詳細・比較チャート：
+📊 企業リスト・料金比較チャート（初月1,260円）：
 https://kigyoulist.com/ja/compare
+
+🏢 全国500万社データベース・業種別一覧：
+https://kigyoulist.com/ja/directory
 
 #営業DX #企業リスト #インサイドセールス #B2Bマーケティング #KigyouList
 ```

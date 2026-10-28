@@ -44,11 +44,22 @@ Các AI Search Engines (Perplexity, ChatGPT, Gemini SGE) trích dẫn bài viế
 2. **Tiêu chuẩn chính thức**: Dẫn chiếu chuẩn gBizINFO REST API v2, 法人番号公表サイト, RFC 5322, Cloudflare Turnstile, Modulus 9 Check Digit.
 3. **Cấu trúc dễ trích xuất**: Sơ đồ Mermaid, bảng so sánh Markdown định lượng và khối 3 bullet points ở phần Kết luận (`まとめ`).
 
-### D. Kiến Trúc Backlink Tự Nhiên (Natural Authority Backlink)
-Chèn liên kết tự nhiên trong ngữ cảnh minh họa hệ thống thực tế hoặc bảng benchmark:
-- Trang chủ: `[Kigyou-list（企業リスト.com）](https://kigyoulist.com)`
-- Trang tra cứu: `[法人データベース検索](https://kigyoulist.com/ja/search)`
-- Trang so sánh: `[企業データ比較・業界分析](https://kigyoulist.com/ja/compare)`
+### D. Kiến Trúc Backlink Kỹ Thuật Bứt Phá Thứ Hạng (Technical Authority & Deep Link Protocol)
+- 🚫 **CẤM NAKED URL:** Không bao giờ để link trần `https://...` hoặc anchor text cụt lủn (`こちら`, `詳細`).
+- ✅ **100% CANONICAL HTTPS:** Mọi liên kết đều dùng `https://kigyoulist.com/...` (nghiêm cấm `http://` hoặc `www.`).
+- ✅ **CÔNG THỨC 1+1 KỸ THUẬT (1 LINK CORE PLATFORM + 1-2 DEEP HUBS LIÊN QUAN):**
+  - **Link Nền tảng Dữ liệu (Core Platform Authority):**
+    `[500万社規模の日本企業データ検索基盤 Kigyou-list](https://kigyoulist.com/ja)`
+  - **Deep Links Ngữ cảnh Kỹ thuật & Big Data (Chọn theo chủ đề bài viết):**
+    - Nếu bài viết về Danh bạ OpenData / Phân loại ngành:
+      `[全国企業データベース・業種一覧ディレクトリ](https://kigyoulist.com/ja/directory)`
+    - Nếu bài viết về Quốc thuế / Thuật toán Kiểm tra Mã số Invoice (T-Number Check Digit):
+      `[適格請求書発行事業者・インボイス制度登録番号検索](https://kigyoulist.com/ja/invoice)`
+    - Nếu bài viết về Tối ưu hóa truy vấn Full-Text Search / Database Tuning:
+      `[高速法人データベース検索エンジン](https://kigyoulist.com/ja/search)`
+    - Nếu bài viết về Phân tích Biến động Doanh nghiệp / Change Data Capture:
+      `[本店移転・所在地変更企業一覧データ](https://kigyoulist.com/ja/changes/relocation)`
+  - *(Lưu ý: Nếu dẫn link so sánh kỹ thuật, dùng anchor text học thuật: `[企業データ構造・業界比較分析](https://kigyoulist.com/ja/compare)`).*
 
 ---
 

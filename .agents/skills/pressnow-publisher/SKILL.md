@@ -26,7 +26,13 @@ Khi người dùng ra lệnh:
    - **Phụ đề (`subtitle`)**: 40〜80 ký tự, tóm tắt đối tượng và giá trị giải pháp.
    - **Lead (`lead`)**: 100〜200 ký tự chuẩn 5W1H (Ai, cái gì, khi nào, ở đâu, lý do, bằng cách nào).
    - **Thân bài (`body_heading1-3`, `body_text1-3`)**: Bối cảnh thị trường, tính năng 5 triệu data + tài chính, định hướng AI matching.
-   - **Thông tin công ty (`official`)**: TQC株式会社, hotline 03-6907-1219, website chính thức và 4 liên kết phụ (Company List, Pricing, X, Blog).
+   - **Thông tin công ty & 4 liên kết phụ Deep Hubs (`official`)**:
+     - Tuân thủ 100% Canonical HTTPS (`https://kigyoulist.com/...`, cấm `http://` hoặc `www.`).
+     - TQC株式会社, hotline 03-6907-1219, website chính thức `https://kigyoulist.com/ja` và 4 liên kết phụ truyền PageRank vào các Category Hubs:
+       - Sub 1: Directory Hub (`https://kigyoulist.com/ja/directory`)
+       - Sub 2: Pricing/Compare Hub (`https://kigyoulist.com/ja/compare`)
+       - Sub 3: Invoice T-Number Hub (`https://kigyoulist.com/ja/invoice`)
+       - Sub 4: Official X (`https://x.com/kigyoulist`)
 3. **Lưu file Payload JSON**:
    - Lưu vào `scripts/press_releases/release_pressnow_YYYYMMDD.json`.
 4. **Kích hoạt Script xuất bản tự động bằng Playwright**:
@@ -90,16 +96,16 @@ Khi người dùng ra lệnh:
     "address": "東京都豊島区池袋2丁目",
     "person": "広報担当：高橋 里佳",
     "tel": "03-6907-1219",
-    "site": "https://kigyoulist.com",
+    "site": "https://kigyoulist.com/ja",
     "email": "info@kigyoulist.com",
-    "sub_url1_label": "企業リスト・データベース検索",
-    "sub_url1": "https://kigyoulist.com/company-list",
-    "sub_url2_label": "お問い合わせ・利用プラン",
-    "sub_url2": "https://kigyoulist.com/plans",
-    "sub_url3_label": "公式X（旧Twitter）",
-    "sub_url3": "https://x.com/kigyoulist",
-    "sub_url4_label": "SaaSカオスマップ2026特集",
-    "sub_url4": "https://kigyoulist.com/blog/saas-chaosmap-2026"
+    "sub_url1_label": "全国500万社データベース・業種一覧",
+    "sub_url1": "https://kigyoulist.com/ja/directory",
+    "sub_url2_label": "企業リストツールの料金比較・機能一覧",
+    "sub_url2": "https://kigyoulist.com/ja/compare",
+    "sub_url3_label": "適格請求書発行事業者・インボイス登録番号検索",
+    "sub_url3": "https://kigyoulist.com/ja/invoice",
+    "sub_url4_label": "公式X（旧Twitter）",
+    "sub_url4": "https://x.com/kigyoulist"
   }
 }
 ```

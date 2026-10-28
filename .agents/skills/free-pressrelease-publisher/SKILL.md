@@ -20,11 +20,15 @@ Khi người dùng ra lệnh:
    - `company_name`: `TQC株式会社` (Pháp nhân chính thức, không slogan).
    - `contact_name`: `キム　バン　チュン` (Tên thật, không nickname).
    - `phone`: `03-6907-1219` (Bắt buộc có dấu gạch ngang `-`).
-   - `url`: `https://kigyoulist.com/` (Đường dẫn website, không điền email).
+   - `url`: `https://kigyoulist.com/ja` (100% Canonical HTTPS Non-WWW, không điền email).
    - `email`: `info@kigyoulist.com`
    - `title`: Tiêu đề giật tít báo chí chứa từ khóa Bing & Google TOP (`500万社`, `企業リスト`, `初月1,260円`, `永久無料プラン`).
    - `subtitle`: Phụ đề súc tích (100 - 180 ký tự), giải quyết trực tiếp nỗi đau B2B chi phí cao.
    - `body`: Nội dung chuẩn thông cáo báo chí Nhật Bản (Bối cảnh, tính năng, bảng giá, thông tin công ty).
+     - **Quy chuẩn Backlink & Deep Link**:
+       - `公式サイト：https://kigyoulist.com/ja`
+       - `料金プラン・機能比較表：https://kigyoulist.com/ja/compare`
+       - `全国企業データベース・業種一覧：https://kigyoulist.com/ja/directory`
    - `image_path`: Banner 16:9 lưu tại `scripts/press_releases/eyecatch_01.jpg`.
 
 2. **Kích hoạt Script xuất bản tự động hoàn toàn**:
@@ -49,7 +53,7 @@ Khi người dùng ra lệnh:
 - **Tên pháp nhân:** `TQC株式会社`
 - **Địa chỉ:** `東京都豊島区東池袋1-34-5 いちご東池袋ビル6階` (Khớp truy vấn GSC `it企業 東京都豊島区`)
 - **Điện thoại:** `03-6907-1219` (Khớp truy vấn GSC `03-6907-1219`, `0369071219`)
-- **Website đại diện:** `https://kigyoulist.com/`
+- **Website đại diện:** `https://kigyoulist.com/ja` (100% Canonical HTTPS Non-WWW)
 - **Tài khoản profile lưu trữ:** `.free_pressrelease_user_profile` (Lưu session Google Account).
 
 ---

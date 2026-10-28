@@ -72,7 +72,7 @@ graph TD
 1. **Lớp 1 (Cloudflare Edge Rules):**
    * Quản lý qua tài khoản: `trungkim8694@gmail.com` (Zone ID: `881d2cbd9004c4216cb9f8d28c99b0b9`).
    * Rule 1: `01_Bypass_Private_And_API` (Bypass toàn bộ API, Dashboard, Admin, Auth).
-   * Rule 2: `02_Cache_Public_Company_Directory_And_Hubs` (Cache Everything 7 ngày cho `/ja/company/*`, `/ja/area/*`, `/ja/industry/*`, `/ja/changes/*`, `/ja/jobs/*`, `/ja/status/*`, `/ja/invoice`, `/ja/licenses`).
+   * Rule 2: `02_Cache_Public_Company_Directory_And_Hubs` (Cache Everything 7 ngày cho toàn bộ kho tài nguyên công khai: Profile công ty `/company/*`, Tỉnh thành `/area/*`, Ngành nghề `/industry/*`, Ma trận Giấy phép kinh doanh `/license/*` & `/licenses`, Danh bạ quốc gia `/directory`, So sánh doanh nghiệp `/compare`, Biến động pháp lý `/changes/*`, Tuyển dụng `/jobs/*`, Phá sản `/status/*`, Hóa đơn thuế `/invoice/*`, Doanh nghiệp mới `/new-companies/*`, Form Marketing `/form-marketing`, Tìm kiếm `/search`, Bảng giá & Văn bản pháp lý `/pricing`, `/terms`, `/privacy`, `/tokushoho` và Trang chủ trên cả 3 ngôn ngữ `ja`, `en`, `vi`).
    * **Smart Tiered Cache:** Luôn bật (ON) để các node nhỏ chia sẻ bộ nhớ cache với Tokyo/Osaka.
 
 2. **Lớp 2 (Nginx Micro-Cache trên VPS):**
