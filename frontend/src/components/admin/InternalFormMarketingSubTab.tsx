@@ -700,13 +700,13 @@ export function InternalFormMarketingSubTab({
 
               {/* Show Created Campaign Action Box */}
               {createdCampaign && (
-                <div className="mt-5 p-4 rounded-xl bg-slate-900 text-slate-100 border border-slate-800 space-y-3">
+                <div className="mt-5 p-4 rounded-xl bg-slate-50 dark:bg-slate-900/60 text-slate-800 dark:text-slate-100 border border-slate-200/90 dark:border-slate-800 space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
+                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
                       <CheckCircle2 className="w-4 h-4" />
                       {isJa ? "キャンペーン作成完了！" : "Đã tạo chiến dịch thành công!"}
                     </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">
                       ID: {createdCampaign.id.substring(0, 8)}...
                     </span>
                   </div>

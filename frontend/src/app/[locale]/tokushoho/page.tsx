@@ -926,16 +926,16 @@ export default async function TokushohoPage({ params }: PageProps) {
         {/* ========================================================
             SUPPORT DESK & INVOICE GUIDANCE
             ======================================================== */}
-        <section className="bg-slate-900 text-white rounded-3xl p-6 sm:p-8 lg:p-10 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+        <section className="bg-white dark:bg-[#161B22] text-slate-800 dark:text-slate-100 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 sm:p-8 lg:p-10 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
           <div className="flex flex-col gap-2 max-w-2xl">
-            <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#1B4F8A] dark:text-blue-400 uppercase tracking-wider">
               <HelpCircle className="w-4 h-4" />
               <span>{d.supportTitle}</span>
             </div>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
               {d.supportDesc}
             </p>
-            <div className="text-[11px] text-slate-400 mt-1">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
               {d.invoiceDocText}
             </div>
           </div>
@@ -950,9 +950,9 @@ export default async function TokushohoPage({ params }: PageProps) {
             </Link>
             <Link
               href={`/${locale}/dashboard?tab=payments`}
-              className="px-4 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 transition-colors flex items-center gap-2 cursor-pointer"
+              className="px-4 py-3 rounded-xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold border border-slate-200/80 dark:border-slate-700 transition-colors flex items-center gap-2 cursor-pointer"
             >
-              <Receipt className="w-4 h-4 text-blue-400" />
+              <Receipt className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
               <span>{isJa ? "領収書・決済履歴" : isVi ? "Lịch sử hóa đơn" : "Receipts & Invoices"}</span>
             </Link>
           </div>

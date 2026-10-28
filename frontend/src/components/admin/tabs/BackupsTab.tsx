@@ -578,7 +578,7 @@ export const BackupsTab: React.FC<BackupsTabProps> = ({
                 復旧対象のVPS（または新規立ち上げサーバー）へ管理者権限でSSHログインします。
               </p>
             </div>
-            <div className="p-2.5 rounded-xl bg-slate-900 text-slate-200 font-mono text-[11px] flex items-center justify-between">
+            <div className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-800 dark:text-slate-200 border border-slate-200/80 dark:border-slate-800 font-mono text-[11px] flex items-center justify-between">
               <code>ssh ubuntu@160.251.203.84</code>
             </div>
           </div>
@@ -600,11 +600,11 @@ export const BackupsTab: React.FC<BackupsTabProps> = ({
                 navigator.clipboard.writeText(cmd);
                 toast.success("最新復旧コマンドをコピーしました！");
               }}
-              className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-850 text-amber-300 font-mono text-[11px] flex items-center justify-between cursor-pointer group transition-colors"
+              className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-850 text-[#1B4F8A] dark:text-amber-300 border border-slate-200/80 dark:border-slate-800 font-mono text-[11px] flex items-center justify-between cursor-pointer group transition-colors"
               title="クリックしてコピー"
             >
               <code className="truncate max-w-[210px]">bash .../db_restore.sh --latest</code>
-              <Copy className="w-3.5 h-3.5 text-slate-400 group-hover:text-white" />
+              <Copy className="w-3.5 h-3.5 text-slate-500 group-hover:text-slate-900 dark:text-slate-400 dark:group-hover:text-white" />
             </button>
           </div>
 

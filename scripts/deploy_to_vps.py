@@ -78,7 +78,7 @@ def main():
 
         # Step 3: Restart PM2
         print("\n--- STEP 3: Restart PM2 Application ---")
-        restart_cmd = "pm2 reload kigyou-list || pm2 restart kigyou-list || pm2 restart all"
+        restart_cmd = "pm2 restart kigyou-list && pm2 restart kigyoulist-api-daemon"
         run_ssh_command(client, restart_cmd)
 
         # Step 4: PM2 status

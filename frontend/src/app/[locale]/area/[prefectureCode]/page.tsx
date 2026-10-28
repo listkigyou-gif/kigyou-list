@@ -169,7 +169,7 @@ export default async function PrefectureAreaPage({ params }: PageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-[#0D1117] text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors duration-200">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
@@ -183,61 +183,78 @@ export default async function PrefectureAreaPage({ params }: PageProps) {
 
       <main className="flex-1 pb-16">
         {/* Breadcrumb */}
-        <div className="bg-slate-900 border-b border-slate-800">
+        <nav className="bg-white dark:bg-[#161B22] border-b border-slate-200/90 dark:border-slate-800" aria-label="Breadcrumb">
           <div className="max-w-7xl mx-auto px-4 py-3 sm:px-6 lg:px-8">
-            <nav className="flex items-center text-xs text-slate-400 space-x-2">
-              <Link href={`/${locale}`} className="hover:text-cyan-400 transition-colors">{d.home}</Link>
-              <ChevronRight className="w-3 h-3 text-slate-600" />
-              <Link href={`/${locale}/directory`} className="hover:text-cyan-400 transition-colors">{d.area}</Link>
-              <ChevronRight className="w-3 h-3 text-slate-600" />
-              <span className="text-slate-200 font-medium">{prefName}</span>
-            </nav>
+            <div className="flex items-center text-xs text-slate-500 dark:text-slate-400 space-x-2">
+              <Link href={`/${locale}`} className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">{d.home}</Link>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              <Link href={`/${locale}/directory`} className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">{d.area}</Link>
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-slate-900 dark:text-slate-200 font-semibold">{prefName}</span>
+            </div>
           </div>
-        </div>
+        </nav>
 
         {/* Hero Section */}
-        <section className="bg-gradient-to-b from-slate-900 via-slate-900/60 to-slate-950 border-b border-slate-800 py-10">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <section className="bg-white dark:bg-[#161B22] border-b border-slate-200/90 dark:border-slate-800 py-10 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
             <div className="max-w-3xl">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-950/80 border border-cyan-800/60 text-cyan-300 text-xs font-semibold mb-4">
-                <MapPin className="w-3.5 h-3.5" />
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200/80 dark:border-blue-800 text-[#1B4F8A] dark:text-blue-300 text-xs font-semibold mb-4">
+                <MapPin className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
                 <span>JIS CODE: {prefectureCode}</span>
               </div>
-              <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight mb-4">
+              <h1 className="text-2xl sm:text-4xl font-extrabold text-slate-900 dark:text-white tracking-tight mb-4">
                 {d.title}
               </h1>
-              <p className="text-slate-400 text-sm sm:text-base leading-relaxed mb-6">
+              <p className="text-slate-600 dark:text-slate-400 text-sm sm:text-base leading-relaxed mb-6">
                 {d.desc}
               </p>
 
               {/* Stats Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                <div className="bg-slate-800/70 border border-slate-700/60 rounded-xl p-3.5">
-                  <div className="flex items-center gap-2 text-slate-400 text-xs mb-1">
-                    <Building2 className="w-4 h-4 text-cyan-400" />
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+                <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-4">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs mb-1">
+                    <Building2 className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
                     <span>{d.totalCompanies}</span>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-white">
+                  <div className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tabular-nums">
                     {totalCount.toLocaleString()}+
                   </div>
                 </div>
-                <div className="bg-slate-800/70 border border-slate-700/60 rounded-xl p-3.5">
-                  <div className="flex items-center gap-2 text-slate-400 text-xs mb-1">
-                    <Briefcase className="w-4 h-4 text-emerald-400" />
+                <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-4">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs mb-1">
+                    <Briefcase className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>{d.withHiring}</span>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-emerald-400">
+                  <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                     アクティブ
                   </div>
                 </div>
-                <div className="bg-slate-800/70 border border-slate-700/60 rounded-xl p-3.5 col-span-2 sm:col-span-1">
-                  <div className="flex items-center gap-2 text-slate-400 text-xs mb-1">
-                    <ShieldCheck className="w-4 h-4 text-amber-400" />
+                <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 rounded-xl p-4 col-span-2 sm:col-span-1">
+                  <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-xs mb-1">
+                    <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                     <span>{d.withSubsidy}</span>
                   </div>
-                  <div className="text-xl sm:text-2xl font-bold text-amber-400">
+                  <div className="text-xl sm:text-2xl font-bold text-amber-600 dark:text-amber-400">
                     シグナル対応
                   </div>
+                </div>
+              </div>
+
+              {/* Trust badges */}
+              <div className="mt-6 flex flex-wrap items-center gap-6 pt-6 border-t border-slate-100 dark:border-slate-800/80 text-xs text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>{locale === 'ja' ? '国税庁法人番号 100% 照合済' : locale === 'vi' ? 'Khớp 100% Mã số thuế NTA' : '100% NTA Corporate Number Match'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>{locale === 'ja' ? '週次クローリングによる高鮮度データ' : locale === 'vi' ? 'Cập nhật định kỳ liên tục' : 'Weekly Refreshed Dataset'}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>{locale === 'ja' ? 'CSV一括ダウンロード対応' : locale === 'vi' ? 'Hỗ trợ xuất file CSV' : 'CSV Export Ready'}</span>
                 </div>
               </div>
             </div>
@@ -247,13 +264,13 @@ export default async function PrefectureAreaPage({ params }: PageProps) {
         {/* Company List */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-10">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg sm:text-xl font-bold text-white flex items-center gap-2">
-              <BarChart3 className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <BarChart3 className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />
               <span>{d.browseList}</span>
             </h2>
             <Link 
               href={`/${locale}/search?prefecture_code=${prefectureCode}`}
-              className="text-xs sm:text-sm text-cyan-400 hover:text-cyan-300 flex items-center gap-1 font-medium"
+              className="text-xs sm:text-sm text-[#1B4F8A] hover:text-[#143D6C] dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 font-semibold transition-colors"
             >
               <span>高度な条件で絞り込み</span>
               <ArrowRight className="w-4 h-4" />
@@ -266,44 +283,44 @@ export default async function PrefectureAreaPage({ params }: PageProps) {
               return (
                 <div 
                   key={comp.corporate_number}
-                  className="bg-slate-900 border border-slate-800 hover:border-cyan-500/50 rounded-xl p-5 transition-all flex flex-col justify-between"
+                  className="bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 hover:border-[#1B4F8A]/40 dark:hover:border-blue-700/60 rounded-xl p-5 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between group"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <Link 
                         href={`/${locale}/company/${comp.corporate_number}`}
-                        className="text-base font-bold text-white hover:text-cyan-400 transition-colors line-clamp-1"
+                        className="text-base font-bold text-slate-900 dark:text-white group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors line-clamp-1"
                       >
                         {name}
                       </Link>
                       {comp.has_hiring && (
-                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-950 text-emerald-400 border border-emerald-800 shrink-0">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60 shrink-0">
                           求人中
                         </span>
                       )}
                     </div>
 
-                    <div className="text-xs text-slate-400 mb-3 space-y-1">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-3 space-y-1.5">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                         <span className="truncate">{comp.full_address || `${comp.prefecture_name || ''} ${comp.city_name || ''}`}</span>
                       </div>
                       {comp.industry_name && (
                         <div className="flex items-center gap-2">
-                          <Briefcase className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+                          <Briefcase className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
                           <span className="truncate">{comp.industry_name}</span>
                         </div>
                       )}
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between">
-                    <span className="text-[11px] text-slate-500">
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
                       法人番号: {comp.corporate_number}
                     </span>
                     <Link
                       href={`/${locale}/company/${comp.corporate_number}`}
-                      className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1"
+                      className="text-xs font-semibold text-[#1B4F8A] hover:text-[#143D6C] dark:text-blue-400 dark:hover:text-blue-300 flex items-center gap-1 transition-colors"
                     >
                       <span>{d.viewDetail}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
@@ -317,8 +334,8 @@ export default async function PrefectureAreaPage({ params }: PageProps) {
 
         {/* Cross-linking Mesh Section */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-14">
-          <div className="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
-            <h3 className="text-base font-bold text-white mb-4">
+          <div className="bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 shadow-2xs">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">
               {d.otherAreas}
             </h3>
             <div className="flex flex-wrap gap-2">
@@ -326,7 +343,7 @@ export default async function PrefectureAreaPage({ params }: PageProps) {
                 <Link
                   key={op.code}
                   href={`/${locale}/area/${op.code}`}
-                  className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-medium text-slate-300 hover:text-white transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700/80 text-xs font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors"
                 >
                   {getPrefectureName(op.name, locale)}の企業一覧
                 </Link>

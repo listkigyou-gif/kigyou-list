@@ -22,10 +22,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const currentYear = new Date().getFullYear();
   const title = isVi
-    ? `So Sánh Nền Tảng Dữ Liệu Doanh Nghiệp & Danh Sách B2B Nhật Bản ${currentYear} | Kigyou-list`
+    ? `So Sánh Dữ Liệu Doanh Nghiệp B2B Nhật Bản ${currentYear} | Kigyou-list`
     : isEn
-    ? `Top Japanese Corporate Database & B2B Sales List Comparison ${currentYear} | Kigyou-list`
-    : `【${currentYear}年最新】日本の企業データベース・営業リスト比較：Kigyou-listが選ばれる理由と料金・件数徹底比較 | Kigyou-list`;
+    ? `Japan B2B Corporate Database Comparison ${currentYear} | Kigyou-list`
+    : `【${currentYear}年最新】企業データベース・営業リスト比較 | Kigyou-list`;
 
   const description = isVi
     ? "Bảng so sánh chi tiết giữa Kigyou-list và các nền tảng danh bạ doanh nghiệp truyền thống tại Nhật Bản. 5 triệu doanh nghiệp, chi phí tháng đầu chỉ từ 1,260 JPY (giảm 70% / giá gốc 4,200 JPY), tích hợp gửi Form tự động từ 5.9 JPY/lần."
