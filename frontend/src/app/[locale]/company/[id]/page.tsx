@@ -304,9 +304,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const locale = resolvedParams.locale || 'ja';
 
   if (!/^\d{13}$/.test(companyId)) {
-    return {
-      title: locale === 'en' ? 'Company Not Found | Kigyou-list' : locale === 'vi' ? 'Không tìm thấy doanh nghiệp | Kigyou-list' : '企業が見つかりません | Kigyou-list',
-    };
+    return notFound();
   }
 
   const [company, industryDetailsList] = await Promise.all([
@@ -315,9 +313,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   ]);
 
   if (!company) {
-    return {
-      title: locale === 'en' ? 'Company Not Found | Kigyou-list' : locale === 'vi' ? 'Không tìm thấy doanh nghiệp | Kigyou-list' : '企業が見つかりません | Kigyou-list',
-    };
+    return notFound();
   }
 
   const primaryIndustry = industryDetailsList[0] || null;

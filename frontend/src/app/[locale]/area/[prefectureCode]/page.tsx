@@ -28,9 +28,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const locale = resolvedParams.locale || 'ja';
 
   if (!pref) {
-    return {
-      title: '地域が見つかりません | Kigyou-list',
-    };
+    return notFound();
   }
 
   const prefName = getPrefectureName(pref.name, locale);

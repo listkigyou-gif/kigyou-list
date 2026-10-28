@@ -32,9 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const locale = resolvedParams.locale || 'ja';
 
   if (!ind || !pref) {
-    return {
-      title: locale === 'en' ? 'Category Not Found | Kigyou-list' : locale === 'vi' ? 'Không tìm thấy danh mục | Kigyou-list' : 'カテゴリが見つかりません | Kigyou-list',
-    };
+    return notFound();
   }
 
   const prefName = getPrefectureName(pref.name, locale);

@@ -26,26 +26,15 @@ def main():
     creds = service_account.Credentials.from_service_account_file(KEY_FILE, scopes=SCOPES)
     service = build('searchconsole', 'v1', credentials=creds)
 
-    # 1. Base index and core
-    sitemaps_to_submit = [
-        f"{BASE_URL}/sitemap.xml",
-        f"{BASE_URL}/sitemap/core.xml",
-    ]
+    # Master Sitemap Index (Contains all child sitemaps: core.xml, 0.xml - 16.xml)
+    master_sitemap = f"{BASE_URL}/sitemap.xml"
 
-    # 2. Company chunk sitemaps 0 to 9
-    for i in range(10):
-        sitemaps_to_submit.append(f"{BASE_URL}/sitemap/{i}.xml")
-
-    print(f"Found {len(sitemaps_to_submit)} sitemaps to verify/submit.\n")
-
-    for sm in sitemaps_to_submit:
-        try:
-            print(f"Submitting: {sm} ... ", end="", flush=True)
-            service.sitemaps().submit(siteUrl=SITE_URL, feedpath=sm).execute()
-            print("✅ SUCCESS")
-            time.sleep(1) # respectful rate limit
-        except Exception as e:
-            print(f"❌ ERROR: {e}")
+    try:
+        print(f"Submitting Master Sitemap Index: {master_sitemap} ... ", end="", flush=True)
+        service.sitemaps().submit(siteUrl=SITE_URL, feedpath=master_sitemap).execute()
+        print("✅ SUCCESS")
+    except Exception as e:
+        print(f"❌ ERROR: {e}")
 
     print("\nVerifying current sitemap status on Google Search Console:")
     time.sleep(2)
