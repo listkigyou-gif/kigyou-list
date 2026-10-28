@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation';
 import type { Metadata } from 'next';
 import { 
   Building2, MapPin, Phone, ArrowRight, ChevronRight,
-  Briefcase, TrendingUp, BarChart3, ShieldCheck, Mail
+  Briefcase, TrendingUp, BarChart3, ShieldCheck, Mail, CheckCircle2
 } from 'lucide-react';
 import { 
   getPrefectureByCode, searchCompanies 
