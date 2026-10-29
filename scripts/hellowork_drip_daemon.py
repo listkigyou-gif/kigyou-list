@@ -143,6 +143,26 @@ def get_maintenance_remaining_seconds(now_jst=None):
     return 0
 
 
+def check_maintenance_in_response(resp_text, status_code=200):
+    """
+    Detects unannounced system maintenance pages, 503 Service Unavailable,
+    or 429 Too Many Requests from HelloWork.
+    """
+    if status_code in [503, 502, 429]:
+        return True
+    if not resp_text:
+        return False
+    maintenance_patterns = [
+        "ただいまメンテナンス中",
+        "システムメンテナンス中",
+        "メンテナンスのお知らせ",
+        "サービスを一時停止",
+        "システムを停止しております",
+        "アクセスが集中しております",
+    ]
+    return any(p in resp_text for p in maintenance_patterns)
+
+
 def wait_if_maintenance():
     """Sleeps until HelloWork maintenance window ends."""
     while True:
@@ -154,7 +174,7 @@ def wait_if_maintenance():
         sleep_secs = secs + 60
         resume_time = (now_jst + timedelta(seconds=sleep_secs)).strftime("%Y-%m-%d %H:%M:%S")
         logger.info(
-            "[MAINTENANCE] HelloWork maintenance window active. Sleeping %ds (~%.1fm) until %s JST.",
+            "[MAINTENANCE] HelloWork scheduled maintenance window active. Sleeping %ds (~%.1fm) until %s JST.",
             sleep_secs, sleep_secs / 60.0, resume_time
         )
         time.sleep(sleep_secs)
@@ -674,6 +694,10 @@ class HelloWorkDripDaemon:
         try:
             # 1. GET initial search form
             r_init = session.get(SEARCH_INIT_URL, timeout=20)
+            if check_maintenance_in_response(r_init.text, r_init.status_code):
+                logger.warning("[MAINTENANCE] Detected active maintenance or service pause on HelloWork init GET. Sleeping 15m...")
+                time.sleep(900)
+                return
             if r_init.status_code != 200:
                 logger.warning("Pref %s: Init GET returned HTTP %d", pref_code, r_init.status_code)
                 return
@@ -704,6 +728,10 @@ class HelloWorkDripDaemon:
 
             # 2. POST search for prefecture
             r_search = session.post(SEARCH_POST_URL, data=form_payload, timeout=20)
+            if check_maintenance_in_response(r_search.text, r_search.status_code):
+                logger.warning("[MAINTENANCE] Detected active maintenance or service pause on HelloWork search POST. Sleeping 15m...")
+                time.sleep(900)
+                return
             if r_search.status_code != 200:
                 logger.warning("Pref %s: Search POST returned HTTP %d", pref_code, r_search.status_code)
                 return
@@ -734,6 +762,10 @@ class HelloWorkDripDaemon:
 
                     try:
                         r_detail = session.get(detail_url, timeout=20)
+                        if check_maintenance_in_response(r_detail.text, r_detail.status_code):
+                            logger.warning("[MAINTENANCE] Detected active maintenance or rate limit on job %s. Sleeping 10m...", job_no)
+                            time.sleep(600)
+                            continue
                         if r_detail.status_code != 200:
                             logger.warning("Detail GET HTTP %d for job %s", r_detail.status_code, job_no)
                             continue

@@ -10,7 +10,7 @@ import {
   ShieldAlert, ShieldCheck, RefreshCcw, Users, MessageSquareWarning, 
   CreditCard, History, Building2, Terminal, Database, Mail, 
   Send, Ticket, Download, LayoutDashboard, KeyRound, Loader2, ExternalLink,
-  Radio, Activity, Search, Eye, FileSpreadsheet, Ban
+  Radio, Activity, Search, Eye, FileSpreadsheet, Ban, Cpu
 } from "lucide-react";
 
 // Toast Provider
@@ -33,6 +33,7 @@ import { OptOutAdminTab } from "@/components/admin/tabs/OptOutAdminTab";
 import { WatchlistAuditTab } from "@/components/admin/tabs/WatchlistAuditTab";
 import { FormOutreachAuditTab } from "@/components/admin/tabs/FormOutreachAuditTab";
 import { SecurityTab } from "@/components/admin/tabs/SecurityTab";
+import CrawlerSeoTab from "@/components/admin/tabs/CrawlerSeoTab";
 
 // Existing Admin Tabs
 import { MarketingTab } from "@/components/admin/MarketingTab";
@@ -48,6 +49,7 @@ export type AdminTab =
   | "payments"
   | "coupons"
   | "marketing"
+  | "crawlerSeo"
   | "exports"
   | "logs"
   | "apiKeys"
@@ -164,6 +166,7 @@ function AdminContent() {
       case "payments": return "決済・インボイス履歴";
       case "coupons": return "クーポン発行・管理";
       case "marketing": return "営業アプローチ管理 (Email / Form DM)";
+      case "crawlerSeo": return "データ収集 & SEOインデックス統括管理";
       case "exports": return "CSV出力履歴・ジョブ管理";
       case "logs": return "管理者操作ログ (Audit Logs)";
       case "apiKeys": return "B2B APIキー管理";
@@ -184,6 +187,7 @@ function AdminContent() {
       case "payments": return "Stripe経由でのプラン契約およびスポット容量購入の決済記録と領収書です。";
       case "coupons": return "プロモーション用割引クーポンの新規発行および利用実績の監視を行います。";
       case "marketing": return "特定ターゲット企業群へのメール営業および問い合わせフォーム営業（Form DM）キャンペーンを作成・配信管理します。";
+      case "crawlerSeo": return "ハローワーク常駐クローラー (24/7)、Bing IndexNow (5,000件/夜)、Google VIP Indexing API (5-Key Pool)、2層キャッシュパージの稼働状況を監視・制御します。";
       case "exports": return "ユーザーが実行したCSVエクスポートの生成状況およびダウンロード期限を管理します。";
       case "logs": return "システム内で実行された全管理操作の監査ログ（IP、日時、詳細）です。";
       case "apiKeys": return "外部連携用APIキーのアクティブ状態および接続ログの管理を行います。";
@@ -439,6 +443,24 @@ function AdminContent() {
                   データ・監査 (Technical)
                 </span>
 
+                {/* Crawler & SEO Engine */}
+                <button
+                  onClick={() => switchTab("crawlerSeo")}
+                  className={getTabClass("crawlerSeo")}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Cpu className={`w-4 h-4 shrink-0 ${activeTab === "crawlerSeo" ? "text-white" : "text-[#1B4F8A] dark:text-blue-400"}`} />
+                    <span>クローラー & SEO</span>
+                  </div>
+                  <span className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-semibold tabular-nums ${
+                    activeTab === "crawlerSeo"
+                      ? "bg-white/20 text-white"
+                      : "bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
+                  }`}>
+                    24/7
+                  </span>
+                </button>
+
                 {/* Exports */}
                 <button
                   onClick={() => switchTab("exports")}
@@ -681,6 +703,10 @@ function AdminContent() {
               adminEmail={user?.email || ""}
               getAdminHeaders={getAdminHeaders}
             />
+          )}
+
+          {activeTab === "crawlerSeo" && (
+            <CrawlerSeoTab getAdminHeaders={getAdminHeaders} />
           )}
 
           {activeTab === "exports" && (
