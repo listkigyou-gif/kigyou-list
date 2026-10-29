@@ -88,18 +88,21 @@ graph TD
 
 ### B. Cỗ Máy Bắn Index Tự Động Hàng Đêm (Automated Nightly Daemons)
 
-Hệ thống chạy hoàn toàn tự động qua Linux Crontab trên VPS (Múi giờ `Asia/Tokyo - JST`):
+Hệ thống chạy tự động theo cơ chế **Kích hoạt theo biến động thực tế (Event-Driven Hot Delta & Hub-and-Spoke)**:
 
 ```cron
-# 1. 02:00 AM JST hàng đêm: Bắn 3,000 URLs lên Bing & IndexNow (Chuẩn hóa chống nghẽn hàng đợi Bingbot)
-0 2 * * * /usr/bin/node /var/www/kigyou-list/scripts/auto_indexnow_submitter_pg.js --batch-size 3000 >> /var/log/indexnow.log 2>&1
+# [ĐÃ THAY THẾ] Lệnh nạp tĩnh 3.000 URL cũ ĐÃ BỊ HỦY BỎ để tránh spam:
+# 0 2 * * * /usr/bin/node /var/www/kigyou-list/scripts/auto_indexnow_submitter_pg.js --batch-size 3000 >> /var/log/indexnow.log 2>&1
 
-# 2. 02:15 AM JST hàng đêm: Bắn 1,000 URLs VIP lên Google Search Indexing API (Ưu tiên 100% biến động nóng)
+# 02:15 AM JST hàng đêm: Bắn tối đa 1.000 URLs VIP lên Google Search Indexing API (100% biến động nóng EDINET/GEPS/Giấy phép/NTA trong 48h)
 15 2 * * * /usr/bin/node /var/www/kigyou-list/scripts/auto_google_indexing_pg.js >> /var/log/google_indexing.log 2>&1
 ```
 
-* **Chuẩn hóa hạn mức Bing (3.000 URLs/đêm):** Thay vì nạp dồn 50.000 URLs gây nghẽn hàng đợi (Queue Congestion) và bị trễ lịch cào của Bingbot, mức 3.000 URLs/đêm vừa vặn tuyệt đối với sức cào thực tế (2.000 - 5.000 URLs/ngày). Hàng đợi của Bing luôn sạch sẽ và cào hết 100% trong vòng 24 giờ.
-* **Cơ chế tự dọn dẹp hàng tháng (Auto Rolling Clean):** Bảng `indexnow_submissions` tự động xóa các bản ghi cũ hơn 30 ngày để cho phép các URL được cào xoay vòng định kỳ (healthy cyclic re-crawling).
+* **Cơ chế Hot Delta 100% (Zero Spam Ping):**
+  - Đã **xóa bỏ hoàn toàn** việc nạp cố định 3.000 URLs tĩnh mỗi đêm.
+  - Cả Google Indexing và IndexNow hiện nay **chỉ bắn duy nhất các doanh nghiệp có biến động thật trong 48 giờ qua** (`WHERE c.updated_at >= NOW() - INTERVAL '48 hours'`) và bắt buộc phải đạt điểm chất lượng `richnessScore >= 3` (Thin Content Guard).
+  - Nếu trong ngày có 150 công ty biến động mới ➔ Chỉ bắn đúng 150 URLs + các Parent Hubs liên quan.
+  - Nếu không có biến động mới ➔ **Bắn 0 URL** (`Zero Spam Ping`), giữ cho bot tìm kiếm luôn đánh giá cao độ tươi mới (Freshness) của website.
 * **Cơ chế chống trùng lặp 100%:** Lưu vết toàn bộ vào bảng `indexnow_submissions` và `google_indexing_submissions` trên PostgreSQL.
 * **Google Multi-Key Pool:** Phân bổ đều qua 5 Google Cloud Projects (`kigyoulist-seo`, `02`, `03`, `04`, `05`), mỗi key bắn đúng 200 URLs/ngày rồi tự động chuyển key tiếp theo.
 
