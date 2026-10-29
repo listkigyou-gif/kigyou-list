@@ -88,23 +88,23 @@ graph TD
 
 ### B. Cỗ Máy Bắn Index Tự Động Hàng Đêm (Automated Nightly Daemons)
 
-Hệ thống chạy tự động theo cơ chế **Kích hoạt theo biến động thực tế (Event-Driven Hot Delta & Hub-and-Spoke)**:
+Hệ thống chạy tự động hàng đêm theo cơ chế **Hybrid Indexing (Biến động nóng Tầng 1 + Mở rộng Backlog Tinh hoa Tầng 2)**:
 
 ```cron
-# [ĐÃ THAY THẾ] Lệnh nạp tĩnh 3.000 URL cũ ĐÃ BỊ HỦY BỎ để tránh spam:
-# 0 2 * * * /usr/bin/node /var/www/kigyou-list/scripts/auto_indexnow_submitter_pg.js --batch-size 3000 >> /var/log/indexnow.log 2>&1
+# 02:00 AM JST hàng đêm: Bắn 5,000 URLs/đêm lên Bingbot qua IndexNow (100% Biến động nóng Tầng 1 + Backlog công ty chất lượng cao Tầng 2)
+0 2 * * * /usr/bin/node /var/www/kigyou-list/scripts/auto_indexnow_submitter_pg.js --batch-size 5000 --allow-backlog >> /var/log/indexnow.log 2>&1
 
 # 02:15 AM JST hàng đêm: Bắn tối đa 1.000 URLs VIP lên Google Search Indexing API (100% biến động nóng EDINET/GEPS/Giấy phép/NTA trong 48h)
 15 2 * * * /usr/bin/node /var/www/kigyou-list/scripts/auto_google_indexing_pg.js >> /var/log/google_indexing.log 2>&1
 ```
 
-* **Cơ chế Hot Delta 100% (Zero Spam Ping):**
-  - Đã **xóa bỏ hoàn toàn** việc nạp cố định 3.000 URLs tĩnh mỗi đêm.
-  - Cả Google Indexing và IndexNow hiện nay **chỉ bắn duy nhất các doanh nghiệp có biến động thật trong 48 giờ qua** (`WHERE c.updated_at >= NOW() - INTERVAL '48 hours'`) và bắt buộc phải đạt điểm chất lượng `richnessScore >= 3` (Thin Content Guard).
-  - Nếu trong ngày có 150 công ty biến động mới ➔ Chỉ bắn đúng 150 URLs + các Parent Hubs liên quan.
-  - Nếu không có biến động mới ➔ **Bắn 0 URL** (`Zero Spam Ping`), giữ cho bot tìm kiếm luôn đánh giá cao độ tươi mới (Freshness) của website.
-* **Cơ chế chống trùng lặp 100%:** Lưu vết toàn bộ vào bảng `indexnow_submissions` và `google_indexing_submissions` trên PostgreSQL.
-* **Google Multi-Key Pool:** Phân bổ đều qua 5 Google Cloud Projects (`kigyoulist-seo`, `02`, `03`, `04`, `05`), mỗi key bắn đúng 200 URLs/ngày rồi tự động chuyển key tiếp theo.
+* **Cơ chế Hybrid IndexNow 5,000 URLs/đêm cho Microsoft Bing:**
+  - **Tầng 1 (Ưu tiên số 1 - Hot Delta 48h):** Bắt 100% doanh nghiệp có biến động nóng trong 48h (báo cáo tài chính EDINET, thầu GEPS, giấy phép, invoice) đạt chuẩn `richnessScore >= 3`.
+  - **Tầng 2 (Mở rộng Backlog Tinh hoa):** Lấy tiếp các doanh nghiệp đạt chuẩn chất lượng cao (`richnessScore >= 3`) chưa từng được nộp IndexNow lần nào (`NOT EXISTS in indexnow_submissions`) để lấp đầy hạn ngạch 5,000 URLs/đêm.
+  - **Mô hình Hub & Spoke:** Tự động đính kèm tối đa 30 Parent Hubs liên quan (`/ja/licenses`, `/ja/invoice`, `/ja/area/*`, `/ja/industry/*`).
+  - **Tốc độ bao phủ:** ~5,000 URLs/đêm $\rightarrow$ Bao phủ hoàn toàn hơn 500,000 doanh nghiệp tinh hoa Nhật Bản trong vòng ~100 ngày.
+* **Cơ chế Google VIP Indexing 1,000 URLs/đêm:** Phân bổ đều qua 5 Google Cloud Projects (`kigyoulist-seo`, `02`, `03`, `04`, `05`), mỗi key bắn đúng 200 URLs/ngày rồi tự động chuyển key tiếp theo.
+* **Cơ chế chống trùng lặp 100%:** Lưu vết toàn bộ vào bảng `indexnow_submissions` và `google_indexing_submissions` trên PostgreSQL, tự động loại trừ mọi URL đã gửi trong 30 ngày.
 
 ---
 
@@ -292,4 +292,25 @@ Trang chi tiết doanh nghiệp không chỉ liên kết dọc lên Hub cha, mà
 * Tự động xuất bản khối tóm tắt cấu trúc máy đọc (Entity Fact Sheet) trong Schema JSON-LD `Corporation` & Semantic HTML:
   * `legalName`, `taxID`, `foundingDate`, `address`, `hasCredential`, `award`, `financialReport`.
 * Giúp các cỗ máy tìm kiếm thế hệ mới (**ChatGPT Search, Perplexity AI, Google Gemini, Microsoft Copilot**) tự động trích dẫn `kigyoulist.com` làm **Nguồn Dữ Liệu Gốc Uy Tín Hàng Đầu (Primary Source Citation)** khi trả lời người dùng.
+
+---
+
+## 10. GIAO THỨC BẢO TOÀN LINK JUICE & CHỮA LỖI PHÂN MẢNH GSC (LINK JUICE & INBOUND LINK RECOVERY PROTOCOL)
+
+Khi kiểm toán Google Search Console (mục Links / External Links), nếu xuất hiện phân mảnh liên kết giữa `http://`, `https://` hoặc `www`:
+
+### 10.1. Ép Chuyển Hướng 301 Bắt Buộc (Edge & Server Canonical)
+1. **Cloudflare Edge v4 API**:
+   - Bắt buộc kích hoạt vĩnh viễn: `always_use_https = "on"`.
+   - Kết quả: Toàn bộ request `http://` được chặn và chuyển hướng ngay tại Cloudflare Edge POPs trong **~12ms** với mã `301 Moved Permanently` về `https://kigyoulist.com$request_uri`.
+   - Thu hồi 100% PageRank từ các backlink cũ trỏ về `http://`.
+2. **Nginx VPS Server**:
+   - Khối `server_name www.kigyoulist.com;` trả về mã `return 301 https://kigyoulist.com$request_uri;` ở cả cổng 80 và 443.
+
+### 10.2. Chuẩn Hóa Anchor Text & Phòng Ngừa Lỗi (Empty) Link Trên GSC
+1. **Tuyệt đối cấm Raw URL**: Không bao giờ chèn link dạng `https://kigyoulist.com/?utm_source=...` trực tiếp trong văn bản.
+2. **Triệt tiêu lỗi Link ảnh rỗng (Empty Anchor Text)**:
+   - Khi bọc thẻ liên kết `<a>` quanh thẻ hình ảnh `<img>`, **BẮT BUỘC** phải có thuộc tính `alt="Tên từ khóa doanh nghiệp"` (ví dụ: `alt="企業リスト・法人データベース Kigyou-list"`). Không bao giờ để ảnh thiếu `alt` khiến Google ghi nhận anchor text là `(empty)`.
+3. **Mô hình Deep Linking (1 Root + 2 Deep Hubs)**:
+   - Mọi bài viết PR hoặc chia sẻ kỹ thuật bắt buộc có ít nhất 1 link trỏ về Landing Page con (`/ja/invoice`, `/ja/search`, `/ja/directory`, `/ja/watchlist`) để phân phối đều PageRank, tránh dồn 100% backlink về root domain.
 

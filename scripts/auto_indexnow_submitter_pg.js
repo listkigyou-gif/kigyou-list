@@ -125,6 +125,17 @@ async function fetchTargets(client, limit = 3000) {
     LEFT JOIN indexnow_submissions sub ON c.corporate_number = sub.corporate_number
     WHERE c.updated_at >= NOW() - INTERVAL '48 hours'
       AND (sub.submitted_at IS NULL OR sub.submitted_at < NOW() - INTERVAL '24 hours')
+      -- THIN CONTENT GUARD (Đồng bộ 100% với Frontend page.tsx: richnessScore >= 3) --
+      AND (
+        (CASE WHEN c.phone_number IS NOT NULL AND c.phone_number != '' THEN 2 ELSE 0 END) +
+        (CASE WHEN c.website_url IS NOT NULL AND c.website_url != '' AND c.website_url NOT LIKE '%なし%' THEN 2 ELSE 0 END) +
+        (CASE WHEN c.has_license = true OR c.has_financial_report = true OR c.has_financials = true OR c.has_public_tender = true OR c.has_bidding = true THEN 3 ELSE 0 END) +
+        (CASE WHEN c.capital_amount IS NOT NULL THEN 1 ELSE 0 END) +
+        (CASE WHEN c.employee_count IS NOT NULL THEN 1 ELSE 0 END) +
+        (CASE WHEN c.representative_name IS NOT NULL AND c.representative_name != '' THEN 1 ELSE 0 END) +
+        (CASE WHEN c.primary_industry_code IS NOT NULL THEN 1 ELSE 0 END) +
+        (CASE WHEN c.has_invoice = true THEN 1 ELSE 0 END)
+      ) >= 3
     ORDER BY priority_score DESC, c.updated_at DESC
     LIMIT $1
   `;
@@ -157,20 +168,28 @@ async function fetchTargets(client, limit = 3000) {
   });
 
   if (deltaRes.rows.length > 0) {
-    console.log(`[+] [Tầng 1 - Hot Delta] Đã bắt được ${deltaRes.rows.length} doanh nghiệp biến động thực tế trong 48h qua cho IndexNow.`);
+    console.log(`[+] [Hot Delta & Thin Guard] Đã bắt được ${deltaRes.rows.length} doanh nghiệp biến động thực tế đạt chuẩn Rich Entity (>= 3đ) cho IndexNow.`);
+  } else {
+    console.log(`[*] [IndexNow Hot Delta] Không có doanh nghiệp nào biến động mới trong 48h qua đạt chuẩn Rich Entity. (Zero Spam Ping)`);
   }
 
   // =========================================================================
-  // TẦNG 2: PHỦ MỚI DẦN ĐỀU (BACKLOG COVERAGE) CHO ĐỦ CHỈ TIÊU BATCH SIZE
+  // TẦNG 2: BACKLOG CHỈ CHẠY KHI BẬT CỜ --allow-backlog (MẶC ĐỊNH LÀ FALSE)
   // =========================================================================
+  const allowBacklog = process.argv.includes('--allow-backlog');
   const quotaRemaining = limit - selectedCorps.length;
-  if (quotaRemaining > 0) {
+  if (allowBacklog && quotaRemaining > 0) {
     const backlogQuery = `
       SELECT c.corporate_number, c.prefecture_code, c.primary_industry_code, c.has_license, c.has_invoice, c.has_financials
       FROM companies c
       WHERE NOT EXISTS (
         SELECT 1 FROM indexnow_submissions sub WHERE sub.corporate_number = c.corporate_number
       )
+      AND (
+        (CASE WHEN c.phone_number IS NOT NULL AND c.phone_number != '' THEN 2 ELSE 0 END) +
+        (CASE WHEN c.website_url IS NOT NULL AND c.website_url != '' AND c.website_url NOT LIKE '%なし%' THEN 2 ELSE 0 END) +
+        (CASE WHEN c.has_license = true OR c.has_financial_report = true OR c.has_financials = true THEN 3 ELSE 0 END)
+      ) >= 3
       ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC
       LIMIT $1
     `;
@@ -195,12 +214,12 @@ async function fetchTargets(client, limit = 3000) {
     });
 
     if (backlogRes.rows.length > 0) {
-      console.log(`[+] [Tầng 2 - Backlog] Bổ sung ${backlogRes.rows.length} doanh nghiệp chưa từng nộp IndexNow để phủ dần chỉ mục.`);
+      console.log(`[+] [Tầng 2 - Backlog] Bổ sung ${backlogRes.rows.length} doanh nghiệp rich entities chưa từng nộp để phủ dần.`);
     }
   }
 
-  // Giới hạn tối đa 50 Hub mẹ mỗi chu kỳ (~1.6% quota)
-  const parentHubs = Array.from(selectedHubsMap.values()).slice(0, 50);
+  // Giới hạn tối đa 30 Hub mẹ mỗi chu kỳ (~1-3% quota)
+  const parentHubs = Array.from(selectedHubsMap.values()).slice(0, 30);
 
   return {
     parentHubUrls: parentHubs,
