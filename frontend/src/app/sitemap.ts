@@ -21,10 +21,14 @@ export async function generateSitemaps() {
 export default async function sitemap({ id }: { id: any }): Promise<MetadataRoute.Sitemap> {
   const resolvedId = await id;
   const baseUrl = 'https://kigyoulist.com';
-  const locales = ['ja', 'en', 'vi'];
+  
+  // 100% CRAWL BUDGET ACCELERATION FOR JAPANESE MARKET (JA)
+  // Multilingual pages (/en and /vi) remain live on web and discovered via HTML hreflang,
+  // but sitemaps submitted to Googlebot & Bingbot focus exclusively on 'ja' to eliminate crawl dilution.
+  const sitemapLocales = ['ja'];
 
   if (resolvedId === 'core') {
-    // 1. Core Platform Pages (Localized for ja and en)
+    // 1. Core Platform Pages (100% Japanese B2B Priority)
     const corePages: MetadataRoute.Sitemap = [
       {
         url: baseUrl,
@@ -34,7 +38,7 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
       }
     ];
 
-    locales.forEach(loc => {
+    sitemapLocales.forEach(loc => {
       corePages.push({
         url: `${baseUrl}/${loc}`,
         lastModified: new Date(),
@@ -208,11 +212,11 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
       });
     });
 
-    // 2. Category Matrix Pages (Prefecture × Industry JSIC) (pSEO) (Localized)
+    // 2. Category Matrix Pages (Prefecture × Industry JSIC) (pSEO) (100% Japanese Priority)
     const categoryPages: MetadataRoute.Sitemap = [];
     try {
       const pairs = await getActiveIndustryPrefecturePairs();
-      locales.forEach(loc => {
+      sitemapLocales.forEach(loc => {
         pairs.forEach(p => {
           if (p.industry_code && p.prefecture_code) {
             categoryPages.push({
