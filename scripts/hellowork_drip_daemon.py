@@ -143,6 +143,44 @@ def get_maintenance_remaining_seconds(now_jst=None):
     return 0
 
 
+def get_adaptive_cycle_sleep_seconds(new_signals_count):
+    """
+    Computes optimal resting time between nationwide cycles based on:
+      1. JST Time of day (Business hours 08:30-18:00 vs Night 22:00-06:00)
+      2. Weekend vs Weekday (HelloWork offices are closed on weekends)
+      3. Signal discovery rate in the cycle just completed
+    """
+    now_utc = datetime.now(timezone.utc)
+    now_jst = now_utc + timedelta(hours=9)
+    jst_hour = now_jst.hour
+    is_weekend = now_jst.weekday() in [5, 6]  # Saturday, Sunday
+
+    # 1. Nighttime (22:00 - 06:00 JST): HelloWork offices are closed, no new jobs published
+    if jst_hour >= 22 or jst_hour < 6:
+        if jst_hour < 6:
+            target_6am = now_jst.replace(hour=6, minute=0, second=0, microsecond=0)
+            secs_until_6am = int((target_6am - now_jst).total_seconds())
+            # Rest 30 - 45 mins before next check or until 06:00 AM JST
+            return min(max(secs_until_6am, 1800), 2700)
+        return 2400  # 40 minutes (22:00 - 24:00)
+
+    # 2. Weekends (Sat / Sun): Offices closed nationwide
+    if is_weekend:
+        return 2700 if new_signals_count == 0 else 1800  # 30 - 45 mins
+
+    # 3. Prime Business Hours (08:30 - 18:00 JST on Weekdays):
+    if 8 <= jst_hour < 18:
+        if new_signals_count == 0:
+            return 900   # 15 mins (check again soon as new branch approvals arrive)
+        elif new_signals_count < 10:
+            return 600   # 10 mins
+        else:
+            return 300   # 5 mins (active stream of new postings)
+
+    # 4. Evening (18:00 - 22:00 JST):
+    return 1800 if new_signals_count == 0 else 900  # 15 - 30 mins
+
+
 def check_maintenance_in_response(resp_text, status_code=200):
     """
     Detects unannounced system maintenance pages, 503 Service Unavailable,
@@ -835,6 +873,7 @@ class HelloWorkDripDaemon:
 
         while True:
             cycle += 1
+            cycle_start_inserted = self.total_signals_inserted
             logger.info("=== Starting Nationwide Cycle #%d (%d prefectures) ===", cycle, len(prefs))
             for pref_code in prefs:
                 self.crawl_prefecture(pref_code)
@@ -843,12 +882,14 @@ class HelloWorkDripDaemon:
                 if not self.once:
                     time.sleep(random.uniform(5.0, 10.0))
 
+            new_in_cycle = self.total_signals_inserted - cycle_start_inserted
             logger.info(
-                "=== Cycle #%d Summary: Fetched=%d | MatchedCompanies=%d | InsertedSignals=%d | UpdatedSignals=%d | HubEvents=%d ===",
+                "=== Cycle #%d Summary: Fetched=%d | MatchedCompanies=%d | InsertedSignals=%d (+%d new this cycle) | UpdatedSignals=%d | HubEvents=%d ===",
                 cycle,
                 self.total_detail_fetched,
                 self.total_matched_companies,
                 self.total_signals_inserted,
+                new_in_cycle,
                 self.total_signals_updated,
                 self.total_hub_events_inserted,
             )
@@ -856,8 +897,15 @@ class HelloWorkDripDaemon:
             if self.once or (self.limit > 0 and self.total_detail_fetched >= self.limit):
                 break
 
-            logger.info("Sleeping 60s before next 47-prefecture cycle...")
-            time.sleep(60)
+            sleep_secs = get_adaptive_cycle_sleep_seconds(new_in_cycle)
+            now_utc = datetime.now(timezone.utc)
+            now_jst = now_utc + timedelta(hours=9)
+            resume_time = (now_jst + timedelta(seconds=sleep_secs)).strftime("%Y-%m-%d %H:%M:%S")
+            logger.info(
+                "[SMART REST] Cycle #%d completed (%d new jobs). Sleeping %ds (~%.1fm) until %s JST before next cycle.",
+                cycle, new_in_cycle, sleep_secs, sleep_secs / 60.0, resume_time
+            )
+            time.sleep(sleep_secs)
 
 
 def main():
