@@ -34,9 +34,10 @@ Không chia lẻ kênh, mỗi ngày Agent sẽ lấy **1 Chủ Đề Cốt Lõi 
 | **5. Mạng Xã Hội X** | **X (@kigyoulist)** | Chuỗi Tweet (Thread) giật tít thu hút + Tweet reply chèn link điều hướng. |
 | **6. Facebook Doanh Nghiệp** | **Facebook Fanpage** | Bản tin chính thức (Official News), hình ảnh chuyên nghiệp, link website. |
 | **7. Facebook Cá Nhân** | **Facebook Profile** | Storytelling của Founder, góc nhìn thực tế P2P, link dưới comment đầu tiên. |
+| **8. Mạng Xã Hội B2B** | **LinkedIn** | Bài viết chuyên gia B2B Nhật Bản + First Comment chứa Backlink Hub & Spoke (Đóng gói Ready-to-Post để Founder đăng thủ công an toàn 100%). |
 
 *(Quy tắc ngoại lệ: **ValuePress** bắt buộc giãn cách tối thiểu 30 ngày/bài. Bài trước đăng ngày 11/10/2026, do đó **TẠM KHÓA ĐẾN SAU 13/11/2026**).*
-*(Tạm thời bỏ qua **LinkedIn** cho đến khi kích hoạt lại. Đã loại trừ vĩnh viễn Yahoo! Chiebukuro).*
+*(Đã loại trừ vĩnh viễn Yahoo! Chiebukuro).*
 ---
 
 ## 2.1. Quy Chuẩn Chiến Lược Bứt Phá Thứ Hạng SEO (SEO Ranking Breakthrough Protocol)
@@ -62,8 +63,17 @@ Không chia lẻ kênh, mỗi ngày Agent sẽ lấy **1 Chủ Đề Cốt Lõi 
      - **Hub Doanh nghiệp Phá sản / Giải thể:** `https://kigyoulist.com/ja/status/bankruptcies`
      - **Hub Tự động hóa Form Marketing:** `https://kigyoulist.com/ja/form-marketing`
 
+
+### D. Quy Tắc 4: Chuẩn Hóa Danh Xưng Thương Hiệu & Tên Miền (Domain & Brand Integrity)
+- 🚫 **TUYỆT ĐỐI CẤM:** Không bao giờ viết tên miền dạng `kigyoulist.com` (ví dụ: `Kigyou-list（kigyoulist.com）`). Tên miền này không thuộc sở hữu và gây mất uy tín, rò rỉ người dùng.
+- ✅ **ĐỊNH DẠNG DUY NHẤT ĐƯỢC PHÉP:**
+  - Tên dịch vụ: `Kigyou-list` hoặc `Kigyou-list (kigyoulist.com)`
+  - Khi cần kèm từ khóa tiếng Nhật: `国内最大級の法人データベース『Kigyou-list（kigyoulist.com）』` hoặc `企業リスト作成ならKigyou-list`
+  - Tên miền website đại diện: 100% là `kigyoulist.com` (hoặc `https://kigyoulist.com/ja`).
+
 ### C. Quy Tắc 3: Mỏ Neo Từ Khóa Vàng Tiếng Nhật (Commercial Anchor Text Protocol)
 - 🚫 **CẤM TUYỆT ĐỐI NAKED URLS & ANCHOR TEXT CHUNG CHUNG:** Không bao giờ để link trần dạng `https://...` hoặc dùng các từ vô nghĩa như `こちら`, `リンク`, `詳細`, `公式`, `Webサイト`.
+- 🚫 **CẤM TUYỆT ĐỐI LINK ẢNH THIẾU THẺ ALT (CHỐNG LỖI (EMPTY) TRÊN GSC):** Khi chèn hình ảnh có liên kết `<a>`, **bắt buộc 100%** phải có thuộc tính `alt="Tên từ khóa doanh nghiệp"` (ví dụ: `alt="企業リスト・法人データベースならKigyou-list"`). Không bao giờ để ảnh trống `alt` khiến Google ghi nhận anchor text là `(empty)`.
 - ✅ **BẮT BUỘC DÙNG ANCHOR TEXT CHỨA TỪ KHÓA TÌM KIẾM B2B CAO CẤP:**
   - **Trang chủ / Brand Entity:**
     - `[企業リスト・法人データベースならKigyou-list](https://kigyoulist.com/ja)`

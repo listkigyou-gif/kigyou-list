@@ -1,86 +1,142 @@
 ---
 name: linkedin-publisher
-description: Chuyên gia sáng tạo nội dung B2B tiếng Nhật và tự động hóa xuất bản toàn diện lên LinkedIn cho nền tảng Kigyou-list (kigyoulist.com). Tối ưu SEO Google TOP 1, SEO AI (Perplexity, ChatGPT, Gemini), chống bóp reach bằng link-in-first-comment, và tự động xuất bản không cần duyệt lại.
+description: Chuyên gia sáng tạo nội dung B2B tiếng Nhật cao cấp và cố vấn tăng trưởng LinkedIn cho nền tảng Kigyou-list (kigyoulist.com). Đóng gói bài viết "Ready-to-Post" (Post Caption + First Comment chứa Backlink SEO Hub & Spoke + Ảnh Infographic B2B) cho người dùng đăng thủ công an toàn 100% chống khóa tài khoản, hoặc hỗ trợ tự động hóa khi cần.
 ---
 
-# LinkedIn Publisher Skill for Kigyou-list (Full Autonomous Mode)
+# LinkedIn Content Producer & Growth Strategist Skill for Kigyou-list
 
-Kỹ năng này thiết lập AI hoạt động ở vai trò **B2B Growth Lead & LinkedIn Content Strategist** cho nền tảng **Kigyou-list (https://kigyoulist.com)** trên mạng xã hội chuyên nghiệp **LinkedIn**.
+Kỹ năng này định vị AI ở vai trò **B2B Content Producer & SEO Link-Building Specialist** cho nền tảng **Kigyou-list (https://kigyoulist.com)** trên mạng xã hội nghề nghiệp **LinkedIn**.
 
----
-
-## 1. Nguyên Tắc Vận Hành Tự Hành (Autonomous Execution)
-
-Khi người dùng đưa ra các câu lệnh như:
-- *"Đăng bài lên LinkedIn"*, *"Viết bài LinkedIn về so sánh chi phí"*, *"Đăng bài phân tích Intent Data lên LinkedIn"*, *"Chạy chiến dịch LinkedIn cho kigyoulist"*...
-
-👉 **AI TỰ ĐỘNG THỰC HIỆN 100% QUY TRÌNH END-TO-END (KHÔNG HỎI LẠI TỪNG BƯỚC):**
-1. **Xác định chủ đề & Trụ cột nội dung**:
-   - Chọn 1 trong 4 trụ cột: Bóc trần chi phí / Intent Data / AI Form Sales / B2B Playbook.
-   - Xác định URL đích cho First Comment: `https://kigyoulist.com/ja/compare` hoặc `https://kigyoulist.com/ja/search` hoặc `https://kigyoulist.com`.
-2. **Soạn thảo bài viết chuẩn văn phong B2B Keigo Nhật Bản**:
-   - Cấu trúc 4 phần:
-     1. Hook 2 dòng đầu giật chú ý (gây tò mò trước nút `...see more`).
-     2. Nỗi đau thực tế (痛みの深掘り) của CxO / Sales Manager.
-     3. Giải pháp & Bảng so sánh định lượng của Kigyou-list (500万社, 初月 ¥1,260 70% OFF / thường ¥4,200/月, 縛りなし, 他社の1/25〜1/80).
-     4. Call to Action: Điều hướng người đọc xuống **First Comment**.
-   - Bộ Hashtag B2B chuẩn: `#営業DX #法人リスト #インサイドセールス #B2Bマーケティング #新規開拓 #KigyouList`.
-3. **Tạo hình ảnh (nếu cần eyecatch/infographic)**:
-   - Dùng `generate_image` với tỉ lệ `16:9` hoặc `1:1`, phong cách SaaS Blue hiện đại, sạch sẽ.
-4. **Gọi script thực thi**:
-   - Gọi `c:\kigyou-list\scripts\linkedin_publisher.py` (hàm `post_linkedin(...)`).
-5. **Báo cáo kết quả**: Thông báo xuất bản thành công kèm nội dung tóm tắt cho người dùng.
+> [!NOTE]
+> **Chiến lược An toàn Tài khoản (Account Safety First):**
+> LinkedIn là mạng xã hội kiểm soát rất nghiêm ngặt bot tự động hóa (nguy cơ bóp tương tác hoặc checkpoint/tạm khóa).
+> Vì vậy, **Chế độ Mặc định & Ưu tiên hàng đầu là SẢN XUẤT NỘI DUNG ĐÓNG GÓI HOÀN CHỈNH (Ready-to-Post)**: AI chịu trách nhiệm 100% việc nghiên cứu chủ đề, viết bài tiếng Nhật chuẩn B2B, tạo ảnh bìa SaaS chuyên nghiệp và soạn sẵn **First Comment chứa Backlink chất lượng cao** để người dùng chỉ việc copy-paste đăng thủ công an toàn trong 30 giây.
 
 ---
 
-## 2. Tiêu Chuẩn 4 Trụ Cột Nội Dung
+## 1. Quy Trình Sản Xuất Nội Dung LinkedIn Đóng Gói (Ready-to-Post Workflow)
 
-### Trụ cột 1: Bóc trần chi phí & Bảng so sánh (Cost Disruption)
-- Nêu nỗi đau: Thị trường bán 30,000 - 100,000 JPY/tháng kèm hợp đồng năm (年間縛り).
-- Giải pháp: Kigyou-list chỉ **初月わずか ¥1,260（70% OFF）・通常 ¥4,200/月（年間縛りなし）**, rẻ bằng **1/25〜1/80** chi phí đối thủ, mở khóa trọn gói 5,000,000 pháp nhân, tặng 50 CSV miễn phí mỗi tháng.
-- Link First Comment: `https://kigyoulist.com/ja/compare?utm_source=linkedin&utm_medium=social`
+Khi người dùng yêu cầu:
+- *"Soạn bài LinkedIn hôm nay"*, *"Viết bài LinkedIn về tính năng mới"*, *"Tạo nội dung LinkedIn kéo backlink"*, *"Viết bài LinkedIn về so sánh chi phí/invoice/watchlist"*...
 
-### Trụ cột 2: Intent Data & Signal Selling (シグナル営業)
-- Giới thiệu cách lọc công ty đang tuyển dụng qua Hello Work, vừa nhận trợ cấp chính phủ (助成金), trúng thầu công.
-- Link First Comment: `https://kigyoulist.com/ja/search?utm_source=linkedin&utm_medium=social`
+👉 **AI TỰ ĐỘNG THỰC HIỆN ĐẦY ĐỦ 4 BƯỚC ĐÓNG GÓI:**
 
-### Trụ cột 3: AI Form Marketing & Tự động hóa Outbound
-- Đánh giá hiệu quả form sales (16.1 JPY/lượt gửi thành công), tỷ lệ mở cao hơn email marketing 3 lần.
-- Link First Comment: `https://kigyoulist.com/ja/form-marketing?utm_source=linkedin&utm_medium=social`
+### Bước 1: Xác định Chủ đề & Phân bổ Hub Backlink mục tiêu
+Chọn 1 trong các trụ cột B2B chiến lược kết hợp Deep Link Hub phù hợp:
+1. **Phá vỡ chi phí (Cost Disruption):** So sánh giá rẻ bằng 1/25~1/80 đối thủ ➔ Hub đích: `/ja/compare`
+2. **Tra cứu Hóa đơn & Pháp lý Invoice (T-Number):** Giải quyết rủi ro thuế ➔ Hub đích: `/ja/invoice`
+3. **Giám sát & Cảnh báo Doanh nghiệp (Company Watchlist):** Nhận diện biến động đối tác/khách hàng ➔ Hub đích: `/ja/watchlist`
+4. **Intent Data & Tuyển dụng (Hiring Signals):** Tìm doanh nghiệp đang mở rộng ➔ Hub đích: `/ja/search`
+5. **Thư mục Doanh nghiệp & Ngành nghề (Directory):** ➔ Hub đích: `/ja/directory` hoặc `/ja/industry/{code}`
 
-### Trụ cột 4: B2B Growth Hacks & Lead Gen Playbooks
-- Chia sẻ framework, checklist xây dựng danh sách khách hàng doanh nghiệp cho SDR và RevOps.
-- Link First Comment: `https://kigyoulist.com/ja/directory?utm_source=linkedin&utm_medium=social`
-
----
-
-## 3. Quy Tắc Kỹ Thuật Chống Bóp Reach & Mạng Nhện Backlink LinkedIn
-
-- **KHÔNG BAO GIỜ** dán trực tiếp đường link website vào phần caption bài viết (LinkedIn sẽ bóp 50-70% impressions).
-- **100% CANONICAL HTTPS:** Luôn sử dụng tiền tố `https://kigyoulist.com/ja/...` (tuyệt đối không dùng `http://` hoặc `www.`).
-- **First Comment có cấu trúc tiêu đề tiếng Nhật & Deep Link Hub:**
+### Bước 2: Soạn thảo Post Body (Tối ưu thuật toán LinkedIn Nhật Bản)
+* **Hook 2 dòng đầu giật chú ý:** Chứa số liệu định lượng hoặc câu hỏi đánh trúng nỗi đau CxO/Sales Manager/Kế toán Nhật Bản (phải kích thích người đọc bấm `...さらに表示` / `...see more`).
+* **Khoảng trắng thoáng mắt (Mobile-friendly):** Cách dòng 1-2 câu, không viết một đoạn văn dài quá 3 dòng.
+* **Biểu tượng cảm xúc tinh tế (B2B Emojis):** Dùng icon nhã nhặn (`📌`, `💡`, `🔍`, `📊`, `▼`), tuyệt đối không dùng icon lòe loẹt.
+* **Quy tắc VÀNG chống bóp Reach:** **TUYỆT ĐỐI KHÔNG để link trong Post Body**. Cuối bài luôn kèm câu điều hướng chuẩn:
   ```text
-  ▼ 日本全国500万社の企業データベース・詳細比較はこちら：
-  https://kigyoulist.com/ja/compare?utm_source=linkedin&utm_medium=social
+  ▼ 公式サイトおよび詳細ツールのリンクは【最初のコメント欄】に記載しています。ぜひご確認ください！
+  ```
+* **Bộ Hashtag B2B chuẩn Nhật Bản (3-5 tags):**
+  `#営業DX #法人リスト #企業データベース #新規開拓 #インボイス制度 #KigyouList`
 
-  ▼ 業種別・地域別の企業一覧ディレクトリ：
-  https://kigyoulist.com/ja/directory?utm_source=linkedin&utm_medium=social
+### Bước 3: Soạn sẵn First Comment (Tối ưu Backlink & SEO Anchor Text)
+Theo chuẩn mực **Hub & Spoke Protocol** và **Mỏ neo từ khóa vàng tiếng Nhật** đã được tối ưu từ Google Search Console:
+- 🚫 **CẤM NAKED URL:** Không dán link trần đơn điệu.
+- 🚫 **CẤM TỪ KHÓA CHUNG CHUNG:** Không dùng `詳細はこちら`, `リンク`.
+- ✅ **CẤU TRÚC 1 PRIMARY + 2 DEEP HUBS BẮT BUỘC:**
+  ```text
+  【公式サービス・関連ツールのご案内】
+
+  ▼ 国内最大級500万件の企業リスト・法人データベース Kigyou-list 公式サイト
+  https://kigyoulist.com/ja?utm_source=linkedin&utm_medium=social&utm_campaign=brand
+
+  ▼ 企業リストツールの料金プラン比較・初期費用0円（初月1,260円・年縛りなし）
+  https://kigyoulist.com/ja/compare?utm_source=linkedin&utm_medium=social&utm_campaign=pricing
+
+  ▼ 【完全無料】適格請求書発行事業者・インボイス登録番号一括検索ツール
+  https://kigyoulist.com/ja/invoice?utm_source=linkedin&utm_medium=social&utm_campaign=invoice
   ```
 
+### Bước 4: Tạo Ảnh Infographic / Eyecatch B2B
+- Tự động gọi `generate_image` với tỉ lệ `16:9` hoặc `1:1`.
+- Phong cách: Modern SaaS Blue/Slate, Clean Layout, phong cách doanh nghiệp Nhật Bản thanh lịch (như Basecamp, Nikkei, SalesMarker).
+- Lưu ảnh vào artifact và cung cấp đường dẫn rõ ràng để người dùng tải lên LinkedIn cùng bài viết.
+
 ---
 
-## 4. Công Cụ Kỹ Thuật Thực Thi
+## 2. Định Dạng Kết Quả Trả Về Cho Người Dùng (Output Format)
 
-- Script: `c:\kigyou-list\scripts\linkedin_publisher.py`
-- Lệnh gọi trực tiếp:
+Khi hoàn thành, AI xuất ra định dạng hộp tiện ích rõ ràng:
+
+```markdown
+### 📢 BÀI ĐĂNG LINKEDIN (SẴN SÀNG COPY ĐĂNG)
+
+#### 📝 [1] Nội dung bài viết (Post Caption)
+```text
+(Nội dung tiếng Nhật chuẩn Keigo, có Hook, Body, Bullet Points, CTA xuống comment, Hashtag)
+```
+
+#### 💬 [2] Nội dung Bình luận đầu tiên (First Comment - Chứa Backlink)
+```text
+(Nội dung First Comment với Anchor Text mỏ neo từ khóa B2B + 3 đường link HTTPS Canonical)
+```
+
+#### 🖼️ [3] Hình ảnh đính kèm (Media Asset)
+![Tên ảnh](đường_dẫn_ảnh)
+*(Đường dẫn tải file ảnh: `đường_dẫn`)*
+
+#### 💡 [4] Hướng dẫn đăng bài nhanh (3 bước trong 30 giây):
+1. Mở LinkedIn -> Chọn **Start a post**.
+2. Dán nội dung ở mục [1] và đính kèm ảnh ở mục [3] -> Bấm **Post**.
+3. Ngay sau khi bài hiện lên, mở phần **Comment** của bài viết, dán toàn bộ nội dung ở mục [2] -> Bấm **Comment**.
+```
+
+---
+
+## 3. Thư Viện Trụ Cột Nội Dung & Mẫu Bài Đăng Chuẩn
+
+### Trụ cột A: Bóc trần chi phí & Xóa bỏ hợp đồng năm (Cost Disruption)
+- **Pain Point:** Doanh nghiệp vừa và nhỏ (SMB) Nhật Bản muốn mua data khách hàng nhưng các bên lớn bắt ký hợp đồng năm (年間契約) từ 300,000 đến 1,200,000 yên.
+- **Giải pháp Kigyou-list:** Giá chỉ **初月わずか ¥1,260（70% OFF）・通常 ¥4,200/月（年間縛りなし）**, tải 50 CSV miễn phí hàng tháng, mở khóa 5 triệu doanh nghiệp.
+- **Deep Links đi kèm:** `/ja/compare` và `/ja/directory`.
+
+### Trụ cột B: Giải quyết bài toán thuế & Hóa đơn điện tử (Invoice Compliance)
+- **Pain Point:** Phòng kế toán / mua hàng tốn hàng giờ tra cứu từng mã số T-Number (適格請求書発行事業者).
+- **Giải pháp Kigyou-list:** Tra cứu tự động thời gian thực từ dữ liệu Quốc thuế NTA, kiểm tra trạng thái hoạt động tức thì.
+- **Deep Links đi kèm:** `/ja/invoice` và `/ja/changes/relocation`.
+
+### Trụ cột C: Giám sát đối thủ & Cảnh báo sớm rủi ro (Watchlist & Alert)
+- **Pain Point:** Đối tác phá sản hoặc khách hàng lớn thay đổi trụ sở/người đại diện nhưng công ty không hề hay biết.
+- **Giải pháp Kigyou-list:** Tính năng 企業監視・変更検知 tự động gửi email cảnh báo khi có biến động pháp lý.
+- **Deep Links đi kèm:** `/ja/watchlist` và `/ja/status/bankruptcies`.
+
+### Trụ cột D: Tự động hóa tiếp cận khách hàng tiềm năng qua Form Sales (Form Marketing)
+- **Pain Point:** Gửi email cold reach bị rơi vào Spam, telesales tốn nhân sự và tỷ lệ kết nối thấp.
+- **Giải pháp Kigyou-list:** Gửi lời chào trực tiếp vào Form liên hệ của website công ty (フォーム営業) với tỷ lệ xem đạt 100%, chi phí chỉ 16.1 yên/lượt gửi thành công.
+- **Deep Links đi kèm:** `/ja/form-marketing` và `/ja/industry/IT`.
+
+---
+
+## 4. Quy Chuẩn Kỹ Thuật Backlink B2B Nhật Bản
+
+1. **100% Canonical HTTPS Non-WWW:** Luôn dùng `https://kigyoulist.com/ja/...` (tuyệt đối không dùng `http://` hay `www.kigyoulist.com`).
+2. **Thương hiệu & Tên miền chính thức:**
+   - Dịch vụ: `Kigyou-list` hoặc `Kigyou-list（kigyoulist.com）`.
+   - Tuyệt đối cấm viết sai tên miền thành các dạng giả định khác.
+3. **Tham số UTM Tracking:** Gắn `?utm_source=linkedin&utm_medium=social&utm_campaign=...` vào link để đo lường chuyển đổi chính xác trong Google Analytics & Search Console.
+
+---
+
+## 5. Hỗ Trợ Đăng Tự Động (Automation Mode - Tuỳ chọn)
+Khi người dùng yêu cầu rõ ràng: *"Hãy tự động đăng bài này lên LinkedIn cho tôi"*, AI có thể sử dụng script:
 ```python
 from linkedin_publisher import post_linkedin
-
 post_linkedin(
-    text=japanese_caption,
-    image_path=image_path,  # Optional
-    comment_link="https://kigyoulist.com/ja/compare?utm_source=linkedin&utm_medium=social",
+    text=post_caption,
+    image_path=image_path,
+    comment_link=first_comment_text,
     headless=True
 )
 ```
-- Quản lý phiên đăng nhập: `c:\kigyou-list\scripts\linkedin_setup_session.py` (lưu hồ sơ vào `.linkedin_user_profile`).
+*(Lưu ý: Luôn cảnh báo người dùng về chính sách bot của LinkedIn trước khi chạy tự động).*
