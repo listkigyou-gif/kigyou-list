@@ -107,13 +107,32 @@ Hệ thống chạy hoàn toàn tự động qua Linux Crontab trên VPS (Múi g
 
 ### C. Ma Trận Khai Báo Sitemaps (Sitemap Sharding Matrix)
 
-* **Google Search Console & Bing:** Khai báo 12 Sitemaps chính thức:
+* **Google Search Console & Bing:** Khai báo các Sitemaps chính thức:
   1. `https://kigyoulist.com/sitemap.xml` (Master Sitemap Index)
-  2. `https://kigyoulist.com/sitemap-index.xml` (Backup Index)
-  3. `https://kigyoulist.com/sitemap/core.xml` (~15,000 URLs quan trọng nhất)
+  2. `https://kigyoulist.com/sitemap/core.xml` (~4,980 URLs tinh hoa 100% tiếng Nhật)
+  3. `https://kigyoulist.com/sitemap-index.xml` (Backup Index)
   4. `https://kigyoulist.com/sitemap/0.xml` đến `9.xml` (10 phân mảnh, mỗi file ~50,000 URLs bao phủ 500,000 doanh nghiệp hàng đầu Nhật Bản).
 
 ---
+
+### D. QUY CHUẨN VÀNG: JAPAN-FIRST CRAWL BUDGET (DỒN 100% CRAWL BUDGET CHO B2B NHẬT BẢN)
+
+> [!CRITICAL]
+> **NGUYÊN TẮC BẤT DI BẤT DỊCH KHI CẬP NHẬT SITEMAP**:
+> 1. **Sitemap chỉ chứa duy nhất tiếng Nhật (`sitemapLocales = ['ja']`)**:
+>    - Tuyệt đối **CẤM** đưa các tiền tố đa ngôn ngữ (`/en/`, `/vi/`) vào tập tin Sitemap chính thức (`sitemap.xml`, `sitemap/core.xml`, `categoryPages`).
+>    - **Lý do kỹ thuật**: Nhân 3 ngôn ngữ sẽ làm sitemap phình to thêm 10,000 URLs rác, gây pha loãng nghiêm trọng ngân sách cào (Crawl Budget Dilution) và làm hàng chục nghìn trang bị kẹt ở trạng thái `Discovered - currently not indexed` trên Google Search Console.
+> 2. **Bảo toàn chuẩn quốc tế qua thẻ Hreflang**:
+>    - Các trang `/en` và `/vi` vẫn tồn tại bình thường trên web để phục vụ người dùng thật.
+>    - Khai báo đa ngôn ngữ bắt buộc thực hiện bằng thẻ chuẩn SEO trong mã HTML `<head>` (`alternates` trong `layout.tsx`):
+>      ```html
+>      <link rel="canonical" href="https://kigyoulist.com/ja/..." />
+>      <link rel="alternate" hrefLang="ja" href="https://kigyoulist.com/ja/..." />
+>      <link rel="alternate" hrefLang="en" href="https://kigyoulist.com/en/..." />
+>      <link rel="alternate" hrefLang="vi" href="https://kigyoulist.com/vi/..." />
+>      <link rel="alternate" hrefLang="x-default" href="https://kigyoulist.com/ja/..." />
+>      ```
+> 3. **Kết quả đạt được**: `sitemap/core.xml` luôn duy trì gọn gàng ở mức **~4,980 URLs**, tải cực nhanh (<0.3s) và Googlebot/Bingbot cào hết 100% trong vòng 24–48 giờ.
 
 ## 3. BỘ LỆNH ĐIỀU HÀNH & KIỂM TRA (COMMAND PLAYBOOK)
 
@@ -138,6 +157,11 @@ python c:\kigyou-list\scripts\deploy_cloudflare_cache_rules.py
 
 # 6. Kiểm tra tiến độ nộp IndexNow tự động
 python c:\kigyou-list\scripts\auto_indexnow_submitter.py --stats
+
+# 7. Hủy Cache 2 Lớp (Cloudflare Edge + Nginx) khi cập nhật dữ liệu mới
+python c:\kigyou-list\scripts\cache_purger.py --companies 1180301018771 --hubs /ja/licenses /ja/changes/relocation
+# Hủy toàn bộ cache khẩn cấp:
+python c:\kigyou-list\scripts\cache_purger.py --all
 ```
 
 ---

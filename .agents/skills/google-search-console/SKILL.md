@@ -69,8 +69,8 @@ Khi kiểm tra báo cáo **Page Indexing (Trang)** trên GSC, Agent bắt buộc
 
 | Bệnh Lý Trên GSC | Nguyên Nhân Kỹ Thuật | Phác Đồ Điều Trị Cho Kigyou-list |
 | :--- | :--- | :--- |
-| **1. Discovered - currently not indexed**<br>*(Đã phát hiện - hiện chưa lập chỉ mục)* | Googlebot đã tìm thấy URL qua sitemap/internal link nhưng chưa đủ Crawl Budget hoặc trang bị cô lập (Orphan Page). | • Bơm Internal Link từ Hub ngành/khu vực.<br>• Kiểm tra sitemap shard (`sitemap/0-9.xml`).<br>• Kích hoạt `auto_google_indexing_pg.js` đưa vào VIP Queue (nếu có biến động). |
-| **2. Crawled - currently not indexed**<br>*(Đã thu thập dữ liệu - hiện chưa lập chỉ mục)* | Googlebot đã tải HTML về nhưng đánh giá chất lượng trang quá mỏng (Thin Content) hoặc trùng lặp cao. | • Kích hoạt ETL làm giàu dữ liệu: Bổ sung mã Invoice NTA, Báo cáo EDINET, Giấy phép ngành nghề.<br>• Đảm bảo Schema JSON-LD `Corporation` & `Dataset` hợp lệ. |
+| **1. Discovered - currently not indexed**<br>*(Đã phát hiện - hiện chưa lập chỉ mục)* | Googlebot đã tìm thấy URL qua sitemap/internal link nhưng chưa đủ Crawl Budget hoặc đang xếp hàng đợi (Queue).<br>*(Bot chưa hề đọc HTML - Last crawled: N/A)*. | • **TUYỆT ĐỐI CẤM BẤM NÚT 'VALIDATE FIX'**: Bấm nút này sẽ ép Googlebot quét lại các link rác/link cũ và dễ bị báo `Validation Failed`.<br>• Đảm bảo sitemap chỉ chứa 100% tiếng Nhật (`/ja/`) để không làm loãng hàng đợi.<br>• Bơm Internal Link từ Hub ngành/khu vực.<br>• Kích hoạt `auto_google_indexing_pg.js` đưa các URL có biến động vào VIP Queue. |
+| **2. Crawled - currently not indexed**<br>*(Đã thu thập dữ liệu - hiện chưa lập chỉ mục)* | Googlebot đã tải HTML về nhưng đánh giá trang đang trong giai đoạn Sandbox hoặc chờ đánh giá tín hiệu chất lượng/người dùng. | • **TUYỆT ĐỐI CẤM BẤM NÚT 'VALIDATE FIX'**: Đây không phải lỗi kỹ thuật.<br>• Kích hoạt ETL làm giàu dữ liệu: Bổ sung mã Invoice NTA, Báo cáo EDINET, Giấy phép ngành nghề (đạt richnessScore >= 3).<br>• Đảm bảo Schema JSON-LD `Corporation` & `Dataset` hợp lệ. |
 | **3. Page with redirect**<br>*(Trang có chuyển hướng)* | URL gốc chuyển hướng 301 sang URL mới (vd: http sang https, www sang non-www, `/company/*` sang `/ja/company/*`). | • Đây là **trạng thái bình thường** nếu người dùng truy cập link cũ.<br>• Tuy nhiên, trong Internal Link và Sitemap **tuyệt đối không được chứa link chuyển hướng**; phải trỏ trực tiếp đến URL đích chuẩn. |
 | **4. Alternate page with proper canonical tag**<br>*(Trang thay thế có thẻ chuẩn tắc thích hợp)* | URL phụ (vd: có tham số `?ref=`, `?page=1`) trỏ canonical về trang gốc. | • Trạng thái hoàn toàn chính xác theo chuẩn SEO.<br>• Đảm bảo thẻ `<link rel="canonical" href="..." />` luôn là link tuyệt đối https không có trailing slash thừa. |
 | **5. Duplicate without user-selected canonical**<br>*(Trùng lặp khi người dùng chưa chọn thẻ chuẩn tắc)* | Trang không khai báo canonical, Google phải tự đoán URL đại diện. | • Lỗi nghiêm trọng! Bắt buộc mọi trang Server Component trong Next.js 15 phải có `alternates.canonical` trong `generateMetadata()`. |
@@ -116,7 +116,7 @@ Theo tài liệu chính thức từ Google Search Console, hệ thống tuân th
 
 1. **URL Nộp Duy Nhất:** `https://kigyoulist.com/sitemap.xml` (Tệp mục lục gốc chuẩn XML `<sitemapindex>`).
 2. **Cấu trúc phân nhánh tự động:** Bên trong file index tự động khai báo toàn bộ các phân mảnh con:
-   * `sitemap/core.xml`: ~15.000 URLs các trang Hub quận huyện, ngành nghề, pháp lý.
+   * `sitemap/core.xml`: ~4,980 URLs tinh hoa 100% tiếng Nhật (đã loại bỏ 10.000 link đa ngôn ngữ rác để tối ưu hóa Crawl Budget).
    * `sitemap/0.xml` đến `sitemap/16.xml`: Mỗi shard chứa 10.000 - 50.000 URLs doanh nghiệp.
 3. **Tuyệt đối cấm nộp thủ công từng file con rời rạc:** Việc nộp riêng lẻ `0.xml` – `9.xml` sẽ làm nghẽn hàng đợi Googlebot và gây ra lỗi hiển thị giả lập "Couldn't fetch" trên giao diện GSC.
 4. **Script quản trị & nạp tự động:** [submit_all_sitemaps_gsc.py](file:///c:/kigyou-list/scripts/submit_all_sitemaps_gsc.py).
