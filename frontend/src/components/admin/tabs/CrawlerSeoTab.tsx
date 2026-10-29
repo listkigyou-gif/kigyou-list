@@ -51,9 +51,13 @@ export default function CrawlerSeoTab({ getAdminHeaders }: CrawlerSeoTabProps) {
 
   const fetchData = useCallback(async (isSilent = false) => {
     if (!isSilent) setRefreshing(true);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 12000); // 12s timeout safeguard
     try {
       const headers = getAdminHeaders();
-      const res = await fetch("/api/admin/crawler-seo", { headers });
+      const url = isSilent ? "/api/admin/crawler-seo" : "/api/admin/crawler-seo?refresh=1";
+      const res = await fetch(url, { headers, signal: controller.signal });
+      clearTimeout(timeoutId);
       if (!res.ok) {
         throw new Error(`HTTP ${res.status}: データの取得に失敗しました`);
       }
@@ -61,7 +65,12 @@ export default function CrawlerSeoTab({ getAdminHeaders }: CrawlerSeoTabProps) {
       setData(json);
       setError(null);
     } catch (err: any) {
-      setError(err.message || "エラーが発生しました");
+      clearTimeout(timeoutId);
+      if (err.name === "AbortError") {
+        setError("データ取得がタイムアウトしました。再試行してください。");
+      } else {
+        setError(err.message || "エラーが発生しました");
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
