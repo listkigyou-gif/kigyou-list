@@ -306,10 +306,13 @@ async function main() {
           c.primary_industry_code,
           c.major_industry_code,
           c.updated_at,
+          c.has_hiring,
+          c.is_hiring,
           (
             CASE 
               WHEN c.has_financial_report = true THEN 100
               WHEN c.has_public_tender = true THEN 80
+              WHEN c.has_hiring = true OR c.is_hiring = true THEN 75
               WHEN c.has_license = true THEN 60
               ELSE 40
             END
@@ -318,6 +321,7 @@ async function main() {
             CASE 
               WHEN c.has_financial_report = true THEN 'EDINET Báo cáo tài chính mới'
               WHEN c.has_public_tender = true THEN 'GEPS Trúng thầu công mới'
+              WHEN c.has_hiring = true OR c.is_hiring = true THEN 'HelloWork Tuyển dụng mới (JobPosting)'
               WHEN c.has_license = true THEN 'Cấp phép kinh doanh mới'
               ELSE 'Thay đổi pháp lý NTA / Thông tin doanh nghiệp'
             END
@@ -326,6 +330,17 @@ async function main() {
         LEFT JOIN google_indexing_submissions sub ON c.corporate_number = sub.corporate_number
         WHERE c.updated_at >= NOW() - INTERVAL '48 hours'
           AND (sub.submitted_at IS NULL OR sub.submitted_at < NOW() - INTERVAL '24 hours')
+          -- THIN CONTENT GUARD (Đồng bộ 100% với Frontend: richnessScore >= 3) --
+          AND (
+            (CASE WHEN c.phone_number IS NOT NULL AND c.phone_number != '' THEN 2 ELSE 0 END) +
+            (CASE WHEN c.website_url IS NOT NULL AND c.website_url != '' AND c.website_url NOT LIKE '%なし%' THEN 2 ELSE 0 END) +
+            (CASE WHEN c.has_license = true OR c.has_financial_report = true OR c.has_financials = true OR c.has_public_tender = true OR c.has_hiring = true THEN 3 ELSE 0 END) +
+            (CASE WHEN c.capital_amount IS NOT NULL THEN 1 ELSE 0 END) +
+            (CASE WHEN c.employee_count IS NOT NULL THEN 1 ELSE 0 END) +
+            (CASE WHEN c.representative_name IS NOT NULL AND c.representative_name != '' THEN 1 ELSE 0 END) +
+            (CASE WHEN c.primary_industry_code IS NOT NULL THEN 1 ELSE 0 END) +
+            (CASE WHEN c.has_invoice = true THEN 1 ELSE 0 END)
+          ) >= 3
         ORDER BY priority_score DESC, c.updated_at DESC
         LIMIT 2500
       `);
@@ -517,9 +532,10 @@ async function main() {
         console.error(`  [${idx + 1}/${selectedItems.length}] ❌ [${currentKey.projectId}] Lỗi: ${errMsg}`);
 
         if (errMsg.includes('RATE_LIMIT_EXCEEDED') || errMsg.toLowerCase().includes('quota') || errMsg.includes('429')) {
-          console.warn(`[!] [${currentKey.projectId}] Hết hạn mức 200/ngày. Tự động chuyển key...`);
+          console.log(`[*] [${currentKey.projectId}] Hết hạn mức 200/ngày. Tự động chuyển sang key khả dụng tiếp theo...`);
           currentKey.isExhausted = true;
           activeKeyIndex = (activeKeyIndex + 1) % keys.length;
+          idx--; // Thử lại URL này với key tiếp theo
         }
       }
 

@@ -105,10 +105,13 @@ async function fetchTargets(client, limit = 3000) {
       c.prefecture_code,
       c.primary_industry_code,
       c.updated_at,
+      c.has_hiring,
+      c.is_hiring,
       (
         CASE 
           WHEN c.has_financial_report = true OR c.has_financials = true THEN 100
           WHEN c.has_public_tender = true OR c.has_bidding = true THEN 80
+          WHEN c.has_hiring = true OR c.is_hiring = true THEN 75
           WHEN c.has_license = true THEN 60
           ELSE 40
         END
@@ -117,6 +120,7 @@ async function fetchTargets(client, limit = 3000) {
         CASE 
           WHEN c.has_financial_report = true OR c.has_financials = true THEN 'EDINET Báo cáo tài chính mới'
           WHEN c.has_public_tender = true OR c.has_bidding = true THEN 'GEPS Trúng thầu công mới'
+          WHEN c.has_hiring = true OR c.is_hiring = true THEN 'HelloWork Tuyển dụng mới (JobPosting)'
           WHEN c.has_license = true THEN 'Cấp phép kinh doanh mới'
           ELSE 'Thay đổi pháp lý NTA / Dữ liệu doanh nghiệp'
         END
@@ -129,7 +133,7 @@ async function fetchTargets(client, limit = 3000) {
       AND (
         (CASE WHEN c.phone_number IS NOT NULL AND c.phone_number != '' THEN 2 ELSE 0 END) +
         (CASE WHEN c.website_url IS NOT NULL AND c.website_url != '' AND c.website_url NOT LIKE '%なし%' THEN 2 ELSE 0 END) +
-        (CASE WHEN c.has_license = true OR c.has_financial_report = true OR c.has_financials = true OR c.has_public_tender = true OR c.has_bidding = true THEN 3 ELSE 0 END) +
+        (CASE WHEN c.has_license = true OR c.has_financial_report = true OR c.has_financials = true OR c.has_public_tender = true OR c.has_bidding = true OR c.has_hiring = true THEN 3 ELSE 0 END) +
         (CASE WHEN c.capital_amount IS NOT NULL THEN 1 ELSE 0 END) +
         (CASE WHEN c.employee_count IS NOT NULL THEN 1 ELSE 0 END) +
         (CASE WHEN c.representative_name IS NOT NULL AND c.representative_name != '' THEN 1 ELSE 0 END) +
