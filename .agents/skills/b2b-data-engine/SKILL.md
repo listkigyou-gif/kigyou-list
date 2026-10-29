@@ -623,6 +623,17 @@ flowchart TD
   - Khi cần reset để chạy lại từ Bước 1: sử dụng cờ `--reset-roll`.
 - **Lợi ích**:
   - Tiết kiệm 100% điện năng và phần cứng của người dùng (chỉ bật khi rảnh, 1 tuần - 1 tháng chạy 1 lần).
+
+### 10.3. Thành Phần 3: HelloWork Stealth Drip-Feed Daemon (`scripts/hellowork_drip_daemon.py` / PM2 `hellowork-drip-daemon`)
+- **Môi trường**: Chạy ngầm liên tục 24/7 trực tiếp trên Production VPS (`160.251.203.84`) dưới sự quản lý của **PM2** (`hellowork-drip-daemon`).
+- **Cơ chế cào nhỏ giọt tàng hình (Stealth Drip-Feed)**:
+  - Quét tuần tự và liên tục các tin tuyển dụng mới trên cổng HelloWork Internet Service xuyên suốt 47 tỉnh thành Nhật Bản.
+  - Áp dụng độ trễ ngẫu nhiên **`8s - 15s` mỗi tin tuyển dụng** (random delay per job) để mô phỏng hành vi người dùng thật, tuyệt đối không gây tải cho máy chủ cơ quan nhà nước và không bao giờ kích hoạt giới hạn chặn IP (rate limits).
+- **Quy trình bóc tách & đồng bộ tự động (Real-time Pipeline)**:
+  1. Bóc tách đầy đủ thông tin phiếu tuyển dụng, đặc biệt trích xuất chính xác trường **`紹介期限日`** (`expiry_date` - Ngày hết hạn giới thiệu việc làm của HelloWork) lưu vào JSONB `details.expiry_date`.
+  2. Tự động đối soát và khớp mã số pháp nhân 13 chữ số **`法人番号`** (`corporate_number`) với CSDL quốc gia.
+  3. Cập nhật trực tiếp vào bảng `business_signals` (`signal_type = 'hiring'`) và `hub_dynamic_events` (`event_type = 'hiring'`).
+  4. Bật cờ `companies.has_hiring = true` và cập nhật `updated_at = NOW()` để tự động bơm nguồn URL biến động mới (kèm Schema `JobPosting` hợp lệ) vào phễu lập chỉ mục hàng đêm của **Google VIP Indexing (1,000 URLs/đêm)** và **Bing IndexNow (5,000 URLs/đêm)**.
 ---
 
 ## 11. Quy Chuẩn Phân Phối Indexing & Phòng Vệ Hàng Đợi (Indexing Distribution & Queue Defense)

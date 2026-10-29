@@ -11,6 +11,17 @@ interface CompanySignalsTimelineProps {
   signals: BusinessSignal[];
 }
 
+export function calculateHelloWorkStatutoryExpiry(signalDate?: string | null): string | null {
+  if (!signalDate) return null;
+  const match = signalDate.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (!match) return null;
+  const year = parseInt(match[1], 10);
+  const monthIndex = parseInt(match[2], 10) - 1;
+  if (isNaN(year) || isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) return null;
+  const lastDayDate = new Date(Date.UTC(year, monthIndex + 3, 0));
+  return lastDayDate.toISOString().split('T')[0];
+}
+
 
 
 // CSS-animated accordion panel — pre-renders content, toggles with max-height transition
@@ -227,9 +238,31 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                                   const parsed = JSON.parse(sig.details);
                                   if (typeof parsed === 'object' && parsed !== null) {
                                     const filteredEntries = Object.entries(parsed).filter(
-                                      ([key]) => key !== 'raw_industry' && key !== 'job_number'
+                                      ([key, val]) =>
+                                        key !== 'raw_industry' &&
+                                        key !== 'job_number' &&
+                                        val !== null &&
+                                        val !== undefined &&
+                                        String(val).trim() !== ''
                                     );
-                                    if (filteredEntries.length === 0) return null;
+                                    const isHiring = type === '求人あり';
+                                    const hasExplicitExpiry = Boolean(
+                                      parsed.expiry_date && String(parsed.expiry_date).trim() !== ''
+                                    );
+                                    const estExpiry =
+                                      isHiring && !hasExplicitExpiry
+                                        ? calculateHelloWorkStatutoryExpiry(sig.signal_date)
+                                        : null;
+
+                                    if (filteredEntries.length === 0 && !estExpiry) return null;
+
+                                    const expiryNote =
+                                      locale === 'en'
+                                        ? '*Estimated based on standard HelloWork validity rules (end of 2nd month after reception); actual company deadline may vary'
+                                        : locale === 'vi'
+                                          ? '*Ước tính theo quy định tiêu chuẩn của HelloWork (cuối tháng thứ 2 sau ngày tiếp nhận), không phải hạn riêng do doanh nghiệp tự đặt'
+                                          : '※ハローワーク規定（受理日の翌々月末日）に基づく目安表示であり、企業独自の募集期限とは異なる場合があります';
+
                                     return (
                                       <div className="flex flex-col gap-1.5 mt-1">
                                         {filteredEntries.map(([key, value]) => {
@@ -241,6 +274,21 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                                             </div>
                                           );
                                         })}
+                                        {estExpiry && (
+                                          <div className="flex flex-col sm:flex-row sm:items-start gap-1">
+                                            <span className="font-medium text-slate-400 dark:text-slate-500 min-w-[80px] shrink-0 text-[10px]">
+                                              {t.company.signalLabels.estimated_expiry_date}:
+                                            </span>
+                                            <div className="flex flex-col gap-0.5">
+                                              <span className="text-slate-700 dark:text-slate-300 text-xs font-mono tabular-nums">
+                                                {estExpiry}
+                                              </span>
+                                              <span className="text-[10px] text-slate-400 dark:text-slate-500 leading-snug">
+                                                {expiryNote}
+                                              </span>
+                                            </div>
+                                          </div>
+                                        )}
                                       </div>
                                     );
                                   }

@@ -111,11 +111,39 @@ class HelloworkExtractor:
             logger.info(f"   - Lọc theo tỉnh        : Mã {self.prefecture}")
 
     def _init_db(self):
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
         conn = sqlite3.connect(DB_PATH, timeout=60)
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA synchronous=NORMAL;")
         conn.execute("PRAGMA busy_timeout=60000;")
+        try:
+            conn.execute("ALTER TABLE jobs ADD COLUMN expiry_date TEXT;")
+            conn.commit()
+        except sqlite3.OperationalError:
+            pass
         conn.close()
+
+    def _normalize_jp_date(self, text):
+        if not text:
+            return None
+        s = str(text).strip()
+        zenkaku = "０１２３４５６７８９"
+        hankaku = "0123456789"
+        s = s.translate(str.maketrans(zenkaku, hankaku))
+
+        eras = {"令和": 2018, "平成": 1988, "昭和": 1925, "大正": 1911, "明治": 1867}
+        for era, base in eras.items():
+            if era in s:
+                m = re.search(era + r'\s*(\d+|元)\s*[年/\-\.]\s*(\d{1,2})\s*[月/\-\.]\s*(\d{1,2})日?', s)
+                if m:
+                    y_val = 1 if m.group(1) == "元" else int(m.group(1))
+                    return f"{base + y_val:04d}-{int(m.group(2)):02d}-{int(m.group(3)):02d}"
+
+        m_iso = re.search(r'(\d{4})\s*[年/\-\.]\s*(\d{1,2})\s*[月/\-\.]\s*(\d{1,2})日?', s)
+        if m_iso:
+            return f"{int(m_iso.group(1)):04d}-{int(m_iso.group(2)):02d}-{int(m_iso.group(3)):02d}"
+
+        return s
 
     def _clean_address(self, text):
         if not text: return None
@@ -200,7 +228,8 @@ class HelloworkExtractor:
             if el: data["company"][key] = el.get_text(strip=True)
 
         data["job"].update({
-            "reception_date": find_val(["受付年月日"]),
+            "reception_date": self._normalize_jp_date(find_val(["受付年月日"])),
+            "expiry_date": self._normalize_jp_date(find_val(["紹介期限日", "有効期限"])),
             "job_title": find_val(["職種"]),
             "job_content": find_val(["仕事の内容", "仕事内容"]),
             "employment_type": find_val(["求人区分", "雇用形態"]),
@@ -397,7 +426,7 @@ class HelloworkExtractor:
                 
             # 2. Ghi bảng jobs
             job_cols = [
-                'job_id', 'corporate_number', 'reception_date', 'job_title', 'job_content', 
+                'job_id', 'corporate_number', 'reception_date', 'expiry_date', 'job_title', 'job_content', 
                 'employment_type', 'contract_period', 'work_location', 'salary_type', 
                 'salary_min', 'salary_max', 'salary_remarks', 'working_hours', 'holiday_remarks', 
                 'insurance_remarks', 'requirements', 'selection_method', 'contact_person', 

@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS jobs (
     job_id TEXT PRIMARY KEY, -- kJNo
     corporate_number TEXT, -- Foreign Key
     reception_date TEXT, -- Ngày tiếp nhận
+    expiry_date TEXT, -- Ngày hết hạn giới thiệu (紹介期限日)
     job_title TEXT NOT NULL,
     job_content TEXT,
     employment_type TEXT, -- Hình thức tuyển dụng

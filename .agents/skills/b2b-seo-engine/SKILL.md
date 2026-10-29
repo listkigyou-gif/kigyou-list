@@ -314,3 +314,31 @@ Khi kiểm toán Google Search Console (mục Links / External Links), nếu xu�
 3. **Mô hình Deep Linking (1 Root + 2 Deep Hubs)**:
    - Mọi bài viết PR hoặc chia sẻ kỹ thuật bắt buộc có ít nhất 1 link trỏ về Landing Page con (`/ja/invoice`, `/ja/search`, `/ja/directory`, `/ja/watchlist`) để phân phối đều PageRank, tránh dồn 100% backlink về root domain.
 
+---
+
+## 11. CHUẨN HÓA SCHEMA `JobPosting` (GOOGLE FOR JOBS & GOOGLE INDEXING API VIP QUOTA READINESS)
+
+Để đáp ứng điều kiện xét duyệt chính thức của **Google Indexing API** (vốn ưu tiên tuyệt đối cho các trang chứa dữ liệu cấu trúc `@type: "JobPosting"` và `BroadcastEvent`) cũng như xuất hiện trực tiếp trên **Google for Jobs (Google しごと検索)**:
+
+### 11.1. Tự Động Nhúng JSON-LD `@type: "JobPosting"`
+* Mọi trang hồ sơ doanh nghiệp có tín hiệu tuyển dụng đang hoạt động (`求人あり` / `has_hiring = true`) tự động xuất bản khối dữ liệu có cấu trúc Schema.org `@type: "JobPosting"` chuẩn chỉnh trong mã nguồn SSR HTML với đầy đủ các trường bắt buộc và khuyến nghị của Google:
+  - `title`: Chức danh vị trí tuyển dụng (`職種`).
+  - `description`: Nội dung mô tả công việc, điều kiện làm việc và phúc lợi chi tiết.
+  - `datePosted`: Ngày đăng tuyển / ngày tiếp nhận hồ sơ tại HelloWork (`受理日` / `signal_date`).
+  - `validThrough`: Ngày hết hạn hiệu lực của tin tuyển dụng (ISO 8601).
+  - `employmentType`: Hình thức tuyển dụng (`FULL_TIME`, `PART_TIME`, `CONTRACTOR`, `TEMPORARY`).
+  - `hiringOrganization`: Tổ chức tuyển dụng (`@type: "Organization"`, `name`, `sameAs`, `identifier` 13 chữ số NTA).
+  - `jobLocation`: Địa điểm làm việc (`@type: "Place"`, `address` với `addressRegion`, `addressLocality`, `streetAddress`, `addressCountry: "JP"`).
+  - `baseSalary`: Mức lương cơ bản (`@type: "MonetaryAmount"`, `currency: "JPY"`, `value` với `minValue`, `maxValue`, `unitText: "MONTH"`).
+
+### 11.2. Quy Tắc Hạn Tuyển Dụng (`validThrough` & `紹介期限日`)
+Hệ thống áp dụng cơ chế phân tách minh bạch 2 tầng cho trường hạn tuyển dụng nhằm đảm bảo tính chính xác pháp lý 100% với cả Googlebot và người dùng:
+
+1. **Tin mới thu thập từ `hellowork-drip-daemon` (Có dữ liệu gốc `details.expiry_date`):**
+   * Lấy chính xác trường **`紹介期限日`** (Ngày hết hạn giới thiệu việc làm được in trực tiếp trên phiếu tuyển dụng HelloWork) lưu trong `details.expiry_date`.
+   * Trên giao diện người dùng (UI): Hiển thị nhãn **`紹介期限日（ハローワーク掲載期限）`** (Hạn giới thiệu / Hạn đăng tải trên HelloWork).
+2. **Tin lịch sử chưa có trường `expiry_date`:**
+   * Tự động tính toán theo đúng quy định pháp lý của Bộ Y tế, Lao động và Phúc lợi Nhật Bản (MHLW - 厚生労働省): **`受理日の翌々月末日`** (Ngày cuối cùng của tháng thứ 2 kể từ ngày tiếp nhận hồ sơ `signal_date`).
+   * Trên giao diện người dùng (UI): Hiển thị nhãn **`紹介期限日（目安）`** kèm chú thích minh bạch (*「※ハローワークの原則（受理日の翌々月末）に基づく目安であり、企業の独自採用期限とは異なる場合があります」*) để người dùng không hiểu lầm đây là hạn nộp hồ sơ riêng của doanh nghiệp.
+
+

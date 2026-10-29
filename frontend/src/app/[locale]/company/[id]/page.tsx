@@ -843,6 +843,134 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     }))
   };
 
+  // 7. Generate JobPosting JSON-LD Schema for Google for Jobs (Up to 5 latest hiring signals)
+  const calculateStatutoryExpiry = (signalDate?: string | null): string | null => {
+    if (!signalDate) return null;
+    const match = signalDate.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+    if (!match) return null;
+    const year = parseInt(match[1], 10);
+    const monthIndex = parseInt(match[2], 10) - 1;
+    if (isNaN(year) || isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) return null;
+    const lastDayDate = new Date(Date.UTC(year, monthIndex + 3, 0));
+    return lastDayDate.toISOString().split('T')[0];
+  };
+
+  const jobPostingSchemas = finalHiringSignals
+    .filter(sig => Boolean(sig.signal_title && sig.signal_title.trim()))
+    .slice(0, 5)
+    .map(sig => {
+      let parsed: Record<string, any> = {};
+      if (sig.details) {
+        try {
+          const obj = JSON.parse(sig.details);
+          if (typeof obj === 'object' && obj !== null) {
+            parsed = obj;
+          }
+        } catch {
+          // Non-JSON details fallback
+        }
+      }
+
+      const datePosted = sig.signal_date && /^\d{4}-\d{2}-\d{2}/.test(sig.signal_date)
+        ? sig.signal_date.slice(0, 10)
+        : new Date().toISOString().split('T')[0];
+
+      const explicitExpiry = parsed.expiry_date && /^\d{4}-\d{2}-\d{2}/.test(String(parsed.expiry_date).trim())
+        ? String(parsed.expiry_date).trim().slice(0, 10)
+        : null;
+      const fallbackExpiry = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const expiryDate = explicitExpiry || calculateStatutoryExpiry(datePosted) || fallbackExpiry;
+      const validThrough = `${expiryDate}T23:59:59+09:00`;
+
+      // Parse salary from parsed.wages
+      let baseSalary: Record<string, any> | undefined = undefined;
+      if (parsed.wages) {
+        const wageMatches = String(parsed.wages).match(/\d[\d,]*/g);
+        if (wageMatches && wageMatches.length > 0) {
+          const nums = wageMatches
+            .map(m => parseInt(m.replace(/,/g, ''), 10))
+            .filter(n => !isNaN(n) && n > 0);
+          if (nums.length > 0) {
+            const minSal = nums[0];
+            const maxSal = nums.length > 1 ? nums[1] : nums[0];
+            const unitText = minSal < 10000 ? "HOUR" : "MONTH";
+            baseSalary = {
+              "@type": "MonetaryAmount",
+              "currency": "JPY",
+              "value": {
+                "@type": "QuantitativeValue",
+                "minValue": minSal,
+                "maxValue": maxSal,
+                "unitText": unitText
+              }
+            };
+          }
+        }
+      }
+
+      // Extract postal code and clean work location
+      const rawWorkLoc = parsed.work_location ? String(parsed.work_location) : "";
+      const postalMatch = rawWorkLoc.match(/〒?\s*(\d{3}-\d{4}|\d{7})/);
+      const postalCode = postalMatch ? postalMatch[1] : (company.postal_code || "");
+      const cleanWorkLocation = rawWorkLoc.replace(/〒?\s*(\d{3}-\d{4}|\d{7})\s*/, "").trim();
+
+      // Determine employmentType
+      const combinedEmpText = `${sig.signal_title || ""} ${parsed.employment_type || ""} ${parsed.holidays || ""}`;
+      const employmentType = (combinedEmpText.includes("パート") || combinedEmpText.includes("アルバイト"))
+        ? "PART_TIME"
+        : "FULL_TIME";
+
+      // Construct rich description (at least 100 characters for Google for Jobs)
+      const descParts: string[] = [
+        `【募集職種】${sig.signal_title}`,
+        `【企業名】${company.company_name}（法人番号：${company.corporate_number}）`
+      ];
+      if (parsed.job_description) descParts.push(`【仕事内容】${parsed.job_description}`);
+      if (parsed.employment_type) descParts.push(`【雇用形態・区分】${parsed.employment_type}`);
+      if (parsed.wages) descParts.push(`【賃金・給与】${parsed.wages}`);
+      if (cleanWorkLocation || company.full_address) descParts.push(`【就業場所】${cleanWorkLocation || company.full_address}`);
+      if (parsed.working_hours) descParts.push(`【就業時間】${parsed.working_hours}`);
+      if (parsed.holidays) descParts.push(`【休日・休暇】${parsed.holidays}`);
+      if (parsed.required_experience) descParts.push(`【必要な経験等】${parsed.required_experience}`);
+      if (!parsed.job_description && sig.details && Object.keys(parsed).length === 0) {
+        descParts.push(`【求人詳細】${sig.details}`);
+      }
+      descParts.push(`${company.company_name}の最新求人情報・募集要項です。所在地：${company.full_address || company.prefecture_name || "日本国内"}。`);
+      const description = descParts.join(" / ");
+
+      return {
+        "@context": "https://schema.org",
+        "@type": "JobPosting",
+        "title": sig.signal_title,
+        "description": description,
+        "datePosted": datePosted,
+        "validThrough": validThrough,
+        "employmentType": employmentType,
+        "hiringOrganization": {
+          "@type": "Organization",
+          "name": company.company_name,
+          "sameAs": company.website_url || `https://kigyoulist.com/${locale}/company/${company.corporate_number}`
+        },
+        "identifier": {
+          "@type": "PropertyValue",
+          "name": company.company_name,
+          "value": parsed.job_number ? String(parsed.job_number) : `${company.corporate_number}-${sig.id}`
+        },
+        "jobLocation": {
+          "@type": "Place",
+          "address": {
+            "@type": "PostalAddress",
+            "addressCountry": "JP",
+            "addressRegion": company.prefecture_name || "東京都",
+            "addressLocality": company.city_name || "",
+            "streetAddress": cleanWorkLocation || company.full_address || "",
+            "postalCode": postalCode
+          }
+        },
+        ...(baseSalary ? { "baseSalary": baseSalary } : {})
+      };
+    });
+
 
   const localizedStatus = locale === 'en' 
     ? (company.status === '活動中' ? 'Active' : company.status === '閉鎖' ? 'Closed' : company.status === '解散' ? 'Dissolved' : company.status)
@@ -863,6 +991,16 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
+      {jobPostingSchemas.length > 0 && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify(
+              jobPostingSchemas.length === 1 ? jobPostingSchemas[0] : jobPostingSchemas
+            )
+          }}
+        />
+      )}
 
       {/* Global Standard Header */}
       <Header />
@@ -921,7 +1059,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                     </span>
                   )}
 
-                  {company.is_claimed && (
+                  {Boolean(company.is_claimed && company.claimed_by_email) && (
                     <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-800">
                       <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
                       {locale === 'en' ? 'Verified Business' : locale === 'vi' ? 'Chính chủ đã xác minh' : '公式認証企業'}
