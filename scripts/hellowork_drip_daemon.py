@@ -409,6 +409,66 @@ def parse_hellowork_detail_html(html, fallback_kjno=None):
     # Raw industry
     raw_industry = get_field(["産業分類", "産業"])
 
+    # Corporate enrichment: Website
+    homepage = get_field(["ホームページ", "ＨＰ"])
+    clean_hp = None
+    if homepage:
+        hp_m = re.search(r"https?://[^\s<>\"']+", homepage)
+        if hp_m:
+            clean_hp = hp_m.group(0).rstrip("/")
+
+    # Corporate enrichment: Phone, Fax, Email from 担当者 section
+    tantosha_text = get_field(["担当者"]) or ""
+    clean_tel = None
+    tel_m = re.search(r"電話番号\s*[:：]?\s*([0-9０-９\-\(\)\s]{10,15})", tantosha_text)
+    if tel_m:
+        raw_tel = tel_m.group(1).translate(str.maketrans("０１２３４５６７８９", "0123456789"))
+        clean_tel = re.sub(r"[^\d\-]", "", raw_tel).strip()
+
+    clean_fax = None
+    fax_m = re.search(r"(?:ＦＡＸ|FAX)\s*[:：]?\s*([0-9０-９\-\(\)\s]{10,15})", tantosha_text)
+    if fax_m:
+        raw_fax = fax_m.group(1).translate(str.maketrans("０１２３４５６７８９", "0123456789"))
+        clean_fax = re.sub(r"[^\d\-]", "", raw_fax).strip()
+
+    email_m = re.search(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", tantosha_text)
+    clean_email = email_m.group(0).lower() if email_m else None
+
+    # Corporate enrichment: Representative
+    raw_rep = get_field(["役職／代表者名", "代表者名"])
+    clean_rep = None
+    if raw_rep:
+        rep_m = re.search(r"代表者名\s*([^\s]+(?:\s+[^\s]+)?)", raw_rep)
+        clean_rep = rep_m.group(1).strip() if rep_m else raw_rep.strip()[:50]
+
+    # Corporate enrichment: Employee count
+    raw_emp = get_field(["従業員数", "企業全体"])
+    clean_emp = None
+    if raw_emp:
+        emp_digits = "".join(filter(str.isdigit, raw_emp))
+        if emp_digits:
+            clean_emp = int(emp_digits)
+
+    # Corporate enrichment: Capital amount
+    raw_cap = get_field(["資本金"])
+    clean_cap = None
+    if raw_cap:
+        cap_str = raw_cap.replace(",", "").strip()
+        if "億" in cap_str:
+            oku_m = re.search(r"(\d+)\s*億(?:\s*(\d+)\s*万)?", cap_str)
+            if oku_m:
+                oku = int(oku_m.group(1)) * 100000000
+                man = int(oku_m.group(2) or 0) * 10000
+                clean_cap = oku + man
+        elif "万" in cap_str:
+            man_m = re.search(r"(\d+)\s*万", cap_str)
+            if man_m:
+                clean_cap = int(man_m.group(1)) * 10000
+        else:
+            cap_digits = "".join(filter(str.isdigit, cap_str))
+            if cap_digits:
+                clean_cap = int(cap_digits)
+
     return {
         "corporate_number": corporate_number,
         "job_number": job_number,
@@ -422,6 +482,13 @@ def parse_hellowork_detail_html(html, fallback_kjno=None):
         "holidays": holidays,
         "job_description": job_description,
         "raw_industry": raw_industry,
+        "website_url": clean_hp,
+        "phone_number": clean_tel,
+        "fax_number": clean_fax,
+        "email_address": clean_email,
+        "representative_name": clean_rep,
+        "employee_count": clean_emp,
+        "capital_amount": clean_cap,
     }
 
 
@@ -621,14 +688,84 @@ class HelloWorkDripDaemon:
                     self.total_signals_inserted += 1
                     sig_action = "INSERTED"
 
-                # 3. Update companies has_hiring flag
+                # 3. Update companies: Enrich missing fields (COALESCE) while respecting manual locks
+                hp_val = job_data.get("website_url")
+                tel_val = job_data.get("phone_number")
+                fax_val = job_data.get("fax_number")
+                email_val = job_data.get("email_address")
+                rep_val = job_data.get("representative_name")
+                emp_val = job_data.get("employee_count")
+                cap_val = job_data.get("capital_amount")
+
+                comp_update_params = {
+                    "hp": hp_val,
+                    "tel": tel_val,
+                    "fax": fax_val,
+                    "email": email_val,
+                    "rep": rep_val,
+                    "emp": emp_val,
+                    "cap": cap_val,
+                    "corp": corp_num,
+                }
+
                 cur.execute("""
                     UPDATE companies
-                    SET has_hiring = true,
+                    SET 
+                        website_url = CASE 
+                            WHEN POSITION('website_url' IN COALESCE(manually_locked_fields, '')) > 0 THEN website_url 
+                            ELSE COALESCE(NULLIF(website_url, ''), %(hp)s) 
+                        END,
+                        has_website = (CASE 
+                            WHEN POSITION('website_url' IN COALESCE(manually_locked_fields, '')) > 0 THEN website_url 
+                            ELSE COALESCE(NULLIF(website_url, ''), %(hp)s) 
+                        END IS NOT NULL AND CASE 
+                            WHEN POSITION('website_url' IN COALESCE(manually_locked_fields, '')) > 0 THEN website_url 
+                            ELSE COALESCE(NULLIF(website_url, ''), %(hp)s) 
+                        END <> ''),
+                        phone_number = CASE 
+                            WHEN POSITION('phone_number' IN COALESCE(manually_locked_fields, '')) > 0 THEN phone_number 
+                            ELSE COALESCE(NULLIF(phone_number, ''), %(tel)s) 
+                        END,
+                        has_phone = (CASE 
+                            WHEN POSITION('phone_number' IN COALESCE(manually_locked_fields, '')) > 0 THEN phone_number 
+                            ELSE COALESCE(NULLIF(phone_number, ''), %(tel)s) 
+                        END IS NOT NULL AND CASE 
+                            WHEN POSITION('phone_number' IN COALESCE(manually_locked_fields, '')) > 0 THEN phone_number 
+                            ELSE COALESCE(NULLIF(phone_number, ''), %(tel)s) 
+                        END <> ''),
+                        fax_number = CASE 
+                            WHEN POSITION('fax_number' IN COALESCE(manually_locked_fields, '')) > 0 THEN fax_number 
+                            ELSE COALESCE(NULLIF(fax_number, ''), %(fax)s) 
+                        END,
+                        has_fax = (CASE 
+                            WHEN POSITION('fax_number' IN COALESCE(manually_locked_fields, '')) > 0 THEN fax_number 
+                            ELSE COALESCE(NULLIF(fax_number, ''), %(fax)s) 
+                        END IS NOT NULL AND CASE 
+                            WHEN POSITION('fax_number' IN COALESCE(manually_locked_fields, '')) > 0 THEN fax_number 
+                            ELSE COALESCE(NULLIF(fax_number, ''), %(fax)s) 
+                        END <> ''),
+                        email_address = CASE 
+                            WHEN POSITION('email_address' IN COALESCE(manually_locked_fields, '')) > 0 THEN email_address 
+                            ELSE COALESCE(NULLIF(email_address, ''), %(email)s) 
+                        END,
+                        has_email = (CASE 
+                            WHEN POSITION('email_address' IN COALESCE(manually_locked_fields, '')) > 0 THEN email_address 
+                            ELSE COALESCE(NULLIF(email_address, ''), %(email)s) 
+                        END IS NOT NULL AND CASE 
+                            WHEN POSITION('email_address' IN COALESCE(manually_locked_fields, '')) > 0 THEN email_address 
+                            ELSE COALESCE(NULLIF(email_address, ''), %(email)s) 
+                        END <> ''),
+                        representative_name = CASE 
+                            WHEN POSITION('representative_name' IN COALESCE(manually_locked_fields, '')) > 0 THEN representative_name 
+                            ELSE COALESCE(NULLIF(representative_name, ''), %(rep)s) 
+                        END,
+                        employee_count = COALESCE(employee_count, %(emp)s),
+                        capital_amount = COALESCE(capital_amount, %(cap)s),
+                        has_hiring = true,
                         is_hiring = true,
                         updated_at = NOW()
-                    WHERE corporate_number = %s;
-                """, (corp_num,))
+                    WHERE corporate_number = %(corp)s;
+                """, comp_update_params)
 
                 # 4. Insert into hub_dynamic_events if not already recorded for this corporate_number + title_ja on event_date
                 cur.execute("""
