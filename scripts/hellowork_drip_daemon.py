@@ -26,6 +26,7 @@ import logging
 import argparse
 from datetime import datetime, timedelta, timezone
 from urllib.parse import urlparse, parse_qs
+import urllib.request
 from logging.handlers import RotatingFileHandler
 
 import requests
@@ -68,6 +69,15 @@ SEARCH_POST_URL = f"{BASE_URL}/kensaku/GECA110010.do"
 
 DEFAULT_LOCAL_PG_URL = "postgresql://postgres:Hrptlcct6789%40@127.0.0.1:5432/kigyou_list"
 FALLBACK_VPS_PG_URL = "postgresql://postgres:Hrptlcct6789%40@160.251.203.84:5432/kigyou_list"
+
+# ============================================================================
+# Bing IndexNow Real-time Micro-Batch Configuration
+# ============================================================================
+KIGYOU_HOST = "kigyoulist.com"
+KIGYOU_BASE_URL = "https://kigyoulist.com"
+INDEXNOW_KEY = "0a1fbe0a7866441bb57817e0bf538068"
+INDEXNOW_KEY_LOCATION = f"https://{KIGYOU_HOST}/0a1fbe0a7866441bb57817e0bf538068.txt"
+INDEXNOW_ENDPOINT = "https://api.indexnow.org/indexnow"
 
 PREFECTURE_NAMES = {
     "01": "北海道", "02": "青森県", "03": "岩手県", "04": "宮城県", "05": "秋田県",
@@ -825,6 +835,89 @@ class HelloWorkDripDaemon:
             logger.error("PostgreSQL sync error for corp %s (job %s): %s", corp_num, job_number, e)
             return False
 
+    def submit_micro_batch_indexnow(self, matched_corps: list, pref_code: str) -> bool:
+        """
+        Submits a real-time micro-batch of freshly scraped company URLs + Parent Hubs
+        to Microsoft Bing via IndexNow API, then logs the batch in indexnow_submissions.
+        """
+        if not matched_corps:
+            return False
+
+        # Build unique list of URLs: Spoke companies + Parent Area Hub + Latest Jobs Hub
+        unique_corps = list(dict.fromkeys(matched_corps))
+        url_list = [f"{KIGYOU_BASE_URL}/ja/company/{c}" for c in unique_corps if len(c) == 13]
+
+        # Inject Parent Hubs (Hub & Spoke Pattern)
+        hub_area = f"{KIGYOU_BASE_URL}/ja/area/{pref_code}"
+        hub_jobs = f"{KIGYOU_BASE_URL}/ja/jobs/latest"
+
+        if hub_area not in url_list:
+            url_list.append(hub_area)
+        if hub_jobs not in url_list:
+            url_list.append(hub_jobs)
+
+        if not url_list:
+            return False
+
+        payload = {
+            "host": KIGYOU_HOST,
+            "key": INDEXNOW_KEY,
+            "keyLocation": INDEXNOW_KEY_LOCATION,
+            "urlList": url_list
+        }
+
+        batch_id = f"micro_pref_{pref_code}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+
+        try:
+            data_bytes = json.dumps(payload).encode("utf-8")
+            req = urllib.request.Request(
+                INDEXNOW_ENDPOINT,
+                data=data_bytes,
+                headers={
+                    "Content-Type": "application/json; charset=utf-8",
+                    "User-Agent": f"Kigyoulist-HelloWorkDaemon-IndexNow/1.0 ({KIGYOU_BASE_URL})"
+                }
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                status_code = resp.status
+        except Exception as e:
+            logger.warning("[-] [IndexNow Micro-Batch] API call failed for pref %s (%d URLs): %s", pref_code, len(url_list), e)
+            status_code = getattr(e, 'code', 500)
+
+        # If successful or accepted (200 or 202)
+        if status_code in (200, 202):
+            logger.info(
+                "⚡ [INDEXNOW REAL-TIME MICRO-BATCH] Sent %d URLs to Bing IndexNow (Pref %s | %d companies + 2 Hubs | Batch: %s | HTTP %d)",
+                len(url_list), pref_code, len(unique_corps), batch_id, status_code
+            )
+            # Record into PostgreSQL indexnow_submissions so nightly crawler skips or knows it was submitted
+            try:
+                conn = self.connect_pg()
+                with conn.cursor() as cur:
+                    for corp in unique_corps:
+                        c_url = f"{KIGYOU_BASE_URL}/ja/company/{corp}"
+                        cur.execute("""
+                            INSERT INTO indexnow_submissions (
+                                corporate_number, url, submitted_at, batch_id, response_code, priority_level
+                            ) VALUES (%s, %s, NOW(), %s, %s, 1)
+                            ON CONFLICT (corporate_number) DO UPDATE
+                            SET submitted_at = NOW(),
+                                batch_id = EXCLUDED.batch_id,
+                                response_code = EXCLUDED.response_code;
+                        """, (corp, c_url, batch_id, status_code))
+                conn.commit()
+            except Exception as err:
+                logger.warning("[-] Could not record indexnow_submissions for batch %s: %s", batch_id, err)
+                if self.pg_conn:
+                    try:
+                        self.pg_conn.rollback()
+                    except Exception:
+                        pass
+            return True
+        else:
+            logger.warning("[-] [IndexNow Micro-Batch] Server returned status %s for pref %s", status_code, pref_code)
+            return False
+
     def _build_session(self):
         s = requests.Session()
         s.headers.update({
@@ -864,6 +957,7 @@ class HelloWorkDripDaemon:
         wait_if_maintenance()
         pref_name = PREFECTURE_NAMES.get(pref_code, f"Pref-{pref_code}")
         logger.info(">>> Scanning Prefecture %s (%s) (max_pages=%d)...", pref_code, pref_name, self.max_pages)
+        pref_synced_corps = []
 
         session = self._build_session()
         try:
@@ -952,7 +1046,15 @@ class HelloWorkDripDaemon:
                             self.seen_job_numbers.add(job_no)
                             continue
 
-                        self.sync_job_to_postgres(job_data, detail_url)
+                        synced = self.sync_job_to_postgres(job_data, detail_url)
+                        if synced:
+                            corp_num = job_data.get("corporate_number")
+                            if corp_num and corp_num not in pref_synced_corps and len(corp_num) == 13:
+                                pref_synced_corps.append(corp_num)
+                                # Micro-batch threshold: submit if 30 companies reached
+                                if len(pref_synced_corps) >= 30:
+                                    self.submit_micro_batch_indexnow(pref_synced_corps, pref_code)
+                                    pref_synced_corps = []
                     except Exception as e:
                         logger.warning("Error fetching/parsing detail %s: %s", job_no, e)
 
@@ -988,6 +1090,11 @@ class HelloWorkDripDaemon:
                     logger.warning("Pref %s: Next page POST returned HTTP %d", pref_code, r_next.status_code)
                     break
                 current_html = r_next.text
+
+            # End of prefecture: Flush any remaining newly synced companies to Bing IndexNow
+            if pref_synced_corps:
+                self.submit_micro_batch_indexnow(pref_synced_corps, pref_code)
+                pref_synced_corps = []
 
         except Exception as e:
             logger.error("Error crawling prefecture %s: %s", pref_code, e)
