@@ -345,10 +345,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   }
 
   const pageTitle = locale === 'en'
-    ? `${companyName}${prefPart ? ` ${prefPart}` : ''} - ${currentYear} Overview, Corporate Number, Financials, Revenue & Phone | Kigyou-list`
+    ? `${companyName}${prefPart ? ` ${prefPart}` : ''} - Company Overview & Financials | Kigyou-list`
     : locale === 'vi'
-    ? `【${currentYear}】${companyName}${prefPart ? ` ${prefPart}` : ''} - Mã số thuế, doanh thu, nhân sự, số điện thoại & hồ sơ pháp nhân | Kigyou-list`
-    : `${kpiMetaPrefix}${companyName}${prefPart}の会社概要・法人番号・売上高・評判・電話番号 | Kigyou-list`;
+    ? `【${currentYear}】${companyName}${prefPart ? ` ${prefPart}` : ''} - Hồ sơ & Doanh thu doanh nghiệp | Kigyou-list`
+    : `${kpiMetaPrefix}${companyName}${prefPart}の会社概要・売上高・評判・電話番号 | Kigyou-list`;
 
 
   const ogLocale = locale === 'en' ? 'en_US' : locale === 'vi' ? 'vi_VN' : 'ja_JP';

@@ -2,16 +2,16 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { 
-  Trophy, 
-  Coins, 
-  ShieldCheck, 
-  Users, 
-  Calendar, 
-  Clock, 
-  Building2, 
-  MapPin, 
-  ChevronRight, 
+import {
+  Trophy,
+  Coins,
+  ShieldCheck,
+  Users,
+  Calendar,
+  Clock,
+  Building2,
+  MapPin,
+  ChevronRight,
   Sparkles,
   ExternalLink,
   Download,
@@ -33,48 +33,48 @@ export function RankingHubView({ items, activeType, locale, prefectureCode }: Pr
 
   const config = {
     salary: {
-      title: locale === 'en' 
-        ? `Top Companies by Average Annual Salary (${currentYear})` 
-        : locale === 'vi' 
-        ? `Bảng Xếp Hạng Thu Nhập Bình Quân Doanh Nghiệp (${currentYear})` 
-        : `【${currentYear}年最新】全国企業の平均年間給与ランキング`,
+      title: locale === 'en'
+        ? `Top Companies by Average Annual Salary (${currentYear})`
+        : locale === 'vi'
+          ? `Bảng Xếp Hạng Thu Nhập Bình Quân Doanh Nghiệp (${currentYear})`
+          : `【${currentYear}年最新】全国企業の平均年間給与ランキング`,
       subtitle: locale === 'en'
         ? 'Official average annual remuneration disclosed in annual securities reports filed with the Financial Services Agency (FSA EDINET).'
         : locale === 'vi'
-        ? 'Dữ liệu thu nhập bình quân năm trích xuất từ Báo cáo Chứng khoán có kiểm toán nộp Cơ quan Dịch vụ Tài chính Nhật Bản (FSA EDINET).'
-        : '金融庁EDINET有価証券報告書の公式開示データに基づく、日本全国の正規従業員における平均年間給与ランキングです。',
+          ? 'Dữ liệu thu nhập bình quân năm trích xuất từ Báo cáo Chứng khoán có kiểm toán nộp Cơ quan Dịch vụ Tài chính Nhật Bản (FSA EDINET).'
+          : '金融庁EDINET有価証券報告書の公式開示データに基づく、日本全国の正規従業員における平均年間給与ランキングです。',
       sourceBadge: '金融庁EDINET開示データ',
       metricLabel: '平均年間給与',
       icon: <Coins className="w-4 h-4 text-amber-600 dark:text-amber-400" />,
       colorClass: 'text-amber-700 bg-amber-50 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-800',
     },
     tenure: {
-      title: locale === 'en' 
-        ? `Top White Companies by Average Service Years (${currentYear})` 
-        : locale === 'vi' 
-        ? `Bảng Xếp Hạng Doanh Nghiệp Uy Tín - Thâm Niên Gắn Bó (${currentYear})` 
-        : `【${currentYear}年最新】全国ホワイト企業ランキング・平均勤続年数`,
+      title: locale === 'en'
+        ? `Top White Companies by Average Service Years (${currentYear})`
+        : locale === 'vi'
+          ? `Bảng Xếp Hạng Doanh Nghiệp Uy Tín - Thâm Niên Gắn Bó (${currentYear})`
+          : `【${currentYear}年最新】全国ホワイト企業ランキング・平均勤続年数`,
       subtitle: locale === 'en'
         ? 'Workforce longevity and retention indicators published by the Ministry of Health, Labour and Welfare (MHLW).'
         : locale === 'vi'
-        ? 'Chỉ số đo lường mức độ đãi ngộ và thời gian gắn bó của nhân viên chính thức công bố bởi Bộ Y tế, Lao động & Phúc lợi Nhật Bản (MHLW).'
-        : '厚生労働省「職場情報総合サイト」公表データに基づく、正社員の平均継続勤務年数ランキング。長期安定雇用と定着率を誇るホワイト企業を網羅。',
+          ? 'Chỉ số đo lường mức độ đãi ngộ và thời gian gắn bó của nhân viên chính thức công bố bởi Bộ Y tế, Lao động & Phúc lợi Nhật Bản (MHLW).'
+          : '厚生労働省「職場情報総合サイト」公表データに基づく、正社員の平均継続勤務年数ランキング。長期安定雇用と定着率を誇るホワイト企業を網羅。',
       sourceBadge: '厚労省 職場情報公表',
       metricLabel: '正社員 平均勤続年数',
       icon: <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />,
       colorClass: 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
     },
     employees: {
-      title: locale === 'en' 
-        ? `Top Corporations by Insured Employees (${currentYear})` 
-        : locale === 'vi' 
-        ? `Bảng Xếp Hạng Quy Mô Nhân Sự Đóng BHXH (${currentYear})` 
-        : `【${currentYear}年最新】全国企業の厚生年金被保険者数ランキング`,
+      title: locale === 'en'
+        ? `Top Corporations by Insured Employees (${currentYear})`
+        : locale === 'vi'
+          ? `Bảng Xếp Hạng Quy Mô Nhân Sự Đóng BHXH (${currentYear})`
+          : `【${currentYear}年最新】全国企業の厚生年金被保険者数ランキング`,
       subtitle: locale === 'en'
         ? 'Exact insured workforce counts verified via Japan Pension Service official corporate registers.'
         : locale === 'vi'
-        ? 'Quy mô lao động đóng Bảo hiểm Xã hội (Phúc lợi 厚生年金) chính thức từ Cơ quan Hưu trí Nhật Bản.'
-        : '日本年金機構（厚生年金保険適用事業所公表情報）に基づく、正規被保険者数による企業規模ランキングです。実態に即した真の企業規模を可視化。',
+          ? 'Quy mô lao động đóng Bảo hiểm Xã hội (Phúc lợi 厚生年金) chính thức từ Cơ quan Hưu trí Nhật Bản.'
+          : '日本年金機構（厚生年金保険適用事業所公表情報）に基づく、正規被保険者数による企業規模ランキングです。実態に即した真の企業規模を可視化。',
       sourceBadge: '日本年金機構 公表データ',
       metricLabel: '厚生年金 被保険者数',
       icon: <Users className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />,
@@ -117,11 +117,10 @@ export function RankingHubView({ items, activeType, locale, prefectureCode }: Pr
       <div className="flex items-center gap-2 mb-6 p-1 rounded-xl bg-slate-100 dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 overflow-x-auto scrollbar-none">
         <Link
           href={`/${locale}/ranking/salary${prefectureCode ? '?prefecture=' + prefectureCode : ''}`}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-            activeType === 'salary'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${activeType === 'salary'
               ? 'bg-white dark:bg-slate-800 text-[#1B4F8A] dark:text-blue-400 shadow-2xs'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+            }`}
         >
           <Coins className="w-3.5 h-3.5" />
           <span>平均年収ランキング</span>
@@ -129,11 +128,10 @@ export function RankingHubView({ items, activeType, locale, prefectureCode }: Pr
 
         <Link
           href={`/${locale}/ranking/tenure${prefectureCode ? '?prefecture=' + prefectureCode : ''}`}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-            activeType === 'tenure'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${activeType === 'tenure'
               ? 'bg-white dark:bg-slate-800 text-[#1B4F8A] dark:text-blue-400 shadow-2xs'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+            }`}
         >
           <Clock className="w-3.5 h-3.5" />
           <span>ホワイト企業（勤続年数）</span>
@@ -141,11 +139,10 @@ export function RankingHubView({ items, activeType, locale, prefectureCode }: Pr
 
         <Link
           href={`/${locale}/ranking/employees${prefectureCode ? '?prefecture=' + prefectureCode : ''}`}
-          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
-            activeType === 'employees'
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${activeType === 'employees'
               ? 'bg-white dark:bg-slate-800 text-[#1B4F8A] dark:text-blue-400 shadow-2xs'
               : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
+            }`}
         >
           <Users className="w-3.5 h-3.5" />
           <span>厚生年金被保険者数</span>

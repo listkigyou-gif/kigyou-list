@@ -21,10 +21,10 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const currentYear = new Date().getFullYear();
 
   const title = locale === "en"
-    ? `Top Japanese Corporations by Insured Employees (${currentYear}) | Japan Pension Service Data - Kigyou-list`
+    ? `Top Japanese Corporations by Employees (${currentYear}) | Kigyou-list`
     : locale === "vi"
-    ? `Bảng Xếp Hạng Quy Mô Nhân Sự Doanh Nghiệp Nhật Bản (${currentYear}) | Kigyou-list`
-    : `【${currentYear}年最新】全国企業の厚生年金被保険者数ランキングTOP100 | 日本年金機構公表データ - Kigyou-list`;
+    ? `Top Doanh Nghiệp Quy Mô Nhân Sự Lớn Nhất (${currentYear}) | Kigyou-list`
+    : `【${currentYear}年最新】全国企業の厚生年金被保険者数TOP100 | Kigyou-list`;
 
   const description = locale === "en"
     ? `Official corporate size ranking based on the verified number of insured regular employees published by the Japan Pension Service. Screen large enterprises, corporate groups, and subsidiaries with CSV export.`

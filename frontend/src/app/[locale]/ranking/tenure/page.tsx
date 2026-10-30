@@ -21,10 +21,10 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const currentYear = new Date().getFullYear();
 
   const title = locale === "en"
-    ? `Top Japanese White Companies by Average Service Years (${currentYear}) | MHLW Workplace Disclosures - Kigyou-list`
+    ? `Top White Companies by Service Tenure (${currentYear}) | Kigyou-list`
     : locale === "vi"
-    ? `Bảng Xếp Hạng Doanh Nghiệp Uy Tín - Thâm Niên Nhân Viên Cao Nhất (${currentYear}) | Kigyou-list`
-    : `【${currentYear}年最新】全国ホワイト企業ランキング・平均勤続年数TOP100 | 厚生労働省職場情報 - Kigyou-list`;
+    ? `Top Doanh Nghiệp Thâm Niên Cao Nhất Nhật Bản (${currentYear}) | Kigyou-list`
+    : `【${currentYear}年最新】全国ホワイト企業・平均勤続年数TOP100 | Kigyou-list`;
 
   const description = locale === "en"
     ? `Official ranking of Japanese corporations by average tenure of regular employees published by the Ministry of Health, Labour and Welfare (MHLW). Discover companies with high retention and worker satisfaction.`

@@ -37,10 +37,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const tenantCountStr = building.tenant_company_count > 0 ? `（${building.tenant_company_count}社）` : "";
 
   const title = locale === "en"
-    ? `${building.building_name} Tenant Companies & Directory (${currentYear}) | Kigyou-list`
+    ? `${building.building_name} Tenants & Directory | Kigyou-list`
     : locale === "vi"
-    ? `Danh sách doanh nghiệp tại ${building.building_name} (${building.tenant_company_count} công ty) | Kigyou-list`
-    : `【${currentYear}年最新】${building.building_name}の入居企業・テナント一覧${tenantCountStr} | Kigyou-list`;
+    ? `${building.building_name} - Doanh nghiệp & Trụ sở | Kigyou-list`
+    : `【${currentYear}年】${building.building_name}の入居企業一覧 | Kigyou-list`;
 
   const description = locale === "en"
     ? `Directory of registered companies, headquarters, and offices located in ${building.building_name} (${building.street_address}). View revenue, corporate numbers, and executives.`

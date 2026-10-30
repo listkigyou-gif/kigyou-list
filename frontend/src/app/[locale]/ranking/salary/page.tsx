@@ -21,10 +21,10 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const currentYear = new Date().getFullYear();
 
   const title = locale === "en"
-    ? `Top Japanese Companies by Average Annual Salary (${currentYear}) | FSA EDINET Disclosures - Kigyou-list`
+    ? `Top Japanese Companies by Salary (${currentYear}) | Kigyou-list`
     : locale === "vi"
-    ? `Bảng Xếp Hạng Doanh Nghiệp Thu Nhập Cao Nhất Nhật Bản (${currentYear}) | Kigyou-list`
-    : `【${currentYear}年最新】全国企業の平均年間給与ランキングTOP50 | 金融庁EDINET有報開示データ - Kigyou-list`;
+    ? `Top Doanh Nghiệp Thu Nhập Cao Nhất Nhật Bản (${currentYear}) | Kigyou-list`
+    : `【${currentYear}年最新】全国企業の平均年間給与ランキングTOP50 | Kigyou-list`;
 
   const description = locale === "en"
     ? `Official ranking of Japanese corporations by average annual salary based on audited securities reports filed with the Financial Services Agency (FSA). Export full lists with corporate numbers and contacts.`

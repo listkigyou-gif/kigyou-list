@@ -18,16 +18,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const currentYear = new Date().getFullYear();
 
   const title = locale === "en"
-    ? `Top 100 Major Office Buildings & Landmark Tower Directory in Japan (${currentYear}) | Kigyou-list`
+    ? `Top Office Buildings & Landmark Towers Japan (${currentYear}) | Kigyou-list`
     : locale === "vi"
-    ? `Top 100 Tòa nhà Văn phòng & Cao ốc Biểu tượng Nhật Bản (${currentYear}) | Kigyou-list`
-    : `【${currentYear}年最新】全国の主要オフィスビル・ランドマークタワーTOP100入居企業一覧 | Kigyou-list`;
+      ? `Top Cao ốc Văn phòng Biểu tượng Nhật Bản (${currentYear}) | Kigyou-list`
+      : `【${currentYear}年最新】全国の主要オフィスビル・ランドマークタワーTOP100入居企業一覧 | Kigyou-list`;
 
   const description = locale === "en"
     ? "Explore headquarters, enterprises, and tenant directories inside Japan's Top 100 major office buildings and skyscrapers across Tokyo, Osaka, Nagoya, Yokohama, and Fukuoka."
     : locale === "vi"
-    ? "Danh bạ chính thức 100 tòa nhà văn phòng và cao ốc biểu tượng hàng đầu Nhật Bản (Tokyo, Osaka, Nagoya, Yokohama, Fukuoka). Tra cứu danh sách công ty, trụ sở và nhân sự đóng bảo hiểm."
-    : "麻布台ヒルズ森JPタワー、六本木ヒルズ、丸の内ビル、グランフロント大阪、JRゲートタワー、天神ビジネスセンターなど、日本全国の主要超高層オフィスビルTOP100に入居する企業の最新名鑑。売上高、従業員数、電話番号を網羅。";
+      ? "Danh bạ chính thức 100 tòa nhà văn phòng và cao ốc biểu tượng hàng đầu Nhật Bản (Tokyo, Osaka, Nagoya, Yokohama, Fukuoka). Tra cứu danh sách công ty, trụ sở và nhân sự đóng bảo hiểm."
+      : "麻布台ヒルズ森JPタワー、六本木ヒルズ、丸の内ビル、グランフロント大阪、JRゲートタワー、天神ビジネスセンターなど、日本全国の主要超高層オフィスビルTOP100に入居する企業の最新名鑑。売上高、従業員数、電話番号を網羅。";
 
   return {
     title,
@@ -233,15 +233,15 @@ export default async function OfficeBuildingsIndexPage({ params }: PageProps) {
                 {locale === "en"
                   ? "Top 100 Major Office Buildings & Landmark Towers in Japan"
                   : locale === "vi"
-                  ? "Top 100 Tòa nhà Văn phòng & Cao ốc Biểu tượng Nhật Bản"
-                  : "全国の主要オフィスビル・ランドマークタワーTOP100入居企業一覧"}
+                    ? "Top 100 Tòa nhà Văn phòng & Cao ốc Biểu tượng Nhật Bản"
+                    : "全国の主要オフィスビル・ランドマークタワーTOP100入居企業一覧"}
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {locale === "en"
                   ? "Browse verified headquarters, corporations, and tenant directories across Japan's Top 100 prominent office complexes."
                   : locale === "vi"
-                  ? "Danh bạ chính thức các doanh nghiệp, trụ sở pháp nhân đặt văn phòng tại Top 100 tòa nhà cao ốc thương mại và trung tâm tài chính hàng đầu Nhật Bản."
-                  : "麻布台ヒルズ森JPタワー、六本木ヒルズ、丸の内ビル、グランフロント大阪、JRゲートタワー、天神ビジネスセンターなど、日本全国の主要超高層オフィスビルTOP100に入居する企業をビル単位で網羅。登記情報、売上高、被保険者数を一覧で比較できます。"}
+                    ? "Danh bạ chính thức các doanh nghiệp, trụ sở pháp nhân đặt văn phòng tại Top 100 tòa nhà cao ốc thương mại và trung tâm tài chính hàng đầu Nhật Bản."
+                    : "麻布台ヒルズ森JPタワー、六本木ヒルズ、丸の内ビル、グランフロント大阪、JRゲートタワー、天神ビジネスセンターなど、日本全国の主要超高層オフィスビルTOP100に入居する企業をビル単位で網羅。登記情報、売上高、被保険者数を一覧で比較できます。"}
               </p>
             </div>
 
