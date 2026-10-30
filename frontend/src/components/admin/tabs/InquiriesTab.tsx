@@ -110,6 +110,8 @@ export const InquiriesTab: React.FC<InquiriesTabProps> = ({
           </span>
         );
       case "edit":
+      case "update":
+      case "company_manage":
         return (
           <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold mt-1 bg-blue-100 text-[#1B4F8A] dark:bg-blue-950 dark:text-blue-300 border border-blue-200/60 dark:border-blue-900/40">
             情報修正申請
@@ -145,7 +147,9 @@ export const InquiriesTab: React.FC<InquiriesTabProps> = ({
   const getInquiryTypeLabel = (type: string) => {
     switch (type) {
       case "hide": return "企業掲載の非公開・削除依頼";
-      case "edit": return "企業情報の修正・更新申請";
+      case "edit":
+      case "update":
+      case "company_manage": return "企業情報の修正・更新申請";
       case "form_marketing": return "問い合わせフォーム営業・配信代行相談";
       case "billing": return "料金プラン・請求書払い・領収書相談";
       case "enterprise": return "大口法人契約・API連携・事業提携";
@@ -657,14 +661,6 @@ export const InquiriesTab: React.FC<InquiriesTabProps> = ({
                                   <CheckCircle className="w-3 h-3 text-emerald-600" /> 承認
                                 </button>
                               </>
-                            ) : inq.type === 'hide' ? (
-                              <button
-                                type="button"
-                                onClick={() => handleResolve(inq.id, inq.corporate_number, "unhide")}
-                                className="px-2.5 py-1 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 font-semibold rounded-md transition-colors flex items-center gap-1 cursor-pointer"
-                              >
-                                <CheckCircle className="w-3 h-3" /> 再公開
-                              </button>
                             ) : (
                               <button
                                 type="button"

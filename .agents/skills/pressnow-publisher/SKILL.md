@@ -27,12 +27,14 @@ Khi người dùng ra lệnh:
    - **Lead (`lead`)**: 100〜200 ký tự chuẩn 5W1H (Ai, cái gì, khi nào, ở đâu, lý do, bằng cách nào).
    - **Thân bài (`body_heading1-3`, `body_text1-3`)**: Bối cảnh thị trường, tính năng 5 triệu data + tài chính, định hướng AI matching.
    - **Thông tin công ty & 4 liên kết phụ Deep Hubs (`official`)**:
-     - Tuân thủ 100% Canonical HTTPS (`https://kigyoulist.com/...`, cấm `http://` hoặc `www.`).
-     - TQC株式会社, hotline 03-6907-1219, website chính thức `https://kigyoulist.com/ja` và 4 liên kết phụ truyền PageRank vào các Category Hubs:
-       - Sub 1: Directory Hub (`https://kigyoulist.com/ja/directory`)
-       - Sub 2: Pricing/Compare Hub (`https://kigyoulist.com/ja/compare`)
-       - Sub 3: Invoice T-Number Hub (`https://kigyoulist.com/ja/invoice`)
-       - Sub 4: Official X (`https://x.com/kigyoulist`)
+      - 🚫 **CHẤM DỨT NAKED URL & GENERIC ANCHOR:** Toàn bộ liên kết phụ và thân bài bắt buộc dùng Mỏ neo từ khóa vàng B2B.
+      - ✅ **100% CANONICAL HTTPS NON-WWW:** Bắt buộc `https://kigyoulist.com/...` (nghiêm cấm `http://` hoặc `www.`).
+      - ✅ **QUY CHUẨN MỎ NEO 4 LIÊN KẾT PHỤ (DEEP HUBS PAGERANK PROTOCOL):**
+        - Sub 1 (Ranking Hub / Directory): `全国企業の平均年間給与ランキングTOP50` (`https://kigyoulist.com/ja/ranking/salary`) または `ホワイト企業・勤続年数ランキング` (`https://kigyoulist.com/ja/ranking/tenure`)
+        - Sub 1-B (Directory Hub): `全国企業データベース・業種一覧` (`https://kigyoulist.com/ja/directory`)
+        - Sub 2 (Pricing Hub): `企業リストツールの料金比較・初期費用0円` (`https://kigyoulist.com/ja/compare`)
+        - Sub 3 (Invoice Hub): `適格請求書発行事業者・インボイス登録番号検索` (`https://kigyoulist.com/ja/invoice`)
+        - Sub 4 (Official Brand Entity): `Kigyou-list公式X（Twitter）` (`https://x.com/kigyoulist`)
 3. **Lưu file Payload JSON**:
    - Lưu vào `scripts/press_releases/release_pressnow_YYYYMMDD.json`.
 4. **Kích hoạt Script xuất bản tự động bằng Playwright**:
@@ -131,3 +133,22 @@ Khi người dùng hỏi:
    ```
    - Tự động đăng nhập qua IMAP SSL, quét toàn bộ Inbox và Spam để lấy email thông báo kết quả duyệt bài từ Ban biên tập PRESSNOW.
 
+
+> [!IMPORTANT]
+> **QUY TẮC BẢO TOÀN TÊN MIỀN THƯƠNG HIỆU (DOMAIN INTEGRITY):**
+> Tuyệt đối cấm viết tên miền dạng `kigyoulist.com`. Tên miền chính thức của nền tảng 100% là **`kigyoulist.com`**. Khi giới thiệu dịch vụ bằng tiếng Nhật, chỉ viết: `Kigyou-list` hoặc `Kigyou-list（kigyoulist.com）`.
+
+---
+
+## 5. Mẫu Thông Cáo Báo Chí Điều Tra Thu Hút Báo Lớn (【独自調査リリース】)
+
+Kích hoạt kịch bản điều tra độc quyền để các tòa soạn báo lớn cào và đưa tin lại:
+- **Tiêu đề (`title`)**: `【独自調査】全国企業の平均年間給与ランキングTOP50を発表！1位は1,235万円の野村総合研究所。公認証券報告書データから独自集計`
+- **Phụ đề (`subtitle`)**: `国内最大級500万社データベース『Kigyou-list』が有価証券報告書を分析。ホワイト企業・被保険者数ランキングも公開し全社CSV出力に対応。`
+- **Lead (`lead`)**: `TQC株式会社（本社：東京都豊島区、代表取締役：天間 吉人）は、国内最大級500万件超の法人データを網羅する「Kigyou-list（kigyoulist.com）」において、金融庁EDINET開示の有価証券報告書に基づく「全国企業の平均年間給与ランキングTOP50」および厚生労働省データに基づく「ホワイト企業ランキング」を公表いたしました。`
+- **Deep links trong Thân bài & Sub links**:
+  - `https://kigyoulist.com/ja/ranking/salary`
+  - `https://kigyoulist.com/ja/ranking/tenure`
+  - `https://kigyoulist.com/ja/ranking/employees`
+- **Quy tắc trích dẫn nguồn**:
+  `※本調査結果を引用・転載される際は、必ず【出典：法人データベース『Kigyou-list（kigyoulist.com）』】のクレジットおよびリンクを明記してください。`

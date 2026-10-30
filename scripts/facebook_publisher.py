@@ -153,12 +153,14 @@ def post_to_fanpage(page, text: str, image_path: Optional[str] = None) -> dict:
         time.sleep(1)
         page.keyboard.insert_text(text)
         time.sleep(2)
+        page.keyboard.press("Escape")
+        time.sleep(1)
 
         # Bấm Next nếu có
         next_btn = dialog.locator('div[aria-label="Next"][role="button"], div[role="button"]:has-text("Next")').first
         if next_btn.count() > 0 and next_btn.is_visible():
             print("  -> Bấm Next...")
-            next_btn.click()
+            next_btn.click(force=True)
             time.sleep(4)
 
         # Bấm Post

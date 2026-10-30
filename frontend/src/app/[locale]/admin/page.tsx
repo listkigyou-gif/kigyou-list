@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useCallback, Suspense } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { useSearchParams, useRouter, usePathname, notFound } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
@@ -16,6 +16,7 @@ import {
 // Toast Provider
 import { ToastProvider, useAdminToast } from "@/components/admin/AdminToast";
 import { AdminPasscodeModal } from "@/components/admin/AdminPasscodeModal";
+import { isAdminEmail } from "@/lib/adminAuth";
 
 // Modular Tabs
 import { OverviewTab } from "@/components/admin/tabs/OverviewTab";
@@ -63,6 +64,7 @@ export type AdminTab =
 
 function AdminContent() {
   const { isLoggedIn, user, setAuthModalOpen } = useAuth();
+  const isUserAdmin = Boolean(user && (user.role === "admin" || isAdminEmail(user.email)));
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -142,10 +144,10 @@ function AdminContent() {
   }, [getAdminHeaders]);
 
   useEffect(() => {
-    if (isLoggedIn) {
+    if (isLoggedIn && isUserAdmin) {
       fetchBadgeCounts();
     }
-  }, [isLoggedIn, fetchBadgeCounts]);
+  }, [isLoggedIn, isUserAdmin, fetchBadgeCounts]);
 
   const handlePasscodeSubmit = async (passcode: string) => {
     localStorage.setItem("kigyou_admin_secret", passcode);
@@ -219,36 +221,9 @@ function AdminContent() {
     );
   }
 
-  if (!isLoggedIn) {
-    return (
-      <div className="flex flex-col min-h-screen bg-[#F8FAFC] text-slate-900 dark:bg-[#0D1117] dark:text-slate-100">
-        <Header />
-        <div className="flex-grow flex flex-col items-center justify-center p-6">
-          <div className="max-w-md w-full bg-white dark:bg-[#151B22] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-8 shadow-xs text-center">
-            <div className="w-12 h-12 rounded-xl bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-[#1B4F8A]/25 dark:text-blue-300 flex items-center justify-center mx-auto mb-4 border border-[#1B4F8A]/20">
-              <ShieldAlert className="w-6 h-6" />
-            </div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-medium mb-3">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A]"></span>
-              <span>管理者認証セキュリティ</span>
-            </div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white mb-2 [font-feature-settings:'palt']">
-              システム統括管理コンソール
-            </h2>
-            <p className="text-xs text-slate-600 dark:text-slate-400 mb-6 leading-relaxed">
-              本画面は Kigyou-List 権限保有者専用ポータルです。アクセスには特権管理者権限（メールアドレス認証および管理者シークレット）が必要です。
-            </p>
-            <button
-              onClick={() => setAuthModalOpen(true)}
-              className="w-full py-2.5 bg-[#1B4F8A] hover:bg-[#143D6C] text-white rounded-lg font-semibold text-xs transition-colors shadow-xs cursor-pointer"
-            >
-              管理者アカウントでログイン
-            </button>
-          </div>
-        </div>
-        <Footer />
-      </div>
-    );
+  // Enterprise Stealth Mode: If not authenticated or not an authorized admin, trigger 404 Not Found
+  if (!isLoggedIn || !isUserAdmin) {
+    notFound();
   }
 
   return (

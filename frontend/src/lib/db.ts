@@ -205,6 +205,8 @@ export async function runQuery(sql: string, params: any[] = []): Promise<any[]> 
   }
 }
 
+export const runAllQuery = runQuery;
+
 /**
  * Executes long-running queries (such as bulk CSV exports) with an extended statement_timeout (300s).
  */
@@ -323,6 +325,15 @@ export interface Company {
   is_listed?: boolean | null;
   listing_market?: string | null;
   stock_code?: string | null;
+  insured_employee_count?: number | null;
+  avg_annual_salary?: number | null;
+  avg_age?: number | null;
+  avg_service_years?: number | null;
+  building_name?: string | null;
+  building_slug?: string | null;
+  has_insured_count?: boolean;
+  has_salary_data?: boolean;
+  in_major_building?: boolean;
 }
 
 export interface Industry {
@@ -506,6 +517,15 @@ function mapCompanyRow(row: any): Company {
     is_listed: Boolean(row.is_listed),
     listing_market: row.listing_market || null,
     stock_code: row.stock_code || null,
+    insured_employee_count: row.insured_employee_count !== null && row.insured_employee_count !== undefined ? Number(row.insured_employee_count) : null,
+    avg_annual_salary: row.avg_annual_salary !== null && row.avg_annual_salary !== undefined ? Number(row.avg_annual_salary) : null,
+    avg_age: row.avg_age !== null && row.avg_age !== undefined ? Number(row.avg_age) : null,
+    avg_service_years: row.avg_service_years !== null && row.avg_service_years !== undefined ? Number(row.avg_service_years) : null,
+    building_name: row.building_name || null,
+    building_slug: row.building_slug || null,
+    has_insured_count: Boolean(row.has_insured_count),
+    has_salary_data: Boolean(row.has_salary_data),
+    in_major_building: Boolean(row.in_major_building),
   };
 }
 
@@ -4267,7 +4287,7 @@ export async function adminGetUserWatchlistDetailed(email: string): Promise<any[
         c.prefecture_name,
         c.city_name,
         c.representative_name,
-        c.primary_industry,
+        COALESCE(c.primary_industry_code, c.major_industry_code, c.business_summary) as primary_industry,
         c.phone_number,
         c.website_url,
         c.status
@@ -4576,17 +4596,93 @@ export async function updateCompanyField(corporate_number: string, field_name: s
         [valToSave, corporate_number]
       );
 
-      // Sync boolean flags if applicable
-      if (field_name === 'contact_form_url' && valToSave) {
-        await pool.query(`UPDATE companies SET has_contact_form = true WHERE corporate_number = $1`, [corporate_number]);
-      } else if (field_name === 'email_address' && valToSave) {
-        await pool.query(`UPDATE companies SET has_email = true WHERE corporate_number = $1`, [corporate_number]);
-      } else if (field_name === 'phone_number' && valToSave) {
-        await pool.query(`UPDATE companies SET has_phone = true WHERE corporate_number = $1`, [corporate_number]);
-      } else if (field_name === 'website_url' && valToSave) {
-        await pool.query(`UPDATE companies SET has_website = true WHERE corporate_number = $1`, [corporate_number]);
-      } else if (field_name === 'fax_number' && valToSave) {
-        await pool.query(`UPDATE companies SET has_fax = true WHERE corporate_number = $1`, [corporate_number]);
+      // Sync boolean flags & auxiliary tables if applicable
+      if (field_name === 'contact_form_url') {
+        await pool.query(`UPDATE companies SET has_contact_form = $1 WHERE corporate_number = $2`, [Boolean(valToSave), corporate_number]);
+      } else if (field_name === 'email_address') {
+        await pool.query(`UPDATE companies SET has_email = $1 WHERE corporate_number = $2`, [Boolean(valToSave), corporate_number]);
+      } else if (field_name === 'phone_number') {
+        await pool.query(`UPDATE companies SET has_phone = $1 WHERE corporate_number = $2`, [Boolean(valToSave), corporate_number]);
+      } else if (field_name === 'website_url') {
+        await pool.query(`UPDATE companies SET has_website = $1 WHERE corporate_number = $2`, [Boolean(valToSave), corporate_number]);
+        if (valToSave) {
+          try {
+            await pool.query(`
+              CREATE TABLE IF NOT EXISTS website_crawl_queue (
+                corporate_number VARCHAR(20) PRIMARY KEY,
+                website_url TEXT NOT NULL,
+                status VARCHAR(30) DEFAULT 'pending',
+                queued_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+              );
+            `);
+            await pool.query(`
+              INSERT INTO website_crawl_queue (corporate_number, website_url, status, queued_at)
+              VALUES ($1, $2, 'pending', CURRENT_TIMESTAMP)
+              ON CONFLICT (corporate_number) DO UPDATE SET
+                website_url = EXCLUDED.website_url,
+                status = 'pending',
+                queued_at = CURRENT_TIMESTAMP
+            `, [corporate_number, String(valToSave)]);
+          } catch (qErr) {
+            console.warn('Could not enqueue website_url to website_crawl_queue:', qErr);
+          }
+        }
+      } else if (field_name === 'fax_number') {
+        await pool.query(`UPDATE companies SET has_fax = $1 WHERE corporate_number = $2`, [Boolean(valToSave), corporate_number]);
+      } else if (field_name === 'jigyo_shumoku') {
+        try {
+          const rawItems = String(valToSave || '')
+            .replace(' (AI確認済)', '')
+            .split(/[,、]/)
+            .map(s => s.trim())
+            .filter(Boolean);
+          const cleanNames = rawItems.map(item => item.replace(/^[A-Z0-9]+\.\s*/, '').trim()).filter(Boolean);
+          const explicitCodes = rawItems
+            .map(item => {
+              const m = item.match(/^([A-Z0-9]+)\./);
+              return m ? m[1] : null;
+            })
+            .filter(Boolean) as string[];
+
+          if (cleanNames.length === 0 && explicitCodes.length === 0) {
+            await pool.query(`DELETE FROM company_industries WHERE corporate_number = $1`, [corporate_number]);
+          } else {
+            const res = await pool.query(
+              `SELECT industry_code, industry_name, classification_level, parent_code
+               FROM m_industries
+               WHERE industry_name = ANY($1) OR industry_code = ANY($2)`,
+              [cleanNames, explicitCodes]
+            );
+            if (res.rows.length > 0) {
+              const codesToInsert = new Set<string>();
+              let primaryMediumCode: string | null = null;
+              for (const r of res.rows) {
+                codesToInsert.add(String(r.industry_code));
+                if (r.parent_code) codesToInsert.add(String(r.parent_code));
+                if (!primaryMediumCode && r.classification_level === '中分類') {
+                  primaryMediumCode = String(r.industry_code);
+                }
+              }
+              await pool.query(`DELETE FROM company_industries WHERE corporate_number = $1`, [corporate_number]);
+              for (const code of Array.from(codesToInsert)) {
+                await pool.query(
+                  `INSERT INTO company_industries (corporate_number, industry_code) VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+                  [corporate_number, code]
+                );
+              }
+              if (primaryMediumCode) {
+                try {
+                  await pool.query(
+                    `UPDATE companies SET primary_industry_code = $1 WHERE corporate_number = $2`,
+                    [primaryMediumCode, corporate_number]
+                  );
+                } catch {}
+              }
+            }
+          }
+        } catch (indErr) {
+          console.error(`Error syncing company_industries for ${corporate_number}:`, indErr);
+        }
       }
     } else {
       const db = getSQLiteDB();
@@ -6329,4 +6425,192 @@ export async function deleteBlacklistEntry(id: number): Promise<boolean> {
     return false;
   }
 }
+
+// ============================================================================
+// OFFICE BUILDINGS & LANDMARK DIRECTORY (pSEO HUBS)
+// ============================================================================
+
+export interface OfficeBuilding {
+  id: number;
+  building_slug: string;
+  building_name: string;
+  building_name_en?: string | null;
+  prefecture_code: string;
+  prefecture_name?: string | null;
+  city_name: string;
+  street_address: string;
+  postal_code?: string | null;
+  total_floors?: number | null;
+  tenant_company_count: number;
+  description?: string | null;
+}
+
+export async function getOfficeBuildings(limit = 100, prefectureCode?: string): Promise<OfficeBuilding[]> {
+  const cacheKey = `office_buildings_${prefectureCode || 'all'}_${limit}`;
+  const cached = getCachedData<OfficeBuilding[]>(cacheKey);
+  if (cached !== null) return cached;
+
+  try {
+    let sql = 'SELECT * FROM office_buildings';
+    const params: any[] = [];
+    if (prefectureCode) {
+      sql += ' WHERE prefecture_code = ?';
+      params.push(prefectureCode);
+    }
+    sql += ' ORDER BY tenant_company_count DESC LIMIT ?';
+    params.push(limit);
+
+    const rows = await runQuery(sql, params);
+    const results: OfficeBuilding[] = (rows || []).map((r: any) => ({
+      id: Number(r.id),
+      building_slug: r.building_slug,
+      building_name: r.building_name,
+      building_name_en: r.building_name_en || null,
+      prefecture_code: r.prefecture_code,
+      prefecture_name: r.prefecture_name || null,
+      city_name: r.city_name,
+      street_address: r.street_address,
+      postal_code: r.postal_code || null,
+      total_floors: r.total_floors !== null && r.total_floors !== undefined ? Number(r.total_floors) : null,
+      tenant_company_count: Number(r.tenant_company_count || 0),
+      description: r.description || null,
+    }));
+
+    setCachedData(cacheKey, results);
+    return results;
+  } catch (error) {
+    console.error('Error in getOfficeBuildings:', error);
+    return [];
+  }
+}
+
+export async function getOfficeBuildingBySlug(slug: string): Promise<OfficeBuilding | null> {
+  const cacheKey = `office_building_slug_${slug}`;
+  const cached = getCachedData<OfficeBuilding | null>(cacheKey);
+  if (cached !== null) return cached;
+
+  try {
+    const row = await runGetQuery('SELECT * FROM office_buildings WHERE building_slug = ? LIMIT 1', [slug]);
+    if (!row) return null;
+    const result: OfficeBuilding = {
+      id: Number(row.id),
+      building_slug: row.building_slug,
+      building_name: row.building_name,
+      building_name_en: row.building_name_en || null,
+      prefecture_code: row.prefecture_code,
+      prefecture_name: row.prefecture_name || null,
+      city_name: row.city_name,
+      street_address: row.street_address,
+      postal_code: row.postal_code || null,
+      total_floors: row.total_floors !== null && row.total_floors !== undefined ? Number(row.total_floors) : null,
+      tenant_company_count: Number(row.tenant_company_count || 0),
+      description: row.description || null,
+    };
+
+    setCachedData(cacheKey, result);
+    return result;
+  } catch (error) {
+    console.error(`Error in getOfficeBuildingBySlug(${slug}):`, error);
+    return null;
+  }
+}
+
+export async function getCompaniesByBuildingSlug(
+  slug: string,
+  page = 1,
+  pageSize = 24
+): Promise<{ companies: Company[]; total: number }> {
+  try {
+    const offset = (page - 1) * pageSize;
+    const building = await getOfficeBuildingBySlug(slug);
+    if (!building) return { companies: [], total: 0 };
+
+    const isPG = !!DATABASE_URL;
+    const tableName = (isPG && building.prefecture_code) ? `companies_p${building.prefecture_code}` : 'companies';
+    
+    const sqlList = `SELECT * FROM ${tableName} WHERE building_slug = ? ORDER BY (capital_amount + 0) DESC NULLS LAST, corporate_number ASC LIMIT ? OFFSET ?`;
+    const sqlCount = `SELECT COUNT(*) as total FROM ${tableName} WHERE building_slug = ?`;
+
+    const [rows, countRow] = await Promise.all([
+      runQuery(sqlList, [slug, pageSize, offset]),
+      runGetQuery(sqlCount, [slug])
+    ]);
+
+    const companies = (rows || []).map((r: any) => mapCompanyRow(r));
+    const total = countRow ? Number(countRow.total || 0) : building.tenant_company_count;
+
+    return { companies, total };
+  } catch (error) {
+    console.error(`Error in getCompaniesByBuildingSlug(${slug}):`, error);
+    return { companies: [], total: 0 };
+  }
+}
+
+// ============================================================================
+// CORPORATE RANKINGS (pSEO & HUMAN CAPITAL MATRIX)
+// ============================================================================
+
+export interface CorporateRankingItem {
+  id: number;
+  ranking_type: 'salary' | 'tenure' | 'employees';
+  rank_position: number;
+  corporate_number: string;
+  company_name: string;
+  prefecture_code?: string | null;
+  prefecture_name?: string | null;
+  city_name?: string | null;
+  industry_name?: string | null;
+  metric_value: number;
+  metric_unit: string;
+  secondary_metric_value?: number | null;
+  secondary_metric_label?: string | null;
+  badge_label?: string | null;
+}
+
+export async function getCorporateRankings(
+  type: 'salary' | 'tenure' | 'employees',
+  limit = 50,
+  prefectureCode?: string
+): Promise<CorporateRankingItem[]> {
+  const cacheKey = `corp_ranking_${type}_${prefectureCode || 'all'}_${limit}`;
+  const cached = getCachedData<CorporateRankingItem[]>(cacheKey);
+  if (cached !== null) return cached;
+
+  try {
+    let sql = 'SELECT * FROM corporate_rankings WHERE ranking_type = ?';
+    const params: any[] = [type];
+    if (prefectureCode) {
+      sql += ' AND prefecture_code = ?';
+      params.push(prefectureCode);
+    }
+    sql += ' ORDER BY rank_position ASC LIMIT ?';
+    params.push(limit);
+
+    const rows = await runQuery(sql, params);
+    const results: CorporateRankingItem[] = (rows || []).map((r: any, idx: number) => ({
+      id: Number(r.id),
+      ranking_type: r.ranking_type,
+      rank_position: Number(r.rank_position || idx + 1),
+      corporate_number: r.corporate_number,
+      company_name: r.company_name,
+      prefecture_code: r.prefecture_code || null,
+      prefecture_name: r.prefecture_name || null,
+      city_name: r.city_name || null,
+      industry_name: r.industry_name || null,
+      metric_value: Number(r.metric_value || 0),
+      metric_unit: r.metric_unit || '',
+      secondary_metric_value: r.secondary_metric_value !== null && r.secondary_metric_value !== undefined ? Number(r.secondary_metric_value) : null,
+      secondary_metric_label: r.secondary_metric_label || null,
+      badge_label: r.badge_label || null,
+    }));
+
+    setCachedData(cacheKey, results);
+    return results;
+  } catch (error) {
+    console.error(`Error in getCorporateRankings(${type}):`, error);
+    return [];
+  }
+}
+
+
 

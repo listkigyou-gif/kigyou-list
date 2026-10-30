@@ -31,6 +31,8 @@ export async function GET(request: Request) {
           r.document_type,
           r.document_url,
           r.notes,
+          r.pr_title,
+          r.pr_message,
           r.status,
           r.reviewed_by,
           r.reviewed_at,
@@ -48,8 +50,26 @@ export async function GET(request: Request) {
 
       query += ` ORDER BY r.created_at DESC LIMIT 100`;
 
-      const res = await client.query(query, params);
-      return NextResponse.json({ success: true, claims: res.rows });
+      const [res, countsRes] = await Promise.all([
+        client.query(query, params),
+        client.query(`
+          SELECT 
+            COUNT(*)::int AS all_count,
+            COUNT(*) FILTER (WHERE status = 'pending')::int AS pending_count,
+            COUNT(*) FILTER (WHERE status = 'approved')::int AS approved_count,
+            COUNT(*) FILTER (WHERE status = 'rejected')::int AS rejected_count
+          FROM company_claim_requests
+        `)
+      ]);
+
+      const counts = {
+        all: countsRes.rows[0]?.all_count || 0,
+        pending: countsRes.rows[0]?.pending_count || 0,
+        approved: countsRes.rows[0]?.approved_count || 0,
+        rejected: countsRes.rows[0]?.rejected_count || 0,
+      };
+
+      return NextResponse.json({ success: true, claims: res.rows, counts });
     } finally {
       client.release();
     }

@@ -846,7 +846,13 @@ export default function DashboardPage() {
           {/* Executive Badge */}
           <div className="inline-flex items-center gap-2 px-3 py-1 bg-white dark:bg-[#151B22] border border-slate-200/90 dark:border-slate-800 text-[#1B4F8A] dark:text-blue-400 text-xs font-semibold rounded-lg shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A] dark:bg-blue-400" />
-            <span>{locale === 'en' ? "ABM Corporate Workspace (Members Only)" : "【法人会員専用】ABM営業支援コンソール"}</span>
+            <span>
+              {locale === 'en' 
+                ? "ABM Corporate Workspace (Members Only)" 
+                : locale === 'vi' 
+                ? "【Dành riêng cho Doanh nghiệp】Không gian làm việc & Quản trị ABM" 
+                : "【法人会員専用】ABM営業支援コンソール"}
+            </span>
           </div>
 
           <div className="flex flex-col gap-3 max-w-2xl">
@@ -856,11 +862,15 @@ export default function DashboardPage() {
             >
               {locale === 'en' 
                 ? "Manage corporate pipeline, saved target lists, and qualified invoice exports" 
+                : locale === 'vi'
+                ? "Quản trị tệp khách hàng tiềm năng, tiến trình đàm phán và đối soát hóa đơn"
                 : "ターゲット企業の選定から商談・成約プロセスまでを一元管理"}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
               {locale === 'en' 
                 ? "Save your ideal accounts to My List, advance sales stages via Kanban pipeline, and export verified corporate data directly to CSV." 
+                : locale === 'vi'
+                ? "Lưu các doanh nghiệp tiềm năng vào My List, theo dõi tiến độ tiếp cận qua bảng Kanban và tải dữ liệu công ty kèm mã Invoice ra file CSV."
                 : "気になる企業を即時ブックマークする「マイリスト」や、案件化プロセスを前進させる「かんばん営業管理ボード」、インボイス制度対応のCSV一括出力を手軽にご利用いただけます。"}
             </p>
           </div>
@@ -872,9 +882,11 @@ export default function DashboardPage() {
                 <ListFilter className="w-4.5 h-4.5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-900 dark:text-white">マイリスト保存・社内メモ</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  {locale === 'en' ? "My List & Corporate Memos" : locale === 'vi' ? "Lưu danh sách & Ghi chú nội bộ" : "マイリスト保存・社内メモ"}
+                </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                  ターゲット企業を即時リスト化し、担当者名や進捗メモを一元管理
+                  {locale === 'en' ? "Bookmark target corporations and manage sales notes in one place" : locale === 'vi' ? "Tập hợp các công ty mục tiêu và ghi chép tiến trình làm việc thuận tiện" : "ターゲット企業を即時リスト化し、担当者名や進捗メモを一元管理"}
                 </span>
               </div>
             </div>
@@ -884,9 +896,11 @@ export default function DashboardPage() {
                 <Kanban className="w-4.5 h-4.5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-900 dark:text-white">直感的なかんばん管理 (D&D)</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  {locale === 'en' ? "Intuitive Kanban Board (D&D)" : locale === 'vi' ? "Bảng Kanban trực quan (Kéo & Thả)" : "直感的なかんばん管理 (D&D)"}
+                </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                  未連絡・連絡済み・商談中・成約をドラッグ＆ドロップで視覚的に管理
+                  {locale === 'en' ? "Track stages from Uncontacted to Closed Won with smooth drag-and-drop" : locale === 'vi' ? "Theo dõi các giai đoạn từ Chưa liên hệ đến Chốt đơn bằng thao tác kéo thả" : "未連絡・連絡済み・商談中・成約をドラッグ＆ドロップで視覚的に管理"}
                 </span>
               </div>
             </div>
@@ -896,9 +910,11 @@ export default function DashboardPage() {
                 <Download className="w-4.5 h-4.5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-900 dark:text-white">CSV一括ダウンロード</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  {locale === 'en' ? "Batch CSV Data Download" : locale === 'vi' ? "Tải xuống dữ liệu CSV hàng loạt" : "CSV一括ダウンロード"}
+                </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                  電話番号・所在地・役員・財務データをCSVで即時出力、自社SFAへ連携
+                  {locale === 'en' ? "Export phone numbers, addresses, executives, and financials into your CRM" : locale === 'vi' ? "Xuất số điện thoại, địa chỉ, người đại diện và báo cáo tài chính vào CRM của bạn" : "電話番号・所在地・役員・財務データをCSVで即時出力、自社SFAへ連携"}
                 </span>
               </div>
             </div>
@@ -908,9 +924,11 @@ export default function DashboardPage() {
                 <FileText className="w-4.5 h-4.5" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xs font-bold text-slate-900 dark:text-white">適格請求書（インボイス制度対応）</span>
+                <span className="text-xs font-bold text-slate-900 dark:text-white">
+                  {locale === 'en' ? "Qualified Invoice Compliance" : locale === 'vi' ? "Hóa đơn hợp lệ theo luật Nhật Bản" : "適格請求書（インボイス制度対応）"}
+                </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-relaxed">
-                  T+13桁登録番号記載の公式PDF領収書を発行、経理処理も安心
+                  {locale === 'en' ? "Official PDF receipts with T+13 corporate registration numbers for accounting" : locale === 'vi' ? "Xuất biên lai PDF chính thức có mã T-Number 13 số để khấu trừ thuế hợp pháp" : "T+13桁登録番号記載の公式PDF領収書を発行、経理処理も安心"}
                 </span>
               </div>
             </div>
@@ -922,21 +940,21 @@ export default function DashboardPage() {
               onClick={() => setAuthModalOpen(true)}
               className="flex-1 px-5 py-2.5 font-bold text-xs sm:text-sm text-white bg-[#1B4F8A] hover:bg-[#143D6C] rounded-lg shadow-xs transition-colors cursor-pointer"
             >
-              {locale === 'en' ? t.dashboard.registerFreeBtn : '無料会員登録 (10秒)'}
+              {locale === 'en' ? "Create Free Account (10s)" : locale === 'vi' ? "Đăng ký tài khoản miễn phí (10s)" : '無料会員登録 (10秒)'}
             </button>
             <button
               onClick={() => setIsDemoMode(true)}
               className="flex-1 px-4 py-2.5 font-bold text-xs sm:text-sm text-[#1B4F8A] bg-white border border-slate-300/90 hover:bg-slate-50 dark:bg-[#151B22] dark:border-slate-700 dark:text-blue-400 dark:hover:bg-slate-800 rounded-lg shadow-2xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-              title="サンプル企業5社でかんばんやリスト操作を体験できます"
+              title={locale === 'en' ? "Preview kanban and list controls with 5 sample corporations" : locale === 'vi' ? "Dùng thử bảng Kanban và danh sách với 5 doanh nghiệp mẫu" : "サンプル企業5社でかんばんやリスト操作を体験できます"}
             >
               <Play className="w-3.5 h-3.5 fill-current" />
-              <span>{locale === 'en' ? "Try Demo Mode" : "デモ画面を体験する"}</span>
+              <span>{locale === 'en' ? "Try Demo Mode" : locale === 'vi' ? "Trải nghiệm bản Demo" : "デモ画面を体験する"}</span>
             </button>
             <Link
               href={`/${locale}/search`}
               className="px-4 py-2.5 font-semibold text-xs sm:text-sm text-slate-600 bg-transparent hover:bg-slate-100/60 dark:text-slate-400 dark:hover:bg-slate-800/60 rounded-lg transition-colors text-center"
             >
-              {locale === 'en' ? t.dashboard.backToSearch : '企業検索へ'}
+              {locale === 'en' ? "Back to Search" : locale === 'vi' ? "Tìm kiếm doanh nghiệp" : '企業検索へ'}
             </Link>
           </div>
         </main>
@@ -1302,7 +1320,7 @@ export default function DashboardPage() {
             >
               <div className="flex items-center gap-2">
                 <Search className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-                <span>企業データ検索</span>
+                <span>{locale === 'en' ? "Search Companies" : locale === 'vi' ? "Tìm kiếm Doanh nghiệp" : "企業データ検索"}</span>
               </div>
               <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform text-slate-400" />
             </Link>
@@ -1359,7 +1377,7 @@ export default function DashboardPage() {
               {/* Group 2: Data & Developer */}
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
-                  データ・連携 (Data & API)
+                  {locale === 'en' ? "Data & Integration" : locale === 'vi' ? "Dữ liệu & Kết nối" : "データ・連携 (Data & API)"}
                 </span>
 
                 {/* Exports */}
@@ -1373,7 +1391,7 @@ export default function DashboardPage() {
                 >
                   <div className="flex items-center gap-2.5">
                     <Download className={`w-4 h-4 shrink-0 ${activeTab === "exports" ? "text-[#1B4F8A] dark:text-blue-300" : "text-slate-500"}`} />
-                    <span>CSVエクスポート履歴</span>
+                    <span>{locale === 'en' ? "CSV Export History" : locale === 'vi' ? "Lịch sử xuất CSV" : "CSVエクスポート履歴"}</span>
                   </div>
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
                     activeTab === "exports" ? "bg-white text-[#1B4F8A] border border-blue-200 dark:bg-blue-900/60 dark:text-blue-200 dark:border-blue-800" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
@@ -1406,7 +1424,7 @@ export default function DashboardPage() {
               {/* Group 3: Billing & Profile */}
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
-                  請求・プラン (Billing)
+                  {locale === 'en' ? "Billing & Invoices" : locale === 'vi' ? "Thanh toán & Hóa đơn" : "請求・プラン (Billing)"}
                 </span>
 
                 {/* Payments */}
@@ -1420,7 +1438,7 @@ export default function DashboardPage() {
                 >
                   <div className="flex items-center gap-2.5">
                     <FileText className={`w-4 h-4 shrink-0 ${activeTab === "payments" ? "text-[#1B4F8A] dark:text-blue-300" : "text-slate-500"}`} />
-                    <span>購入履歴・インボイス</span>
+                    <span>{locale === 'en' ? "Invoices & Receipts" : locale === 'vi' ? "Hóa đơn & Biên lai" : "購入履歴・インボイス"}</span>
                   </div>
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
                     activeTab === "payments" ? "bg-white text-[#1B4F8A] border border-blue-200 dark:bg-blue-900/60 dark:text-blue-200 dark:border-blue-800" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
@@ -1440,7 +1458,7 @@ export default function DashboardPage() {
                 >
                   <div className="flex items-center gap-2.5">
                     <Settings className={`w-4 h-4 shrink-0 ${activeTab === "settings" ? "text-[#1B4F8A] dark:text-blue-300" : "text-slate-500"}`} />
-                    <span>領収書・企業情報設定</span>
+                    <span>{locale === 'en' ? "Receipt / Tax Settings" : locale === 'vi' ? "Cài đặt hóa đơn / Thuế" : "領収書・企業情報設定"}</span>
                   </div>
                 </button>
               </div>
@@ -1448,7 +1466,7 @@ export default function DashboardPage() {
               {/* Group 4: Company Profile & Claim Management */}
               <div className="flex flex-col gap-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-3 py-1">
-                  自社・公式認証 (Enterprise)
+                  {locale === 'en' ? "Verified Profiles" : locale === 'vi' ? "Hồ sơ chính chủ" : "自社・公式認証 (Enterprise)"}
                 </span>
 
                 <button
@@ -1466,7 +1484,7 @@ export default function DashboardPage() {
                   <span className={`text-[10px] px-1.5 py-0.2 rounded-md font-semibold ${
                     activeTab === "companies" ? "bg-white text-[#1B4F8A] border border-blue-200 dark:bg-blue-900/60 dark:text-blue-200 dark:border-blue-800" : "bg-slate-100 text-slate-500 dark:bg-slate-800"
                   }`}>
-                    企業認証
+                    {locale === 'en' ? "Verified" : locale === 'vi' ? "Xác thực" : "企業認証"}
                   </span>
                 </button>
               </div>

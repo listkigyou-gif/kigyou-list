@@ -55,7 +55,25 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return session;
     },
+    async redirect({ url, baseUrl }) {
+      const isDev = process.env.NODE_ENV === "development";
+      const publicBase = isDev ? "http://localhost:3000" : "https://kigyoulist.com";
+      if (url.startsWith("/")) {
+        return `${publicBase}${url}`;
+      }
+      try {
+        const parsed = new URL(url);
+        if (!isDev && (parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1")) {
+          return `${publicBase}${parsed.pathname}${parsed.search}`;
+        }
+        if (parsed.origin === publicBase || parsed.origin === baseUrl) {
+          return url;
+        }
+      } catch {}
+      return publicBase;
+    },
   },
+  trustHost: true,
   session: {
     strategy: "jwt",
     maxAge: 365 * 24 * 60 * 60, // 365 days in seconds

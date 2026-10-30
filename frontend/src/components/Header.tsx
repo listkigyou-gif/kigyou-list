@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   LogOut,
@@ -46,6 +46,35 @@ export const Header: React.FC = () => {
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [mobileLangDropdownOpen, setMobileLangDropdownOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const langMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdowns on outside click or Esc key
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      const target = e.target as Node;
+      if (userMenuRef.current && !userMenuRef.current.contains(target)) {
+        setUserDropdownOpen(false);
+      }
+      if (langMenuRef.current && !langMenuRef.current.contains(target)) {
+        setLangDropdownOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setUserDropdownOpen(false);
+        setLangDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleDocumentClick);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleDocumentClick);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, []);
 
   const isUserAdmin = Boolean(user && (user.role === "admin" || isAdminEmail(user.email)));
 
@@ -275,7 +304,7 @@ export const Header: React.FC = () => {
               <div className="w-28 h-8 bg-slate-100 dark:bg-slate-850 rounded-xl animate-pulse" />
             ) : isLoggedIn ? (
               /* User Profile & Account Dropdown */
-              <div className="relative">
+              <div ref={userMenuRef} className="relative">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
                   aria-label="User menu"
@@ -296,7 +325,7 @@ export const Header: React.FC = () => {
 
                 {userDropdownOpen && (
                   <>
-                    <div className="fixed inset-0 z-40 cursor-default" onClick={() => setUserDropdownOpen(false)} />
+                    <div className="fixed inset-0 z-40 bg-transparent cursor-default" onClick={() => setUserDropdownOpen(false)} />
                     <div className="absolute right-0 mt-2 w-80 rounded-2xl bg-white border border-slate-200 shadow-2xl dark:bg-[#1C2128] dark:border-slate-800 py-3 z-50 animate-in fade-in slide-in-from-top-2 duration-150">
                       
                       {/* Header Info */}

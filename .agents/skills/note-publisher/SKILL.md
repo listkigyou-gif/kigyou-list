@@ -49,6 +49,9 @@ Mỗi bài viết phải luôn tuân thủ cấu trúc 6 phần:
           `[適格請求書発行事業者・インボイス登録番号検索](https://kigyoulist.com/ja/invoice)` hoặc `[本店移転・所在地変更企業一覧](https://kigyoulist.com/ja/changes/relocation)`
         - Nếu bài viết về tiếp cận Form:
           `[問い合わせフォーム自動営業・送信代行ツール](https://kigyoulist.com/ja/form-marketing)`
+        - Nếu bài viết về Xếp hạng Doanh nghiệp & Chỉ số Nhân sự Vàng (Ranking / Survey):
+          `[【2026年最新】全国上場企業の平均年間給与ランキングTOP50](https://kigyoulist.com/ja/ranking/salary)` または `[ホワイト企業・平均勤続年数ランキングTOP100](https://kigyoulist.com/ja/ranking/tenure)` または `[厚生年金被保険者数による実質規模ランキングTOP100](https://kigyoulist.com/ja/ranking/employees)`
+          `※引用・転載クレジット：【出典：Kigyou-list（kigyoulist.com）】`
 
 ---
 
@@ -73,3 +76,7 @@ create_note(
 )
 ```
 - Account Note: `https://note.com/kigyoulist` (User ID: 14994382).
+
+> [!IMPORTANT]
+> **QUY TẮC BẢO TOÀN TÊN MIỀN THƯƠNG HIỆU (DOMAIN INTEGRITY):**
+> Tuyệt đối cấm viết tên miền dạng `kigyoulist.com`. Tên miền chính thức của nền tảng 100% là **`kigyoulist.com`**. Khi giới thiệu dịch vụ bằng tiếng Nhật, chỉ viết: `Kigyou-list` hoặc `Kigyou-list（kigyoulist.com）`.

@@ -285,7 +285,7 @@ export default async function ComparePage({ params }: PageProps) {
                   <th scope="col" className="p-4 sm:p-5 font-extrabold w-2/5 min-w-[200px] bg-blue-50/70 dark:bg-blue-950/30 text-[#1B4F8A] dark:text-blue-300 border-x border-blue-200 dark:border-blue-900/60">
                     <div className="flex items-center gap-1.5">
                       <Sparkles className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
-                      <span>Kigyou-list（当サービス）</span>
+                      <span>{isJa ? "Kigyou-list（当サービス）" : isEn ? "Kigyou-list (Our Service)" : "Kigyou-list (Nền tảng của chúng tôi)"}</span>
                     </div>
                   </th>
                   <th scope="col" className="p-4 sm:p-5 font-bold w-1/3 min-w-[180px] text-slate-500 dark:text-slate-400">
@@ -300,13 +300,15 @@ export default async function ComparePage({ params }: PageProps) {
                     {isJa ? "収録企業数（データ量）" : isEn ? "Total Company Coverage" : "Quy mô dữ liệu"}
                   </th>
                   <td className="p-4 sm:p-5 font-bold text-emerald-700 dark:text-emerald-400 bg-blue-50/30 dark:bg-blue-950/20 border-x border-blue-200 dark:border-blue-900/60">
-                    <span className="text-base sm:text-lg">500万社以上</span>
+                    <span className="text-base sm:text-lg">
+                      {isJa ? "500万社以上" : isEn ? "5,000,000+ Corps" : "Hơn 5 triệu doanh nghiệp"}
+                    </span>
                     <span className="block text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
                       {isJa ? "全国47都道府県・国税庁全法人100%網羅" : isEn ? "100% of all registered active corporations" : "100% pháp nhân toàn quốc"}
                     </span>
                   </td>
                   <td className="p-4 sm:p-5 text-slate-600 dark:text-slate-400">
-                    100万 〜 200万社
+                    {isJa ? "100万 〜 200万社" : isEn ? "1M - 2M Corps" : "1 - 2 triệu doanh nghiệp"}
                     <span className="block text-[11px] text-slate-400 mt-0.5">
                       {isJa ? "自社収集可能なWEB保有企業中心" : isEn ? "Limited to web-active companies" : "Chỉ gồm công ty có website"}
                     </span>
@@ -350,13 +352,13 @@ export default async function ComparePage({ params }: PageProps) {
                     {isJa ? "契約期間の縛り" : isEn ? "Contract Lock-in Period" : "Ràng buộc hợp đồng"}
                   </th>
                   <td className="p-4 sm:p-5 font-bold text-slate-900 dark:text-white bg-blue-50/30 dark:bg-blue-950/20 border-x border-blue-200 dark:border-blue-900/60">
-                    <span>縛りなし（1ヶ月単位）</span>
+                    <span>{isJa ? "縛りなし（1ヶ月単位）" : isEn ? "No Lock-in (Monthly)" : "Không ràng buộc (Hàng tháng)"}</span>
                     <span className="block text-[11px] font-normal text-slate-500 dark:text-slate-400 mt-0.5">
                       {isJa ? "いつでも管理画面からワンクリック解約可能" : isEn ? "Cancel anytime with 1-click in dashboard" : "Hủy bất kỳ lúc nào"}
                     </span>
                   </td>
                   <td className="p-4 sm:p-5 text-slate-600 dark:text-slate-400">
-                    年間契約（12ヶ月縛り）が一般的
+                    {isJa ? "年間契約（12ヶ月縛り）が一般的" : isEn ? "Mandatory 12-month annual contracts" : "Thường bắt buộc hợp đồng 12 tháng"}
                     <span className="block text-[11px] text-slate-400 mt-0.5">
                       {isJa ? "途中解約不可、一括支払い要" : isEn ? "Mandatory 6-12 mo commit" : "Bắt buộc 6-12 tháng"}
                     </span>
@@ -371,11 +373,11 @@ export default async function ComparePage({ params }: PageProps) {
                   <td className="p-4 sm:p-5 font-bold text-slate-900 dark:text-white bg-blue-50/30 dark:bg-blue-950/20 border-x border-blue-200 dark:border-blue-900/60">
                     <span className="inline-flex items-center gap-1.5 text-emerald-700 dark:text-emerald-400">
                       <Check className="w-4 h-4 stroke-[3]" />
-                      <span>標準装備（求人・補助金・公共入札）</span>
+                      <span>{isJa ? "標準装備（求人・補助金・公共入札）" : isEn ? "Included (Hiring, Subsidies, Tenders)" : "Tích hợp sẵn (Tuyển dụng, Trợ cấp, Đấu thầu)"}</span>
                     </span>
                   </td>
                   <td className="p-4 sm:p-5 text-slate-600 dark:text-slate-400">
-                    上位高額プラン限定、または非対応
+                    {isJa ? "上位高額プラン限定、または非対応" : isEn ? "High-tier plans only or unsupported" : "Chỉ có trên gói cao cấp hoặc không hỗ trợ"}
                   </td>
                 </tr>
 
@@ -401,7 +403,7 @@ export default async function ComparePage({ params }: PageProps) {
                     </span>
                   </td>
                   <td className="p-4 sm:p-5 text-slate-600 dark:text-slate-400">
-                    非対応（他社別ツールとの連携が必要）
+                    {isJa ? "非対応（他社別ツールとの連携が必要）" : isEn ? "Not supported (requires 3rd-party tools)" : "Không hỗ trợ (phải dùng phần mềm bên thứ 3)"}
                   </td>
                 </tr>
 
@@ -416,7 +418,7 @@ export default async function ComparePage({ params }: PageProps) {
                     </span>
                   </td>
                   <td className="p-4 sm:p-5 text-slate-600 dark:text-slate-400">
-                    商談後のデモ発行、または数件のみ
+                    {isJa ? "商談後のデモ発行、または数件のみ" : isEn ? "Demo issued only after sales meetings, or very few leads" : "Chỉ cấp demo sau họp tư vấn, hoặc rất ít dòng"}
                   </td>
                 </tr>
               </tbody>

@@ -62,6 +62,10 @@ Không chia lẻ kênh, mỗi ngày Agent sẽ lấy **1 Chủ Đề Cốt Lõi 
      - **Hub Doanh nghiệp Thay đổi Trụ sở / Pháp lý:** `https://kigyoulist.com/ja/changes/relocation`, `https://kigyoulist.com/ja/changes/merger`
      - **Hub Doanh nghiệp Phá sản / Giải thể:** `https://kigyoulist.com/ja/status/bankruptcies`
      - **Hub Tự động hóa Form Marketing:** `https://kigyoulist.com/ja/form-marketing`
+     - **Hub Xếp Hạng Thu Nhập Bình Quân (EDINET 50社):** `https://kigyoulist.com/ja/ranking/salary`
+     - **Hub Doanh Nghiệp Uy Tín / Thâm Niên (MHLW 100社):** `https://kigyoulist.com/ja/ranking/tenure`
+     - **Hub Quy Mô Lao Động Đóng BHXH (Pension Service 100社):** `https://kigyoulist.com/ja/ranking/employees`
+     - **Hub Danh Bạ Cao Ốc Biểu Tượng (15 Tòa tháp):** `https://kigyoulist.com/ja/building`
 
 
 ### D. Quy Tắc 4: Chuẩn Hóa Danh Xưng Thương Hiệu & Tên Miền (Domain & Brand Integrity)
@@ -92,6 +96,11 @@ Không chia lẻ kênh, mỗi ngày Agent sẽ lấy **1 Chủ Đề Cốt Lõi 
   - **Trang Invoice & Biến động pháp lý:**
     - `[適格請求書発行事業者・インボイス登録番号検索](https://kigyoulist.com/ja/invoice)`
     - `[本店移転・所在地変更の最新企業一覧](https://kigyoulist.com/ja/changes/relocation)`
+  - **Trang Xếp hạng Doanh nghiệp & Chỉ số Nhân sự Vàng (Ranking Hubs - High Viral PR):**
+    - `[【2026年最新】全国上場企業の平均年間給与ランキングTOP50](https://kigyoulist.com/ja/ranking/salary)`
+    - `[全国ホワイト企業ランキング・正社員の平均勤続年数TOP100](https://kigyoulist.com/ja/ranking/tenure)`
+    - `[厚生年金被保険者数による実質企業規模ランキングTOP100](https://kigyoulist.com/ja/ranking/employees)`
+    - `[六本木ヒルズなど主要15高層オフィスビル入居企業名鑑](https://kigyoulist.com/ja/building)`
   - **Kênh Kỹ thuật (Qiita & Zenn - Safe Technical Anchors):**
     - `[500万社規模の日本企業データ検索基盤 Kigyou-list](https://kigyoulist.com/ja)`
     - `[全国法人データ・企業ディレクトリ](https://kigyoulist.com/ja/directory)`
@@ -108,7 +117,7 @@ Không chia lẻ kênh, mỗi ngày Agent sẽ lấy **1 Chủ Đề Cốt Lõi 
    - Mỗi lần lên kế hoạch hoặc xuất bản, Agent **BẮT BUỘC** đối soát lịch sử để kiểm tra chủ đề của các ngày gần nhất.
    - Sau khi hoàn thành xuất bản, Agent tự động cập nhật ID chiến dịch, ngày, tiêu đề, landing page và các liên kết bài đăng thực tế vào sổ cái này.
 
-2. **Ma Trận 8 Trụ Cột Xoay Vòng (8-Pillar Rotation Matrix):**
+2. **Ma Trận 10 Trụ Cột Xoay Vòng (10-Pillar Rotation Matrix):**
    - **Trụ cột 1:** Bóc trần chi phí & Xóa hợp đồng năm (`/ja/compare`)
    - **Trụ cột 2:** Tra cứu & Đối soát Hóa đơn điện tử Invoice T-Number (`/ja/invoice`)
    - **Trụ cột 3:** Giám sát Doanh nghiệp & Cảnh báo Sớm rủi ro phá sản (`/ja/watchlist`)
@@ -117,6 +126,28 @@ Không chia lẻ kênh, mỗi ngày Agent sẽ lấy **1 Chủ Đề Cốt Lõi 
    - **Trụ cột 6:** Thư mục Ngành nghề Trọng điểm: IT, Xây dựng, BĐS, Sản xuất (`/ja/directory`)
    - **Trụ cột 7:** Bao phủ Địa phương 47 Tỉnh Thành: Tokyo, Osaka, Aichi... (`/ja/area/...`)
    - **Trụ cột 8:** Kiến trúc Kỹ thuật Big Data 500万社 & Benchmark < 50ms (`/ja` trên Qiita/Zenn)
+   - **Trụ cột 9 (MỚI - VIRAL PRESS & MEDIA SYNDICATION MAGNET):** Báo cáo Điều tra / Xếp hạng Thu nhập Bình quân & White Company & Quy mô BHXH (`/ja/ranking/salary`, `/ja/ranking/tenure`, `/ja/ranking/employees`). Đây là "thỏi nam châm" truyền thông mà các tờ báo lớn (Yahoo! News, Livedoor, Nikkei, Excite, Mynavi, Toyo Keizai, Diamond) và trang việc làm đặc biệt yêu thích cào bài và đăng tải lại.
+   - **Trụ cột 10 (MỚI - LANDMARK BUSINESS HUBS):** Mạng lưới Doanh nghiệp Trụ sở tại Cao ốc Biểu tượng Tokyo (`/ja/building`).
+
+---
+
+## 2.3. Quy Chuẩn Kích Hoạt Báo Lớn Cào & Đăng Tải Lại (Press Syndication Magnet Protocol)
+
+Để các tòa soạn báo kinh tế, trang tổng hợp tin tức và cộng đồng nhân sự cào và đăng lại bài viết, các Sub-Agent xuất bản **BẮT BUỘC** áp dụng công thức sau:
+
+1. **Định danh thông cáo báo chí dạng Điều Tra Độc Bản (調査リリース):**
+   - Tiêu đề bắt đầu bằng nhãn: `【独自調査】`, `【2026年最新ランキング】`, hoặc `【ホワイト企業調査2026】`.
+   - Nêu số liệu định lượng giật tít ngay tiêu đề (ví dụ: `平均年収1,235万円`, `平均勤続20年超`, `公認証券報告書/厚労省公表データ分析`).
+
+2. **Điều khoản bắt buộc trích dẫn bản quyền có Link (Mandatory Source Attribution):**
+   Cuối mỗi bài PR, bài Note, hoặc thông cáo báo chí, chèn nguyên văn đoạn pháp lý bản quyền:
+   ```text
+   ※本調査結果およびランキングデータを引用・転載される際は、必ず【出典：国内最大級の法人データベース『Kigyou-list（kigyoulist.com）』】のクレジット表記および下記URLへのリンクを明記してください。
+   ・平均年間給与ランキング：https://kigyoulist.com/ja/ranking/salary
+   ・ホワイト企業・勤続年数ランキング：https://kigyoulist.com/ja/ranking/tenure
+   ・厚生年金被保険者数ランキング：https://kigyoulist.com/ja/ranking/employees
+   ```
+   👉 *Hiệu quả: Khi báo lớn đăng lại, hệ thống tự động nhận được backlink biên tập chất lượng cao (DoFollow / High-DA Media Backlinks) hoàn toàn miễn phí.*
 
 > 🚫 **QUY TẮC CẤM TRÙNG LẶP NỘI DUNG (ZERO-DUPLICATION RULE):**
 > - Không bao giờ lặp lại cùng 1 chủ đề cốt lõi trong các ngày liền kề.

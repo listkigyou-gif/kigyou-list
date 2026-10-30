@@ -3,6 +3,7 @@ import { Pool } from 'pg';
 import { isAdmin } from '@/lib/adminAuth';
 import { logAdminAction } from '@/lib/db';
 import { sendEmailViaResend } from '@/lib/marketing';
+import { executePostApprovalSeoPipeline } from '@/lib/seoIndexingTrigger';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -39,7 +40,7 @@ export async function POST(request: Request) {
       const companyUrl = `${appUrl}/ja/company/${claimReq.corporate_number}`;
 
       if (action === 'approve') {
-        // A. Update company
+        // A. Update company (including approved PR catchcopy and message)
         await client.query(
           `UPDATE companies SET
             is_claimed = TRUE,
@@ -48,6 +49,8 @@ export async function POST(request: Request) {
             claimed_by_email = $2,
             claimed_by_phone = $3,
             claimed_by_department = $4,
+            pr_title = COALESCE($6, pr_title),
+            pr_message = COALESCE($7, pr_message),
             updated_at = NOW()
           WHERE corporate_number = $5`,
           [
@@ -56,6 +59,8 @@ export async function POST(request: Request) {
             claimReq.applicant_phone,
             claimReq.department,
             claimReq.corporate_number,
+            claimReq.pr_title ? claimReq.pr_title.trim() : null,
+            claimReq.pr_message ? claimReq.pr_message.trim() : null,
           ]
         );
 
@@ -144,7 +149,13 @@ export async function POST(request: Request) {
           user_email: claimReq.user_email,
         });
 
-        return NextResponse.json({ success: true, message: '申請を承認しました。' });
+        try {
+          await executePostApprovalSeoPipeline(claimReq.corporate_number, 'URL_UPDATED');
+        } catch (seoErr) {
+          console.warn('executePostApprovalSeoPipeline warning in claim review:', seoErr);
+        }
+
+        return NextResponse.json({ success: true, message: '申請を承認し、キャッシュ削除・検索インデックス送信を完了しました。' });
       } else {
         // Action: Reject
         const reason = rejection_reason || '提出書類が不鮮明または企業関係者様であることを確認できませんでした。';

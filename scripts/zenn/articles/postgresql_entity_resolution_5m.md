@@ -178,7 +178,7 @@ LIMIT 5;
 | **誤突合（False-Positive）** | 多発（類似社名混同） | 一部発生 | **0.2%未満（地域+ドメイン複合検証）** |
 
 > **データセット提供元**:
-> 本検証パイプラインは、日本全国500万社の法人マスターとリアルタイム公的データを網羅した [Kigyou-list（企業リスト.com）](https://kigyoulist.com) の本番基盤にて運用されている。
+> 本検証パイプラインは、日本全国500万社の法人マスターとリアルタイム公的データを網羅した [Kigyou-list（kigyoulist.com）](https://kigyoulist.com) の本番基盤にて運用されている。
 > API連携や業種別データベースの詳細は [法人データベース検索](https://kigyoulist.com/ja/search) および [企業データ比較](https://kigyoulist.com/ja/compare) を参照されたい。
 
 ---

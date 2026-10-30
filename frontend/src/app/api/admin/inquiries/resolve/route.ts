@@ -10,6 +10,7 @@ import {
 } from "@/lib/db";
 import { isAdmin } from "@/lib/adminAuth";
 import { revalidatePath } from "next/cache";
+import { executePostApprovalSeoPipeline } from "@/lib/seoIndexingTrigger";
 
 async function sendNotificationEmail(
   toEmail: string, 
@@ -17,7 +18,7 @@ async function sendNotificationEmail(
   htmlContent: string
 ) {
   const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "Kigyou List <auth@kigyoulist.com>";
+  const fromEmail = process.env.RESEND_SUPPORT_FROM_EMAIL || "Kigyou-List サポート事務局 <support@kigyoulist.com>";
   if (!resendApiKey || !toEmail) return;
 
   try {
@@ -81,14 +82,16 @@ export async function POST(request: Request) {
 
       await resolveInquiry(id, "resolved");
 
-      // Revalidate cache
-      if (corporate_number) {
+      // Execute Two-Tier Cache Purge (Nginx + Cloudflare) & Instant Search Indexing (Google VIP + Bing IndexNow)
+      let seoSummary = "";
+      if (corporate_number && corporate_number !== "N/A") {
         try {
-          revalidatePath(`/ja/company/${corporate_number}`);
-          revalidatePath(`/en/company/${corporate_number}`);
-          revalidatePath(`/vi/company/${corporate_number}`);
+          const seoRes = await executePostApprovalSeoPipeline(corporate_number, "URL_UPDATED");
+          if (seoRes.details.length > 0) {
+            seoSummary = `（${seoRes.details.join("・")}）`;
+          }
         } catch (e) {
-          console.warn("revalidatePath error in approve_update:", e);
+          console.warn("executePostApprovalSeoPipeline error in approve_update:", e);
         }
       }
 
@@ -136,7 +139,10 @@ export async function POST(request: Request) {
         );
       }
 
-      return NextResponse.json({ success: true, message: "企業情報の更新を承認し、データベースへ反映しました。" });
+      return NextResponse.json({
+        success: true,
+        message: `企業情報の更新を承認し、DB反映・キャッシュ削除・インデックス送信を完了しました。${seoSummary}`,
+      });
     }
 
     // 2. ACTION: REJECT (Reject update or request with reason)
@@ -186,7 +192,37 @@ export async function POST(request: Request) {
     // 3. ACTION: HIDE COMPANY
     if (action === "hide" && corporate_number && corporate_number !== "N/A") {
       await hideCompany(corporate_number, reason || "Hidden via Admin Dashboard");
+      await runQuery(
+        "UPDATE company_edit_history SET status = 'approved', new_value = '非公開' WHERE inquiry_id = ?",
+        [id]
+      );
       await resolveInquiry(id, "resolved");
+
+      try {
+        await executePostApprovalSeoPipeline(corporate_number, "URL_DELETED");
+      } catch (e) {
+        console.warn("executePostApprovalSeoPipeline error in hide:", e);
+      }
+
+      if (requester_email) {
+        await sendNotificationEmail(
+          requester_email,
+          `【Kigyou-List】掲載情報の取り下げ（非公開）手続き完了のお知らせ（${company_name || corporate_number}）`,
+          `
+            <div style="font-family: sans-serif; max-width: 560px; margin: 0 auto; padding: 24px; border: 1px solid #e2e8f0; border-radius: 12px; background: #ffffff;">
+              <h2 style="font-size: 16px; color: #0f172a; margin-top: 0;">【Kigyou-List】掲載情報の取り下げ完了</h2>
+              <p style="font-size: 13px; color: #334155; line-height: 1.6;">
+                ご申請いただきました以下の企業情報につきまして、管理者による確認が完了し、非公開（オプトアウト）処理が完了いたしました。
+              </p>
+              <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin: 16px 0; font-size: 13px; line-height: 1.8;">
+                <div><strong>対象企業名:</strong> ${company_name || corporate_number}</div>
+                <div><strong>法人番号:</strong> ${corporate_number}</div>
+                <div><strong>処理結果:</strong> 非公開（検索結果および企業ページより除外・キャッシュ削除済み）</div>
+              </div>
+            </div>
+          `
+        );
+      }
 
       await logAdminAction(
         adminEmail,
@@ -196,13 +232,22 @@ export async function POST(request: Request) {
         ipAddress,
         userAgent
       );
-      return NextResponse.json({ success: true, message: "企業を非公開に設定しました。" });
+      return NextResponse.json({
+        success: true,
+        message: "企業を非公開に設定し、キャッシュ削除および検索インデックス除外リクエストを送信しました。",
+      });
     }
 
     // 4. ACTION: UNHIDE COMPANY
     if (action === "unhide" && corporate_number && corporate_number !== "N/A") {
       await unhideCompany(corporate_number);
       await resolveInquiry(id, "rejected");
+
+      try {
+        await executePostApprovalSeoPipeline(corporate_number, "URL_UPDATED");
+      } catch (e) {
+        console.warn("executePostApprovalSeoPipeline error in unhide:", e);
+      }
 
       await logAdminAction(
         adminEmail,
@@ -212,7 +257,10 @@ export async function POST(request: Request) {
         ipAddress,
         userAgent
       );
-      return NextResponse.json({ success: true, message: "企業の非公開設定を解除しました。" });
+      return NextResponse.json({
+        success: true,
+        message: "企業の非公開設定を解除し、キャッシュ更新および検索インデックス送信を完了しました。",
+      });
     }
 
     // 5. ACTION: RESOLVE (Generic)

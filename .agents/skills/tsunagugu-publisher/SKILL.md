@@ -20,12 +20,19 @@ Khi người dùng ra lệnh:
    - `title`: Tiêu đề giật tít báo chí chứa từ khóa Bing & Google TOP (`国内最大級500万件超`, `企業リスト`, `ダウンロード`).
    - `lead`: Đoạn mở đầu chuẩn mực báo chí Nhật Bản, định vị thương hiệu Kigyou-list và pháp nhân TQC株式会社.
    - `heading_1`, `body_1`, `heading_2`, `body_2`, `heading_3`, `body_3`: Cấu trúc 3 đoạn logic chặt chẽ.
-     - **Quy chuẩn Backlink & Deep Link**:
-       - `body_3` luôn chèn đầy đủ URL chính thức và Deep Link Hub:
-         `・公式サイト：https://kigyoulist.com/ja`
-         `・料金比較・機能一覧：https://kigyoulist.com/ja/compare`
-         `・全国企業データベース・業種一覧：https://kigyoulist.com/ja/directory`
-   - `category`: `service` (サービス紹介).
+      - **Quy chuẩn Backlink & Deep Link Bứt Phá Thứ Hạng (Hub & Spoke Protocol)**:
+        - 🚫 **CHẤM DỨT NAKED URLS:** Chuyển đổi 100% sang Mỏ neo từ khóa vàng tiếng Nhật ngữ cảnh.
+        - ✅ **100% CANONICAL HTTPS NON-WWW:** Bắt buộc `https://kigyoulist.com/...` (cấm `http://` hoặc `www.`).
+        - ✅ **CÔNG THỨC 1+2 BẮT BUỘC TRONG BODY_3 (1 Link Cốt Lõi + 1–2 Deep Links Hub):**
+          `・国内最大級500万社の企業リスト・法人データベース Kigyou-list 公式サイト：https://kigyoulist.com/ja`
+          `・企業リストツールの料金プラン比較・初期費用0円プラン：https://kigyoulist.com/ja/compare`
+          `・全国企業データベース・業種一覧ディレクトリ：https://kigyoulist.com/ja/directory`
+   - `category`: `service` (サービス紹介) hoặc `survey` (調査・リサーチ khi phát hành bảng xếp hạng).
+   - `ranking_hubs`:
+     - `・平均年間給与ランキングTOP50：https://kigyoulist.com/ja/ranking/salary`
+     - `・ホワイト企業・勤続年数ランキングTOP100：https://kigyoulist.com/ja/ranking/tenure`
+     - `・厚生年金被保険者数ランキングTOP100：https://kigyoulist.com/ja/ranking/employees`
+     - `※引用・転載時は【出典：Kigyou-list】のクレジットおよびリンク明記必須。`
    - `industry`: `g_net` (ネットサービス).
    - `company_name`: `TQC株式会社`
    - `business_desc`: `B2B企業データプラットフォーム「Kigyou-list」の企画・開発・運営`
@@ -64,3 +71,7 @@ Khi người dùng ra lệnh:
 - **Mã số hóa đơn (Invoice):** `T4013301048678`
 - **Đại diện / Liên hệ:** `キム　バン　チュン`
 - **Domain chính thức:** `https://kigyoulist.com/ja` (100% Canonical HTTPS Non-WWW)
+
+> [!IMPORTANT]
+> **QUY TẮC BẢO TOÀN TÊN MIỀN THƯƠNG HIỆU (DOMAIN INTEGRITY):**
+> Tuyệt đối cấm viết tên miền dạng `kigyoulist.com`. Tên miền chính thức của nền tảng 100% là **`kigyoulist.com`**. Khi giới thiệu dịch vụ bằng tiếng Nhật, chỉ viết: `Kigyou-list` hoặc `Kigyou-list（kigyoulist.com）`.

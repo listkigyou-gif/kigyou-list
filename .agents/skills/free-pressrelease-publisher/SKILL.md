@@ -25,10 +25,17 @@ Khi người dùng ra lệnh:
    - `title`: Tiêu đề giật tít báo chí chứa từ khóa Bing & Google TOP (`500万社`, `企業リスト`, `初月1,260円`, `永久無料プラン`).
    - `subtitle`: Phụ đề súc tích (100 - 180 ký tự), giải quyết trực tiếp nỗi đau B2B chi phí cao.
    - `body`: Nội dung chuẩn thông cáo báo chí Nhật Bản (Bối cảnh, tính năng, bảng giá, thông tin công ty).
-     - **Quy chuẩn Backlink & Deep Link**:
-       - `公式サイト：https://kigyoulist.com/ja`
-       - `料金プラン・機能比較表：https://kigyoulist.com/ja/compare`
-       - `全国企業データベース・業種一覧：https://kigyoulist.com/ja/directory`
+      - **Quy chuẩn Backlink & Deep Link Bứt Phá Thứ Hạng (Hub & Spoke Protocol)**:
+        - 🚫 **CHẤM DỨT NAKED URLS & ANCHOR GENERIC:** 100% sử dụng Mỏ neo từ khóa vàng B2B ngay trước URL để Google/Bing bot hiểu đúng thực thể.
+        - ✅ **100% CANONICAL HTTPS NON-WWW:** Bắt buộc `https://kigyoulist.com/...` (loại bỏ hoàn toàn `http://` và `www.`).
+        - ✅ **CÔNG THỨC 1+2 BẮT BUỘC (1 Link Cốt Lõi + 1–2 Deep Links Hub):**
+          - `■ 500万社網羅の企業リスト・法人データベース Kigyou-list 公式サイト：https://kigyoulist.com/ja`
+          - `■ 企業リストツールの料金プラン・機能比較表（初月1,260円・年縛りなし）：https://kigyoulist.com/ja/compare`
+          - `■ 全国企業データベース・業種一覧ディレクトリ：https://kigyoulist.com/ja/directory`
+          - `■ 【独自調査】全国企業の平均年間給与ランキングTOP50：https://kigyoulist.com/ja/ranking/salary`
+          - `■ 【ホワイト企業調査】平均勤続年数ランキングTOP100：https://kigyoulist.com/ja/ranking/tenure`
+          - `■ 【実質規模調査】厚生年金被保険者数ランキングTOP100：https://kigyoulist.com/ja/ranking/employees`
+          - `※本調査結果を引用・転載される際は必ず【出典：Kigyou-list】のクレジットおよびリンクを明記してください。`
    - `image_path`: Banner 16:9 lưu tại `scripts/press_releases/eyecatch_01.jpg`.
 
 2. **Kích hoạt Script xuất bản tự động hoàn toàn**:
@@ -69,3 +76,7 @@ Khi người dùng ra lệnh:
 3. **Bài 3:** Báo cáo thị trường SaaS & B2B Data Map 2026
    - File: `scripts/press_releases/release_free_pressrelease_03.json`
    - Mục tiêu: Đẩy mạnh thứ hạng từ khóa `saas カオスマップ 2026` từ Top #5 lên Top 1-3 Bing.
+
+> [!IMPORTANT]
+> **QUY TẮC BẢO TOÀN TÊN MIỀN THƯƠNG HIỆU (DOMAIN INTEGRITY):**
+> Tuyệt đối cấm viết tên miền dạng `kigyoulist.com`. Tên miền chính thức của nền tảng 100% là **`kigyoulist.com`**. Khi giới thiệu dịch vụ bằng tiếng Nhật, chỉ viết: `Kigyou-list` hoặc `Kigyou-list（kigyoulist.com）`.

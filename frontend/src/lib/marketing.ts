@@ -504,17 +504,19 @@ export async function sendEmailViaResend({
   to,
   subject,
   html,
+  from,
 }: {
   to: string;
   subject: string;
   html: string;
+  from?: string;
 }): Promise<{ success: boolean; id?: string; error?: string }> {
   const resendApiKey = process.env.RESEND_API_KEY;
   if (!resendApiKey) {
     return { success: false, error: 'RESEND_API_KEY is not configured in .env.local' };
   }
 
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'Kigyou List <auth@kigyoulist.com>';
+  const fromEmail = from || process.env.RESEND_SUPPORT_FROM_EMAIL || process.env.RESEND_FROM_EMAIL || 'Kigyou-List サポート事務局 <support@kigyoulist.com>';
 
   try {
     const res = await fetch('https://api.resend.com/emails', {

@@ -5,6 +5,7 @@ import { verifyOtp, invalidateCompanyCache } from '@/lib/db';
 import { isAdmin, isAdminEmail } from '@/lib/adminAuth';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
+import { executePostApprovalSeoPipeline } from '@/lib/seoIndexingTrigger';
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -199,15 +200,11 @@ export async function POST(request: Request) {
       ]
     );
 
-    // Invalidate memory cache and revalidate Next.js ISR cache
-    invalidateCompanyCache(corporate_number);
+    // Invalidate memory cache, Next.js ISR, Cloudflare Edge & trigger Google/Bing indexing
     try {
-      revalidatePath(`/[locale]/company/${corporate_number}`, 'page');
-      revalidatePath(`/ja/company/${corporate_number}`);
-      revalidatePath(`/vi/company/${corporate_number}`);
-      revalidatePath(`/en/company/${corporate_number}`);
-    } catch (e) {
-      console.warn("revalidatePath warning:", e);
+      await executePostApprovalSeoPipeline(corporate_number, 'URL_UPDATED');
+    } catch (seoErr) {
+      console.warn("executePostApprovalSeoPipeline error in claim route:", seoErr);
     }
 
     // 4. Record ownership in user_companies for multi-company management
@@ -228,13 +225,40 @@ export async function POST(request: Request) {
       console.error('Failed to update user_companies in claim route:', err);
     }
 
-    // 5. If there was any pending manual claim request, mark it approved
+    // 5. If there was any pending manual claim request, mark it approved, or insert approved record if none existed
     try {
-      await client.query(
-        `UPDATE company_claim_requests SET status = 'approved', reviewed_by = 'system_instant_verify', reviewed_at = NOW()
+      const updateRes = await client.query(
+        `UPDATE company_claim_requests SET status = 'approved', reviewed_by = 'system_instant_verify', reviewed_at = NOW(), pr_title = COALESCE($3, pr_title), pr_message = COALESCE($4, pr_message)
          WHERE corporate_number = $1 AND LOWER(user_email) = LOWER($2) AND status = 'pending'`,
-        [corporate_number, email.toLowerCase().trim()]
+        [corporate_number, email.toLowerCase().trim(), pr_title || null, pr_message || null]
       );
+      if (updateRes.rowCount === 0) {
+        await client.query(
+          `INSERT INTO company_claim_requests (
+            corporate_number, company_name, applicant_name, applicant_phone, department,
+            user_email, document_type, document_url, notes, status,
+            reviewed_by, reviewed_at, pr_title, pr_message, created_at, updated_at
+          ) VALUES (
+            $1, $2, $3, $4, $5,
+            $6, 'domain_email', 'DOMAIN_EMAIL_VERIFIED', $7, 'approved',
+            $8, NOW(), $9, $10, NOW(), NOW()
+          )`,
+          [
+            corporate_number,
+            company.company_name,
+            effectivePersonInCharge,
+            phone ? phone.trim() : null,
+            department ? department.trim() : null,
+            email.toLowerCase().trim(),
+            isRequestAdmin
+              ? '【管理者直接即時認証】特権により即時承認完了'
+              : '【WEBドメイン即時認証】メールOTP認証により自動承認完了',
+            isRequestAdmin ? 'admin_direct' : 'system_instant_verify',
+            pr_title ? pr_title.trim() : null,
+            pr_message ? pr_message.trim() : null,
+          ]
+        );
+      }
     } catch (ignore) {}
 
     // 6. Incentive: Upgrade daily quota to 50 rows/day (free tier) + 100 bonus quota balance

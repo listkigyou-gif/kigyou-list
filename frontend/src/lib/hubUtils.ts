@@ -151,3 +151,15 @@ export function parseHubSlug(slugs?: string[]): {
 
   return { prefecture, yearMonth };
 }
+
+/**
+ * Returns localized name for a prefecture (or 'Nationwide' / 'Toàn quốc' / '全国' if null).
+ */
+export function getPrefectureLabel(p: PrefectureMeta | null, locale: string): string {
+  if (!p) {
+    return locale === 'ja' ? '全国' : locale === 'vi' ? 'Toàn quốc' : 'Nationwide';
+  }
+  if (locale === 'ja') return p.nameJa;
+  if (locale === 'vi') return p.nameEn;
+  return p.nameEn;
+}

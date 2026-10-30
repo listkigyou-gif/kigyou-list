@@ -29,7 +29,10 @@ import {
   ChevronUp,
   Briefcase,
   ExternalLink,
-  Check
+  Check,
+  FileText,
+  FileEdit,
+  EyeOff
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 import { trackLeadGenerated } from "@/lib/gtag";
@@ -51,6 +54,10 @@ export default function ContactPage() {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [foundCompany, setFoundCompany] = useState<{ corporate_number: string; company_name: string; prefecture_name?: string } | null>(null);
   const [lookupError, setLookupError] = useState<string | null>(null);
+
+  // Category: Company Manage Dual-Path Sub-Modes
+  const [companyManageSubTab, setCompanyManageSubTab] = useState<"direct_inquiry" | "claim">("direct_inquiry");
+  const [directInquiryType, setDirectInquiryType] = useState<"update" | "hide" | "other">("update");
 
   // Common Form States
   const [formData, setFormData] = useState({
@@ -219,12 +226,24 @@ export default function ContactPage() {
         api_data: "api",
         billing_enterprise: "billing",
         general_partner: "general",
-        company_manage: "general",
+        company_manage: "company_manage",
       };
 
       // Format message according to category context
       let compiledMessage = "";
-      if (activeCategory === "form_marketing") {
+      if (activeCategory === "company_manage") {
+        const typeTitle = directInquiryType === "hide"
+          ? "【掲載取り下げ・非公開（オプトアウト）申請】※個人情報保護法（APPI）準拠"
+          : directInquiryType === "update"
+          ? "【掲載情報の修正依頼（公式サイトURL・連絡先・基本情報）】"
+          : "【掲載情報に関するお問い合わせ】";
+        compiledMessage = [
+          typeTitle,
+          lookupCorpNum.trim() ? `【対象法人番号】${lookupCorpNum.trim()}` : "",
+          formData.department_role ? `【部署・役職】${formData.department_role}` : "",
+          `\n【申請・修正内容の詳細】\n${formData.message}`,
+        ].filter(Boolean).join("\n");
+      } else if (activeCategory === "form_marketing") {
         compiledMessage = [
           `【お問い合わせ種別】セルフ型フォーム営業・配信代行のご相談`,
           formData.department_role ? `【部署・役職】${formData.department_role}` : "",
@@ -262,6 +281,7 @@ export default function ContactPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           type: typeMap[activeCategory],
+          corporate_number: activeCategory === "company_manage" ? (lookupCorpNum.trim() || undefined) : undefined,
           company_name: formData.company_name.trim(),
           person_in_charge: formData.name.trim(),
           requester_email: formData.email.trim(),
@@ -720,155 +740,382 @@ export default function ContactPage() {
                   </h2>
                   <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
                     {isJa
-                      ? "Kigyou-Listでは、悪意ある第三者によるなりすまし改ざんを防止するため、各社固有の国税庁13桁法人番号をもとに「公式オーナー認証（本人確認コード照合）」を実施しております。公式バッジの取得、PR文や最新連絡先の更新、または検索除外の申請を安全に行っていただけます。"
+                      ? "Kigyou-Listでは、個人情報保護法（APPI）に基づき、登録情報の修正や掲載取り下げ（オプトアウト）の直接申請を【ログイン不要】で常時受付しております。また、公式オーナー認証を行うことで、PRメッセージ掲載や自社情報のリアルタイム管理も完全無料でご利用いただけます。"
                       : isVi
-                      ? "Nhằm ngăn chặn hành vi mạo danh, Kigyou-list áp dụng quy trình xác thực mã số pháp nhân 13 số kết hợp mã OTP gửi về email tên miền công ty. Bạn có thể cập nhật thông tin PR hoặc yêu cầu ẩn thông tin an toàn."
-                      : "To prevent unauthorized modification, Kigyou-list verifies corporate identity using 13-digit corporate numbers and OTP verification. Safely claim your profile, update details, or request delisting."}
+                      ? "Kigyou-list tiếp nhận các yêu cầu đính chính thông tin và gỡ bỏ trang trực tiếp theo Luật Bảo vệ Thông tin Cá nhân Nhật Bản (APPI) mà không cần đăng nhập. Ngoài ra, bạn cũng có thể xác thực chính chủ để đăng PR và tự quản trị trang miễn phí."
+                      : "We accept information correction and delisting requests in compliance with Japan's APPI regulations without requiring account registration, as well as official corporate owner verification for real-time profile management."}
                   </p>
+
+                  {/* Dual-Path Mode Switcher */}
+                  <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700">
+                    <button
+                      type="button"
+                      onClick={() => setCompanyManageSubTab("direct_inquiry")}
+                      className={`py-2.5 px-3 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        companyManageSubTab === "direct_inquiry"
+                          ? "bg-white dark:bg-slate-900 text-[#1B4F8A] dark:text-blue-400 shadow-xs border border-slate-200 dark:border-slate-700"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      }`}
+                    >
+                      <FileText className="w-4 h-4 shrink-0 text-[#1B4F8A] dark:text-blue-400" />
+                      <span>{isJa ? "【ログイン不要】情報修正・非公開申請（直接受付）" : "Gửi yêu cầu sửa/gỡ không cần đăng nhập"}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCompanyManageSubTab("claim")}
+                      className={`py-2.5 px-3 text-xs sm:text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        companyManageSubTab === "claim"
+                          ? "bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-400 shadow-xs border border-slate-200 dark:border-slate-700"
+                          : "text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white"
+                      }`}
+                    >
+                      <ShieldCheck className="w-4 h-4 shrink-0 text-emerald-600" />
+                      <span>{isJa ? "【公式認証・PR掲載】公式オーナー認証（自社管理）" : "Xác minh chính chủ & Đăng PR (Tự quản lý)"}</span>
+                    </button>
+                  </div>
                 </div>
 
-                {/* 13-Digit Corporate Number Fast Lookup Box */}
-                <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl p-5 sm:p-6 space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                      {isJa 
-                        ? "貴社の法人番号（13桁）を入力して、自社管理パネルを検索してください" 
-                        : isVi 
-                        ? "Nhập mã số pháp nhân 13 số (国税庁法人番号) để tìm trang quản lý công ty:" 
-                        : "Enter your 13-digit corporate number to open the verification panel:"}
-                    </label>
-                    <p className="text-[11px] text-slate-400 dark:text-slate-500">
-                      {isJa 
-                        ? "※ 法人番号が不明な場合は、国税庁法人番号公表サイトまたは国税庁発行書類をご確認ください。" 
-                        : isVi 
-                        ? "※ Mã số pháp nhân do Cơ quan Thuế Quốc gia Nhật Bản cấp." 
-                        : "※ Available via Japan National Tax Agency Corporate Number Publication Site."}
-                    </p>
-                  </div>
+                {/* SUB-PATH A: DIRECT APPI INQUIRY / OPT-OUT FORM (NO LOGIN REQUIRED) */}
+                {companyManageSubTab === "direct_inquiry" ? (
+                  <form onSubmit={handleSubmitInquiry} className="space-y-6 animate-in fade-in duration-200">
+                    {/* Inquiry Type Radio Cards */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">
+                        {isJa ? "申請・ご希望の種別" : "Loại yêu cầu"} <span className="text-rose-500 font-bold">*</span>
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <label className={`p-3.5 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${
+                          directInquiryType === "update"
+                            ? "bg-blue-50/70 dark:bg-blue-950/40 border-[#1B4F8A] dark:border-blue-600 text-[#1B4F8A] dark:text-blue-300"
+                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                        }`}>
+                          <input
+                            type="radio"
+                            name="directInquiryType"
+                            value="update"
+                            checked={directInquiryType === "update"}
+                            onChange={() => setDirectInquiryType("update")}
+                            className="mt-0.5 text-[#1B4F8A] focus:ring-[#1B4F8A]"
+                          />
+                          <div className="text-xs">
+                            <span className="block font-bold text-slate-900 dark:text-white mb-0.5">
+                              {isJa ? "掲載情報の修正・追加依頼" : "Yêu cầu đính chính / bổ sung thông tin"}
+                            </span>
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 block leading-relaxed">
+                              {isJa ? "公式サイトURL、代表電話番号、代表者名、所在地等の最新化" : "Cập nhật website, số điện thoại, người đại diện..."}
+                            </span>
+                          </div>
+                        </label>
 
-                  <form onSubmit={handleLookupCompany} className="flex flex-col sm:flex-row gap-2.5">
-                    <div className="relative flex-1">
-                      <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
-                      <input
-                        type="text"
-                        maxLength={13}
-                        value={lookupCorpNum}
-                        onChange={(e) => setLookupCorpNum(e.target.value)}
-                        placeholder="例: 1010001000001"
-                        className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-300/90 dark:border-slate-700 rounded-lg text-xs font-mono tracking-wider focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-semibold"
+                        <label className={`p-3.5 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${
+                          directInquiryType === "hide"
+                            ? "bg-rose-50/70 dark:bg-rose-950/40 border-rose-600 dark:border-rose-700 text-rose-800 dark:text-rose-300"
+                            : "bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300"
+                        }`}>
+                          <input
+                            type="radio"
+                            name="directInquiryType"
+                            value="hide"
+                            checked={directInquiryType === "hide"}
+                            onChange={() => setDirectInquiryType("hide")}
+                            className="mt-0.5 text-rose-600 focus:ring-rose-600"
+                          />
+                          <div className="text-xs">
+                            <span className="block font-bold text-slate-900 dark:text-white mb-0.5">
+                              {isJa ? "掲載取り下げ・非公開（オプトアウト）" : "Yêu cầu gỡ bỏ trang (Opt-out)"}
+                            </span>
+                            <span className="text-[11px] text-slate-500 dark:text-slate-400 block leading-relaxed">
+                              {isJa ? "個人情報保護法に基づき、検索結果からの非公開（掲載停止）を申請" : "Ẩn trang khỏi công cụ tìm kiếm theo luật APPI"}
+                            </span>
+                          </div>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Company Name & Corporate Number */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                          {isJa ? "対象の貴社名（会社名）" : "Tên công ty"} <span className="text-rose-500 font-bold">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.company_name}
+                          onChange={(e) => setFormData({ ...formData, company_name: e.target.value })}
+                          placeholder="例: 株式会社〇〇"
+                          className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-300/90 dark:border-slate-700 rounded-lg text-xs font-medium focus:ring-2 focus:ring-[#1B4F8A]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                          {isJa ? "法人番号（13桁・任意）" : "Mã số pháp nhân 13 số (Tùy chọn)"}
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={13}
+                          value={lookupCorpNum}
+                          onChange={(e) => setLookupCorpNum(e.target.value)}
+                          placeholder="例: 1010001000001"
+                          className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-300/90 dark:border-slate-700 rounded-lg text-xs font-mono font-medium focus:ring-2 focus:ring-[#1B4F8A]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Name & Email */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                          {isJa ? "ご担当者様氏名" : "Họ và tên người gửi"} <span className="text-rose-500 font-bold">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={formData.name}
+                          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                          placeholder="例: 山田 太郎"
+                          className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-300/90 dark:border-slate-700 rounded-lg text-xs font-medium focus:ring-2 focus:ring-[#1B4F8A]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                          {isJa ? "ご連絡先メールアドレス" : "Email liên hệ"} <span className="text-rose-500 font-bold">*</span>
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          value={formData.email}
+                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                          placeholder="例: yamada@example.co.jp"
+                          className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-300/90 dark:border-slate-700 rounded-lg text-xs font-medium focus:ring-2 focus:ring-[#1B4F8A]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Phone & Department */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                          {isJa ? "お電話番号（任意）" : "Số điện thoại liên hệ (Tùy chọn)"}
+                        </label>
+                        <input
+                          type="tel"
+                          value={formData.phone}
+                          onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                          placeholder="例: 03-1234-5678"
+                          className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-300/90 dark:border-slate-700 rounded-lg text-xs font-mono font-medium focus:ring-2 focus:ring-[#1B4F8A]"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                          {isJa ? "部署・役職（任意）" : "Bộ phận / Chức vụ"}
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.department_role}
+                          onChange={(e) => setFormData({ ...formData, department_role: e.target.value })}
+                          placeholder="例: 広報部 / 総務部 / 経営企画"
+                          className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-300/90 dark:border-slate-700 rounded-lg text-xs font-medium focus:ring-2 focus:ring-[#1B4F8A]"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Details / Message */}
+                    <div>
+                      <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                        {directInquiryType === "hide"
+                          ? (isJa ? "非公開申請の理由・対象ページの詳細" : "Lý do và chi tiết yêu cầu gỡ bỏ trang")
+                          : (isJa ? "修正・追加を希望される内容の詳細" : "Nội dung cần đính chính / bổ sung")} <span className="text-rose-500 font-bold">*</span>
+                      </label>
+                      <textarea
+                        required
+                        rows={5}
+                        value={formData.message}
+                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                        placeholder={directInquiryType === "hide"
+                          ? (isJa ? "非公開をご希望される理由や、対象企業ページのURLをご記入ください。" : "Nhập lý do hoặc URL trang cần ẩn.")
+                          : (isJa ? "【修正・追加をご希望の項目】\n・公式サイトURL: https://...\n・代表電話番号: 03-...\n・代表者名: ...\n等の具体的な最新情報をご記入ください。" : "Nhập chi tiết các trường thông tin cần sửa...")}
+                        className="w-full px-3.5 py-2.5 bg-white dark:bg-slate-900 border border-slate-300/90 dark:border-slate-700 rounded-lg text-xs font-medium leading-relaxed focus:ring-2 focus:ring-[#1B4F8A]"
                       />
                     </div>
+
+                    {/* Privacy acceptance */}
+                    <div className="flex items-start gap-2 pt-1">
+                      <input
+                        type="checkbox"
+                        id="agree_privacy_direct"
+                        required
+                        checked={formData.agree_privacy}
+                        onChange={(e) => setFormData({ ...formData, agree_privacy: e.target.checked })}
+                        className="mt-0.5 rounded text-[#1B4F8A] focus:ring-[#1B4F8A]"
+                      />
+                      <label htmlFor="agree_privacy_direct" className="text-xs text-slate-600 dark:text-slate-400 cursor-pointer">
+                        <span>{isJa ? "個人情報の取り扱いおよび" : "Tôi đồng ý với "}</span>
+                        <Link href={`/${locale}/privacy`} target="_blank" className="text-[#1B4F8A] dark:text-blue-400 underline font-semibold">
+                          {isJa ? "プライバシーポリシー" : "Chính sách bảo mật"}
+                        </Link>
+                        <span>{isJa ? "に同意して申請します。" : " và Điều khoản sử dụng."}</span>
+                      </label>
+                    </div>
+
+                    {/* Turnstile Container */}
+                    <div id={turnstileContainerId} className="my-2"></div>
+
                     <button
                       type="submit"
-                      disabled={lookupLoading}
-                      className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-xs cursor-pointer"
+                      disabled={submitting}
+                      className="w-full py-3 bg-[#1B4F8A] hover:bg-[#143D6C] text-white font-bold text-xs sm:text-sm rounded-lg flex items-center justify-center gap-2 transition-all shadow-sm cursor-pointer disabled:opacity-50"
                     >
-                      {lookupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
-                      <span>{isJa ? "企業ページを検索" : isVi ? "Tìm doanh nghiệp" : "Search Company"}</span>
+                      {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                      <span>{isJa ? "申請内容を送信する（無料・直接受付）" : "Gửi yêu cầu (Miễn phí)"}</span>
                     </button>
                   </form>
-
-                  {lookupError && (
-                    <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
-                      <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
-                      <span>{lookupError}</span>
-                    </div>
-                  )}
-
-                  {foundCompany && (
-                    <div className="bg-white dark:bg-slate-900 border-2 border-emerald-400 dark:border-emerald-700 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-in fade-in duration-200">
+                ) : (
+                  /* SUB-PATH B: OFFICIAL OWNER VERIFICATION & PR (SELF-MANAGED) */
+                  <div className="space-y-6 animate-in fade-in duration-200">
+                    <div className="bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 rounded-xl p-5 sm:p-6 space-y-4">
                       <div>
-                        <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold font-mono">
-                          <Check className="w-3 h-3" /> 法人番号: {foundCompany.corporate_number}
+                        <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                          {isJa 
+                            ? "貴社の法人番号（13桁）を入力して、自社管理パネルを検索してください" 
+                            : isVi 
+                            ? "Nhập mã số pháp nhân 13 số (国税庁法人番号) để tìm trang quản lý công ty:" 
+                            : "Enter your 13-digit corporate number to open the verification panel:"}
+                        </label>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500">
+                          {isJa 
+                            ? "※ 法人番号が不明な場合は、国税庁法人番号公表サイトまたは国税庁発行書類をご確認ください。" 
+                            : isVi 
+                            ? "※ Mã số pháp nhân do Cơ quan Thuế Quốc gia Nhật Bản cấp." 
+                            : "※ Available via Japan National Tax Agency Corporate Number Publication Site."}
+                        </p>
+                      </div>
+
+                      <form onSubmit={handleLookupCompany} className="flex flex-col sm:flex-row gap-2.5">
+                        <div className="relative flex-1">
+                          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+                          <input
+                            type="text"
+                            maxLength={13}
+                            value={lookupCorpNum}
+                            onChange={(e) => setLookupCorpNum(e.target.value)}
+                            placeholder="例: 1010001000001"
+                            className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-300/90 dark:border-slate-700 rounded-lg text-xs font-mono tracking-wider focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-semibold"
+                          />
                         </div>
-                        <h4 className="text-base font-extrabold text-slate-900 dark:text-white mt-1.5">
-                          {foundCompany.company_name}
-                        </h4>
-                        {foundCompany.prefecture_name && (
-                          <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block">
-                            所在地: {foundCompany.prefecture_name}
-                          </span>
-                        )}
-                      </div>
-                      <Link
-                        href={`/${locale}/company/${foundCompany.corporate_number}?claim=1`}
-                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all shrink-0 cursor-pointer"
-                      >
-                        <ShieldCheck className="w-4 h-4" />
-                        <span>{isJa ? "公式管理・認証パネルを開く →" : isVi ? "Mở bảng quản lý chính chủ →" : "Open Verification Panel →"}</span>
-                      </Link>
-                    </div>
-                  )}
-                </div>
+                        <button
+                          type="submit"
+                          disabled={lookupLoading}
+                          className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg flex items-center justify-center gap-2 transition-all disabled:opacity-50 shadow-xs cursor-pointer"
+                        >
+                          {lookupLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+                          <span>{isJa ? "企業ページを検索" : isVi ? "Tìm doanh nghiệp" : "Search Company"}</span>
+                        </button>
+                      </form>
 
-                {/* 3 Steps Visual Guide */}
-                <div>
-                  <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
-                    {isJa ? "お手続きの流れ（3ステップ）" : isVi ? "Quy trình thực hiện (3 bước)" : "Verification Workflow (3 Steps)"}
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                    <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-800">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-xs font-black flex items-center justify-center mb-2.5">
-                        1
-                      </div>
-                      <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                        {isJa ? "自社ページを開く" : isVi ? "Tìm mã số & mở hồ sơ" : "Open Company Profile"}
-                      </h5>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                        {isJa
-                          ? "上記で検索した自社ページへ進み、「公式オーナー認証・情報管理」ボタンをクリックします。"
-                          : isVi
-                          ? "Tra cứu mã số pháp nhân và nhấn nút xác thực chính chủ trên trang chi tiết công ty."
-                          : "Navigate to your company profile and click the Claim/Manage Profile button."}
-                      </p>
-                    </div>
+                      {lookupError && (
+                        <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                          <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                          <span>{lookupError}</span>
+                        </div>
+                      )}
 
-                    <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-800">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-xs font-black flex items-center justify-center mb-2.5">
-                        2
-                      </div>
-                      <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                        {isJa ? "公式メール宛に認証" : isVi ? "Xác thực mã OTP email" : "Email OTP Verification"}
-                      </h5>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                        {isJa
-                          ? "会社ドメインの公式メールアドレス宛に届く6桁のワンタイムパスワード（OTP）を入力して認証を完了。"
-                          : isVi
-                          ? "Nhận mã OTP gồm 6 chữ số gửi về địa chỉ email công ty để hoàn tất xác thực."
-                          : "Enter the 6-digit one-time password sent to your official company email."}
-                      </p>
+                      {foundCompany && (
+                        <div className="bg-white dark:bg-slate-900 border-2 border-emerald-400 dark:border-emerald-700 rounded-xl p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-in fade-in duration-200">
+                          <div>
+                            <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 text-[10px] font-bold font-mono">
+                              <Check className="w-3 h-3" /> 法人番号: {foundCompany.corporate_number}
+                            </div>
+                            <h4 className="text-base font-extrabold text-slate-900 dark:text-white mt-1.5">
+                              {foundCompany.company_name}
+                            </h4>
+                            {foundCompany.prefecture_name && (
+                              <span className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 block">
+                                所在地: {foundCompany.prefecture_name}
+                              </span>
+                            )}
+                          </div>
+                          <Link
+                            href={`/${locale}/company/${foundCompany.corporate_number}?claim=1`}
+                            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all shrink-0 cursor-pointer"
+                          >
+                            <ShieldCheck className="w-4 h-4" />
+                            <span>{isJa ? "公式管理・認証パネルを開く →" : isVi ? "Mở bảng quản lý chính chủ →" : "Open Verification Panel →"}</span>
+                          </Link>
+                        </div>
+                      )}
                     </div>
 
-                    <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-800">
-                      <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-xs font-black flex items-center justify-center mb-2.5">
-                        3
+                    {/* 3 Steps Visual Guide */}
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-3">
+                        {isJa ? "お手続きの流れ（3ステップ）" : isVi ? "Quy trình thực hiện (3 bước)" : "Verification Workflow (3 Steps)"}
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+                        <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-800">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-xs font-black flex items-center justify-center mb-2.5">
+                            1
+                          </div>
+                          <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            {isJa ? "自社ページを開く" : isVi ? "Tìm mã số & mở hồ sơ" : "Open Company Profile"}
+                          </h5>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                            {isJa
+                              ? "上記で検索した自社ページへ進み、「公式オーナー認証・情報管理」ボタンをクリックします。"
+                              : isVi
+                              ? "Tra cứu mã số pháp nhân và nhấn nút xác thực chính chủ trên trang chi tiết công ty."
+                              : "Navigate to your company profile and click the Claim/Manage Profile button."}
+                          </p>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-800">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-xs font-black flex items-center justify-center mb-2.5">
+                            2
+                          </div>
+                          <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            {isJa ? "公式メール宛に認証" : isVi ? "Xác thực mã OTP email" : "Email OTP Verification"}
+                          </h5>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                            {isJa
+                              ? "会社ドメインの公式メールアドレス宛に届く6桁のワンタイムパスワード（OTP）を入力して認証を完了。"
+                              : isVi
+                              ? "Nhận mã OTP gồm 6 chữ số gửi về địa chỉ email công ty để hoàn tất xác thực."
+                              : "Enter the 6-digit one-time password sent to your official company email."}
+                          </p>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-slate-50/70 dark:bg-slate-800/20 border border-slate-200/80 dark:border-slate-800">
+                          <div className="w-7 h-7 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-xs font-black flex items-center justify-center mb-2.5">
+                            3
+                          </div>
+                          <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            {isJa ? "情報更新または非公開" : isVi ? "Cập nhật hoặc Ẩn dữ liệu" : "Update or Opt-out"}
+                          </h5>
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                            {isJa
+                              ? "公式認証バッジの獲得、PR文・電話番号・URLの編集、または掲載取り下げ（非公開）を安全に実行。"
+                              : isVi
+                              ? "Nhận huy hiệu xác thực, cập nhật số điện thoại, website, thông tin tuyển dụng hoặc chọn ẩn."
+                              : "Earn the official verified badge, update contact info and PR text, or request delisting."}
+                          </p>
+                        </div>
                       </div>
-                      <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                        {isJa ? "情報更新または非公開" : isVi ? "Cập nhật hoặc Ẩn dữ liệu" : "Update or Opt-out"}
-                      </h5>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    </div>
+
+                    {/* Additional assistance note */}
+                    <div className="p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 text-xs text-slate-600 dark:text-slate-400 leading-relaxed flex items-start gap-3">
+                      <HelpCircle className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-slate-800 dark:text-slate-200 block mb-0.5">
+                          {isJa ? "法人番号が不明な場合やメールを受信できない場合" : "Cần hỗ trợ thêm về xác thực?"}
+                        </span>
                         {isJa
-                          ? "公式認証バッジの獲得、PR文・電話番号・URLの編集、または掲載取り下げ（非公開）を安全に実行。"
-                          : isVi
-                          ? "Nhận huy hiệu xác thực, cập nhật số điện thoại, website, thông tin tuyển dụng hoặc chọn ẩn."
-                          : "Earn the official verified badge, update contact info and PR text, or request delisting."}
-                      </p>
+                          ? "代表印の印鑑証明書や登記簿謄本による手動確認にも対応しております。その場合は「業務提携・その他窓口」タブより直接運営事務局へご連絡ください。"
+                          : "Nếu bạn không thể xác thực tự động qua email công ty, vui lòng gửi yêu cầu qua tab 'Hợp tác & Yêu cầu khác' kèm thông tin để bộ phận hỗ trợ xác minh thủ công."}
+                      </div>
                     </div>
                   </div>
-                </div>
-
-                {/* Additional assistance note */}
-                <div className="p-4 rounded-xl bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-900 text-xs text-slate-600 dark:text-slate-400 leading-relaxed flex items-start gap-3">
-                  <HelpCircle className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400 shrink-0 mt-0.5" />
-                  <div>
-                    <span className="font-bold text-slate-800 dark:text-slate-200 block mb-0.5">
-                      {isJa ? "法人番号が不明な場合やメールを受信できない場合" : "Cần hỗ trợ thêm về xác thực?"}
-                    </span>
-                    {isJa
-                      ? "代表印の印鑑証明書や登記簿謄本による手動確認にも対応しております。その場合は「業務提携・その他窓口」タブより直接運営事務局へご連絡ください。"
-                      : "Nếu bạn không thể xác thực tự động qua email công ty, vui lòng gửi yêu cầu qua tab 'Hợp tác & Yêu cầu khác' kèm thông tin để bộ phận hỗ trợ xác minh thủ công."}
-                  </div>
-                </div>
+                )}
               </div>
             ) : (
               /* =======================================================

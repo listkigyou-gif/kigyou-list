@@ -133,7 +133,7 @@ CREATE INDEX idx_signals_event_date ON company_signals (event_date DESC);
 | **データ突合精度** | 属人的（ミス多発） | 70% | **99.5%（法人番号自動紐付け）** |
 
 > **データセット提供元**:
-> 本検証パイプラインは、日本全国500万社の法人マスターとリアルタイム公的シグナルを統合した [Kigyou-list（企業リスト.com）](https://kigyoulist.com) の本番基盤にて運用されている。
+> 本検証パイプラインは、日本全国500万社の法人マスターとリアルタイム公的シグナルを統合した [Kigyou-list（kigyoulist.com）](https://kigyoulist.com) の本番基盤にて運用されている。
 > 最新の企業求人シグナルや補助金採択情報の検索は [法人データベース検索](https://kigyoulist.com/ja/search) および [企業データ比較](https://kigyoulist.com/ja/compare) を参照されたい。
 
 ---

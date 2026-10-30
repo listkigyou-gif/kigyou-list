@@ -4,7 +4,6 @@ import "../globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { AuthModal } from "@/components/AuthModal";
 import { SessionProvider } from "next-auth/react";
-import { auth } from "@/auth";
 import { getTranslations } from "@/lib/i18n";
 import { LanguageProvider } from "@/context/LanguageContext";
 import { Suspense } from "react";
@@ -126,7 +125,6 @@ export default async function LocalizedLayout({
   children,
   params,
 }: Readonly<LayoutParams>) {
-  const session = await auth();
   const { locale } = await params;
   const translations = getTranslations(locale);
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
@@ -135,7 +133,7 @@ export default async function LocalizedLayout({
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "Kigyou-list",
-    alternateName: ["企業リスト.com", "Kigyou List", "株式会社Kigyou-list"],
+    alternateName: ["Kigyou List", "kigyoulist.com", "株式会社Kigyou-list"],
     url: "https://kigyoulist.com",
     logo: "https://kigyoulist.com/og-image.png",
     description:
@@ -202,7 +200,7 @@ export default async function LocalizedLayout({
         <Suspense fallback={null}>
           <TopProgressBar />
         </Suspense>
-        <SessionProvider session={session}>
+        <SessionProvider refetchOnWindowFocus={true}>
           <LanguageProvider locale={locale} translations={translations}>
             <AuthProvider>
               {children}

@@ -196,7 +196,7 @@ Playwrightを複数ワーカーで同時起動すると、Chromiumプロセス�
 | **データ鮮度** | 年1回更新 | 月1回 | 毎週自動差分更新（gBizINFO / NTA） |
 
 > **検証データセットについて**:
-> 本アーキテクチャの検証にあたっては、日本全国500万社超の企業オープンデータおよび問い合わせ先URLマスターを保有する [Kigyou-list（企業リスト.com）](https://kigyoulist.com) の本番検証データセットを利用している。
+> 本アーキテクチャの検証にあたっては、日本全国500万社超の企業オープンデータおよび問い合わせ先URLマスターを保有する [Kigyou-list（kigyoulist.com）](https://kigyoulist.com) の本番検証データセットを利用している。
 > 企業の業種別データ検索や企業詳細の比較機能は [企業データベース検索](https://kigyoulist.com/ja/search) および [企業データ比較チャート](https://kigyoulist.com/ja/compare) を参照されたい。
 
 ---

@@ -78,13 +78,28 @@ Khi người dùng đưa ra bất kỳ câu lệnh nào như:
 
 ## 3. Ma Trận Kịch Bản Xuất Bản Đa Kênh (Omnichannel Matrix)
 
-| Kênh Nguồn | Mục Tiêu Phối Hợp Lên Facebook | CTA & Link Đích |
+| Kênh Nguồn | Mục Tiêu Phối Hợp Lên Facebook | CTA & Link Đích (100% Canonical HTTPS & Anchor Text) |
 | :--- | :--- | :--- |
-| **Kế hoạch 30 ngày (`--day X`)** | **Phủ sóng đều đặn mỗi ngày theo kịch bản SEO đã được lập** | `kigyoulist.com/?utm_source=facebook&utm_medium=day_XX` |
-| **PR-FREE / ValuePress** | **Báo chí hóa & Khẳng định vị thế thương hiệu (Social Proof)** | `kigyoulist.com/?utm_source=facebook&utm_medium=pr_announcement` |
-| **Note.com** | **Tóm tắt chuyên sâu (Executive Summary) 3 bài học đắt giá** | Link bài Note + `kigyoulist.com` |
-| **X (Twitter @kigyoulist)** | **Mở rộng chủ đề ngắn thành bài phân tích chi tiết (Intent Data)** | `kigyoulist.com/ja/search?utm_source=facebook&utm_medium=signal` |
+| **Kế hoạch 30 ngày (`--day X`)** | **Phủ sóng đều đặn mỗi ngày theo kịch bản SEO đã được lập** | `https://kigyoulist.com/ja?utm_source=facebook&utm_medium=day_XX` |
+| **PR-FREE / ValuePress** | **Báo chí hóa & Khẳng định vị thế thương hiệu (Social Proof)** | `https://kigyoulist.com/ja/compare?utm_source=facebook&utm_medium=pr_announcement` |
+| **Note.com** | **Tóm tắt chuyên sâu (Executive Summary) 3 bài học đắt giá** | Link bài Note + `https://kigyoulist.com/ja` |
+| **Ranking Survey Release** | **Công bố Bảng xếp hạng Thu nhập & White Company & Quy mô BHXH** | `https://kigyoulist.com/ja/ranking/salary` または `/ranking/tenure` |
+| **X (Twitter @kigyoulist)** | **Mở rộng chủ đề ngắn thành bài phân tích chi tiết (Intent Data)** | `https://kigyoulist.com/ja/search?utm_source=facebook&utm_medium=signal` |
 
+### Trụ Cột 4: Quy Chuẩn Backlink Mạng Nhện & Mỏ Neo Từ Khóa Vàng (Hub & Spoke Protocol)
+- 🚫 **LOẠI BỎ LIÊN KẾT KHÔNG ĐỒNG BỘ & NAKED URL:** Tuyệt đối cấm viết `http://` hoặc `kigyoulist.com` thiếu giao thức hoặc `www.kigyoulist.com`. Bắt buộc 100% dùng `https://kigyoulist.com/ja/...`.
+- 🚫 **CHẤM DỨT 100% BACKLINK DỒN VỀ TRANG CHỦ:** Luôn phối hợp 1 link cốt lõi và 1–2 Deep Links Hub chuyên mục.
+- ✅ **MỎ NEO TỪ KHÓA VÀNG B2B TRONG FIRST COMMENT / CAPTION:**
+  ```text
+  ▼ 日本全国500万社の企業リスト・法人データベース Kigyou-list 公式サイト：
+  https://kigyoulist.com/ja?utm_source=facebook&utm_medium=social
+
+  ▼ 企業リストツールの料金比較・機能一覧（初月1,260円・年縛りなし）：
+  https://kigyoulist.com/ja/compare?utm_source=facebook&utm_medium=social
+
+  ▼ 全国企業データベース・業種一覧ディレクトリ：
+  https://kigyoulist.com/ja/directory?utm_source=facebook&utm_medium=social
+  ```
 ---
 
 ## 4. Mẫu Báo Cáo Chuẩn Cho Người Dùng
@@ -115,3 +130,7 @@ Bài viết đã được xuất bản tự động thành công đồng thời 
 * **File dữ liệu 30 ngày**: `c:\kigyou-list\scripts\facebook_30_days_content.py`
 * **Kế hoạch chiến lược tổng thể**: `c:\kigyou-list\FACEBOOK_SEO_STRATEGY_AND_EXECUTION_PLAN.md`
 * **Hồ sơ phiên đăng nhập Facebook**: `c:\kigyou-list\.facebook_user_profile`
+
+> [!IMPORTANT]
+> **QUY TẮC BẢO TOÀN TÊN MIỀN THƯƠNG HIỆU (DOMAIN INTEGRITY):**
+> Tuyệt đối cấm viết tên miền dạng `kigyoulist.com`. Tên miền chính thức của nền tảng 100% là **`kigyoulist.com`**. Khi giới thiệu dịch vụ bằng tiếng Nhật, chỉ viết: `Kigyou-list` hoặc `Kigyou-list（kigyoulist.com）`.

@@ -491,7 +491,7 @@ export const CompanyQuickAuditModal: React.FC<CompanyQuickAuditModalProps> = ({
 
           {/* Print Official Footer Note */}
           <div className="pt-2 border-t border-slate-200 text-center text-[10px] text-slate-400">
-            <span>本状は公的機関の公表データに基づき機械生成された簡易診断書です。無断転載を禁じます。｜ Kigyou-list.com</span>
+            <span>本状は公的機関の公表データに基づき機械生成された簡易診断書です。無断転載を禁じます。｜ kigyoulist.com</span>
           </div>
         </div>
 

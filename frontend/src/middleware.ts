@@ -69,10 +69,15 @@ export function middleware(request: NextRequest) {
   // Redirect if no locale prefix is present
   const detectedLocale = getLocale(request);
   
+  // Use public origin instead of internal proxy request.url (http://localhost:3000)
+  const publicBase = host && !host.includes("localhost") && !host.includes("127.0.0.1")
+    ? `https://${host}`
+    : (process.env.NEXTAUTH_URL || request.url);
+
   // Construct the new URL with the locale prefix
   const redirectUrl = new URL(
     `/${detectedLocale}${pathname === "/" ? "" : pathname}${search}`,
-    request.url
+    publicBase
   );
 
   // Return 308 Permanent Redirect for SEO canonical consistency

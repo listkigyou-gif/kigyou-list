@@ -27,7 +27,8 @@ import {
   HelpCircle,
   Scale,
   Sparkles,
-  Bell
+  Bell,
+  Coins
 } from "lucide-react";
 import { getDatabaseStats } from "@/lib/db";
 import { Header } from "@/components/Header";
@@ -634,6 +635,160 @@ export default async function Home({ params }: PageParams) {
                 </div>
               </Link>
 
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================
+            TẦNG BỔ SUNG: BẢNG XẾP HẠNG DOANH NGHIỆP & CHỈ SỐ NHÂN SỰ VÀNG (Sub-Agent 3.5)
+            ======================================================== */}
+        <section aria-labelledby="rankings-heading" className="py-14 bg-white dark:bg-[#0D1117] border-b border-slate-200/90 dark:border-slate-800">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+              <div>
+                <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-[#1B4F8A]/10 text-[#1B4F8A] dark:bg-blue-950/60 dark:text-blue-400 text-xs font-semibold mb-2">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>
+                    {isJa ? "全国企業ランキング & 人的資本データ" : isVi ? "Bảng Xếp Hạng & Chỉ Số Nhân Sự Vàng" : "National Corporate Rankings & Human Capital"}
+                  </span>
+                </div>
+                <h2 id="rankings-heading" className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  {isJa ? "金融庁・厚労省・年金機構の公表データに基づく企業ランキング" : isVi ? "Bảng xếp hạng độc bản từ cơ quan công quyền Nhật Bản" : "Official Authority-Backed Corporate Rankings"}
+                </h2>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+                  {isJa
+                    ? "有価証券報告書の平均年間給与、職場情報総合サイトの勤続年数、厚生年金保険の被保険者数を網羅。CSVダウンロードにも対応。"
+                    : isVi
+                    ? "Tổng hợp thu nhập bình quân từ FSA EDINET, thâm niên nhân viên từ MHLW và số lượng lao động đóng BHXH từ Japan Pension Service."
+                    : "Audited remuneration, workforce longevity, and exact insured employees verified from official government databases."}
+                </p>
+              </div>
+
+              <Link
+                href={`/${locale}/ranking/salary`}
+                className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1B4F8A] dark:text-blue-400 hover:underline shrink-0"
+              >
+                <span>{isJa ? "すべてのランキングを見る" : isVi ? "Xem toàn bộ BXH" : "View All Rankings"}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Ranking 1: Average Salary */}
+              <Link
+                href={`/${locale}/ranking/salary`}
+                className="p-5 rounded-xl bg-slate-50/70 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800 border border-slate-200/80 hover:border-[#1B4F8A] dark:border-slate-800 dark:hover:border-blue-400 transition-all flex flex-col justify-between group shadow-2xs"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800">
+                      有報・EDINET
+                    </span>
+                    <Coins className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors">
+                    {isJa ? "平均年間給与ランキング" : isVi ? "BXH Thu nhập bình quân" : "Average Salary Ranking"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                    {isJa
+                      ? "金融庁EDINET有報開示データに基づく全国上場企業の給与ランキング。役員・連絡先リストのCSV出力対応。"
+                      : isVi
+                      ? "Thu nhập bình quân năm từ Báo cáo tài chính kiểm toán FSA EDINET. Xuất danh sách CSV liên hệ ban lãnh đạo."
+                      : "Official remuneration disclosed in FSA annual securities reports with corporate contacts."}
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-[#1B4F8A] dark:text-blue-400">
+                  <span className="font-mono">TOP 1,235万円〜</span>
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
+
+              {/* Ranking 2: White Company / Tenure */}
+              <Link
+                href={`/${locale}/ranking/tenure`}
+                className="p-5 rounded-xl bg-slate-50/70 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800 border border-slate-200/80 hover:border-[#1B4F8A] dark:border-slate-800 dark:hover:border-blue-400 transition-all flex flex-col justify-between group shadow-2xs"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800">
+                      厚労省 職場情報
+                    </span>
+                    <Clock className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors">
+                    {isJa ? "ホワイト企業・勤続年数" : isVi ? "BXH Doanh nghiệp uy tín" : "White Companies (Tenure)"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                    {isJa
+                      ? "正社員の平均継続勤務年数ランキング。高い定着率と安定した雇用環境を誇る優良企業を可視化。"
+                      : isVi
+                      ? "Thời gian gắn bó của nhân viên chính thức công bố bởi Bộ Lao động. Đánh giá tính bền vững đối tác."
+                      : "Regular workforce longevity and retention indicators published by MHLW."}
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-[#1B4F8A] dark:text-blue-400">
+                  <span className="font-mono">平均20年〜30年超</span>
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
+
+              {/* Ranking 3: Insured Employees */}
+              <Link
+                href={`/${locale}/ranking/employees`}
+                className="p-5 rounded-xl bg-slate-50/70 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800 border border-slate-200/80 hover:border-[#1B4F8A] dark:border-slate-800 dark:hover:border-blue-400 transition-all flex flex-col justify-between group shadow-2xs"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800">
+                      日本年金機構
+                    </span>
+                    <Users className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors">
+                    {isJa ? "厚生年金被保険者数" : isVi ? "BXH Quy mô đóng BHXH" : "Insured Employees"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                    {isJa
+                      ? "公的厚生年金適用事業所情報に基づく、正規雇用労働者数による実質的な企業規模ランキングTOP100。"
+                      : isVi
+                      ? "Quy mô lao động đóng BHXH thực tế từ Cơ quan Hưu trí Nhật Bản. Đo lường chính xác thực lực công ty."
+                      : "Verified insured workforce counts directly from Japan Pension Service registries."}
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-[#1B4F8A] dark:text-blue-400">
+                  <span className="font-mono">1万人〜30万人規模</span>
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
+
+              {/* Hub 4: Landmark Office Buildings */}
+              <Link
+                href={`/${locale}/building`}
+                className="p-5 rounded-xl bg-slate-50/70 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800 border border-slate-200/80 hover:border-[#1B4F8A] dark:border-slate-800 dark:hover:border-blue-400 transition-all flex flex-col justify-between group shadow-2xs"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-indigo-50 text-indigo-800 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800">
+                      主要オフィスビル
+                    </span>
+                    <Building2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
+                  </div>
+                  <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-1 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors">
+                    {isJa ? "主要高層オフィスビル名鑑" : isVi ? "Danh bạ Cao ốc biểu tượng" : "Landmark Towers Hub"}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-3">
+                    {isJa
+                      ? "六本木ヒルズ、恵比寿ガーデンプレイス、虎ノ門ヒルズなど主要15高層ビルの入居企業3,800社超を網羅。"
+                      : isVi
+                      ? "Danh bạ 3,800+ doanh nghiệp đặt trụ sở tại 15 cao ốc danh tiếng nhất Tokyo như Roppongi Hills, Ebisu."
+                      : "Directory of 3,800+ tenant enterprises housed in 15 prestigious Tokyo skyscraper towers."}
+                  </p>
+                </div>
+                <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-[#1B4F8A] dark:text-blue-400">
+                  <span className="font-mono">15棟・3,824社入居</span>
+                  <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </div>
+              </Link>
             </div>
           </div>
         </section>

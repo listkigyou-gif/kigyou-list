@@ -101,6 +101,12 @@ export const Footer: React.FC = () => {
                 </LocaleLink>
               </li>
               <li>
+                <LocaleLink href="/building" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors flex items-center gap-1">
+                  <span>{locale === "en" ? "Landmark Towers Hub" : locale === "vi" ? "Cao ốc & Tòa nhà biểu tượng" : "主要オフィスビル名鑑"}</span>
+                  <span className="text-[9px] bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-bold px-1 rounded">NEW</span>
+                </LocaleLink>
+              </li>
+              <li>
                 <LocaleLink href="/directory#regions" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
                   {locale === "en" ? "47 Prefectures Directory" : locale === "vi" ? "Danh bạ 47 Tỉnh thành" : "全国47都道府県別一覧"}
                 </LocaleLink>
@@ -123,15 +129,33 @@ export const Footer: React.FC = () => {
             </ul>
           </div>
 
-          {/* Column 2: Real-time Business Signals Hubs */}
+          {/* Column 2: Real-time Business Signals & Corporate Rankings Hubs */}
           <div className="space-y-3.5">
             <h3 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5 pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
               <Activity className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
               <span>
-                {locale === "en" ? "Real-Time Signals" : locale === "vi" ? "Tín hiệu biến động" : "法人動向・速報ハブ"}
+                {locale === "en" ? "Signals & Rankings" : locale === "vi" ? "Biến động & Bảng xếp hạng" : "動向速報・企業ランキング"}
               </span>
             </h3>
             <ul className="space-y-2.5 text-slate-600 dark:text-slate-400 font-normal">
+              <li>
+                <LocaleLink href="/ranking/salary" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors flex items-center gap-1">
+                  <span>{locale === "en" ? "Average Annual Salary Ranking" : locale === "vi" ? "BXH Thu nhập bình quân" : "平均年間給与ランキング"}</span>
+                  <span className="text-[9px] bg-amber-100 dark:bg-amber-950/80 text-amber-700 dark:text-amber-300 font-bold px-1 rounded">有報</span>
+                </LocaleLink>
+              </li>
+              <li>
+                <LocaleLink href="/ranking/tenure" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors flex items-center gap-1">
+                  <span>{locale === "en" ? "White Companies (Tenure)" : locale === "vi" ? "BXH Doanh nghiệp uy tín (Thâm niên)" : "ホワイト企業・平均勤続年数"}</span>
+                  <span className="text-[9px] bg-emerald-100 dark:bg-emerald-950/80 text-emerald-700 dark:text-emerald-300 font-bold px-1 rounded">厚労省</span>
+                </LocaleLink>
+              </li>
+              <li>
+                <LocaleLink href="/ranking/employees" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors flex items-center gap-1">
+                  <span>{locale === "en" ? "Insured Workforce Ranking" : locale === "vi" ? "BXH Quy mô đóng BHXH" : "厚生年金被保険者数ランキング"}</span>
+                  <span className="text-[9px] bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-bold px-1 rounded">年金機構</span>
+                </LocaleLink>
+              </li>
               <li>
                 <LocaleLink href="/new-companies" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
                   {locale === "en" ? "Newly Incorporated Companies" : locale === "vi" ? "Công ty mới thành lập" : "新設法人・新規設立企業速報"}
@@ -155,11 +179,6 @@ export const Footer: React.FC = () => {
               <li>
                 <LocaleLink href="/status/bankruptcies" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
                   {locale === "en" ? "Dissolutions & Closures" : locale === "vi" ? "Giải thể & Phá sản" : "倒産・解散・清算結了速報"}
-                </LocaleLink>
-              </li>
-              <li>
-                <LocaleLink href="/search?hiring=true" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
-                  {locale === "en" ? "Hiring Intent Signal Search" : locale === "vi" ? "Tìm kiếm theo tín hiệu tuyển dụng" : "採用意欲シグナル検索"}
                 </LocaleLink>
               </li>
             </ul>

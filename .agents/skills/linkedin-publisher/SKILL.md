@@ -28,6 +28,7 @@ Chọn 1 trong các trụ cột B2B chiến lược kết hợp Deep Link Hub ph
 3. **Giám sát & Cảnh báo Doanh nghiệp (Company Watchlist):** Nhận diện biến động đối tác/khách hàng ➔ Hub đích: `/ja/watchlist`
 4. **Intent Data & Tuyển dụng (Hiring Signals):** Tìm doanh nghiệp đang mở rộng ➔ Hub đích: `/ja/search`
 5. **Thư mục Doanh nghiệp & Ngành nghề (Directory):** ➔ Hub đích: `/ja/directory` hoặc `/ja/industry/{code}`
+6. **Bảng Xếp Hạng & Vốn Con Người (Human Capital & Rankings):** ➔ Hub đích: `/ja/ranking/salary` (EDINET 有報年収), `/ja/ranking/tenure` (厚労省 ホワイト企業), `/ja/ranking/employees` (年金機構 正規規模)
 
 ### Bước 2: Soạn thảo Post Body (Tối ưu thuật toán LinkedIn Nhật Bản)
 * **Hook 2 dòng đầu giật chú ý:** Chứa số liệu định lượng hoặc câu hỏi đánh trúng nỗi đau CxO/Sales Manager/Kế toán Nhật Bản (phải kích thích người đọc bấm `...さらに表示` / `...see more`).

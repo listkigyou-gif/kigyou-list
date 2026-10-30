@@ -21,12 +21,16 @@ Khi người dùng ra lệnh:
    - **Tiêu đề (`title`)**: Tối đa **140 ký tự** (Khuyên dùng 40-70 ký tự). Có số liệu định lượng (`500万社`, `初月1,260円`) + góc nhìn tin tức.
    - **Phụ đề (`subtitle`)**: Tối đa **140 ký tự** (Nêu bật giải pháp: Giảm 90% chi phí tìm khách hàng, rẻ bằng 1/25〜1/80 đối thủ, không ràng buộc hợp đồng năm).
    - **Thân bài (`body`)**: Plain text (**Tối thiểu 300 ký tự**). Không dùng HTML tags `<p>`, `<a>`. Sử dụng ký tự phân cách như `■`, `━━━━━━━━━━━━━` để chia đoạn rõ ràng.
-   - **Quy chuẩn Backlink & Deep Link Bứt Phá Thứ Hạng**:
-     - 100% Canonical HTTPS (`https://kigyoulist.com/...`, nghiêm cấm `http://` hoặc `www.`).
-     - Luôn gắn đồng thời URL chính thức và 1-2 Deep Links Hub chuyên mục (Compare, Directory, Invoice):
-       - `公式サイト：https://kigyoulist.com/ja?utm_source=prfree&utm_medium=pr`
-       - `料金比較・プラン詳細：https://kigyoulist.com/ja/compare?utm_source=prfree&utm_medium=pr`
-       - `全国企業データベース・業種一覧：https://kigyoulist.com/ja/directory?utm_source=prfree&utm_medium=pr`
+    - **Quy chuẩn Backlink & Deep Link Bứt Phá Thứ Hạng (Hub & Spoke Protocol)**:
+      - 🚫 **CHẤM DỨT NAKED URLS ĐƠN ĐIỆU:** Vì PR-FREE là định dạng Plain Text (không hỗ trợ HTML `<a>`), tuyệt đối không để URL trần đứng một mình hoặc chỉ ghi "公式サイト". Bắt buộc đi kèm **Từ khóa mỏ neo ngữ cảnh (Contextual Keyword Anchors)** chứa từ khóa vàng B2B ngay trước URL.
+      - ✅ **100% CANONICAL HTTPS NON-WWW:** Nghiêm cấm `http://` hoặc `www.kigyoulist.com`.
+      - ✅ **CÔNG THỨC 1+2 BẮT BUỘC (1 Link Cốt Lõi + 1–2 Deep Links Hub):**
+        - `■ 500万社を網羅する企業リスト・法人データベース Kigyou-list 公式サイト：https://kigyoulist.com/ja?utm_source=prfree&utm_medium=pr`
+        - `■ 企業リストツールの料金比較・初期費用0円（初月1,260円・年縛りなし）：https://kigyoulist.com/ja/compare?utm_source=prfree&utm_medium=pr`
+        - `■ 全国企業データベース・業種一覧ディレクトリ：https://kigyoulist.com/ja/directory?utm_source=prfree&utm_medium=pr`
+        - `■ 【独自調査】全国企業の平均年間給与ランキングTOP50：https://kigyoulist.com/ja/ranking/salary?utm_source=prfree&utm_medium=pr`
+        - `■ 【ホワイト企業調査】平均勤続年数ランキングTOP100：https://kigyoulist.com/ja/ranking/tenure?utm_source=prfree&utm_medium=pr`
+        - `■ 【実質規模調査】厚生年金被保険者数ランキングTOP100：https://kigyoulist.com/ja/ranking/employees?utm_source=prfree&utm_medium=pr`
 2. **Banner thương hiệu (`image_path`)**:
    - Sử dụng ảnh Banner chuẩn tỉ lệ 16:9 lưu tại `scripts/press_releases/eyecatch_01.jpg` (Chứa logo và tên miền **`kigyoulist.com`**).
 3. **Lưu file payload JSON**:
@@ -80,7 +84,32 @@ Khi người dùng ra lệnh:
   "company_brand": "Kigyou-list",
   "title": "国内最大級500万社を網羅する法人データベース『Kigyou-list』が大型アップデート。初月1,260円（通常4,200円）で求人・助成金シグナルに対応",
   "subtitle": "初期費用0円・年間契約の縛りなし。他社（3万〜10万）の1/25〜1/80の圧倒的低価格で中小企業の営業DXを推進。",
-  "body": "国内最大級500万件超の法人オープンデータを統合するB2B営業・マーケティング支援プラットフォーム『Kigyou-list（企業リスト.com）』は、ハローワークの最新求人募集情報および政府助成金・補助金採択シグナルを抽出可能な大型アップデートを実施いたしました。\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n■ サービス概要＆公式リンク\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n・サービス名：Kigyou-list（企業リスト.com）\n・公式サイト：https://kigyoulist.com/ja?utm_source=prfree&utm_medium=pr\n・料金比較・機能一覧：https://kigyoulist.com/ja/compare?utm_source=prfree&utm_medium=pr\n・全国企業データベース・業種一覧：https://kigyoulist.com/ja/directory?utm_source=prfree&utm_medium=pr\n・利用料金：初月 1,260円（税込・70%OFFキャンペーン）／ 2ヶ月目以降 通常4,200円（税込）\n・初期費用：0円（即日利用可能・年間契約縛りなし）\n・無料特典：全500万社検索＆1日20件（月約600件）CSVダウンロード永久無料",
+  "body": "国内最大級500万件超の法人オープンデータを統合するB2B営業・マーケティング支援プラットフォーム『Kigyou-list（kigyoulist.com）』は、ハローワークの最新求人募集情報および政府助成金・補助金採択シグナルを抽出可能な大型アップデートを実施いたしました。\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n■ サービス概要＆公式リンク\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n・サービス名：Kigyou-list（kigyoulist.com）\n・公式サイト：https://kigyoulist.com/ja?utm_source=prfree&utm_medium=pr\n・料金比較・機能一覧：https://kigyoulist.com/ja/compare?utm_source=prfree&utm_medium=pr\n・全国企業データベース・業種一覧：https://kigyoulist.com/ja/directory?utm_source=prfree&utm_medium=pr\n・利用料金：初月 1,260円（税込・70%OFFキャンペーン）／ 2ヶ月目以降 通常4,200円（税込）\n・初期費用：0円（即日利用可能・年間契約縛りなし）\n・無料特典：全500万社検索＆1日20件（月約600件）CSVダウンロード永久無料",
+  "image_path": "c:\\kigyou-list\\scripts\\press_releases\\eyecatch_01.jpg"
+}
+```
+
+> [!IMPORTANT]
+> **QUY TẮC BẢO TOÀN TÊN MIỀN THƯƠNG HIỆU (DOMAIN INTEGRITY):**
+> Tuyệt đối cấm viết tên miền dạng `kigyoulist.com`. Tên miền chính thức của nền tảng 100% là **`kigyoulist.com`**. Khi giới thiệu dịch vụ bằng tiếng Nhật, chỉ viết: `Kigyou-list` hoặc `Kigyou-list（kigyoulist.com）`.
+
+---
+
+## 5. Mẫu Thông Cáo Báo Chí Dạng Điều Tra & Xếp Hạng (【独自調査リリース】フォーマット)
+
+Kích hoạt định dạng này để thu hút các tòa soạn báo lớn (Yahoo! News, Excite, Nikkei, Toyo Keizai, Mynavi) cào bài và đăng tải lại:
+
+```json
+{
+  "team_name": "Kigyou-list広報部",
+  "contact_name": "広報担当",
+  "email": "contact@kigyoulist.com",
+  "url": "https://kigyoulist.com/ja/ranking/salary?utm_source=prfree&utm_medium=pr",
+  "category": "ＩＴ・通信",
+  "company_brand": "Kigyou-list",
+  "title": "【2026年最新】全国上場企業の平均年間給与ランキングTOP50を発表！1位は野村総合研究所（1,235万円）。金融庁EDINET開示データから独自集計",
+  "subtitle": "国内最大級500万社データベース『Kigyou-list』が有価証券報告書を徹底解析。ホワイト企業・被保険者数ランキングも同時公開し全社CSV出力に対応。",
+  "body": "国内最大級500万件超の法人データを網羅する企業情報プラットフォーム『Kigyou-list（kigyoulist.com）』を運営するTQC株式会社は、金融庁EDINET開示の有価証券報告書に基づき、最新の「全国企業の平均年間給与ランキングTOP50」を公表いたしました。\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n■ 調査結果サマリー\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n・第1位：株式会社野村総合研究所（平均年間給与：1,235万円）\n・監査法人の監査証明を受けた信頼性の高い公式有報データのみを集計。\n・給与水準だけでなく、厚生労働省公表の「平均勤続年数」や日本年金機構の「厚生年金被保険者数」ともクロス分析可能。\n\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n■ 各種ランキングハブ一覧 & CSVダウンロード\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n・平均年間給与ランキング：https://kigyoulist.com/ja/ranking/salary?utm_source=prfree&utm_medium=pr\n・ホワイト企業・勤続年数ランキング：https://kigyoulist.com/ja/ranking/tenure?utm_source=prfree&utm_medium=pr\n・厚生年金被保険者数ランキング：https://kigyoulist.com/ja/ranking/employees?utm_source=prfree&utm_medium=pr\n・公式サイト（全500万社検索）：https://kigyoulist.com/ja?utm_source=prfree&utm_medium=pr\n\n※本調査結果およびランキングデータを引用・転載される際は、必ず【出典：国内最大級の法人データベース『Kigyou-list（kigyoulist.com）』】のクレジット表記および上記URLへのリンクを明記してください。",
   "image_path": "c:\\kigyou-list\\scripts\\press_releases\\eyecatch_01.jpg"
 }
 ```

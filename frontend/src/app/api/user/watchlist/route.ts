@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { runQuery } from "@/lib/db";
+import { runQuery, removeUserWatchlistCompany } from "@/lib/db";
+import { auth } from "@/auth";
 
 export async function POST(req: NextRequest) {
   try {
@@ -155,6 +156,40 @@ export async function POST(req: NextRequest) {
     console.error("Error in /api/user/watchlist:", error);
     return NextResponse.json(
       { success: false, error: error.message || "Failed to fetch watchlist" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await auth();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    let corporateNumber = searchParams.get("corporateNumber");
+
+    if (!corporateNumber) {
+      const body = await req.json().catch(() => ({}));
+      corporateNumber = body?.corporateNumber;
+    }
+
+    if (!corporateNumber || typeof corporateNumber !== "string") {
+      return NextResponse.json({ error: "Missing corporateNumber" }, { status: 400 });
+    }
+
+    const success = await removeUserWatchlistCompany(session.user.email, corporateNumber.trim());
+
+    return NextResponse.json({
+      success,
+      removed: corporateNumber.trim(),
+    });
+  } catch (error: any) {
+    console.error("Error in /api/user/watchlist DELETE:", error);
+    return NextResponse.json(
+      { success: false, error: error.message || "Failed to delete company from watchlist" },
       { status: 500 }
     );
   }

@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 
         <hr style="border: none; border-top: 1px solid #f1f5f9; margin-bottom: 16px;" />
         <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0;">
-          © kigyou-list.com All Rights Reserved.
+          © kigyoulist.com All Rights Reserved.
         </p>
       </div>
     `;
@@ -98,7 +98,7 @@ export async function POST(request: Request) {
 
           <hr style="border: none; border-top: 1px solid #f1f5f9; margin-bottom: 16px;" />
           <p style="font-size: 11px; color: #94a3b8; text-align: center; margin: 0;">
-            © kigyou-list.com All Rights Reserved.
+            © kigyoulist.com All Rights Reserved.
           </p>
         </div>
       `;

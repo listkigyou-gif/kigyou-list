@@ -1,0 +1,29 @@
+{
+  "listing_type": "無料掲載",
+  "company_name": "TQC株式会社",
+  "your_name": "高橋 里佳",
+  "your_tel": "03-6907-1219",
+  "your_email": "info@kigyoulist.com",
+  "category": "ＩＴ・通信",
+  "sub_category_it": "SaaS・クラウド",
+  "title": "国内500万社DB『Kigyou-list』、B2B営業・与信管理DXを加速する「統合型オープンデータ検索基盤」を本格展開",
+  "subtitle": "年間契約縛りなし・月額4,980円。国税庁登記・ハローワーク求人・インボイス失効を統合した高品質データ基盤で中小企業の成長を後押し。",
+  "lead": "全国500万件超の企業データベースを提供する『Kigyou-list（kigyoulist.com）』（運営：TQC株式会社、本社：東京都豊島区、代表取締役：キム バン チュン）は、2026年10月27日、B2B営業のターゲティングから与信リスク管理までを一気通貫で支援する「統合型オープンデータ検索基盤」の本格展開を開始いたしました。高額な年間契約やデータサイロ化を打破し、日本の法人取引DXを強力に推進します。",
+  "body_heading1": "1. サービス展開の背景：高額な年間名簿と「サイレントな取引先リスク」の解消",
+  "body_text1": "従来の企業信用調査や営業名簿サービスは、年間100万円〜数百万円の固定費負担や中途解約不可の契約縛りが多く、事業変化の激しい中小企業やスタートアップにとって大きな障壁となっていました。また、取引開始後に相手先がいつの間にかインボイス登録を取り消していたり、本店移転・代表者交代が行われていたことに気づかず、貸倒れや追徴課税のリスクに直面する企業が増加しています。『Kigyou-list』はオープンデータと最新AI技術を組み合わせ、これらすべての課題を圧倒的な低コストで解決いたします。",
+  "body_heading2": "2. 『Kigyou-list』統合基盤の4大特長",
+  "body_text2": "① 全国500万社を網羅する圧倒的データベース：国税庁の登記法人オープンデータを日次・週次で自動同期。\n② 購買意向（インテント）シグナル検知：ハローワーク求人や助成金採択情報と連動し、今まさに投資意欲のある企業を抽出。\n③ インボイス一括照会機能：CSVドラッグ＆ドロップで数百社のT番号ステータスをわずか10秒で一括判定。\n④ 企業監視・変更検知（ウォッチリスト）：商号変更・代表者交代・本店移転を24時間自動巡回し、即日メールでアラート通知。",
+  "body_heading3": "3. 誰もが0円から始められるオープンな料金体系",
+  "body_text3": "初期費用0円・クレジットカード不要で、毎月50件の企業CSVダウンロードが永久無料で利用できるフリープランを常時開放しております。さらに、全機能が使い放題のスタンダードプランも月額4,980円（年間契約縛りなし・いつでもワンクリック解約可能）で提供し、透明で安心な取引環境を支援いたします。",
+  "remarks": "サービス公式サイト： https://kigyoulist.com/?utm_source=pressnow&utm_medium=pr&utm_campaign=inbound_authority\nインボイス一括照会： https://kigyoulist.com/ja/invoice?utm_source=pressnow&utm_medium=pr\n企業監視・検知： https://kigyoulist.com/ja/watchlist?utm_source=pressnow&utm_medium=pr",
+  "official": {
+    "company": "TQC株式会社",
+    "address": "東京都豊島区東池袋1-34-5 いちご東池袋ビル6階",
+    "person": "高橋 里佳",
+    "tel": "03-6907-1219",
+    "site": "https://kigyoulist.com/",
+    "email": "info@kigyoulist.com"
+  },
+  "image_path": "c:\\kigyou-list\\scripts\\press_releases\\eyecatch_inbound.jpg",
+  "confirm_site_url": "https://kigyoulist.com/"
+}

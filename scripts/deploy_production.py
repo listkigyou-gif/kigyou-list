@@ -13,18 +13,33 @@ REMOTE_BASE = "/var/www/kigyou-list"
 
 ITEMS_TO_SYNC = [
     # Core Components & Pages
+    "frontend/src/lib/domainUtils.ts",
+    "frontend/src/lib/seoIndexingTrigger.ts",
+    "frontend/src/lib/cloudflarePurge.ts",
+    "frontend/src/components/CompanyOwnershipClaimForm.tsx",
+    "frontend/src/components/CompanyManagementModal.tsx",
+    "frontend/src/components/CompanyClaimModal.tsx",
+    "frontend/src/components/CompanyLogo.tsx",
+    "frontend/src/auth.ts",
+    "frontend/src/middleware.ts",
+    "frontend/src/app/api/auth/signout-direct/route.ts",
     "frontend/src/app/[locale]/company/[id]/page.tsx",
     "frontend/src/lib/ntaHistory.ts",
     "frontend/src/lib/db.ts",
     "frontend/src/lib/hubUtils.ts",
+    "frontend/src/lib/currency.ts",
     "frontend/src/lib/searchCache.ts",
     "frontend/src/components/company/CompanyLegalHistoryTimeline.tsx",
+    "frontend/src/components/company/CompanyWorkplaceMetrics.tsx",
     "frontend/src/components/CompanySignalsTimeline.tsx",
+    "frontend/src/context/AuthContext.tsx",
     "frontend/src/components/dashboard/WatchlistTab.tsx",
+    "frontend/src/components/dashboard/CompaniesTab.tsx",
     "frontend/src/components/dashboard/BatchInvoiceModal.tsx",
     "frontend/src/components/dashboard/DeveloperTab.tsx",
     "frontend/src/components/Header.tsx",
     "frontend/src/components/Footer.tsx",
+    "frontend/src/components/ranking",
     "frontend/src/components/SearchClientContainer.tsx",
     "frontend/src/components/SearchSidebar.tsx",
     "frontend/src/components/CompanyActions.tsx",
@@ -37,11 +52,14 @@ ITEMS_TO_SYNC = [
     "frontend/src/components/company/CompanyHubBacklinks.tsx",
     
     # App Pages
+    "frontend/src/app/[locale]/login/verify/page.tsx",
     "frontend/src/app/[locale]/page.tsx",
     "frontend/src/app/[locale]/layout.tsx",
     "frontend/src/app/[locale]/dashboard/page.tsx",
+    "frontend/src/app/[locale]/compare/page.tsx",
     "frontend/src/app/[locale]/search/page.tsx",
     "frontend/src/app/[locale]/pricing/page.tsx",
+    "frontend/src/app/[locale]/contact/page.tsx",
     "frontend/src/app/[locale]/form-marketing/page.tsx",
     "frontend/src/app/[locale]/developer/page.tsx",
     
@@ -52,12 +70,22 @@ ITEMS_TO_SYNC = [
     "frontend/src/app/[locale]/jobs",
     "frontend/src/app/[locale]/new-companies",
     "frontend/src/app/[locale]/status",
+    "frontend/src/app/[locale]/building",
+    "frontend/src/app/[locale]/ranking",
     
     # APIs
+    "frontend/src/app/api/companies",
+    "frontend/src/app/api/inquiry",
     "frontend/src/app/api/invoice",
-    "frontend/src/app/api/user/watchlist",
-    "frontend/src/app/api/admin/inquiries",
+    "frontend/src/app/api/user",
+    "frontend/src/app/api/admin",
     "frontend/src/app/api/sys-check",
+    "frontend/src/app/api/metadata",
+    
+    # Admin & Components
+    "frontend/src/components/admin",
+    "frontend/src/app/[locale]/admin",
+    "frontend/src/lib/adminAuth.ts",
     
     # Locales & Styles
     "frontend/src/locales/ja.ts",

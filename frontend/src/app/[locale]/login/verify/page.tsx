@@ -50,11 +50,19 @@ function VerifyPageInner() {
           );
         } else {
           setStatus("success");
-          localStorage.removeItem("kigyou_user");
+          try {
+            sessionStorage.removeItem("kigyou_logged_out_ts");
+            const nextUser = {
+              email,
+              name: email.split("@")[0],
+              role: "free",
+            };
+            localStorage.setItem("kigyou_user", JSON.stringify(nextUser));
+          } catch {}
           
           setTimeout(() => {
-            router.push(`/${locale}/dashboard`);
-          }, 2000);
+            window.location.href = `/${locale}/dashboard`;
+          }, 1200);
         }
       } catch (err) {
         console.error("Sign-in exception:", err);

@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { 
   Building2, MapPin, Phone, Globe, Mail, Printer, Calendar, 
-  Briefcase, FileText, ChevronRight, BarChart3, Clock, Share2, ShieldCheck, MessageSquare, ArrowRight, HelpCircle, Search, Newspaper, History, Award, ExternalLink, CheckCircle2
+  Briefcase, FileText, ChevronRight, BarChart3, Clock, Share2, ShieldCheck, MessageSquare, ArrowRight, HelpCircle, Search, Newspaper, History, Award, ExternalLink, CheckCircle2, Users
 } from 'lucide-react';
 import { formatShortDate, toISOStringLocal } from '@/lib/dateUtils';
 import { 
@@ -23,6 +23,7 @@ import { CompanyFinancials } from '@/components/CompanyFinancials';
 import { CompanySignalsTimeline } from '@/components/CompanySignalsTimeline';
 import { CompanyLegalHistoryTimeline } from '@/components/company/CompanyLegalHistoryTimeline';
 import { CompanyLicensesSection } from '@/components/company/CompanyLicensesSection';
+import { CompanyWorkplaceMetrics } from '@/components/company/CompanyWorkplaceMetrics';
 import { CompanyHubBacklinks } from '@/components/company/CompanyHubBacklinks';
 import { CopyTextButton } from '@/components/CopyTextButton';
 
@@ -269,8 +270,19 @@ function generateDynamicSummary(
       if (company.ordinary_income) {
         kpis.push(`経常利益: ${formatJapaneseCurrency(company.ordinary_income, 'ja')}`);
       }
-      if (company.employee_count) {
+      if (company.insured_employee_count) {
+        kpis.push(`厚生年金被保険者数: ${company.insured_employee_count.toLocaleString('ja-JP')}名`);
+      } else if (company.employee_count) {
         kpis.push(`従業員数: ${company.employee_count.toLocaleString('ja-JP')}名`);
+      }
+      if (company.avg_annual_salary) {
+        kpis.push(`平均年収: ${company.avg_annual_salary}万円`);
+      }
+      if (company.avg_age) {
+        kpis.push(`平均年齢: ${Number(company.avg_age).toFixed(1)}歳`);
+      }
+      if (company.avg_service_years) {
+        kpis.push(`平均勤続年数: ${Number(company.avg_service_years).toFixed(1)}年`);
       }
       if (company.capital_amount) {
         kpis.push(`資本金: ${formatJapaneseCurrency(company.capital_amount, 'ja', true)}`);
@@ -323,11 +335,20 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const prefPart = company.prefecture_name ? `（${company.prefecture_name}）` : '';
   const currentYear = new Date().getFullYear();
+  let kpiMetaPrefix = '';
+  if (company.avg_annual_salary) {
+    kpiMetaPrefix = `【平均年収${company.avg_annual_salary}万円】`;
+  } else if (company.insured_employee_count) {
+    kpiMetaPrefix = `【被保険者${company.insured_employee_count.toLocaleString('ja-JP')}名】`;
+  } else {
+    kpiMetaPrefix = `【${currentYear}年最新】`;
+  }
+
   const pageTitle = locale === 'en'
     ? `${companyName}${prefPart ? ` ${prefPart}` : ''} - ${currentYear} Overview, Corporate Number, Financials, Revenue & Phone | Kigyou-list`
     : locale === 'vi'
     ? `【${currentYear}】${companyName}${prefPart ? ` ${prefPart}` : ''} - Mã số thuế, doanh thu, nhân sự, số điện thoại & hồ sơ pháp nhân | Kigyou-list`
-    : `【${currentYear}年最新】${companyName}${prefPart}の会社概要・法人番号・売上高・評判・電話番号 | Kigyou-list`;
+    : `${kpiMetaPrefix}${companyName}${prefPart}の会社概要・法人番号・売上高・評判・電話番号 | Kigyou-list`;
 
 
   const ogLocale = locale === 'en' ? 'en_US' : locale === 'vi' ? 'vi_VN' : 'ja_JP';
@@ -340,6 +361,8 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   if (company.has_license || company.has_financials || company.has_financial_report || company.has_public_tender || company.has_bidding) richnessScore += 3;
   if (company.capital_amount) richnessScore += 1;
   if (company.employee_count) richnessScore += 1;
+  if (company.insured_employee_count || company.has_insured_count) richnessScore += 2;
+  if (company.avg_annual_salary) richnessScore += 1;
   if (company.representative_name && company.representative_name.trim()) richnessScore += 1;
   if (primaryIndustry) richnessScore += 1;
   if (company.has_invoice) richnessScore += 1;
@@ -648,8 +671,24 @@ export default async function CompanyDetailPage({ params }: PageProps) {
           "@type": "PropertyValue",
           "name": "資本金 (Capital Amount)",
           "value": formatJapaneseCurrency(company.capital_amount, 'ja', true)
+        }] : []),
+        ...(company.insured_employee_count ? [{
+          "@type": "PropertyValue",
+          "name": "厚生年金被保険者数 (Insured Employees)",
+          "value": `${company.insured_employee_count}名`
+        }] : []),
+        ...(company.avg_annual_salary ? [{
+          "@type": "PropertyValue",
+          "name": "平均年間給与 (Average Annual Salary)",
+          "value": `${company.avg_annual_salary}万円`
         }] : [])
       ]
+    } : {}),
+    ...((company.insured_employee_count || company.employee_count) ? {
+      "numberOfEmployees": {
+        "@type": "QuantitativeValue",
+        "value": company.insured_employee_count || company.employee_count
+      }
     } : {}),
     ...(company.employee_count ? {
       "numberOfEmployees": {
@@ -1151,18 +1190,28 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             </div>
             <div className="flex flex-col">
               <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {locale === 'en' ? 'Employees' : locale === 'vi' ? 'Quy mô nhân sự' : '従業員数'}
+                {company.insured_employee_count 
+                  ? (locale === 'en' ? 'Insured Employees' : locale === 'vi' ? 'Nhân sự BHXH' : '厚生年金 被保険者数')
+                  : (locale === 'en' ? 'Employees' : locale === 'vi' ? 'Quy mô nhân sự' : '従業員数')}
               </span>
               <span className="text-base sm:text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-white">
-                {company.employee_count ? (locale === 'en' ? `${company.employee_count.toLocaleString()} employees` : locale === 'vi' ? `${company.employee_count.toLocaleString()} nhân sự` : `${company.employee_count.toLocaleString('ja-JP')}名`) : t.company.unregistered}
+                {company.insured_employee_count 
+                  ? `${company.insured_employee_count.toLocaleString(locale === 'ja' ? 'ja-JP' : 'en-US')}名`
+                  : company.employee_count 
+                  ? (locale === 'en' ? `${company.employee_count.toLocaleString()} employees` : locale === 'vi' ? `${company.employee_count.toLocaleString()} nhân sự` : `${company.employee_count.toLocaleString('ja-JP')}名`) 
+                  : t.company.unregistered}
               </span>
             </div>
             <div className="flex flex-col">
               <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
-                {locale === 'en' ? 'Capital Amount' : locale === 'vi' ? 'Vốn điều lệ' : '資本金'}
+                {company.avg_annual_salary
+                  ? (locale === 'en' ? 'Avg Annual Salary' : locale === 'vi' ? 'Lương bình quân' : '平均年間給与')
+                  : (locale === 'en' ? 'Capital Amount' : locale === 'vi' ? 'Vốn điều lệ' : '資本金')}
               </span>
               <span className="text-base sm:text-lg font-bold font-mono tabular-nums text-slate-900 dark:text-white">
-                {formatJapaneseCurrency(company.capital_amount, locale, true) || t.company.unregistered}
+                {company.avg_annual_salary
+                  ? `${company.avg_annual_salary.toLocaleString('ja-JP')}万円`
+                  : (formatJapaneseCurrency(company.capital_amount, locale, true) || t.company.unregistered)}
               </span>
             </div>
           </div>
@@ -1194,6 +1243,16 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             >
               <Award className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
               <span>{locale === 'en' ? 'Licenses' : locale === 'vi' ? 'Giấy phép' : '保有許認可'}</span>
+            </a>
+          )}
+
+          {(company.insured_employee_count || company.avg_age || company.avg_service_years || company.avg_annual_salary) && (
+            <a 
+              href="#workforce" 
+              className="px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-[#1B4F8A] dark:hover:text-blue-300 transition-colors whitespace-nowrap inline-flex items-center gap-1.5"
+            >
+              <Users className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
+              <span>{locale === 'en' ? 'Workforce' : locale === 'vi' ? 'Nhân sự & Phúc lợi' : '人的資本・就業'}</span>
             </a>
           )}
 
@@ -1274,9 +1333,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 </p>
               </div>
 
-              {/* Verified Company PR Section (Only renders if an official statement has been published) */}
+              {/* Verified Company PR Section */}
               <CompanyPRSection
                 corporateNumber={company.corporate_number}
+                companyName={companyName}
                 isClaimed={Boolean(company.is_claimed)}
                 prTitle={company.pr_title}
                 prMessage={company.pr_message}
@@ -1712,6 +1772,9 @@ export default async function CompanyDetailPage({ params }: PageProps) {
               </div>
             )}
 
+            {/* 3.5. Human Capital, Workforce & Salary Indicators (日本年金機構 厚生年金被保険者数・厚労省 職場情報) */}
+            <CompanyWorkplaceMetrics company={company} locale={locale} />
+
             {/* 4. Financial Chart Section */}
             {financials && financials.length > 0 && (
               <section id="financials" className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-5 sm:p-6 shadow-2xs scroll-mt-24">
@@ -2124,6 +2187,8 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             establishmentDate={company.establishment_date}
             status={company.status}
             hasHiring={Boolean(company.has_hiring)}
+            buildingName={company.building_name}
+            buildingSlug={company.building_slug}
             locale={locale}
             recentEvents={recentHubEvents}
           />

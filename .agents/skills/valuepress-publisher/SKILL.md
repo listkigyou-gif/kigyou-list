@@ -20,15 +20,16 @@ Khi người dùng ra lệnh:
    - **Tiêu đề (`title`)**: Tối đa **80 ký tự** (Quy định cứng của ValuePress Free Plan). Có số liệu định lượng + tên thương hiệu `Kigyou-list`.
    - **Tóm tắt (`summary`)**: Tối đa **400 ký tự** (Quy định cứng của ValuePress Free Plan). Trả lời 5W1H (Ai, làm gì, khi nào, vì sao, giá bao nhiêu).
    - **Thân bài (`body`)**: Định dạng HTML với các thẻ `<p>`, `<br>`. Có 3 ưu thế cạnh tranh, bảng giá `初月1,260円（通常4,200円）・年縛りなし（他社の1/25〜1/80の圧倒的低価格）`.
-   - **Quy chuẩn Backlink & Deep Link Bứt Phá Thứ Hạng**:
-     - 100% Canonical HTTPS (`https://kigyoulist.com/...`, nghiêm cấm `http://` hoặc `www.`).
-     - Chèn đồng thời Link chính thức `https://kigyoulist.com/ja` và 1-2 Deep Links Hub chuyên mục (`/ja/compare`, `/ja/directory`, `/ja/invoice`):
-       `<p>■ 公式サイト：<a href="https://kigyoulist.com/ja?utm_source=valuepress&utm_medium=pr">https://kigyoulist.com/ja</a></p>`
-       `<p>■ 料金プラン比較表：<a href="https://kigyoulist.com/ja/compare?utm_source=valuepress&utm_medium=pr">https://kigyoulist.com/ja/compare</a></p>`
-       `<p>■ 全国企業一覧・業種別ディレクトリ：<a href="https://kigyoulist.com/ja/directory?utm_source=valuepress&utm_medium=pr">https://kigyoulist.com/ja/directory</a></p>`
+    - **Quy chuẩn Backlink & Deep Link Bứt Phá Thứ Hạng (Hub & Spoke Protocol)**:
+      - 🚫 **CẤM TUYỆT ĐỐI NAKED URL & GENERIC ANCHOR TEXT:** Không chèn URL trần làm text hiển thị của thẻ `<a>`. 100% phải dùng Mỏ neo từ khóa vàng B2B tiếng Nhật (High-Volume Commercial B2B Anchor Texts).
+      - ✅ **100% CANONICAL HTTPS NON-WWW:** Bắt buộc `https://kigyoulist.com/...` (nghiêm cấm `http://` hoặc `www.`).
+      - ✅ **CÔNG THỨC 1+2 BẮT BUỘC (1 Link Cốt Lõi + 1–2 Deep Links Hub Chuyên Mục):**
+        `<p>■ <a href="https://kigyoulist.com/ja?utm_source=valuepress&utm_medium=pr">国内最大級500万社を網羅する企業リスト・法人データベース Kigyou-list 公式サイト</a></p>`
+        `<p>■ <a href="https://kigyoulist.com/ja/compare?utm_source=valuepress&utm_medium=pr">企業リストツールの料金プラン比較・初期費用0円プラン（初月1,260円）</a></p>`
+        `<p>■ <a href="https://kigyoulist.com/ja/directory?utm_source=valuepress&utm_medium=pr">全国企業一覧・業種別データベース</a></p>
 2. **Banner thương hiệu (`eyecatch`)**:
    - Sử dụng ảnh Banner chuẩn tỉ lệ 16:9 lưu tại `scripts/press_releases/eyecatch_01.jpg` (Chứa logo và tên miền **`kigyoulist.com`**).
-   - Nếu cần ảnh mới cho chủ đề đặc biệt, gọi `generate_image` với text bắt buộc là `kigyoulist.com` (tuyệt đối không viết `企業リスト.com` làm tên miền chính).
+   - Nếu cần ảnh mới cho chủ đề đặc biệt, gọi `generate_image` với text bắt buộc là `kigyoulist.com` (tuyệt đối không viết `kigyoulist.com` làm tên miền chính).
 3. **Lưu file payload JSON**:
    - Lưu vào `scripts/press_releases/release_YYYYMMDD.json`.
 4. **Kích hoạt Script xuất bản tự động hoàn toàn**:

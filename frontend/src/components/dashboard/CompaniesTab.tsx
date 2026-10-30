@@ -93,6 +93,8 @@ let cachedCompaniesData: {
 
 export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabProps) {
   const isJa = locale === "ja";
+  const isVi = locale === "vi";
+  const isEn = !isJa && !isVi;
   const [loading, setLoading] = useState(() => !cachedCompaniesData);
   const [isVerifiedPartner, setIsVerifiedPartner] = useState(() => cachedCompaniesData?.isVerifiedPartner || false);
   const [dailyAllowance, setDailyAllowance] = useState(() => cachedCompaniesData?.dailyAllowance || 20);
@@ -199,7 +201,9 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
   const handleDetachCompany = async (corporateNumber: string, companyName: string) => {
     const confirmMsg = isJa
       ? `「${companyName}」を自社管理企業リストから解除してもよろしいですか？\n\n（※企業ページに掲載されたPR情報等は削除されませんが、あなたの管理対象外となります）`
-      : `Bạn có chắc chắn muốn gỡ liên kết doanh nghiệp 「${companyName}」 khỏi danh sách quản lý không?\n\n(Nội dung PR đã lưu trên trang công ty vẫn được bảo lưu)`;
+      : isVi
+      ? `Bạn có chắc chắn muốn gỡ liên kết doanh nghiệp 「${companyName}」 khỏi danh sách quản lý không?\n\n(Nội dung PR đã lưu trên trang công ty vẫn được bảo lưu)`
+      : `Are you sure you want to remove 「${companyName}」 from your managed companies list?\n\n(Existing PR information will remain visible on the public page, but you will no longer manage it).`;
     if (!window.confirm(confirmMsg)) return;
 
     try {
@@ -212,23 +216,23 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
       if (res.ok && data.success) {
         fetchUserCompanies();
       } else {
-        alert(data.error || (isJa ? "解除に失敗しました。" : "Gỡ liên kết thất bại."));
+        alert(data.error || (isJa ? "解除に失敗しました。" : isVi ? "Gỡ liên kết thất bại." : "Failed to remove company link."));
       }
     } catch {
-      alert(isJa ? "通信エラーが発生しました。" : "Lỗi kết nối.");
+      alert(isJa ? "通信エラーが発生しました。" : isVi ? "Lỗi kết nối." : "Network connection error.");
     }
   };
 
   const getDocTypeLabel = (type: string) => {
     switch (type) {
       case "business_card":
-        return isJa ? "名刺" : "Danh thiếp";
+        return isJa ? "名刺" : isVi ? "Danh thiếp" : "Business Card";
       case "registry":
-        return isJa ? "登記簿謄本" : "Giấy ĐKKD";
+        return isJa ? "登記簿謄本" : isVi ? "Giấy ĐKKD" : "Company Registry";
       case "employee_id":
-        return isJa ? "社員証" : "Thẻ nhân viên";
+        return isJa ? "社員証" : isVi ? "Thẻ nhân viên" : "Employee ID";
       default:
-        return isJa ? "その他書類" : "Giấy tờ khác";
+        return isJa ? "その他書類" : isVi ? "Giấy tờ khác" : "Other Document";
     }
   };
 
@@ -245,7 +249,11 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
             <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-md text-xs font-semibold text-[#1B4F8A] dark:text-blue-400">
               <ShieldCheck className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
               <span style={{ fontFeatureSettings: '"palt"' }}>
-                {isJa ? "公式認証パートナー限定プログラム" : "Chương trình Doanh nghiệp Chính chủ"}
+                {isJa
+                  ? "公式認証パートナー限定プログラム"
+                  : isVi
+                  ? "Chương trình Doanh nghiệp Chính chủ"
+                  : "Official Verified Partner Program"}
               </span>
             </div>
 
@@ -253,13 +261,19 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
               className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-white"
               style={{ fontFeatureSettings: '"palt"' }}
             >
-              {isJa ? "自社プロファイル管理 & 公式オーナー認証" : "Quản lý Hồ sơ Doanh nghiệp & Xác thực Chính chủ"}
+              {isJa
+                ? "自社プロファイル管理 & 公式オーナー認証"
+                : isVi
+                ? "Quản lý Hồ sơ Doanh nghiệp & Xác thực Chính chủ"
+                : "Company Profile Management & Official Verification"}
             </h2>
 
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
               {isJa
                 ? "自社の公式オーナー認証を完了すると、信頼の証である「公式認証企業マーク」が付与され、企業詳細ページに公式PRメッセージや採用案内を無料で掲載できます。さらに、毎日のリスト無料ダウンロード枠が永久に 20件 → 50件/日（月間1,500件）に拡大されます。"
-                : "Xác minh chính chủ để nhận huy hiệu Doanh nghiệp xác thực, tự do cập nhật thông điệp PR, tuyển dụng và được nâng cấp hạn ngạch tải danh bạ lên 50 lượt/ngày (1.500 lượt/tháng)."}
+                : isVi
+                ? "Xác minh chính chủ để nhận huy hiệu Doanh nghiệp xác thực, tự do cập nhật thông điệp PR, tuyển dụng và được nâng cấp hạn ngạch tải danh bạ lên 50 lượt/ngày (1.500 lượt/tháng)."
+                : "Complete official company ownership verification to receive an authentic Verified Badge, publish free PR messages and hiring alerts, and permanently unlock 50 free CSV list exports per day (1,500/month)."}
             </p>
 
             {/* 3 Core Value Pillars */}
@@ -268,10 +282,14 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                 <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" />
                 <div>
                   <span className="font-bold text-slate-900 dark:text-white block">
-                    {isJa ? "公式認証マーク付与" : "Huy hiệu xác minh"}
+                    {isJa ? "公式認証マーク付与" : isVi ? "Huy hiệu xác minh" : "Verified Partner Badge"}
                   </span>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block leading-normal">
-                    {isJa ? "公認バッジで社会的信用を担保" : "Khẳng định uy tín chính chủ"}
+                    {isJa
+                      ? "公認バッジで社会的信用を担保"
+                      : isVi
+                      ? "Khẳng định uy tín chính chủ"
+                      : "Build trust with official trustmark"}
                   </span>
                 </div>
               </div>
@@ -280,10 +298,14 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                 <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" />
                 <div>
                   <span className="font-bold text-slate-900 dark:text-white block">
-                    {isJa ? "公式PR・採用情報の掲載" : "Đăng PR & Tuyển dụng"}
+                    {isJa ? "公式PR・採用情報の掲載" : isVi ? "Đăng PR & Tuyển dụng" : "Publish PR & Hiring Alerts"}
                   </span>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block leading-normal">
-                    {isJa ? "500万社DB上で強みをアピール" : "Tiếp cận hàng nghìn khách hàng"}
+                    {isJa
+                      ? "500万社DB上で強みをアピール"
+                      : isVi
+                      ? "Tiếp cận hàng nghìn khách hàng"
+                      : "Showcase strengths across 5M+ directory"}
                   </span>
                 </div>
               </div>
@@ -292,10 +314,14 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                 <CheckCircle2 className="w-4 h-4 text-[#059669] shrink-0 mt-0.5" />
                 <div>
                   <span className="font-bold text-slate-900 dark:text-white block">
-                    {isJa ? "毎日50件ダウンロード枠" : "Tải 50 lượt/ngày"}
+                    {isJa ? "毎日50件ダウンロード枠" : isVi ? "Tải 50 lượt/ngày" : "50 Free Downloads / Day"}
                   </span>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 block leading-normal">
-                    {isJa ? "通常20件から+150%永続拡大" : "Mở khóa 1.500 lượt/tháng"}
+                    {isJa
+                      ? "通常20件から+150%永続拡大"
+                      : isVi
+                      ? "Mở khóa 1.500 lượt/tháng"
+                      : "Permanent +150% boost from default 20/day"}
                   </span>
                 </div>
               </div>
@@ -306,12 +332,16 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
           <div className="bg-slate-50 dark:bg-slate-900/60 border border-slate-200/90 dark:border-slate-800 p-5 rounded-xl text-center shrink-0 min-w-[240px] flex flex-col justify-between">
             <div>
               <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider block">
-                {isJa ? "現在の無料ダウンロード枠" : "Hạn ngạch tải danh bạ"}
+                {isJa
+                  ? "現在の無料ダウンロード枠"
+                  : isVi
+                  ? "Hạn ngạch tải danh bạ"
+                  : "Daily Free Download Quota"}
               </span>
               <div className="text-3xl font-bold font-mono tabular-nums text-slate-900 dark:text-white mt-1">
                 {dailyAllowance}{" "}
                 <span className="text-xs font-sans font-medium text-slate-500">
-                  {isJa ? "件/日" : "lượt/ngày"}
+                  {isJa ? "件/日" : isVi ? "lượt/ngày" : "items/day"}
                 </span>
               </div>
             </div>
@@ -320,15 +350,25 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
               {isVerifiedPartner ? (
                 <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#059669] bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 rounded-md">
                   <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
-                  <span>{isJa ? "公式認証特典 適用中" : "Đã kích hoạt ưu đãi"}</span>
+                  <span>
+                    {isJa
+                      ? "公式認証特典 適用中"
+                      : isVi
+                      ? "Đã kích hoạt ưu đãi"
+                      : "Verified Partner Perk Active"}
+                  </span>
                 </span>
               ) : (
                 <div className="flex flex-col gap-1 items-center">
                   <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-                    {isJa ? "認証完了で 50件/日 へ拡大" : "Xác thực để nhận 50 lượt/ngày"}
+                    {isJa
+                      ? "認証完了で 50件/日 へ拡大"
+                      : isVi
+                      ? "Xác thực để nhận 50 lượt/ngày"
+                      : "Verify to expand to 50/day"}
                   </span>
                   <span className="text-[10px] font-semibold text-[#1B4F8A] dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-900 px-2 py-0.5 rounded">
-                    {isJa ? "+150% 枠拡大" : "+150% dung lượng"}
+                    {isJa ? "+150% 枠拡大" : isVi ? "+150% dung lượng" : "+150% Quota Boost"}
                   </span>
                 </div>
               )}
@@ -340,16 +380,34 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
         <div className="mt-5 pt-4 border-t border-slate-150 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-600 dark:text-slate-400 pl-2">
           <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-200">
             <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A]" />
-            <span>{isJa ? "選べる2つの安全な認証方式:" : "Hai phương thức xác thực chính thức:"}</span>
+            <span>
+              {isJa
+                ? "選べる2つの安全な認証方式:"
+                : isVi
+                ? "Hai phương thức xác thực chính thức:"
+                : "Two Official Verification Channels:"}
+            </span>
           </div>
           <div className="flex flex-wrap items-center gap-3 text-[11px]">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
               <Mail className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-              <span>{isJa ? "会社ドメインメール認証 (即時 0分)" : "Email tên miền công ty (Tức thì)"}</span>
+              <span>
+                {isJa
+                  ? "会社ドメインメール認証 (即時 0分)"
+                  : isVi
+                  ? "Email tên miền công ty (Tức thì)"
+                  : "Company Domain Email (Instant 0-min)"}
+              </span>
             </span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
               <FileCheck2 className="w-3.5 h-3.5 text-[#059669]" />
-              <span>{isJa ? "名刺・登記簿写真の審査 (平日24h以内)" : "Danh thiếp / Giấy ĐKKD (Duyệt trong 24h)"}</span>
+              <span>
+                {isJa
+                  ? "名刺・登記簿写真の審査 (平日24h以内)"
+                  : isVi
+                  ? "Danh thiếp / Giấy ĐKKD (Duyệt trong 24h)"
+                  : "Business Card / Registry Document (Within 24h)"}
+              </span>
             </span>
           </div>
         </div>
@@ -363,15 +421,23 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
             style={{ fontFeatureSettings: '"palt"' }}
           >
             <Building2 className="w-4.5 h-4.5 text-[#1B4F8A] dark:text-blue-400" />
-            <span>{isJa ? "管理企業一覧" : "Danh sách doanh nghiệp quản lý"}</span>
+            <span>
+              {isJa
+                ? "管理企業一覧"
+                : isVi
+                ? "Danh sách doanh nghiệp quản lý"
+                : "Managed Companies"}
+            </span>
             <span className="px-2 py-0.5 rounded-md text-xs font-mono tabular-nums font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-              {companies.length} {isJa ? "社" : "cty"}
+              {companies.length} {isJa ? "社" : isVi ? "cty" : "companies"}
             </span>
           </h3>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {isJa
               ? "あなたが公式オーナーとして認証・管理している企業の一覧です。"
-              : "Các doanh nghiệp bạn đã xác thực và có quyền quản lý thông tin."}
+              : isVi
+              ? "Các doanh nghiệp bạn đã xác thực và có quyền quản lý thông tin."
+              : "Companies you have verified and officially manage."}
           </p>
         </div>
 
@@ -380,7 +446,7 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
             onClick={fetchUserCompanies}
             disabled={loading}
             className="p-2 text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer border border-slate-200 dark:border-slate-700"
-            title={isJa ? "更新" : "Làm mới"}
+            title={isJa ? "更新" : isVi ? "Làm mới" : "Refresh"}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
           </button>
@@ -390,7 +456,7 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
             className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#1B4F8A] hover:bg-[#143D6C] text-white text-xs font-bold rounded-lg shadow-xs transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4" />
-            <span>{isJa ? "企業を追加認証する" : "Thêm doanh nghiệp quản lý"}</span>
+            <span>{isJa ? "企業を追加認証する" : isVi ? "Thêm doanh nghiệp quản lý" : "Verify New Company"}</span>
           </Link>
         </div>
       </div>
@@ -399,7 +465,9 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
       {loading ? (
         <div className="p-14 text-center bg-white dark:bg-[#151B22] border border-slate-200/90 dark:border-slate-800 rounded-xl">
           <Loader2 className="w-6 h-6 animate-spin text-[#1B4F8A] dark:text-blue-400 mx-auto mb-2" />
-          <p className="text-xs text-slate-500">{isJa ? "管理企業情報を取得中..." : "Đang tải dữ liệu..."}</p>
+          <p className="text-xs text-slate-500">
+            {isJa ? "管理企業情報を取得中..." : isVi ? "Đang tải dữ liệu..." : "Loading managed companies..."}
+          </p>
         </div>
       ) : companies.length === 0 ? (
         /* Empty State with 3-Step Verification Guide & Quick Search */
@@ -413,12 +481,18 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white"
                 style={{ fontFeatureSettings: '"palt"' }}
               >
-                {isJa ? "まだ認証済みの企業がありません" : "Chưa có doanh nghiệp nào được xác thực"}
+                {isJa
+                  ? "まだ認証済みの企業がありません"
+                  : isVi
+                  ? "Chưa có doanh nghiệp nào được xác thực"
+                  : "No verified companies registered yet"}
               </h4>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-normal">
                 {isJa
                   ? "自社の企業ページを検索し、「公式オーナー認証」を行うことで、公式PRメッセージの掲載や連絡先の更新が行えます。以下の手順で簡単にお手続きいただけます。"
-                  : "Tìm kiếm doanh nghiệp của bạn và thực hiện 'Xác minh chính chủ' để cập nhật thông tin và hưởng ưu đãi 50 lượt tải/ngày."}
+                  : isVi
+                  ? "Tìm kiếm doanh nghiệp của bạn và thực hiện 'Xác minh chính chủ' để cập nhật thông tin và hưởng ưu đãi 50 lượt tải/ngày."
+                  : "Search for your business profile and complete official owner verification to update company messages and unlock 50 free CSV downloads per day."}
               </p>
             </div>
 
@@ -432,12 +506,14 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                   <Search className="w-4 h-4 text-slate-400" />
                 </div>
                 <h5 className="font-bold text-xs text-slate-900 dark:text-white mt-1">
-                  {isJa ? "自社企業を検索" : "Tìm kiếm công ty"}
+                  {isJa ? "自社企業を検索" : isVi ? "Tìm kiếm công ty" : "Search Your Company"}
                 </h5>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
                   {isJa
                     ? "企業名または法人番号（13桁）で自社の掲載ページを検索して開きます。"
-                    : "Tìm kiếm theo tên công ty hoặc mã số pháp nhân 13 số."}
+                    : isVi
+                    ? "Tìm kiếm theo tên công ty hoặc mã số pháp nhân 13 số."
+                    : "Find your public company listing by name or 13-digit corporate number."}
                 </p>
               </div>
 
@@ -449,12 +525,14 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                   <FileText className="w-4 h-4 text-slate-400" />
                 </div>
                 <h5 className="font-bold text-xs text-slate-900 dark:text-white mt-1">
-                  {isJa ? "認証方式を選択" : "Chọn cách xác thực"}
+                  {isJa ? "認証方式を選択" : isVi ? "Chọn cách xác thực" : "Select Verification"}
                 </h5>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
                   {isJa
                     ? "会社ドメインメール（即時）または名刺・登記簿写真（24h審査）で申請。"
-                    : "Xác thực tức thì qua email công ty hoặc nộp ảnh danh thiếp."}
+                    : isVi
+                    ? "Xác thực tức thì qua email công ty hoặc nộp ảnh danh thiếp."
+                    : "Verify instantly with company domain email or submit business credentials."}
                 </p>
               </div>
 
@@ -466,12 +544,14 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                   <BadgeCheck className="w-4 h-4 text-[#059669]" />
                 </div>
                 <h5 className="font-bold text-xs text-slate-900 dark:text-white mt-1">
-                  {isJa ? "認証完了・特典反映" : "Hoàn tất & Nhận ưu đãi"}
+                  {isJa ? "認証完了・特典反映" : isVi ? "Hoàn tất & Nhận ưu đãi" : "Badge & 50 DL / Day"}
                 </h5>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
                   {isJa
                     ? "公式認証マークが付与され、50件/日のCSVダウンロード枠が即時開放されます。"
-                    : "Mở khóa hạn mức 50 lượt/ngày và đăng thông điệp PR."}
+                    : isVi
+                    ? "Mở khóa hạn mức 50 lượt/ngày và đăng thông điệp PR."
+                    : "Receive your official badge and instantly unlock 50 free list exports daily."}
                 </p>
               </div>
             </div>
@@ -480,7 +560,11 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
             <div className="pt-4 border-t border-slate-150 dark:border-slate-800">
               <div className="max-w-xl mx-auto space-y-3">
                 <label className="block text-center text-xs font-bold text-slate-800 dark:text-slate-200">
-                  {isJa ? "今すぐ自社を検索して認証手続きを開始する" : "Tìm kiếm công ty của bạn để xác thực ngay"}
+                  {isJa
+                    ? "今すぐ自社を検索して認証手続きを開始する"
+                    : isVi
+                    ? "Tìm kiếm công ty của bạn để xác thực ngay"
+                    : "Search your business and begin verification"}
                 </label>
                 <div className="relative">
                   <input
@@ -490,7 +574,9 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                     placeholder={
                       isJa
                         ? "例: 株式会社〇〇 または 法人番号（13桁）..."
-                        : "Nhập tên công ty hoặc pháp nhân số 13 số..."
+                        : isVi
+                        ? "Nhập tên công ty hoặc pháp nhân số 13 số..."
+                        : "e.g., Company name or 13-digit corporate number..."
                     }
                     className="w-full pl-9 pr-10 py-2.5 text-xs bg-slate-50 dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:border-[#1B4F8A] focus:ring-1 focus:ring-[#1B4F8A]"
                   />
@@ -505,7 +591,11 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                   <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-xl overflow-hidden shadow-md divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in text-left">
                     {searchResults.length === 0 ? (
                       <div className="p-4 text-center text-xs text-slate-500">
-                        {isJa ? "該当する企業が見つかりませんでした。" : "Không tìm thấy doanh nghiệp phù hợp."}
+                        {isJa
+                          ? "該当する企業が見つかりませんでした。"
+                          : isVi
+                          ? "Không tìm thấy doanh nghiệp phù hợp."
+                          : "No matching companies found."}
                       </div>
                     ) : (
                       searchResults.map((comp) => (
@@ -518,7 +608,9 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                               {comp.company_name}
                             </span>
                             <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
-                              <span className="font-mono tabular-nums">法人番号: {comp.corporate_number}</span>
+                              <span className="font-mono tabular-nums">
+                                {isJa ? "法人番号" : isVi ? "Mã số thuế" : "ID"}: {comp.corporate_number}
+                              </span>
                               {comp.prefecture_name && <span>• {comp.prefecture_name}</span>}
                             </div>
                           </div>
@@ -526,7 +618,7 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                             href={`/${locale}/company/${comp.corporate_number}?action=claim`}
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B4F8A] hover:bg-[#143D6C] text-white font-bold text-xs rounded-lg transition-colors shrink-0 shadow-2xs"
                           >
-                            <span>{isJa ? "認証する" : "Xác thực"}</span>
+                            <span>{isJa ? "認証する" : isVi ? "Xác thực" : "Verify"}</span>
                             <ArrowRight className="w-3.5 h-3.5" />
                           </Link>
                         </div>
@@ -540,7 +632,13 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                     href={`/${locale}/search`}
                     className="inline-flex items-center gap-1 text-[11px] font-semibold text-[#1B4F8A] dark:text-blue-400 hover:underline"
                   >
-                    <span>{isJa ? "詳細条件を指定して企業データベース全体から探す" : "Tìm kiếm nâng cao"}</span>
+                    <span>
+                      {isJa
+                        ? "詳細条件を指定して企業データベース全体から探す"
+                        : isVi
+                        ? "Tìm kiếm nâng cao"
+                        : "Search nationwide directory with advanced filters"}
+                    </span>
                     <ChevronRight className="w-3 h-3" />
                   </Link>
                 </div>
@@ -561,18 +659,24 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
-                    <span>{isJa ? "公式認証企業" : "Đã xác minh chính chủ"}</span>
+                    <span>
+                      {isJa
+                        ? "公式認証企業"
+                        : isVi
+                        ? "Đã xác minh chính chủ"
+                        : "Verified Company"}
+                    </span>
                   </span>
 
                   {comp.is_hidden ? (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#D97706]" />
-                      <span>{isJa ? "非公開設定中" : "Đang ẩn"}</span>
+                      <span>{isJa ? "非公開設定中" : isVi ? "Đang ẩn" : "Hidden"}</span>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-blue-50 text-[#1B4F8A] dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
                       <span className="w-1.5 h-1.5 rounded-full bg-[#1B4F8A]" />
-                      <span>{isJa ? "公開中" : "Đang công khai"}</span>
+                      <span>{isJa ? "公開中" : isVi ? "Đang công khai" : "Public"}</span>
                     </span>
                   )}
 
@@ -580,10 +684,14 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                     {comp.verification_method === "manual_document"
                       ? isJa
                         ? "書類審査完了"
-                        : "Duyệt giấy tờ"
+                        : isVi
+                        ? "Duyệt giấy tờ"
+                        : "Document Verified"
                       : isJa
                       ? "会社ドメイン認証"
-                      : "Xác thực tên miền"}
+                      : isVi
+                      ? "Xác thực tên miền"
+                      : "Domain Verified"}
                   </span>
                 </div>
 
@@ -595,16 +703,18 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                     {comp.company_name}
                   </h4>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-mono tabular-nums">
-                    法人番号:{" "}
+                    {isJa ? "法人番号" : isVi ? "Mã số thuế" : "ID"}:{" "}
                     <span className="text-slate-800 dark:text-slate-200 font-semibold">{comp.corporate_number}</span>
-                    {comp.prefecture_name && ` | 所在地: ${comp.prefecture_name}`}
+                    {comp.prefecture_name && ` | ${isJa ? "所在地" : isVi ? "Tỉnh/Thành" : "Location"}: ${comp.prefecture_name}`}
                     {comp.phone_number && ` | TEL: ${comp.phone_number}`}
                   </p>
                 </div>
 
                 {comp.pr_message && (
                   <p className="text-xs text-slate-700 dark:text-slate-300 line-clamp-2 bg-slate-50 dark:bg-slate-900/40 p-3 rounded-lg border border-slate-150 dark:border-slate-800 leading-relaxed font-normal">
-                    <strong className="text-slate-900 dark:text-slate-100 font-semibold">公式PR: </strong>
+                    <strong className="text-slate-900 dark:text-slate-100 font-semibold">
+                      {isJa ? "公式PR: " : isVi ? "PR chính thức: " : "Official PR: "}
+                    </strong>
                     {comp.pr_title && (
                       <span className="font-semibold text-[#1B4F8A] dark:text-blue-400">「{comp.pr_title}」 </span>
                     )}
@@ -621,7 +731,7 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1B4F8A] hover:bg-[#143D6C] text-white text-xs font-bold rounded-lg transition-colors cursor-pointer shadow-2xs"
                 >
                   <FileEdit className="w-3.5 h-3.5" />
-                  <span>{isJa ? "プロファイル編集" : "Chỉnh sửa hồ sơ"}</span>
+                  <span>{isJa ? "プロファイル編集" : isVi ? "Chỉnh sửa hồ sơ" : "Edit Profile"}</span>
                 </button>
 
                 <Link
@@ -629,7 +739,7 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                   target="_blank"
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 dark:bg-[#151B22] dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-300/80 dark:border-slate-700 text-xs font-semibold rounded-lg transition-colors"
                 >
-                  <span>{isJa ? "公開ページ" : "Xem trang"}</span>
+                  <span>{isJa ? "公開ページ" : isVi ? "Xem trang" : "Public Page"}</span>
                   <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
                 </Link>
 
@@ -637,10 +747,10 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                   type="button"
                   onClick={() => handleDetachCompany(comp.corporate_number, comp.company_name)}
                   className="inline-flex items-center gap-1 px-2.5 py-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg text-xs font-medium transition-colors cursor-pointer border border-transparent hover:border-rose-200 dark:hover:border-rose-900"
-                  title={isJa ? "自社管理リストから解除" : "Gỡ khỏi danh sách quản lý"}
+                  title={isJa ? "自社管理リストから解除" : isVi ? "Gỡ khỏi danh sách quản lý" : "Remove from managed list"}
                 >
                   <Unlink className="w-3.5 h-3.5" />
-                  <span>{isJa ? "解除" : "Gỡ"}</span>
+                  <span>{isJa ? "解除" : isVi ? "Gỡ" : "Unlink"}</span>
                 </button>
               </div>
             </div>
@@ -657,12 +767,20 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
               style={{ fontFeatureSettings: '"palt"' }}
             >
               <Clock className="w-4 h-4 text-[#D97706]" />
-              <span>{isJa ? "名刺・書類審査の申請履歴" : "Lịch sử nộp hồ sơ xét duyệt"}</span>
+              <span>
+                {isJa
+                  ? "名刺・書類審査の申請履歴"
+                  : isVi
+                  ? "Lịch sử nộp hồ sơ xét duyệt"
+                  : "Document Verification Requests"}
+              </span>
             </h4>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-normal">
               {isJa
                 ? "書類アップロードによる認証申請の進捗状況です。通常24時間以内に審査が完了します。"
-                : "Tiến độ xét duyệt các yêu cầu xác minh bằng giấy tờ/danh thiếp. Thông thường hoàn tất trong 24 giờ làm việc."}
+                : isVi
+                ? "Tiến độ xét duyệt các yêu cầu xác minh bằng giấy tờ/danh thiếp. Thông thường hoàn tất trong 24 giờ làm việc."
+                : "Status of document verification requests. Typically reviewed within 24 business hours."}
             </p>
           </div>
 
@@ -670,23 +788,23 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
             <table className="w-full text-left text-xs whitespace-nowrap border-collapse">
               <thead className="bg-slate-50/80 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 font-semibold border-b border-slate-200/80 dark:border-slate-800 text-[11px]">
                 <tr>
-                  <th className="px-4 py-3">{isJa ? "申請日時" : "Thời gian"}</th>
-                  <th className="px-4 py-3">{isJa ? "対象企業名" : "Tên doanh nghiệp"}</th>
-                  <th className="px-4 py-3">{isJa ? "書類種類" : "Loại giấy tờ"}</th>
-                  <th className="px-4 py-3">{isJa ? "審査状況" : "Trạng thái"}</th>
-                  <th className="px-4 py-3">{isJa ? "備考・結果" : "Ghi chú"}</th>
+                  <th className="px-4 py-3">{isJa ? "申請日時" : isVi ? "Thời gian" : "Date"}</th>
+                  <th className="px-4 py-3">{isJa ? "対象企業名" : isVi ? "Tên doanh nghiệp" : "Company"}</th>
+                  <th className="px-4 py-3">{isJa ? "書類種類" : isVi ? "Loại giấy tờ" : "Document"}</th>
+                  <th className="px-4 py-3">{isJa ? "審査状況" : isVi ? "Trạng thái" : "Status"}</th>
+                  <th className="px-4 py-3">{isJa ? "備考・結果" : isVi ? "Ghi chú" : "Notes"}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60 font-medium">
                 {claimRequests.map((req) => (
                   <tr key={req.id} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
                     <td className="px-4 py-3 text-slate-500 font-mono tabular-nums">
-                      {new Date(req.created_at).toLocaleDateString(isJa ? "ja-JP" : "vi-VN")}
+                      {new Date(req.created_at).toLocaleDateString(isJa ? "ja-JP" : isVi ? "vi-VN" : "en-US")}
                     </td>
                     <td className="px-4 py-3 font-bold text-slate-900 dark:text-white">
                       {req.company_name}
                       <span className="block text-[11px] text-slate-400 font-mono tabular-nums font-normal">
-                        法人番号: {req.corporate_number}
+                        {isJa ? "法人番号" : isVi ? "Mã số thuế" : "ID"}: {req.corporate_number}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-slate-700 dark:text-slate-300">
@@ -696,17 +814,23 @@ export function CompaniesTab({ userEmail, locale, onStatsUpdate }: CompaniesTabP
                       {req.status === "pending" ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#D97706] animate-pulse" />
-                          <span>{isJa ? "審査中（24時間以内）" : "Đang xét duyệt"}</span>
+                          <span>
+                            {isJa
+                              ? "審査中（24時間以内）"
+                              : isVi
+                              ? "Đang xét duyệt"
+                              : "Under Review (24h)"}
+                          </span>
                         </span>
                       ) : req.status === "approved" ? (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
-                          <span>{isJa ? "承認完了" : "Đã phê duyệt"}</span>
+                          <span>{isJa ? "承認完了" : isVi ? "Đã phê duyệt" : "Approved"}</span>
                         </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md text-xs font-semibold bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                           <span className="w-1.5 h-1.5 rounded-full bg-[#E11D48]" />
-                          <span>{isJa ? "見送り / 却下" : "Từ chối"}</span>
+                          <span>{isJa ? "見送り / 却下" : isVi ? "Từ chối" : "Rejected"}</span>
                         </span>
                       )}
                     </td>

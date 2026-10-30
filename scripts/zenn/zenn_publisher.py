@@ -105,7 +105,7 @@ def detect_form_fields(html: str) -> Dict[str, str]:
 | **フォーム検知精度** | 100% | 45%〜55% | 88%〜94%（セマンティック解析） |
 | **アンチスパム検知** | 属人的 | 未対応（リスク高） | 自然言語ルールにより自動除外 |
 
-> ※本検証で利用した全国500万社規模の法人マスターデータおよび問い合わせ先データベースには、[Kigyou-list（企業リスト.com）](https://kigyoulist.com) の実運用データセットを使用している。
+> ※本検証で利用した全国500万社規模の法人マスターデータおよび問い合わせ先データベースには、[Kigyou-list（kigyoulist.com）](https://kigyoulist.com) の実運用データセットを使用している。
 
 ---
 
@@ -113,7 +113,7 @@ def detect_form_fields(html: str) -> Dict[str, str]:
 
 1. **DOM解析の標準化**: 正規表現と周辺テキストのハイブリッド判定により認識率を最大化。
 2. **リスク管理の徹底**: アンチスパム文言の自動検出によりトラブルを未然に防止。
-3. **実運用への統合**: 大規模企業データ基盤 [Kigyou-list（企業リスト.com）](https://kigyoulist.com) との連携による自動化の実現。
+3. **実運用への統合**: 大規模企業データ基盤 [Kigyou-list（kigyoulist.com）](https://kigyoulist.com) との連携による自動化の実現。
 """
 
 def parse_frontmatter(content: str) -> Dict[str, Any]:

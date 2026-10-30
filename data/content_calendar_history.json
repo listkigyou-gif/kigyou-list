@@ -7,56 +7,96 @@
       "code": "PILLAR_01_COST_DISRUPTION",
       "name": "Bóc trần chi phí & Xóa bỏ hợp đồng năm",
       "primary_landing_page": "/ja/compare",
-      "core_keywords": ["企業リスト 料金比較", "法人データベース 初期費用0円", "営業名簿 格安", "営業リスト作成 縛りなし"],
+      "core_keywords": [
+        "企業リスト 料金比較",
+        "法人データベース 初期費用0円",
+        "営業名簿 格安",
+        "営業リスト作成 縛りなし"
+      ],
       "last_covered": "2026-10-19"
     },
     {
       "code": "PILLAR_02_INVOICE_COMPLIANCE",
       "name": "Tra cứu & Đối soát Hóa đơn điện tử Invoice (T-Number)",
       "primary_landing_page": "/ja/invoice",
-      "core_keywords": ["インボイス 登録番号 検索", "適格請求書発行事業者 一括照会", "インボイス失効 確認", "国税庁 インボイスAPI"],
+      "core_keywords": [
+        "インボイス 登録番号 検索",
+        "適格請求書発行事業者 一括照会",
+        "インボイス失効 確認",
+        "国税庁 インボイスAPI"
+      ],
       "last_covered": "2026-10-25"
     },
     {
       "code": "PILLAR_03_WATCHLIST_ALERTS",
       "name": "Giám sát Doanh nghiệp & Cảnh báo Sớm Rủi ro Tín dụng",
       "primary_landing_page": "/ja/watchlist",
-      "core_keywords": ["企業監視 ツール", "取引先 倒産 予兆 検知", "本店移転 登記変更 アラート", "与信管理 DX 無料"],
+      "core_keywords": [
+        "企業監視 ツール",
+        "取引先 倒産 予兆 検知",
+        "本店移転 登記変更 アラート",
+        "与信管理 DX 無料"
+      ],
       "last_covered": "2026-10-29"
     },
     {
       "code": "PILLAR_04_FORM_MARKETING",
       "name": "AI Form Marketing & Tiếp cận Doanh nghiệp Tự động",
       "primary_landing_page": "/ja/form-marketing",
-      "core_keywords": ["問い合わせフォーム営業 代行", "フォーム営業 自動化 AI", "B2B 新規開拓 コスト削減", "テレアポ 代替 フォーム送信"],
+      "core_keywords": [
+        "問い合わせフォーム営業 代行",
+        "フォーム営業 自動化 AI",
+        "B2B 新規開拓 コスト削減",
+        "テレアポ 代替 フォーム送信"
+      ],
       "last_covered": "2026-10-30"
     },
     {
       "code": "PILLAR_05_INTENT_DATA_SIGNALS",
       "name": "Intent Data & Tín hiệu Mua hàng (Tuyển dụng / Trợ cấp METI)",
       "primary_landing_page": "/ja/search",
-      "core_keywords": ["インテントデータ 営業", "シグナル営業 ハローワーク求人", "助成金採択 企業リスト", "動意シグナル B2B"],
+      "core_keywords": [
+        "インテントデータ 営業",
+        "シグナル営業 ハローワーク求人",
+        "助成金採択 企業リスト",
+        "動意シグナル B2B"
+      ],
       "last_covered": "2026-10-20"
     },
     {
       "code": "PILLAR_06_INDUSTRY_VERTICALS",
       "name": "Thư mục Ngành nghề Trọng điểm (IT, Xây dựng, BĐS, Sản xuất)",
       "primary_landing_page": "/ja/directory",
-      "core_keywords": ["全国企業一覧 業種別", "IT企業 営業リスト", "建設業 データベース", "製造業 調達先一覧"],
+      "core_keywords": [
+        "全国企業一覧 業種別",
+        "IT企業 営業リスト",
+        "建設業 データベース",
+        "製造業 調達先一覧"
+      ],
       "last_covered": "2026-10-22"
     },
     {
       "code": "PILLAR_07_REGIONAL_EXPANSION",
       "name": "Bao phủ Địa phương 47 Tỉnh Thành (Tokyo, Osaka, Aichi...)",
       "primary_landing_page": "/ja/area/tokyo",
-      "core_keywords": ["東京都 企業データベース", "大阪 営業リスト", "愛知県 法人一覧", "地方企業 新規開拓"],
+      "core_keywords": [
+        "東京都 企業データベース",
+        "大阪 営業リスト",
+        "愛知県 法人一覧",
+        "地方企業 新規開拓"
+      ],
       "last_covered": "2026-10-23"
     },
     {
       "code": "PILLAR_08_TECH_DATA_ENGINEERING",
       "name": "Kiến trúc Kỹ thuật & Big Data Pipeline 500万社 (Qiita/Zenn)",
       "primary_landing_page": "/ja",
-      "core_keywords": ["PostgreSQL 500万件 チューニング", "FastAPI キャッシュ設計", "Playwright クローリング 自動化", "pgvector 類似企業検索"],
+      "core_keywords": [
+        "PostgreSQL 500万件 チューニング",
+        "FastAPI キャッシュ設計",
+        "Playwright クローリング 自動化",
+        "pgvector 類似企業検索"
+      ],
       "last_covered": "2026-10-28"
     }
   ],
@@ -128,11 +168,11 @@
       "title_ja": "テレアポの限界を超える：開封率80%超・1件16.1円の「AI問い合わせフォーム営業」× 全国500万社インテントデータ",
       "target_landing_page": "https://kigyoulist.com/ja/form-marketing",
       "channels": {
-        "note": "Scheduled",
-        "pr_free": "Scheduled",
-        "x": "Scheduled",
-        "facebook_fanpage": "Scheduled",
-        "linkedin": "Ready-to-Post"
+        "note": "https://note.com/kigyoulist/n/n6862e5e0c246",
+        "tsunagugu_press": "https://portal-th.com/campaign/",
+        "facebook_fanpage": "https://www.facebook.com/kigyoulist/",
+        "indexnow_api": "202 Accepted",
+        "linkedin": "Ready-to-Post (Manual Safe Mode)"
       }
     }
   ]

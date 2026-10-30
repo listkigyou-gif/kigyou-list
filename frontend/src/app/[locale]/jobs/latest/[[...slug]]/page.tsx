@@ -11,7 +11,8 @@ import {
 } from '@/lib/db';
 import { 
   PREFECTURES, 
-  parseHubSlug 
+  parseHubSlug,
+  getPrefectureLabel 
 } from '@/lib/hubUtils';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -32,12 +33,23 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { locale = 'ja', slug } = await params;
   const { prefecture, yearMonth } = parseHubSlug(slug);
   const currentYear = new Date().getFullYear();
+  const isVi = locale === 'vi';
+  const isEn = locale === 'en';
 
-  const prefLabel = prefecture ? prefecture.nameJa : '全国';
+  const prefLabel = getPrefectureLabel(prefecture, locale);
   const ymLabel = yearMonth ? `${yearMonth} ` : `${currentYear}年最新 `;
 
-  const title = `${prefLabel}の求人募集中・新着採用企業一覧【${ymLabel}】 | Kigyou-list`;
-  const description = `${prefLabel}で現在、積極採用・求人募集を行っている企業のデータベース一覧です。公式採用ページURL、ハローワーク求人、法人番号、所在地、資本金、従業員規模を網羅。人材紹介、人材派遣、中途採用リサーチに。`;
+  const title = isVi
+    ? `Danh sách doanh nghiệp đang tuyển dụng tại ${prefLabel} (${currentYear}) | Kigyou-list`
+    : isEn
+    ? `${prefLabel} Actively Hiring Companies Directory (${currentYear}) | Kigyou-list`
+    : `${prefLabel}の求人募集中・新着採用企業一覧【${ymLabel}】 | Kigyou-list`;
+
+  const description = isVi
+    ? `Cơ sở dữ liệu các công ty đang tích cực tuyển dụng nhân sự tại ${prefLabel}. Liên kết trang tuyển dụng chính thức, mã số thuế NTA, địa chỉ, người đại diện và quy mô vốn.`
+    : isEn
+    ? `Real-time database of companies actively hiring in ${prefLabel}. Official career site links, corporate numbers, capital scale, and verified business contacts.`
+    : `${prefLabel}で現在、積極採用・求人募集を行っている企業のデータベース一覧です。公式採用ページURL、ハローワーク求人、法人番号、所在地、資本金、従業員規模を網羅。人材紹介、人材派遣、中途採用リサーチに。`;
 
   const canonicalPath = slug && slug.length > 0 ? `/jobs/latest/${slug.join('/')}` : '/jobs/latest';
 
@@ -95,7 +107,9 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
     prefCountMap.set(pc.prefecture_code, pc.count);
   }
 
-  const prefLabel = prefecture ? prefecture.nameJa : '全国';
+  const isVi = locale === 'vi';
+  const isEn = locale === 'en';
+  const prefLabel = getPrefectureLabel(prefecture, locale);
   const currentYear = new Date().getFullYear();
 
   // Structured Data Schema
@@ -111,19 +125,19 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
           {
             '@type': 'ListItem',
             'position': 1,
-            'name': 'ホーム',
+            'name': isVi ? 'Trang chủ' : isEn ? 'Home' : 'ホーム',
             'item': `${baseUrl}/${locale}`
           },
           {
             '@type': 'ListItem',
             'position': 2,
-            'name': '求人募集中企業一覧',
+            'name': isVi ? 'Doanh nghiệp đang tuyển dụng' : isEn ? 'Actively Hiring Companies' : '求人募集中企業一覧',
             'item': `${baseUrl}/${locale}/jobs/latest`
           },
           ...(prefecture ? [{
             '@type': 'ListItem',
             'position': 3,
-            'name': `${prefecture.nameJa}の採用企業`,
+            'name': isVi ? `Tuyển dụng tại ${prefLabel}` : isEn ? `Hiring in ${prefLabel}` : `${prefecture.nameJa}の採用企業`,
             'item': `${baseUrl}/${locale}/jobs/latest/${prefecture.slug}`
           }] : [])
         ]
@@ -132,8 +146,16 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
         '@type': 'CollectionPage',
         '@id': pageUrl,
         'url': pageUrl,
-        'name': `${prefLabel}の求人募集中企業一覧【${currentYear}年最新】`,
-        'description': `${prefLabel}において求人採用を実施している企業のデータベース一覧です。`,
+        'name': isVi
+          ? `Danh sách doanh nghiệp đang tuyển dụng tại ${prefLabel} (${currentYear})`
+          : isEn
+          ? `${prefLabel} Actively Hiring Companies Directory (${currentYear})`
+          : `${prefLabel}の求人募集中企業一覧【${currentYear}年最新】`,
+        'description': isVi
+          ? `Cơ sở dữ liệu các công ty đang tuyển dụng tại ${prefLabel}.`
+          : isEn
+          ? `Official corporate directory of companies actively hiring in ${prefLabel}.`
+          : `${prefLabel}において求人採用を実施している企業のデータベース一覧です。`,
         'mainEntity': {
           '@type': 'ItemList',
           'numberOfItems': events.length,
@@ -167,7 +189,7 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
           <ol className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 overflow-x-auto whitespace-nowrap">
             <li>
               <Link href={`/${locale}`} className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
-                ホーム
+                {isVi ? 'Trang chủ' : isEn ? 'Home' : 'ホーム'}
               </Link>
             </li>
             <li><ChevronRight className="w-3.5 h-3.5 text-slate-400" /></li>
@@ -176,14 +198,14 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                 href={`/${locale}/jobs/latest`} 
                 className={!prefecture ? "font-semibold text-slate-800 dark:text-slate-200" : "hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors"}
               >
-                求人募集中企業一覧
+                {isVi ? 'Doanh nghiệp đang tuyển dụng' : isEn ? 'Actively Hiring Companies' : '求人募集中企業一覧'}
               </Link>
             </li>
             {prefecture && (
               <>
                 <li><ChevronRight className="w-3.5 h-3.5 text-slate-400" /></li>
                 <li className="font-semibold text-slate-800 dark:text-slate-200">
-                  {prefecture.nameJa}
+                  {prefLabel}
                 </li>
               </>
             )}
@@ -205,49 +227,70 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
           <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200/70 dark:border-emerald-800/70">
               <Briefcase className="w-4 h-4" />
-              <span>公式採用ページ & ハローワーク求人シグナル検知</span>
+              <span>
+                {isVi
+                  ? 'Phát hiện tín hiệu tuyển dụng từ Trang tuyển dụng chính thức & HelloWork'
+                  : isEn
+                  ? 'Official Careers Pages & HelloWork Hiring Signals'
+                  : '公式採用ページ & ハローワーク求人シグナル検知'}
+              </span>
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400">
-              毎日自動更新・Hiring Intent Data Hub
+              {isVi ? 'Cập nhật tự động hàng ngày' : isEn ? 'Daily Automated Sync' : '毎日自動更新・Hiring Intent Data Hub'}
             </div>
           </div>
 
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[#0F172A] dark:text-white mb-3">
-            {prefLabel}の求人募集中・新着採用企業一覧
+            {isVi
+              ? `Danh sách doanh nghiệp đang tuyển dụng tại ${prefLabel}`
+              : isEn
+              ? `${prefLabel} Actively Hiring Companies`
+              : `${prefLabel}の求人募集中・新着採用企業一覧`}
             <span className="text-base sm:text-lg font-normal text-slate-500 dark:text-slate-400 ml-2">
-              （{currentYear}年最新速報）
+              {isVi ? `(${currentYear} Mới nhất)` : isEn ? `(${currentYear} Latest Updates)` : `（${currentYear}年最新速報）`}
             </span>
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed max-w-4xl mb-6">
-            {prefLabel}にて現在、中途採用・正社員募集・新卒採用を積極的に行っている企業のデータベースです。
-            採用活動中の企業は事業拡大期にあり、人材紹介、人事SaaS、研修サービス、オフィス拡大など様々なB2B商材の導入意欲が旺盛です。公式リクルートページやハローワーク求人を検知した企業を毎日更新。
+            {isVi
+              ? `Cơ sở dữ liệu các công ty đang tích cực tuyển dụng nhân sự chính thức, tuyển dụng trung cấp và sinh viên mới tốt nghiệp tại ${prefLabel}. Doanh nghiệp đang mở rộng quy mô là khách hàng tiềm năng cao cho các giải pháp nhân sự, SaaS, đào tạo và mở rộng văn phòng.`
+              : isEn
+              ? `Verified database of companies actively hiring full-time staff, mid-career professionals, and graduates in ${prefLabel}. Expanding companies present prime B2B opportunities for HR tech, recruitment, and corporate services.`
+              : `${prefLabel}にて現在、中途採用・正社員募集・新卒採用を積極的に行っている企業のデータベースです。採用活動中の企業は事業拡大期にあり、人材紹介、人事SaaS、研修サービス、オフィス拡大など様々なB2B商材の導入意欲が旺盛です。公式リクルートページやハローワーク求人を検知した企業を毎日更新。`}
           </p>
 
           {/* Quick Metrics Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-100 dark:border-slate-800/80">
             <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">採用中企業総数</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                {isVi ? 'Tổng số công ty tuyển dụng' : isEn ? 'Hiring Companies' : '採用中企業総数'}
+              </div>
               <div className="text-xl sm:text-2xl font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                {totalCount.toLocaleString()} <span className="text-xs font-normal text-slate-500">社</span>
+                {totalCount.toLocaleString()} <span className="text-xs font-normal text-slate-500">{isVi ? 'cty' : isEn ? 'companies' : '社'}</span>
               </div>
             </div>
             <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">対象エリア</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                {isVi ? 'Khu vực áp dụng' : isEn ? 'Target Region' : '対象エリア'}
+              </div>
               <div className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mt-0.5">
                 {prefLabel}
               </div>
             </div>
             <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">シグナル種別</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                {isVi ? 'Loại tín hiệu' : isEn ? 'Signal Type' : 'シグナル種別'}
+              </div>
               <div className="text-xl sm:text-2xl font-bold text-[#1B4F8A] dark:text-blue-400 mt-0.5">
-                求人中 <span className="text-xs font-normal text-slate-500">Intent Signal</span>
+                {isVi ? 'Đang tuyển dụng' : isEn ? 'Hiring Active' : '求人中'} <span className="text-xs font-normal text-slate-500">Intent Signal</span>
               </div>
             </div>
             <div>
-              <div className="text-xs text-slate-500 dark:text-slate-400">更新頻度</div>
+              <div className="text-xs text-slate-500 dark:text-slate-400">
+                {isVi ? 'Tần suất cập nhật' : isEn ? 'Update Frequency' : '更新頻度'}
+              </div>
               <div className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-slate-200 mt-0.5">
-                毎日 <span className="text-xs font-normal text-slate-500">Daily Sync</span>
+                {isVi ? 'Hàng ngày' : isEn ? 'Daily' : '毎日'} <span className="text-xs font-normal text-slate-500">Daily Sync</span>
               </div>
             </div>
           </div>
@@ -258,10 +301,10 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
           <div className="flex items-center gap-2 mb-3">
             <Filter className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
             <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-              都道府県で絞り込む
+              {isVi ? 'Lọc theo tỉnh thành' : isEn ? 'Filter by Prefecture' : '都道府県で絞り込む'}
             </h2>
             <span className="text-xs text-slate-500">
-              （クリックで地域別の採用企業一覧へ移動）
+              {isVi ? '(Bấm vào để xem danh sách từng địa phương)' : isEn ? '(Click to view hiring companies by prefecture)' : '（クリックで地域別の採用企業一覧へ移動）'}
             </span>
           </div>
 
@@ -274,12 +317,13 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                   : 'bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 hover:bg-[#F0F4F9] dark:hover:bg-slate-700/80'
               }`}
             >
-              全国すべて
+              {isVi ? 'Tất cả toàn quốc' : isEn ? 'All Japan' : '全国すべて'}
             </Link>
 
             {PREFECTURES.map((p) => {
               const count = prefCountMap.get(p.code) || 0;
               const isActive = prefecture?.code === p.code;
+              const pLabel = isVi ? p.nameEn : isEn ? p.nameEn : p.nameJa;
               return (
                 <Link
                   key={p.code}
@@ -290,7 +334,7 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                       : 'bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 hover:bg-[#F0F4F9] dark:hover:bg-slate-700 border border-slate-200/70 dark:border-slate-700/70'
                   }`}
                 >
-                  <span>{p.nameJa}</span>
+                  <span>{pLabel}</span>
                   {count > 0 && (
                     <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
                       isActive ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
@@ -309,19 +353,29 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Building2 className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />
-              <span>求人募集中企業一覧（{totalCount.toLocaleString()} 件中 {events.length} 件表示）</span>
+              <span>
+                {isVi
+                  ? `Doanh nghiệp đang tuyển dụng (Hiển thị ${events.length} trên tổng ${totalCount.toLocaleString()})`
+                  : isEn
+                  ? `Actively Hiring Companies (Showing ${events.length} of ${totalCount.toLocaleString()})`
+                  : `求人募集中企業一覧（${totalCount.toLocaleString()} 件中 ${events.length} 件表示）`}
+              </span>
             </h2>
             <Link
               href={`/${locale}/search?has_hiring=true&prefecture=${prefecture?.code || ''}`}
               className="text-xs text-[#1B4F8A] dark:text-blue-400 hover:underline flex items-center gap-1 font-medium"
             >
-              求人シグナルで詳細検索 ➔
+              {isVi ? 'Tìm kiếm nâng cao qua tín hiệu tuyển dụng ➔' : isEn ? 'Search by hiring signals ➔' : '求人シグナルで詳細検索 ➔'}
             </Link>
           </div>
 
           {events.length === 0 ? (
             <div className="bg-white dark:bg-[#151B22] rounded-xl border border-slate-200/90 dark:border-slate-800 p-12 text-center text-slate-500">
-              現在、指定された条件の求人企業データはありません。
+              {isVi
+                ? 'Hiện chưa có dữ liệu tuyển dụng theo điều kiện đã chọn.'
+                : isEn
+                ? 'No hiring companies found for the selected criteria.'
+                : '現在、指定された条件の求人企業データはありません。'}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -335,10 +389,10 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-200/60">
                         <Briefcase className="w-3.5 h-3.5" />
-                        <span>求人募集中速報</span>
+                        <span>{isVi ? 'Tin tuyển dụng mới' : isEn ? 'Active Hiring' : '求人募集中速報'}</span>
                       </div>
                       <span className="font-mono text-[11px] text-slate-400">
-                        法人番号: {ev.corporate_number}
+                        {isVi ? 'Mã số thuế' : isEn ? 'ID' : '法人番号'}: {ev.corporate_number}
                       </span>
                     </div>
 
@@ -360,7 +414,7 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                     {/* Hiring Context Box */}
                     <div className="p-2.5 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 text-xs mb-3">
                       <div className="text-emerald-900 dark:text-emerald-300 font-medium">
-                        {ev.description_ja || '採用活動を実施中。'}
+                        {ev.description_ja || (isVi ? 'Đang triển khai hoạt động tuyển dụng.' : isEn ? 'Currently hiring new personnel.' : '採用活動を実施中。')}
                       </div>
                       {ev.new_value && ev.new_value.startsWith('http') && (
                         <div className="mt-1">
@@ -370,7 +424,7 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1 text-[11px] text-[#1B4F8A] dark:text-blue-400 font-semibold hover:underline"
                           >
-                            <span>公式採用ページを開く</span>
+                            <span>{isVi ? 'Mở trang tuyển dụng chính thức' : isEn ? 'Open Careers Page' : '公式採用ページを開く'}</span>
                             <ArrowUpRight className="w-3 h-3" />
                           </a>
                         </div>
@@ -381,13 +435,13 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                   {/* Bottom Action Footer */}
                   <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                     <span className="text-slate-400 text-[11px]">
-                      確認日：{ev.event_date}
+                      {isVi ? `Xác nhận: ${ev.event_date}` : isEn ? `Verified: ${ev.event_date}` : `確認日：${ev.event_date}`}
                     </span>
                     <Link
                       href={`/${locale}/company/${ev.corporate_number}`}
                       className="inline-flex items-center gap-1 font-semibold text-[#1B4F8A] dark:text-blue-400 hover:underline"
                     >
-                      企業詳細・連絡先を見る
+                      {isVi ? 'Xem chi tiết & Liên hệ' : isEn ? 'View Profile & Contacts' : '企業詳細・連絡先を見る'}
                       <ChevronRight className="w-3.5 h-3.5" />
                     </Link>
                   </div>
@@ -404,12 +458,12 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                   href={`/${locale}/jobs/latest${slug ? '/' + slug.join('/') : ''}?page=${currentPage - 1}`}
                   className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#151B22] text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50"
                 >
-                  前へ
+                  {isVi ? 'Trước' : isEn ? 'Previous' : '前へ'}
                 </Link>
               )}
 
               <span className="text-xs text-slate-500 px-3">
-                {currentPage} / {totalPages} ページ
+                {isVi ? `Trang ${currentPage} / ${totalPages}` : isEn ? `Page ${currentPage} of ${totalPages}` : `${currentPage} / ${totalPages} ページ`}
               </span>
 
               {currentPage < totalPages && (
@@ -417,7 +471,7 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                   href={`/${locale}/jobs/latest${slug ? '/' + slug.join('/') : ''}?page=${currentPage + 1}`}
                   className="px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-[#151B22] text-xs font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50"
                 >
-                  次へ
+                  {isVi ? 'Sau' : isEn ? 'Next' : '次へ'}
                 </Link>
               )}
             </div>
@@ -432,24 +486,32 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
               <span>Hiring Intent Sales Leads</span>
             </div>
             <h2 className="text-xl sm:text-2xl font-bold mb-3">
-              採用活動中の企業リストをCSVで一括ダウンロード
+              {isVi
+                ? 'Tải trọn bộ danh sách doanh nghiệp đang tuyển dụng (File CSV)'
+                : isEn
+                ? 'Export Actively Hiring Companies via Bulk CSV'
+                : '採用活動中の企業リストをCSVで一括ダウンロード'}
             </h2>
             <p className="text-sm text-slate-200 leading-relaxed mb-6">
-              求人を公開している企業は、成長に伴う予算があり意思決定スピードが極めて早い優良見込み顧客です。人材紹介やHRTech、B2Bサービスの提案先として高い成約率を期待できます。
+              {isVi
+                ? 'Doanh nghiệp đang tuyển dụng sở hữu ngân sách dồi dào và tốc độ ra quyết định nhanh chóng. Đây là tệp khách hàng tiềm năng lý tưởng cho các dịch vụ B2B, tuyển dụng và phần mềm doanh nghiệp.'
+                : isEn
+                ? 'Companies with open positions have active budgets and faster decision-making cycles. Perfect high-intent B2B target lists for HR solutions, staffing, and corporate SaaS.'
+                : '求人を公開している企業は、成長に伴う予算があり意思決定スピードが極めて早い優良見込み顧客です。人材紹介やHRTech、B2Bサービスの提案先として高い成約率を期待できます。'}
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link
                 href={`/${locale}/pricing`}
                 className="px-5 py-2.5 rounded-lg bg-white text-[#1B4F8A] hover:bg-slate-100 font-bold text-xs sm:text-sm transition-colors shadow-sm inline-flex items-center gap-2"
               >
-                <span>無料プランで試す</span>
+                <span>{isVi ? 'Trải nghiệm gói miễn phí' : isEn ? 'Try Free Tier' : '無料プランで試す'}</span>
                 <ChevronRight className="w-4 h-4" />
               </Link>
               <Link
                 href={`/${locale}/search?has_hiring=true`}
                 className="px-5 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium text-xs sm:text-sm transition-colors"
               >
-                求人シグナル企業を詳細検索
+                {isVi ? 'Tìm kiếm công ty theo tín hiệu' : isEn ? 'Explore Hiring Signals' : '求人シグナル企業を詳細検索'}
               </Link>
             </div>
           </div>

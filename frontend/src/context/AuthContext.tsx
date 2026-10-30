@@ -1,7 +1,8 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
+import { isAdminEmail } from "@/lib/adminAuth";
 
 export interface User {
   email: string;
@@ -34,6 +35,7 @@ export interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AUTH_CHANNEL_NAME = "kigyou_auth_sync_channel";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { data: session, status } = useSession();
@@ -44,23 +46,34 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [kanbanStages, setKanbanStages] = useState<Record<string, KanbanStage>>({});
   const [mounted, setMounted] = useState(false);
 
+  // Guard ref to prevent stale session re-hydration right after instant logout
+  const isLoggingOutRef = useRef<boolean>(false);
+
   const refreshQuota = React.useCallback(async (targetEmail?: string) => {
+    if (isLoggingOutRef.current) return;
     const email = targetEmail || user?.email || session?.user?.email;
     if (!email) return;
     try {
-      const res = await fetch(`/api/export/quota-check?email=${encodeURIComponent(email)}`);
+      const res = await fetch(`/api/export/quota-check?email=${encodeURIComponent(email)}&_t=${Date.now()}`, {
+        cache: "no-store",
+      });
       if (res.ok) {
         const data = await res.json();
-        if (data.quota) {
+        if (data.quota && !isLoggingOutRef.current) {
           setQuota(data.quota);
-          if (data.quota.plan) {
-            setUser(prev => {
-              if (prev && prev.email === email && prev.role !== data.quota.plan) {
-                return { ...prev, role: data.quota.plan };
-              }
-              return prev;
-            });
-          }
+          const resolvedRole = isAdminEmail(email)
+            ? "admin"
+            : (data.quota.plan || "free");
+          setUser(prev => {
+            if (prev && prev.email === email && prev.role !== resolvedRole) {
+              const updated = { ...prev, role: resolvedRole };
+              try {
+                localStorage.setItem("kigyou_user", JSON.stringify(updated));
+              } catch {}
+              return updated;
+            }
+            return prev;
+          });
         }
       }
     } catch (e) {
@@ -68,42 +81,155 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [user?.email, session?.user?.email]);
 
-  // Sync NextAuth session
+  // 1. Hydrate immediately from localStorage on client mount (0ms Optimistic UI)
+  useEffect(() => {
+    try {
+      const logoutFlag = sessionStorage.getItem("kigyou_logged_out_ts");
+      if (logoutFlag && Date.now() - Number(logoutFlag) < 8000) {
+        isLoggingOutRef.current = true;
+        localStorage.removeItem("kigyou_user");
+      } else {
+        sessionStorage.removeItem("kigyou_logged_out_ts");
+        const storedUser = localStorage.getItem("kigyou_user");
+        if (storedUser) {
+          const parsed = JSON.parse(storedUser);
+          if (parsed && parsed.email) {
+            if (isAdminEmail(parsed.email)) {
+              parsed.role = "admin";
+            }
+            setUser(parsed);
+            refreshQuota(parsed.email);
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Failed to parse stored user", e);
+    }
+
+    try {
+      const storedSaved = localStorage.getItem("kigyou_saved");
+      if (storedSaved) {
+        setSavedCompanies(JSON.parse(storedSaved));
+      }
+    } catch {}
+
+    try {
+      const storedKanban = localStorage.getItem("kigyou_kanban");
+      if (storedKanban) {
+        setKanbanStages(JSON.parse(storedKanban));
+      }
+    } catch {}
+
+    setMounted(true);
+  }, []);
+
+  // 2. Multi-Tab Real-Time Sync via BroadcastChannel & Storage Events
+  useEffect(() => {
+    let channel: BroadcastChannel | null = null;
+    try {
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        channel = new BroadcastChannel(AUTH_CHANNEL_NAME);
+        channel.onmessage = (event) => {
+          if (event.data?.type === "LOGOUT") {
+            isLoggingOutRef.current = true;
+            setUser(null);
+            setQuota(null);
+            try {
+              localStorage.removeItem("kigyou_user");
+            } catch {}
+          } else if (event.data?.type === "LOGIN" && event.data?.user) {
+            isLoggingOutRef.current = false;
+            setUser(event.data.user);
+            refreshQuota(event.data.user.email);
+          }
+        };
+      }
+    } catch {}
+
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "kigyou_user") {
+        if (!e.newValue) {
+          isLoggingOutRef.current = true;
+          setUser(null);
+          setQuota(null);
+        } else {
+          try {
+            const parsed = JSON.parse(e.newValue);
+            isLoggingOutRef.current = false;
+            setUser(parsed);
+          } catch {}
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => {
+      if (channel) channel.close();
+      window.removeEventListener("storage", handleStorageChange);
+    };
+  }, [refreshQuota]);
+
+  // 3. Sync NextAuth authoritative session from /api/auth/session
   useEffect(() => {
     if (status === "authenticated" && session?.user?.email) {
+      if (isLoggingOutRef.current) {
+        return;
+      }
       const email = session.user.email;
+      const initialRole = isAdminEmail(email) ? "admin" : "free";
+
       setUser(prev => {
-        if (prev && prev.email === email) return prev;
-        return {
+        if (prev && prev.email === email) {
+          // Preserve already-fetched higher plan or admin role
+          if (isAdminEmail(email) && prev.role !== "admin") {
+            return { ...prev, role: "admin" };
+          }
+          return prev;
+        }
+        const nextUser: User = {
           email,
           name: session.user?.name || email.split("@")[0],
-          role: "free",
+          role: initialRole,
         };
+        try {
+          localStorage.setItem("kigyou_user", JSON.stringify(nextUser));
+          if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+            const bc = new BroadcastChannel(AUTH_CHANNEL_NAME);
+            bc.postMessage({ type: "LOGIN", user: nextUser });
+            bc.close();
+          }
+        } catch {}
+        return nextUser;
       });
+
       refreshQuota(email);
 
-      // Auto-sync watchlist bi-directionally with server database
+      // Fetch authoritative watchlist from server database
       try {
-        const localSaved = JSON.parse(localStorage.getItem("kigyou_saved") || "[]");
         fetch("/api/user/watchlist/sync", {
-          method: "POST",
+          method: "GET",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ corporateNumbers: localSaved }),
+          cache: "no-store",
         })
           .then(res => res.json())
           .then(data => {
-            if (data?.success && Array.isArray(data.watchlist)) {
+            if (data?.success && Array.isArray(data.watchlist) && !isLoggingOutRef.current) {
               setSavedCompanies(data.watchlist);
               localStorage.setItem("kigyou_saved", JSON.stringify(data.watchlist));
             }
           })
           .catch(() => {});
       } catch {}
-    } else if (status === "unauthenticated" && mounted) {
+    } else if (status === "unauthenticated") {
+      isLoggingOutRef.current = false;
+      try {
+        sessionStorage.removeItem("kigyou_logged_out_ts");
+        localStorage.removeItem("kigyou_user");
+      } catch {}
       setUser(null);
       setQuota(null);
     }
-  }, [session, status, mounted, refreshQuota]);
+  }, [session, status, refreshQuota]);
 
   // Listen to global quotaUpdated events
   useEffect(() => {
@@ -116,47 +242,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, [refreshQuota]);
 
-  // Sync state from localStorage on mount (hydration safe)
-  useEffect(() => {
-    const storedUser = localStorage.getItem("kigyou_user");
-    if (storedUser) {
-      try {
-        const parsed = JSON.parse(storedUser);
-        setUser(parsed);
-        // Sync plan in background
-        refreshQuota(parsed.email);
-      } catch (e) {
-        console.error("Failed to parse stored user", e);
-      }
-    }
-
-    const storedSaved = localStorage.getItem("kigyou_saved");
-    if (storedSaved) {
-      try {
-        setSavedCompanies(JSON.parse(storedSaved));
-      } catch (e) {
-        console.error("Failed to parse saved companies", e);
-      }
-    }
-
-    const storedKanban = localStorage.getItem("kigyou_kanban");
-    if (storedKanban) {
-      try {
-        setKanbanStages(JSON.parse(storedKanban));
-      } catch (e) {
-        console.error("Failed to parse kanban stages", e);
-      }
-    }
-
-    setMounted(true);
-  }, []);
-
   // Save to localStorage when state changes
   useEffect(() => {
     if (!mounted) return;
-    if (user) {
+    if (user && !isLoggingOutRef.current) {
       localStorage.setItem("kigyou_user", JSON.stringify(user));
-    } else {
+    } else if (!user) {
       localStorage.removeItem("kigyou_user");
     }
   }, [user, mounted]);
@@ -164,27 +255,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (!mounted) return;
     localStorage.setItem("kigyou_saved", JSON.stringify(savedCompanies));
-    if (user?.email) {
-      fetch("/api/user/watchlist/sync", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ corporateNumbers: savedCompanies }),
-      }).catch(() => {});
-    }
-  }, [savedCompanies, mounted, user?.email]);
+  }, [savedCompanies, mounted]);
 
   useEffect(() => {
     if (!mounted) return;
     localStorage.setItem("kigyou_kanban", JSON.stringify(kanbanStages));
   }, [kanbanStages, mounted]);
 
-  const logout = () => {
+  // 4. Instant Optimistic SPA Logout (0ms UI transition, no page flicker)
+  const logout = async () => {
+    isLoggingOutRef.current = true;
     setUser(null);
-    signOut();
+    setQuota(null);
+
+    try {
+      sessionStorage.setItem("kigyou_logged_out_ts", String(Date.now()));
+      localStorage.removeItem("kigyou_user");
+      if (typeof window !== "undefined" && "BroadcastChannel" in window) {
+        const bc = new BroadcastChannel(AUTH_CHANNEL_NAME);
+        bc.postMessage({ type: "LOGOUT" });
+        bc.close();
+      }
+    } catch {}
+
+    // Clear server cookies in background + synchronize NextAuth internal state
+    try {
+      await Promise.allSettled([
+        fetch(`/api/auth/signout-direct?_t=${Date.now()}`, {
+          method: "POST",
+          credentials: "include",
+          cache: "no-store",
+        }),
+        signOut({ redirect: false }),
+      ]);
+    } catch {}
+
+    // Only redirect if user is currently on a private route (/admin or /dashboard)
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      if (path.includes("/admin") || path.includes("/dashboard")) {
+        const segs = path.split("/");
+        const loc = ["ja", "en", "vi"].includes(segs[1]) ? segs[1] : "ja";
+        window.location.href = `/${loc}`;
+      }
+    }
   };
 
   const loginWithGoogle = () => {
-    signIn("google");
+    isLoggingOutRef.current = false;
+    try {
+      sessionStorage.removeItem("kigyou_logged_out_ts");
+    } catch {}
+    const cleanPath = window.location.pathname + window.location.search;
+    signIn("google", { callbackUrl: cleanPath });
   };
 
   const upgradeUserPlan = async (plan: "free" | "pro" | "business" | "enterprise", couponCode?: string): Promise<boolean> => {
@@ -197,7 +320,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
       if (res.ok) {
         setUser({ ...user, role: plan });
-        // Trigger quota update in other components (e.g. Header)
         setTimeout(() => {
           window.dispatchEvent(new Event("quotaUpdated"));
         }, 100);
@@ -210,35 +332,64 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const toggleSaveCompany = (corpNum: string) => {
+    const id = String(corpNum).trim();
+    if (!id) return;
+
     setSavedCompanies((prev) => {
-      const exists = prev.includes(corpNum);
+      const exists = prev.some((item) => String(item).trim() === id);
       if (exists) {
-        // Also remove Kanban stage if removed from MyList
         setKanbanStages((prevKanban) => {
           const next = { ...prevKanban };
-          delete next[corpNum];
+          delete next[id];
           return next;
         });
-        return prev.filter((id) => id !== corpNum);
+
+        const userEmail = user?.email || session?.user?.email;
+        if (userEmail) {
+          fetch(`/api/user/watchlist?corporateNumber=${encodeURIComponent(id)}`, {
+            method: "DELETE",
+          }).catch((err) => console.error("Failed to delete company from server watchlist:", err));
+        }
+
+        const nextList = prev.filter((item) => String(item).trim() !== id);
+        try {
+          localStorage.setItem("kigyou_saved", JSON.stringify(nextList));
+        } catch {}
+        return nextList;
       } else {
-        // Default new company to "未連絡" stage
         setKanbanStages((prevKanban) => ({
           ...prevKanban,
-          [corpNum]: "未連絡",
+          [id]: "未連絡",
         }));
-        return [...prev, corpNum];
+
+        const userEmail = user?.email || session?.user?.email;
+        if (userEmail) {
+          fetch("/api/user/watchlist/sync", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ corporateNumbers: [id] }),
+          }).catch((err) => console.error("Failed to add company to server watchlist:", err));
+        }
+
+        const nextList = [...prev, id];
+        try {
+          localStorage.setItem("kigyou_saved", JSON.stringify(nextList));
+        } catch {}
+        return nextList;
       }
     });
   };
 
   const saveCompaniesBatch = (corpNums: string[]) => {
-    const validNums = corpNums.filter(n => typeof n === "string" && /^\d{13}$/.test(n));
+    const validNums = corpNums
+      .map(n => String(n).trim())
+      .filter(n => /^\d{13}$/.test(n));
     let added = 0;
     let limitHit = false;
     const MAX_LIMIT = 100;
 
     setSavedCompanies((prev) => {
-      const existingSet = new Set(prev);
+      const existingSet = new Set(prev.map(p => String(p).trim()));
       const toAdd: string[] = [];
 
       for (const num of validNums) {
@@ -255,7 +406,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       added = toAdd.length;
 
-      // Update Kanban stages
       setKanbanStages((prevKanban) => {
         const next = { ...prevKanban };
         for (const num of toAdd) {
@@ -264,14 +414,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return next;
       });
 
-      return [...prev, ...toAdd];
+      const userEmail = user?.email || session?.user?.email;
+      if (userEmail && toAdd.length > 0) {
+        fetch("/api/user/watchlist/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ corporateNumbers: toAdd }),
+        }).catch((err) => console.error("Failed to sync batch companies to server watchlist:", err));
+      }
+
+      const nextList = [...prev, ...toAdd];
+      try {
+        localStorage.setItem("kigyou_saved", JSON.stringify(nextList));
+      } catch {}
+      return nextList;
     });
 
     return { addedCount: added, totalCount: validNums.length, maxReached: limitHit };
   };
 
   const isCompanySaved = (corpNum: string) => {
-    return savedCompanies.includes(corpNum);
+    const id = String(corpNum).trim();
+    return savedCompanies.some((item) => String(item).trim() === id);
   };
 
   const updateKanbanStage = (corpNum: string, stage: KanbanStage) => {
@@ -286,7 +450,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isLoggedIn: !!user,
-        isAuthLoading: !mounted || status === "loading",
+        isAuthLoading: !mounted || (status === "loading" && !user),
         quota,
         refreshQuota,
         logout,

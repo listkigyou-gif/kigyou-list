@@ -15,6 +15,8 @@ interface CompanyHubBacklinksProps {
   establishmentDate?: string | null;
   status?: string | null;
   hasHiring?: boolean;
+  buildingName?: string | null;
+  buildingSlug?: string | null;
   locale: string;
   recentEvents: HubDynamicEvent[];
 }
@@ -27,6 +29,8 @@ export const CompanyHubBacklinks: React.FC<CompanyHubBacklinksProps> = ({
   establishmentDate,
   status,
   hasHiring,
+  buildingName,
+  buildingSlug,
   locale,
   recentEvents,
 }) => {
@@ -69,8 +73,8 @@ export const CompanyHubBacklinks: React.FC<CompanyHubBacklinksProps> = ({
         最新の法人登記データや採用活動の動向を各ハブにて毎日自動更新しています。
       </p>
 
-      {/* 1. Verified Active Event Badges (If any active event exists) */}
-      {(hasRelocationEvent || hasMergerEvent || hasBankruptciesEvent || hasHiringEvent || hasNewEstEvent) && (
+      {/* 1. Verified Active Event Badges & Building Hub */}
+      {(hasRelocationEvent || hasMergerEvent || hasBankruptciesEvent || hasHiringEvent || hasNewEstEvent || buildingSlug) && (
         <div className="mb-5 p-3.5 rounded-lg bg-[#F0F4F9] dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-700/80">
           <div className="text-xs font-bold text-[#1B4F8A] dark:text-blue-400 mb-2.5 flex items-center gap-1.5">
             <ShieldCheck className="w-3.5 h-3.5" />
@@ -78,6 +82,20 @@ export const CompanyHubBacklinks: React.FC<CompanyHubBacklinksProps> = ({
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+            {buildingSlug && (
+              <Link
+                href={`/${locale}/building/${buildingSlug}`}
+                className="flex items-center justify-between p-2.5 rounded-md bg-white dark:bg-[#151B22] border border-blue-200/80 dark:border-blue-900/60 hover:border-[#1B4F8A] text-slate-800 dark:text-slate-200 hover:text-[#1B4F8A] transition-colors group"
+              >
+                <div className="flex items-center gap-2">
+                  <Building2 className="w-3.5 h-3.5 text-[#1B4F8A]" />
+                  <span className="font-semibold">{buildingName || '主要オフィスビル'} 入居企業</span>
+                </div>
+                <span className="text-[11px] text-[#1B4F8A] dark:text-blue-400 group-hover:underline flex items-center gap-0.5">
+                  ビル入居一覧 ➔
+                </span>
+              </Link>
+            )}
             {hasRelocationEvent && (
               <Link
                 href={`/${locale}/changes/relocation${prefSlug ? '/' + prefSlug : ''}`}
@@ -260,6 +278,64 @@ export const CompanyHubBacklinks: React.FC<CompanyHubBacklinksProps> = ({
               <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 shrink-0 ml-2" />
             </Link>
           )}
+        </div>
+
+        {/* Sub-group: Regional Ranking & Human Capital Hubs */}
+        <div className="mt-4 pt-3.5 border-t border-slate-150 dark:border-slate-800/80">
+          <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+            <Sparkles className="w-3 h-3 text-[#1B4F8A] dark:text-blue-400" />
+            <span>{prefName}の企業ランキング・人的資本指標ハブ</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+            {/* Card R1: Employees */}
+            <Link
+              href={`/${locale}/ranking/employees${pref ? '?prefecture=' + pref.code : ''}`}
+              className="p-3 rounded-lg border border-slate-200/80 hover:border-[#1B4F8A] dark:border-slate-800 dark:hover:border-blue-500 bg-slate-50/50 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800 transition-all flex items-center justify-between group"
+            >
+              <div>
+                <span className="font-bold text-slate-800 dark:text-slate-200 block group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400">
+                  {prefName}の被保険者・規模ランキング
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  厚生年金加入・正規従業員数
+                </span>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 shrink-0 ml-2" />
+            </Link>
+
+            {/* Card R2: Tenure */}
+            <Link
+              href={`/${locale}/ranking/tenure${pref ? '?prefecture=' + pref.code : ''}`}
+              className="p-3 rounded-lg border border-slate-200/80 hover:border-[#1B4F8A] dark:border-slate-800 dark:hover:border-blue-500 bg-slate-50/50 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800 transition-all flex items-center justify-between group"
+            >
+              <div>
+                <span className="font-bold text-slate-800 dark:text-slate-200 block group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400">
+                  {prefName}のホワイト企業ランキング
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  平均勤続年数・定着率指標
+                </span>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 shrink-0 ml-2" />
+            </Link>
+
+            {/* Card R3: Salary */}
+            <Link
+              href={`/${locale}/ranking/salary${pref ? '?prefecture=' + pref.code : ''}`}
+              className="p-3 rounded-lg border border-slate-200/80 hover:border-[#1B4F8A] dark:border-slate-800 dark:hover:border-blue-500 bg-slate-50/50 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800 transition-all flex items-center justify-between group"
+            >
+              <div>
+                <span className="font-bold text-slate-800 dark:text-slate-200 block group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400">
+                  {prefName}の平均年収・給与ランキング
+                </span>
+                <span className="text-[10px] text-slate-400">
+                  上場有報・推定年間給与水準
+                </span>
+              </div>
+              <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 shrink-0 ml-2" />
+            </Link>
+          </div>
         </div>
       </div>
     </section>

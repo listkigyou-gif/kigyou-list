@@ -13,6 +13,7 @@ import {
 import { isAdmin, isAdminEmail } from "@/lib/adminAuth";
 import { revalidatePath } from "next/cache";
 import { verifyClientIp, verifyClientEmail, autoBanIp } from "@/lib/securityGuard";
+import { executePostApprovalSeoPipeline } from "@/lib/seoIndexingTrigger";
 
 async function sendNotificationEmail(
   toEmail: string, 
@@ -20,7 +21,7 @@ async function sendNotificationEmail(
   htmlContent: string
 ) {
   const resendApiKey = process.env.RESEND_API_KEY;
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "Kigyou List <auth@kigyoulist.com>";
+  const fromEmail = process.env.RESEND_SUPPORT_FROM_EMAIL || "Kigyou-List サポート事務局 <support@kigyoulist.com>";
   if (!resendApiKey) return;
 
   try {
@@ -147,8 +148,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // If General / Enterprise API / Partnership / Form Marketing / Billing inquiry
-    if (type === "general" || type === "api" || type === "partner" || type === "form_marketing" || type === "billing" || type === "enterprise") {
+    // If General / Enterprise API / Partnership / Form Marketing / Billing / Company Manage inquiry
+    if (type === "general" || type === "api" || type === "partner" || type === "form_marketing" || type === "billing" || type === "enterprise" || type === "company_manage") {
       if (!requester_email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(requester_email)) {
         return NextResponse.json({ 
           error: locale === "vi" ? "Vui lòng nhập địa chỉ email hợp lệ." : "有効なメールアドレスを入力してください。" 
@@ -180,6 +181,7 @@ export async function POST(request: Request) {
         type === "api" ? "法人API・データ一括購入" : 
         type === "billing" || type === "enterprise" ? "料金・見積・請求書払い" :
         type === "partner" ? "業務提携・広告" : 
+        type === "company_manage" ? "自社情報管理・掲載修正・オプトアウト申請（一般受付）" :
         "一般お問い合わせ";
       for (const adm of adminEmails) {
         await sendNotificationEmail(
@@ -191,6 +193,7 @@ export async function POST(request: Request) {
               <p><strong>種別:</strong> ${typeLabel}</p>
               <p><strong>氏名:</strong> ${person_in_charge}</p>
               <p><strong>会社名/組織名:</strong> ${company_name || '未記入'}</p>
+              ${corporate_number && corporate_number !== 'N/A' ? `<p><strong>法人番号:</strong> ${corporate_number}</p>` : ''}
               <p><strong>メールアドレス:</strong> ${requester_email}</p>
               <p><strong>電話番号:</strong> ${mobile_number || '未記入'}</p>
               <p><strong>内容:</strong></p>
@@ -201,15 +204,22 @@ export async function POST(request: Request) {
       }
 
       // Auto-reply to user
+      const userSubject = type === "company_manage"
+        ? (locale === "vi" 
+            ? `【kigyou-list】Tiếp nhận yêu cầu quản lý / đính chính thông tin doanh nghiệp: ${company_name || 'N/A'}`
+            : `【Kigyou-List】掲載情報に関する申請・お問い合わせを受け付けました（${company_name || '貴社'}）`)
+        : `【Kigyou-List】お問い合わせを受け付けました`;
+
       await sendNotificationEmail(
         requester_email,
-        `【Kigyou-List】お問い合わせを受け付けました`,
+        userSubject,
         `
           <div style="font-family: sans-serif; padding: 20px;">
             <p>${person_in_charge} 様</p>
-            <p>この度はKigyou-List（企業リスト）にお問い合わせいただき、誠にありがとうございます。<br>以下の内容でお問い合わせを受け付けました。</p>
+            <p>この度はKigyou-List（企業リスト）にお問い合わせ・申請いただき、誠にありがとうございます。<br>以下の内容で受け付けました。</p>
+            ${corporate_number && corporate_number !== 'N/A' ? `<p><strong>対象法人番号:</strong> ${corporate_number}<br><strong>対象企業名:</strong> ${company_name}</p>` : ''}
             <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; white-space: pre-wrap; margin: 15px 0;">${message}</div>
-            <p>内容を確認の上、担当者より2営業日以内にご返信申し上げます。</p>
+            <p>日本国個人情報保護法（APPI）および当社の情報管理基準に基づき、担当者にて内容を確認の上、通常1〜2営業日以内にご連絡または対応いたします。</p>
             <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;">
             <p style="font-size: 12px; color: #64748b;">Kigyou-List 運営事務局<br>https://kigyoulist.com</p>
           </div>
@@ -220,8 +230,8 @@ export async function POST(request: Request) {
         success: true,
         autoApproved: false,
         message: locale === "vi" 
-          ? "Đã gửi thông tin liên hệ thành công. Chúng tôi sẽ phản hồi trong vòng 2 ngày làm việc."
-          : "お問い合わせを受け付けました。内容を確認の上、2営業日以内に担当者よりご返信いたします。"
+          ? "Đã gửi thông tin liên hệ thành công. Chúng tôi sẽ phản hồi trong vòng 1-2 ngày làm việc."
+          : "お問い合わせ・申請を受け付けました。内容を確認の上、通常1〜2営業日以内に担当者よりご返信いたします。"
       });
     }
 
@@ -249,42 +259,67 @@ export async function POST(request: Request) {
 
 
     // -------------------------------------------------------------
-    // CASE A: UNPUBLISH / HIDE REQUEST (Auto-Approved with Rollback)
+    // CASE A: UNPUBLISH / HIDE REQUEST (100% Manual Admin Review for Users & Owners)
     // -------------------------------------------------------------
     if (type === "hide") {
-      // Check if verified owner or if requester is admin
-      const isOwner = isRequestAdmin || await isUserCompanyOwner(requester_email, corporate_number);
-      if (!isOwner) {
-        if (!otp_code) {
-          return NextResponse.json({ 
-            error: locale === "vi" 
-              ? "Vui lòng lấy và nhập mã xác thực OTP gửi về email." 
-              : "非公開申請を確認するため、メール宛に送信された認証コード（6桁）を入力してください。" 
-          }, { status: 400 });
+      const isOwner = await isUserCompanyOwner(requester_email, corporate_number);
+
+      // Only Administrator direct action executes immediately
+      if (isRequestAdmin) {
+        const reasonText = message ? `管理者直接非公開: ${message}` : "管理者による直接非公開処理";
+        await hideCompany(corporate_number, reasonText);
+
+        const inqResult = await createInquiry(
+          corporate_number,
+          company_name,
+          "hide",
+          requester_email,
+          person_in_charge,
+          mobile_number,
+          reasonText,
+          ip,
+          "auto_approved"
+        );
+
+        await saveCompanyEditHistory(
+          corporate_number,
+          company_name,
+          "status",
+          "公開",
+          "非公開",
+          requester_email,
+          inqResult.id,
+          "auto_approved"
+        );
+
+        try {
+          await executePostApprovalSeoPipeline(corporate_number, "URL_DELETED");
+        } catch (e) {
+          console.warn("SEO pipeline warning on admin hide:", e);
         }
-        const isOtpValid = await verifyOtp(requester_email, otp_code);
-        if (!isOtpValid) {
-          return NextResponse.json({ 
-            error: locale === "vi" 
-              ? "Mã xác thực OTP không đúng hoặc đã hết hạn." 
-              : "認証コードが正しくないか、有効期限が切れています。" 
-          }, { status: 400 });
-        }
+
+        return NextResponse.json({
+          success: true,
+          auto_approved: true,
+          type: "hide",
+          message: locale === "vi"
+            ? "Doanh nghiệp đã được ẩn trực tiếp bởi Quản trị viên (Đã xóa cache & gửi lệnh gỡ Index)."
+            : "管理者権限により企業を即時非公開化し、キャッシュ削除・検索インデックス除外を送信しました。"
+        });
       }
 
-      const reasonText = message ? `ユーザー申請: ${message}` : "ユーザー申請による非公開（自動承認）";
-      await hideCompany(corporate_number, reasonText);
-
+      // All non-admin requests (Verified Owner or Guest APPI) -> Hold for 100% Manual Admin Review
+      const prefixLabel = isOwner ? "【公式オーナー・非公開申請】" : "【一般受付・APPI非公開申請】";
       const inqResult = await createInquiry(
-        corporate_number, 
-        company_name, 
-        "hide", 
-        requester_email, 
-        person_in_charge, 
-        mobile_number, 
-        message || "掲載取り下げ（自動承認）", 
-        ip, 
-        "auto_approved"
+        corporate_number,
+        company_name,
+        "hide",
+        requester_email,
+        person_in_charge,
+        mobile_number,
+        `${prefixLabel} ${message || "掲載取り下げ（非公開・オプトアウト）申請"}`,
+        ip,
+        "pending"
       );
 
       await saveCompanyEditHistory(
@@ -292,70 +327,84 @@ export async function POST(request: Request) {
         company_name,
         "status",
         "公開",
-        "非公開",
+        "非公開（審査待ち）",
         requester_email,
         inqResult.id,
-        "auto_approved"
+        "pending_review"
       );
 
-      const emailSubject = locale === "vi"
-        ? `[kigyou-list] Đã hoàn tất ẩn thông tin doanh nghiệp: ${company_name}`
-        : `【kigyou-list】掲載情報の取り下げ（非公開）手続き完了のお知らせ`;
+      // Notify Admin
+      const adminEmails = (process.env.ADMIN_EMAILS || "trungkim8694@gmail.com,listkigyou@gmail.com").split(",");
+      for (const adm of adminEmails) {
+        await sendNotificationEmail(
+          adm.trim(),
+          `【Kigyou-List 非公開審査待ち】${company_name} (${corporate_number}) - ${person_in_charge || requester_email}`,
+          `
+            <div style="font-family: sans-serif; padding: 20px;">
+              <h2>掲載取り下げ（オプトアウト）申請が届きました（要承認）</h2>
+              <p><strong>申請区分:</strong> ${isOwner ? "公式認証オーナー" : "一般受付（ログイン不要）"}</p>
+              <p><strong>対象企業:</strong> ${company_name} (${corporate_number})</p>
+              <p><strong>申請者:</strong> ${person_in_charge || "未記入"} (${requester_email})</p>
+              <p><strong>電話番号:</strong> ${mobile_number || "未記入"}</p>
+              <p><strong>申請理由・詳細:</strong></p>
+              <div style="background: #fff1f2; padding: 15px; border-radius: 8px; border: 1px solid #fecdd3; white-space: pre-wrap;">${message}</div>
+              <p style="margin-top: 12px;">管理画面の「非公開・修正依頼一覧」より内容をご確認の上、承認（非公開化）または却下を行ってください。</p>
+            </div>
+          `
+        );
+      }
 
-      const emailHtml = `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; padding: 32px 24px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px;">
-          <h2 style="font-size: 18px; color: #0f172a; margin-top: 0;">【kigyou-list】掲載情報の取り下げ完了</h2>
-          <p style="font-size: 14px; color: #334155; line-height: 1.6;">
-            平素より「kigyou-list」をご利用いただきありがとうございます。<br /><br />
-            ご申請いただきました以下の企業情報につきまして、掲載の取り下げ（非公開）処理が正常に完了いたしました。
-          </p>
-          <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px; line-height: 1.8;">
-            <div><strong>対象企業名:</strong> ${company_name}</div>
-            <div><strong>法人番号:</strong> ${corporate_number}</div>
-            <div><strong>処理結果:</strong> 非公開（検索結果および企業ページより除外）</div>
-            <div><strong>処理日時:</strong> ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}</div>
+      // Auto-reply to requester
+      await sendNotificationEmail(
+        requester_email,
+        `【Kigyou-List】掲載取り下げ（非公開）申請を受け付けました（${company_name}）`,
+        `
+          <div style="font-family: sans-serif; padding: 20px;">
+            <p>${person_in_charge || requester_email} 様</p>
+            <p>Kigyou-List 運営事務局でございます。<br>以下の企業ページの非公開（オプトアウト）申請を受け付けました。</p>
+            <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 15px 0;">
+              <div><strong>対象企業名:</strong> ${company_name}</div>
+              <div><strong>法人番号:</strong> ${corporate_number}</div>
+              <div><strong>ステータス:</strong> 運営事務局 審査待ち</div>
+              <div style="margin-top: 8px; white-space: pre-wrap;">${message}</div>
+            </div>
+            <p>個人情報保護法（APPI）および当社の情報管理基準に基づき、運営事務局にて内容を確認の上、承認後に非公開処理および完了のご連絡を差し上げます。</p>
           </div>
-          <p style="font-size: 12px; color: #64748b; line-height: 1.6;">
-            ※検索エンジンのキャッシュ等により一時的に表示が残る場合がございますが、順次削除されます。
-          </p>
-        </div>
-      `;
-      await sendNotificationEmail(requester_email, emailSubject, emailHtml);
+        `
+      );
 
       return NextResponse.json({
         success: true,
-        auto_approved: true,
+        auto_approved: false,
         type: "hide",
-        message: locale === "vi" 
-          ? "Thông tin doanh nghiệp đã được ẩn thành công." 
-          : "企業情報の非公開処理が完了しました。"
+        message: locale === "vi"
+          ? "Yêu cầu gỡ bỏ/ẩn doanh nghiệp đã được gửi đến Ban quản trị để phê duyệt. Chúng tôi sẽ thông báo qua email ngay sau khi xử lý."
+          : "非公開（オプトアウト）申請を受け付けました。運営事務局にて内容を確認・承認後、非公開処理および完了メールをお送りいたします。"
       });
     }
 
     // -------------------------------------------------------------
-    // CASE B: UPDATE / EDIT REQUEST (Supports Multi-Field Input)
+    // CASE B: UPDATE / EDIT REQUEST (100% Manual Admin Review for Users & Owners)
     // -------------------------------------------------------------
     if (type === "update") {
       // 1. Gather all active field updates
       const activeUpdates: Record<string, string> = {};
+      const hasExplicitUpdatesMap = Boolean(body.updates && typeof body.updates === "object" && Object.keys(body.updates).length > 0);
 
-      if (body.updates && typeof body.updates === "object") {
+      if (hasExplicitUpdatesMap) {
         for (const [k, v] of Object.entries(body.updates)) {
           if (ALLOWED_EDIT_FIELDS.includes(k) && typeof v === "string" && v.trim()) {
             activeUpdates[k] = v.trim();
           }
         }
-      }
-
-      // Backward compatibility: single field_name and new_value
-      if (field_name && new_value && ALLOWED_EDIT_FIELDS.includes(field_name) && typeof new_value === "string" && new_value.trim()) {
-        activeUpdates[field_name] = new_value.trim();
-      }
-
-      // Also check root body keys
-      for (const field of ALLOWED_EDIT_FIELDS) {
-        if (body[field] && typeof body[field] === "string" && body[field].trim()) {
-          activeUpdates[field] = body[field].trim();
+      } else {
+        if (field_name && new_value && ALLOWED_EDIT_FIELDS.includes(field_name) && typeof new_value === "string" && new_value.trim()) {
+          activeUpdates[field_name] = new_value.trim();
+        }
+        for (const field of ALLOWED_EDIT_FIELDS) {
+          if (body[field] && typeof body[field] === "string" && body[field].trim()) {
+            activeUpdates[field] = body[field].trim();
+          }
         }
       }
 
@@ -363,19 +412,19 @@ export async function POST(request: Request) {
       if (updateKeys.length === 0) {
         return NextResponse.json({ 
           error: locale === "vi" 
-            ? "Vui lòng nhập ít nhất một thông tin cần chỉnh sửa." 
-            : "修正したい項目を少なくとも1つ入力してください。" 
+            ? "Vui lòng thay đổi ít nhất một thông tin so với dữ liệu hiện tại." 
+            : "現在の登録情報から変更された項目がありません。修正したい項目を入力してください。" 
         }, { status: 400 });
       }
 
-      // 2. Syntax Validation for each non-empty field
+      // 2. Strict Unified Server-Side Validation for each non-empty field
       if (activeUpdates.phone_number) {
         const cleanPhone = activeUpdates.phone_number.replace(/\s+/g, "");
         if (!/^0\d{1,4}-?\d{1,4}-?\d{3,4}$/.test(cleanPhone)) {
           return NextResponse.json({
             error: locale === "vi" 
               ? "Định dạng số điện thoại không hợp lệ (Ví dụ: 03-1234-5678)." 
-              : "電話番号の形式が正しくありません (例: 03-1234-5678)。"
+              : "代表電話番号の形式が正しくありません（例: 03-1234-5678）。"
           }, { status: 400 });
         }
       }
@@ -386,55 +435,114 @@ export async function POST(request: Request) {
           return NextResponse.json({
             error: locale === "vi" 
               ? "Định dạng số FAX không hợp lệ (Ví dụ: 03-1234-5679)." 
-              : "FAX番号の形式が正しくありません (例: 03-1234-5679)。"
+              : "FAX番号の形式が正しくありません（例: 03-1234-5679）。"
           }, { status: 400 });
         }
       }
 
       if (activeUpdates.website_url) {
-        let testUrl = activeUpdates.website_url;
+        let testUrl = activeUpdates.website_url.trim();
         if (!/^https?:\/\//i.test(testUrl)) {
           testUrl = `https://${testUrl}`;
-          activeUpdates.website_url = testUrl;
         }
-      }
-
-      if (activeUpdates.contact_form_url) {
-        let testUrl = activeUpdates.contact_form_url;
-        if (!/^https?:\/\//i.test(testUrl)) {
-          testUrl = `https://${testUrl}`;
-          activeUpdates.contact_form_url = testUrl;
+        if (!/^https?:\/\/[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(\/\S*)?$/.test(testUrl)) {
+          return NextResponse.json({
+            error: locale === "vi"
+              ? "URL Website chính thức không đúng định dạng (Ví dụ: https://example.co.jp)."
+              : "公式ウェブサイトURLの形式が正しくありません（例: https://example.co.jp）。"
+          }, { status: 400 });
         }
-      }
-
-      if (activeUpdates.recruit_url) {
-        let testUrl = activeUpdates.recruit_url;
-        if (!/^https?:\/\//i.test(testUrl)) {
-          testUrl = `https://${testUrl}`;
-          activeUpdates.recruit_url = testUrl;
-        }
+        activeUpdates.website_url = testUrl;
       }
 
       if (activeUpdates.email_address) {
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(activeUpdates.email_address)) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(activeUpdates.email_address)) {
           return NextResponse.json({
             error: locale === "vi" 
-              ? "Định dạng email liên hệ không hợp lệ." 
-              : "メールアドレスの形式が正しくありません。"
+              ? "Định dạng email đại diện không hợp lệ." 
+              : "代表メールアドレスの形式が正しくありません。"
           }, { status: 400 });
         }
       }
 
+      if (activeUpdates.company_name_kana) {
+        if (!/^[\u30A0-\u30FF\u3000\sー・＆（）()．.]+$/.test(activeUpdates.company_name_kana)) {
+          return NextResponse.json({
+            error: locale === "vi"
+              ? "Tên Furigana chỉ được phép nhập bằng chữ Katakana (全角カタカナ)."
+              : "会社名（フリガナ）は全角カタカナのみで入力してください。"
+          }, { status: 400 });
+        }
+      }
+
+      if (activeUpdates.company_name_en) {
+        if (!/^[A-Za-z0-9\s.,&'()\-/]+$/.test(activeUpdates.company_name_en)) {
+          return NextResponse.json({
+            error: locale === "vi"
+              ? "Tên công ty tiếng Anh chỉ được chứa ký tự chữ cái tiếng Anh, số và dấu câu chuẩn."
+              : "英語社名表記は半角英数字・標準記号のみで入力してください（例: Sample Inc.）。"
+          }, { status: 400 });
+        }
+      }
+
+      for (const numField of ["capital_amount", "employee_count", "sales_amount"] as const) {
+        if (activeUpdates[numField]) {
+          const cleaned = activeUpdates[numField].replace(/[,、\s]/g, "");
+          if (!/^\d+$/.test(cleaned)) {
+            return NextResponse.json({
+              error: locale === "vi"
+                ? "Các trường Vốn điều lệ, Nhân sự, Doanh thu chỉ được phép nhập số nguyên."
+                : "資本金・従業員数・売上高は半角数字（整数）のみで入力してください。"
+            }, { status: 400 });
+          }
+          activeUpdates[numField] = cleaned;
+        }
+      }
+
       const currentCompany = await getCompanyByNumber(corporate_number);
-      const isOwner = isRequestAdmin || await isUserCompanyOwner(requester_email, corporate_number);
+      const isOwner = await isUserCompanyOwner(requester_email, corporate_number);
 
-      // Check if email_address is being changed/updated
+      // Compare against currentCompany to filter out unchanged fields
+      const actualChangedUpdates: Record<string, string> = {};
+      for (const [k, v] of Object.entries(activeUpdates)) {
+        const oldVal = currentCompany ? String((currentCompany as any)[k] ?? "").trim() : "";
+        if (v !== oldVal) {
+          actualChangedUpdates[k] = v;
+        }
+      }
+
+      // If both jigyo_shumoku and business_summary are identical, keep jigyo_shumoku as the primary diff entry
+      if (
+        actualChangedUpdates.jigyo_shumoku &&
+        actualChangedUpdates.business_summary &&
+        actualChangedUpdates.jigyo_shumoku === actualChangedUpdates.business_summary
+      ) {
+        delete actualChangedUpdates.business_summary;
+      }
+      // If both full_address and street_address are identical, keep full_address as the primary diff entry
+      if (
+        actualChangedUpdates.full_address &&
+        actualChangedUpdates.street_address &&
+        actualChangedUpdates.full_address === actualChangedUpdates.street_address
+      ) {
+        delete actualChangedUpdates.street_address;
+      }
+
+      if (Object.keys(actualChangedUpdates).length === 0) {
+        return NextResponse.json({
+          error: locale === "vi"
+            ? "Thông tin bạn nhập trùng khớp với dữ liệu hiện tại, không có mục nào thay đổi."
+            : "現在の登録情報から変更された項目がありません。"
+        }, { status: 400 });
+      }
+
+      // Check if email_address is being changed by non-admin Owner
       const currentEmail = (currentCompany?.email_address || "").trim().toLowerCase();
-      const newEmail = (activeUpdates.email_address || "").trim().toLowerCase();
+      const newEmail = (actualChangedUpdates.email_address || "").trim().toLowerCase();
       const isEmailChanging = Boolean(newEmail && newEmail !== currentEmail);
+      const isGuestSubmission = Boolean(body.is_guest_submission);
 
-      // RULE 1: Sửa email bắt buộc nhập OTP gửi về chính email mới đó (Admin bypasses OTP)
-      if (isEmailChanging && !isRequestAdmin) {
+      if (isEmailChanging && !isRequestAdmin && !isGuestSubmission) {
         const emailOtp = body.email_otp_code || body.otp_code;
         if (!emailOtp) {
           return NextResponse.json({
@@ -453,18 +561,14 @@ export async function POST(request: Request) {
         }
       }
 
-      // RULE 2: SĐT sửa KHÔNG CẦN THIẾT nhận OTP!
-      // (activeUpdates.phone_number does not require any OTP)
-
-      // Build summary of changes
       const updateDescriptions: string[] = [];
-      for (const [k, v] of Object.entries(activeUpdates)) {
+      for (const [k, v] of Object.entries(actualChangedUpdates)) {
         updateDescriptions.push(`${k}: ${v}`);
       }
       const summaryMsg = updateDescriptions.join(", ");
 
-      // SUB-CASE B0: If verified company owner or Admin -> AUTO-APPROVE IMMEDIATELY
-      if (isOwner) {
+      // SUB-CASE B0: ONLY Administrator direct action updates DB immediately
+      if (isRequestAdmin) {
         const inqResult = await createInquiry(
           corporate_number,
           company_name,
@@ -472,21 +576,19 @@ export async function POST(request: Request) {
           requester_email,
           person_in_charge,
           mobile_number,
-          isRequestAdmin 
-            ? `【管理者直接即時反映】更新項目: [${summaryMsg}]`
-            : `【公式オーナー即時更新】更新項目: [${summaryMsg}]`,
+          `【管理者直接即時反映】更新項目: [${summaryMsg}]`,
           ip,
           "auto_approved"
         );
 
-        for (const [field, newVal] of Object.entries(activeUpdates)) {
+        for (const [field, newVal] of Object.entries(actualChangedUpdates)) {
           const oldVal = currentCompany ? (currentCompany as any)[field] || null : null;
           await updateCompanyField(corporate_number, field, newVal);
           await saveCompanyEditHistory(
             corporate_number,
             company_name,
             field,
-            oldVal,
+            oldVal ? String(oldVal) : null,
             newVal,
             requester_email,
             inqResult.id,
@@ -495,237 +597,108 @@ export async function POST(request: Request) {
         }
 
         try {
-          revalidatePath(`/[locale]/company/${corporate_number}`, 'page');
-          revalidatePath(`/ja/company/${corporate_number}`);
-          revalidatePath(`/vi/company/${corporate_number}`);
-          revalidatePath(`/en/company/${corporate_number}`);
+          await executePostApprovalSeoPipeline(corporate_number, "URL_UPDATED");
         } catch (e) {
-          console.warn("revalidatePath warning in inquiry:", e);
+          console.warn("SEO pipeline warning on admin update:", e);
         }
-
-        // Send confirmation email
-        const emailSubject = `【kigyou-list】企業情報の更新が完了いたしました（公式オーナー更新）`;
-        const updatedListHtml = Object.entries(activeUpdates)
-          .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
-          .join("");
-        const emailHtml = `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; padding: 32px 24px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px;">
-            <h2 style="font-size: 18px; color: #0f172a; margin-top: 0;">【kigyou-list】企業情報の更新完了</h2>
-            <p style="font-size: 14px; color: #334155; line-height: 1.6;">
-              平素より「kigyou-list」をご利用いただきありがとうございます。<br /><br />
-              公式オーナー様による以下の企業情報更新が即座に反映されました。
-            </p>
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px; line-height: 1.8;">
-              <div><strong>対象企業名:</strong> ${company_name}</div>
-              <div><strong>法人番号:</strong> ${corporate_number}</div>
-              <div style="margin-top: 8px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
-                ${updatedListHtml}
-              </div>
-              <div style="margin-top: 8px; color: #64748b;"><strong>更新日時:</strong> ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}</div>
-            </div>
-          </div>
-        `;
-        await sendNotificationEmail(requester_email, emailSubject, emailHtml);
-        if (isEmailChanging && newEmail && newEmail !== requester_email.toLowerCase()) {
-          await sendNotificationEmail(newEmail, emailSubject, emailHtml);
-        }
-
-        return NextResponse.json({
-          success: true,
-          auto_approved: true,
-          type: "update",
-          message: isRequestAdmin
-            ? (locale === "vi" 
-                ? "Thông tin doanh nghiệp đã được cập nhật trực tiếp vào cơ sở dữ liệu bởi Quản trị viên (Không cần OTP / Phê duyệt)!" 
-                : "管理者特権により、企業情報がデータベースに直接更新・反映されました（承認・OTP不要）。")
-            : (locale === "vi"
-                ? "Thông tin doanh nghiệp đã được cập nhật thành công!"
-                : "企業情報が正常に更新されました。")
-        });
-      }
-
-      // SUB-CASE FOR PUBLIC PROPOSALS (Requires matching official website or manual admin review)
-      if (!website_url.trim()) {
-        return NextResponse.json({
-          error: locale === "vi" 
-            ? "Vui lòng nhập URL website chính thức để đối chiếu (bắt buộc)." 
-            : "照合用公式ウェブサイトURLを入力してください（必須）。"
-        }, { status: 400 });
-      }
-
-      // Determine website to verify against
-      const targetWebsite = website_url.trim();
-      let isVerified = false;
-
-      // Rule: Check targetWebsite
-      if (targetWebsite) {
-        try {
-          let crawlUrl = targetWebsite;
-          if (!/^https?:\/\//i.test(crawlUrl)) {
-            crawlUrl = `https://${crawlUrl}`;
-          }
-
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 7000);
-          const webRes = await fetch(crawlUrl, {
-            signal: controller.signal,
-            headers: {
-              "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) KigyouListBot/1.0",
-              "Accept": "text/html,application/xhtml+xml"
-            }
-          });
-          clearTimeout(timeoutId);
-
-          if (webRes.ok || webRes.status === 403 || webRes.status === 301 || webRes.status === 302) {
-            if (updateKeys.length === 1 && updateKeys[0] === "website_url") {
-              isVerified = true;
-            } else {
-              const html = await webRes.text();
-              let matchedCount = 0;
-              let checkedCount = 0;
-
-              for (const [key, val] of Object.entries(activeUpdates)) {
-                if (key === "website_url") {
-                  matchedCount++;
-                  checkedCount++;
-                } else if (key === "phone_number" || key === "fax_number") {
-                  checkedCount++;
-                  const digits = val.replace(/\D/g, "");
-                  const cleanHtml = html.replace(/[-\s()]/g, "");
-                  if (digits.length >= 8 && cleanHtml.includes(digits)) {
-                    matchedCount++;
-                  }
-                } else if (key === "email_address") {
-                  checkedCount++;
-                  if (html.toLowerCase().includes(val.toLowerCase())) {
-                    matchedCount++;
-                  }
-                } else if (key === "representative_name") {
-                  checkedCount++;
-                  const cleanRep = val.replace(/\s+/g, "");
-                  if (cleanRep.length >= 2 && html.replace(/\s+/g, "").includes(cleanRep)) {
-                    matchedCount++;
-                  }
-                } else {
-                  checkedCount++;
-                  if (html.includes(val)) {
-                    matchedCount++;
-                  }
-                }
-              }
-
-              if (checkedCount > 0 && matchedCount > 0) {
-                isVerified = true;
-              }
-            }
-          }
-        } catch (crawlErr) {
-          console.warn("Website crawl error in inquiry verify:", crawlErr);
-          isVerified = false;
-        }
-      }
-
-      // SUB-CASE B1: MATCHED -> AUTO APPROVE ALL FIELDS
-      if (isVerified) {
-        const inqResult = await createInquiry(
-          corporate_number,
-          company_name,
-          "update",
-          requester_email,
-          person_in_charge,
-          mobile_number,
-          `【自動承認】更新項目: [${summaryMsg}], 参照URL: ${targetWebsite}`,
-          ip,
-          "auto_approved"
-        );
-
-        // Update each field in DB & save history
-        for (const [field, newVal] of Object.entries(activeUpdates)) {
-          const oldVal = currentCompany ? (currentCompany as any)[field] || null : null;
-          await updateCompanyField(corporate_number, field, newVal);
-          await saveCompanyEditHistory(
-            corporate_number,
-            company_name,
-            field,
-            oldVal,
-            newVal,
-            requester_email,
-            inqResult.id,
-            "auto_approved"
-          );
-        }
-
-        // Send confirmation email
-        const emailSubject = `【kigyou-list】貴社の情報更新が完了いたしました（自動承認）`;
-        const updatedListHtml = Object.entries(activeUpdates).map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`).join("");
-        const emailHtml = `
-          <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; padding: 32px 24px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px;">
-            <h2 style="font-size: 18px; color: #0f172a; margin-top: 0;">【kigyou-list】企業情報の更新完了</h2>
-            <p style="font-size: 14px; color: #334155; line-height: 1.6;">
-              平素より「kigyou-list」をご利用いただきありがとうございます。<br /><br />
-              ウェブサイトとの照合が完了し、以下の企業情報が正常に自動更新されました。
-            </p>
-            <div style="background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 20px 0; font-size: 13px; line-height: 1.8;">
-              <div><strong>対象企業名:</strong> ${company_name}</div>
-              <div><strong>法人番号:</strong> ${corporate_number}</div>
-              <div style="margin-top: 8px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
-                ${updatedListHtml}
-              </div>
-              <div style="margin-top: 8px; color: #64748b;"><strong>更新日時:</strong> ${new Date().toLocaleString("ja-JP", { timeZone: "Asia/Tokyo" })}</div>
-            </div>
-            <p style="font-size: 12px; color: #64748b;">
-              kigyou-listをご利用いただき誠にありがとうございます。
-            </p>
-          </div>
-        `;
-        await sendNotificationEmail(requester_email, emailSubject, emailHtml);
 
         return NextResponse.json({
           success: true,
           auto_approved: true,
           type: "update",
           message: locale === "vi" 
-            ? "Thông tin đã được đối chiếu với website và cập nhật thành công!" 
-            : "ウェブサイトとの照合が完了し、入力された各情報が自動更新されました。"
-        });
-      } 
-      // SUB-CASE B2: MISMATCH -> HOLD FOR ADMIN MANUAL REVIEW
-      else {
-        const inqResult = await createInquiry(
-          corporate_number,
-          company_name,
-          "update",
-          requester_email,
-          person_in_charge,
-          mobile_number,
-          `【自動照合不一致・要確認】更新項目: [${summaryMsg}], 参照URL: ${targetWebsite} - 備考: ${message}`,
-          ip,
-          "pending"
-        );
-
-        for (const [field, newVal] of Object.entries(activeUpdates)) {
-          const oldVal = currentCompany ? (currentCompany as any)[field] || null : null;
-          await saveCompanyEditHistory(
-            corporate_number,
-            company_name,
-            field,
-            oldVal,
-            newVal,
-            requester_email,
-            inqResult.id,
-            "pending_review"
-          );
-        }
-
-        return NextResponse.json({
-          success: true,
-          auto_approved: false,
-          type: "update",
-          message: locale === "vi"
-            ? "Yêu cầu đã được tiếp nhận. Do chưa tìm thấy đối chiếu khớp trên website, ban quản trị sẽ xem xét và duyệt trong thời gian sớm nhất."
-            : "リクエストを受け付けました。ウェブサイトとの自動照合で一致を確認できなかったため、管理者の確認後に反映されます。"
+            ? "Thông tin doanh nghiệp đã được cập nhật trực tiếp bởi Quản trị viên (Đã xóa cache & gửi Google VIP / Bing IndexNow)!" 
+            : "管理者特権により企業情報を即時更新し、キャッシュ削除・検索インデックス送信を完了しました。"
         });
       }
+
+      // SUB-CASE B1: ALL USERS (Both Verified Owner & Guest) -> 100% MANUAL ADMIN REVIEW
+      const sourcePrefix = isOwner
+        ? "【公式オーナー修正申請・審査待ち】"
+        : "【一般受付・修正申請・審査待ち】";
+      const inquiryMsg = `${sourcePrefix} 更新項目: [${summaryMsg}]${message ? `\n【補足・理由】${message}` : ""}`;
+
+      const inqResult = await createInquiry(
+        corporate_number,
+        company_name,
+        "update",
+        requester_email,
+        person_in_charge,
+        mobile_number,
+        inquiryMsg,
+        ip,
+        "pending"
+      );
+
+      for (const [field, newVal] of Object.entries(actualChangedUpdates)) {
+        const oldVal = currentCompany ? (currentCompany as any)[field] || null : null;
+        await saveCompanyEditHistory(
+          corporate_number,
+          company_name,
+          field,
+          oldVal ? String(oldVal) : null,
+          newVal,
+          requester_email,
+          inqResult.id,
+          "pending_review"
+        );
+      }
+
+      // Send alert email to Admin
+      const adminEmails = (process.env.ADMIN_EMAILS || "trungkim8694@gmail.com,listkigyou@gmail.com").split(",");
+      const updatedListHtml = Object.entries(actualChangedUpdates)
+        .map(([k, v]) => `<div><strong>${k}:</strong> ${v}</div>`)
+        .join("");
+      for (const adm of adminEmails) {
+        await sendNotificationEmail(
+          adm.trim(),
+          `【Kigyou-List 情報修正審査待ち】${company_name} (${corporate_number}) - ${person_in_charge || requester_email}`,
+          `
+            <div style="font-family: sans-serif; padding: 20px;">
+              <h2>企業情報の修正申請が届きました（要承認）</h2>
+              <p><strong>申請区分:</strong> ${isOwner ? "公式認証オーナー" : "一般受付（ログイン不要）"}</p>
+              <p><strong>対象企業:</strong> ${company_name} (${corporate_number})</p>
+              <p><strong>申請者:</strong> ${person_in_charge || "未記入"} (${requester_email})</p>
+              <p><strong>電話番号:</strong> ${mobile_number || "未記入"}</p>
+              <div style="background: #f8fafc; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 15px 0;">
+                ${updatedListHtml}
+                ${message ? `<div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0;"><strong>補足:</strong> ${message}</div>` : ""}
+              </div>
+              <p>管理画面の「非公開・修正依頼一覧」より変更差分をご確認の上、1クリックで承認（DB反映・キャッシュ削除・Google/Bingインデックス送信）または却下が可能です。</p>
+            </div>
+          `
+        );
+      }
+
+      // Send confirmation email to applicant
+      await sendNotificationEmail(
+        requester_email,
+        `【Kigyou-List】掲載情報の修正申請を受け付けました（${company_name}）`,
+        `
+          <div style="font-family: sans-serif; padding: 20px;">
+            <p>${person_in_charge || requester_email} 様</p>
+            <p>この度はKigyou-List（企業リスト）へ掲載情報の修正をご申請いただき、誠にありがとうございます。<br>以下の内容で修正申請を受け付けました（現在、運営事務局の審査待ちです）。</p>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin: 16px 0; font-size: 13px; line-height: 1.8;">
+              <div><strong>対象企業名:</strong> ${company_name}</div>
+              <div><strong>法人番号:</strong> ${corporate_number}</div>
+              <div><strong>ステータス:</strong> 審査待ち（承認後に本番反映）</div>
+              <div style="margin-top: 8px; border-top: 1px solid #e2e8f0; padding-top: 8px;">
+                ${updatedListHtml}
+              </div>
+            </div>
+            <p>運営事務局にて内容を確認の上、承認後にデータベースへ反映し、完了のご連絡を差し上げます。</p>
+          </div>
+        `
+      );
+
+      return NextResponse.json({
+        success: true,
+        auto_approved: false,
+        type: "update",
+        message: locale === "vi"
+          ? "Yêu cầu chỉnh sửa thông tin đã được gửi tới Ban quản trị để kiểm duyệt. Dữ liệu sẽ được cập nhật lên hệ thống ngay sau khi được phê duyệt."
+          : "掲載情報の修正申請を受け付けました。運営事務局にて内容を確認・承認後、公式データベースへ反映しメールにてお知らせいたします。"
+      });
     }
 
     return NextResponse.json({ error: "Invalid request type" }, { status: 400 });

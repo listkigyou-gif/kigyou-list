@@ -1,14 +1,14 @@
 {
   "created_at": "2026-10-22T14:51:42.658530",
-  "total_runs": 271,
-  "last_sync_at": "2026-10-27T12:40:08.749342",
+  "total_runs": 379,
+  "last_sync_at": "2026-10-31T00:31:21.215312",
   "layers": {
     "layer_0": {
       "name": "Foundation Entities (NTA & Legal)",
       "status": "COMPLETED",
-      "last_run": "2026-10-26T15:05:57.120236",
-      "last_success": "2026-10-26T15:06:05.547658",
-      "processed": 51200,
+      "last_run": "2026-10-30T15:42:08.391451",
+      "last_success": "2026-10-30T15:43:08.812658",
+      "processed": 52000,
       "last_delta": 200,
       "note": "+200 sự kiện pháp lý mới",
       "error_count": 0,
@@ -17,30 +17,30 @@
     "layer_gbiz": {
       "name": "Tầng 1A: METI gBizINFO (Vốn, Nhân sự, Trợ cấp, Bằng sáng chế)",
       "status": "COMPLETED",
-      "last_run": "2026-10-26T15:06:05.548905",
-      "last_success": "2026-10-26T15:06:06.201775",
+      "last_run": "2026-10-30T15:43:08.814427",
+      "last_success": "2026-10-30T15:47:19.019505",
       "processed": 7063551,
-      "last_delta": 0,
-      "note": "Đã hoàn thành quét hôm nay, hết dữ liệu mới",
+      "last_delta": 500,
+      "note": "+0 signals, +500 cos",
       "error_count": 0,
       "last_error": null
     },
     "layer_1": {
       "name": "Compliance & Licenses (MLIT, NPA, MHLW)",
       "status": "COMPLETED",
-      "last_run": "2026-10-26T15:21:31.393124",
-      "last_success": "2026-10-26T15:38:47.899257",
-      "processed": 491631,
-      "last_delta": 0,
-      "note": "Đã thu thập trọn bộ kho dữ liệu mở, không có giấy phép mới",
+      "last_run": "2026-10-29T15:29:37.483070",
+      "last_success": "2026-10-29T15:53:59.588595",
+      "processed": 491639,
+      "last_delta": 8,
+      "note": "+8 giấy phép mới",
       "error_count": 0,
       "last_error": null
     },
     "layer_edinet": {
       "name": "Tầng 1.5A: FSA EDINET (Tài chính & Thu nhập bình quân)",
       "status": "COMPLETED",
-      "last_run": "2026-10-26T15:06:53.248438",
-      "last_success": "2026-10-26T15:06:54.536924",
+      "last_run": "2026-10-30T16:18:05.362228",
+      "last_success": "2026-10-30T16:18:06.817778",
       "processed": 24124,
       "last_delta": 0,
       "note": "Hoàn thành quét 3 ngày qua, không có báo cáo mới",
@@ -50,8 +50,8 @@
     "layer_geps": {
       "name": "Tầng 1.5B: GEPS Cổng Đấu thầu Mua sắm Chính phủ",
       "status": "COMPLETED",
-      "last_run": "2026-10-26T15:06:54.538455",
-      "last_success": "2026-10-26T15:06:57.710130",
+      "last_run": "2026-10-30T16:18:06.821595",
+      "last_success": "2026-10-30T16:18:10.848320",
       "processed": 257994,
       "last_delta": 0,
       "note": "Hoàn thành quét đấu thầu, không có gói thầu mới",
@@ -61,19 +61,19 @@
     "layer_2": {
       "name": "Digital Presence (Website & Contacts)",
       "status": "COMPLETED",
-      "last_run": "2026-10-27T12:39:22.635196",
-      "last_success": "2026-10-27T12:39:47.985771",
-      "processed": 540748,
+      "last_run": "2026-10-31T00:30:38.797895",
+      "last_success": "2026-10-31T00:31:05.068509",
+      "processed": 540751,
       "last_delta": 0,
-      "note": "Kho website: 540,748 (236 chờ recrawl)",
+      "note": "Kho website: 540,751 (811 chờ recrawl)",
       "error_count": 0,
       "last_error": null
     },
     "layer_3": {
       "name": "Business Intent Signals (HelloWork)",
       "status": "COMPLETED",
-      "last_run": "2026-10-26T15:39:14.983976",
-      "last_success": "2026-10-26T15:39:15.322076",
+      "last_run": "2026-10-30T16:18:37.471473",
+      "last_success": "2026-10-30T16:18:41.104058",
       "processed": 1453180,
       "last_delta": 0,
       "note": "Kho: 1,453,180 tin việc làm (207,826 DN tuyển dụng) | Đã đồng bộ 100%, không có tin mới",
@@ -81,5 +81,5 @@
       "last_error": null
     }
   },
-  "updated_at": "2026-10-27T12:40:08.749355"
+  "updated_at": "2026-10-31T00:31:21.215324"
 }

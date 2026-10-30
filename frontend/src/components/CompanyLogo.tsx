@@ -39,7 +39,7 @@ export const CompanyLogo: React.FC<CompanyLogoProps> = ({
   const [imgError, setImgError] = useState(false);
   const domain = extractDomain(websiteUrl);
 
-  // Kigyou-list.com is owned by ＴＱＣ株式会社 (Corporate Number: 4013301048678).
+  // kigyoulist.com is owned by ＴＱＣ株式会社 (Corporate Number: 4013301048678).
   // Only this exact company or kigyoulist.com domain should show the official platform book logo.
   const cleanName = (companyName || "").replace(/[\s\u3000]/g, "");
   const isExactTqc = 

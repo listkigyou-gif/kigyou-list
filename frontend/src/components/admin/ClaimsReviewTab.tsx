@@ -30,6 +30,8 @@ interface ClaimRequestAdmin {
   document_type: string;
   document_url: string;
   notes: string | null;
+  pr_title?: string | null;
+  pr_message?: string | null;
   status: "pending" | "approved" | "rejected";
   reviewed_by: string | null;
   reviewed_at: string | null;
@@ -47,6 +49,12 @@ export function ClaimsReviewTab({ adminEmail, getAdminHeaders }: ClaimsReviewTab
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>("pending");
   const [searchQuery, setSearchQuery] = useState<string>("");
+  const [counts, setCounts] = useState<{ all: number; pending: number; approved: number; rejected: number }>({
+    all: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
 
   // Reviewing modal states
   const [previewDocUrl, setPreviewDocUrl] = useState<string | null>(null);
@@ -64,6 +72,9 @@ export function ClaimsReviewTab({ adminEmail, getAdminHeaders }: ClaimsReviewTab
       const data = await res.json();
       if (res.ok && data.success) {
         setClaims(data.claims || []);
+        if (data.counts) {
+          setCounts(data.counts);
+        }
       }
     } catch (e) {
       console.error("Failed to fetch claims for admin:", e);
@@ -141,43 +152,55 @@ export function ClaimsReviewTab({ adminEmail, getAdminHeaders }: ClaimsReviewTab
           <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs font-bold">
             <button
               onClick={() => setStatusFilter("pending")}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === "pending"
                   ? "bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-300 shadow-xs"
                   : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
               }`}
             >
-              未審査
+              <span>未審査</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${statusFilter === "pending" ? "bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300" : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"}`}>
+                {counts.pending}
+              </span>
             </button>
             <button
               onClick={() => setStatusFilter("approved")}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === "approved"
                   ? "bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-300 shadow-xs"
                   : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
               }`}
             >
-              承認済
+              <span>承認済</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${statusFilter === "approved" ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300" : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"}`}>
+                {counts.approved}
+              </span>
             </button>
             <button
               onClick={() => setStatusFilter("rejected")}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === "rejected"
                   ? "bg-white dark:bg-slate-700 text-rose-700 dark:text-rose-300 shadow-xs"
                   : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
               }`}
             >
-              却下
+              <span>却下</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${statusFilter === "rejected" ? "bg-rose-100 dark:bg-rose-950 text-rose-800 dark:text-rose-300" : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"}`}>
+                {counts.rejected}
+              </span>
             </button>
             <button
               onClick={() => setStatusFilter("all")}
-              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
                 statusFilter === "all"
                   ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs"
                   : "text-slate-500 hover:text-slate-800 dark:hover:text-slate-200"
               }`}
             >
-              すべて
+              <span>すべて</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-mono ${statusFilter === "all" ? "bg-slate-200 text-slate-900 dark:bg-slate-600 dark:text-slate-100" : "bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300"}`}>
+                {counts.all}
+              </span>
             </button>
           </div>
 
@@ -261,6 +284,14 @@ export function ClaimsReviewTab({ adminEmail, getAdminHeaders }: ClaimsReviewTab
                       <span className="text-[10px] text-slate-400 font-mono font-normal block mt-0.5">
                         {claim.corporate_number}
                       </span>
+                      {claim.pr_title && (
+                        <div className="mt-1 flex items-center gap-1 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
+                          <span className="font-bold shrink-0">💡 PR:</span>
+                          <span className="truncate max-w-[200px]" title={claim.pr_message || claim.pr_title}>
+                            {claim.pr_title}
+                          </span>
+                        </div>
+                      )}
                     </td>
 
                     <td className="px-4 py-3.5">
@@ -276,20 +307,34 @@ export function ClaimsReviewTab({ adminEmail, getAdminHeaders }: ClaimsReviewTab
                     </td>
 
                     <td className="px-4 py-3.5">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewDocUrl(claim.document_url)}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800 transition-colors cursor-pointer"
-                      >
-                        <Eye className="w-3.5 h-3.5" />
-                        <span>
-                          {claim.document_type === "business_card"
-                            ? "名刺画像を確認"
-                            : claim.document_type === "registry"
-                            ? "登記簿を確認"
-                            : "添付書類を確認"}
+                      {claim.document_type === "domain_email" || claim.document_type === "domain_otp" || claim.reviewed_by === "system_instant_verify" ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 font-bold border border-emerald-200 dark:border-emerald-800 text-[11px]">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          WEBドメイン認証 (自動即時)
                         </span>
-                      </button>
+                      ) : claim.reviewed_by === "admin_direct" ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300 font-bold border border-purple-200 dark:border-purple-800 text-[11px]">
+                          <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                          管理者直接認証
+                        </span>
+                      ) : claim.document_url && claim.document_url !== "DOMAIN_EMAIL_VERIFIED" ? (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewDocUrl(claim.document_url)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 text-[#1B4F8A] dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800 transition-colors cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>
+                            {claim.document_type === "business_card"
+                              ? "名刺画像を確認"
+                              : claim.document_type === "registry_doc" || claim.document_type === "registry"
+                              ? "登記簿を確認"
+                              : "添付書類を確認"}
+                          </span>
+                        </button>
+                      ) : (
+                        <span className="text-slate-400 text-xs">書類なし</span>
+                      )}
                     </td>
 
                     <td className="px-4 py-3.5 text-slate-500 max-w-xs truncate" title={claim.notes || ""}>
@@ -336,9 +381,23 @@ export function ClaimsReviewTab({ adminEmail, getAdminHeaders }: ClaimsReviewTab
                           </button>
                         </div>
                       ) : (
-                        <span className="text-[11px] text-slate-400">
-                          {claim.reviewed_by ? `審査者: ${claim.reviewed_by.split("@")[0]}` : "完了"}
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <Link
+                            href={`/ja/company/${claim.corporate_number}`}
+                            target="_blank"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] font-semibold text-[#1B4F8A] dark:text-blue-400 hover:underline bg-slate-50 dark:bg-slate-800 rounded border border-slate-200 dark:border-slate-700"
+                          >
+                            <span>企業ページを開く</span>
+                            <ExternalLink className="w-3 h-3" />
+                          </Link>
+                          <span className="text-[10px] text-slate-400">
+                            {claim.reviewed_by === "system_instant_verify"
+                              ? "システム自動承認"
+                              : claim.reviewed_by
+                              ? `審査者: ${claim.reviewed_by.split("@")[0]}`
+                              : "完了"}
+                          </span>
+                        </div>
                       )}
                     </td>
                   </tr>
@@ -402,10 +461,46 @@ export function ClaimsReviewTab({ adminEmail, getAdminHeaders }: ClaimsReviewTab
               <p>申請者: <strong>{rejectingClaim.applicant_name}</strong> ({rejectingClaim.user_email})</p>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+            <div className="space-y-2">
+              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
                 却下理由（申請者へのメールに記載されます）
               </label>
+
+              {/* Quick Preset Reason Chips */}
+              <div className="space-y-1">
+                <span className="text-[10px] text-slate-400 block">定型理由を選択（クリックで入力）：</span>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setRejectionReason("提出書類（名刺・登記簿謄本）が不鮮明で文字が判読できませんでした。")}
+                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[11px] rounded-md text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-left transition-colors cursor-pointer"
+                  >
+                    書類不鮮明
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRejectionReason("ご登録のメールアドレスが企業公式ドメインと確認できませんでした。")}
+                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[11px] rounded-md text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-left transition-colors cursor-pointer"
+                  >
+                    ドメイン不一致
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRejectionReason("申請者様のお名前とお役職が、提出書類または企業公表情報と一致しませんでした。")}
+                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[11px] rounded-md text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-left transition-colors cursor-pointer"
+                  >
+                    氏名・役職不一致
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRejectionReason("在籍または代表権の確認が取れませんでした。")}
+                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 text-[11px] rounded-md text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 text-left transition-colors cursor-pointer"
+                  >
+                    在籍確認不可
+                  </button>
+                </div>
+              </div>
+
               <textarea
                 rows={4}
                 value={rejectionReason}

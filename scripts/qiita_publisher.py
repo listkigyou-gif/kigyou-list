@@ -36,7 +36,7 @@ def list_my_items():
         return res.json()
     return []
 
-def post_article(title: str, body_markdown: str, tags: list, is_private: bool = False, tweet: bool = False):
+def post_article(title: str, body_markdown: str, tags: list, is_private: bool = False, tweet: bool = False, organization_url_name: str = 'kigyoulist-inc'):
     payload = {
         'title': title,
         'body': body_markdown,
@@ -44,16 +44,29 @@ def post_article(title: str, body_markdown: str, tags: list, is_private: bool = 
         'private': is_private,
         'tweet': tweet
     }
+    if organization_url_name:
+        payload['organization_url_name'] = organization_url_name
+
     res = requests.post(f'{API_BASE}/items', headers=headers, json=payload)
     if res.status_code in [200, 201]:
         data = res.json()
         print(f'Successfully published: {data.get("title")}')
         print(f'URL: {data.get("url")}')
         print(f'Item ID: {data.get("id")}')
+        print(f'Organization: {data.get("organization_url_name")}')
         return data
-    else:
-        print(f'Failed to publish ({res.status_code}): {res.text}')
-        return None
+    elif res.status_code == 404 and organization_url_name:
+        # Neu Organization chua duoc duyet xong hoac chua active, fallback dang bai ca nhan
+        print(f'Warning: Organization {organization_url_name} chua duoc kich hoat hoac 404. Fallback dang bai ca nhan...')
+        payload.pop('organization_url_name', None)
+        retry_res = requests.post(f'{API_BASE}/items', headers=headers, json=payload)
+        if retry_res.status_code in [200, 201]:
+            data = retry_res.json()
+            print(f'Successfully published (Individual): {data.get("title")}')
+            print(f'URL: {data.get("url")}')
+            return data
+    print(f'Failed to publish ({res.status_code}): {res.text}')
+    return None
 
 def delete_article(item_id: str):
     res = requests.delete(f'{API_BASE}/items/{item_id}', headers=headers)
@@ -163,12 +176,12 @@ def publish_chaos_map_2026(is_private=False):
     tags = ['SaaS', 'BtoB', 'カオスマップ', 'アーキテクチャ', 'DX']
     return post_article(title, body, tags, is_private=is_private)
 
-def publish_from_file(file_path: str, title: str, tags: list, is_private: bool = False):
+def publish_from_file(file_path: str, title: str, tags: list, is_private: bool = False, organization_url_name: str = 'kigyoulist-inc'):
     if not os.path.isabs(file_path):
         file_path = os.path.join(os.path.dirname(__file__), file_path)
     with open(file_path, 'r', encoding='utf-8') as f:
         body = f.read()
-    return post_article(title, body, tags, is_private=is_private)
+    return post_article(title, body, tags, is_private=is_private, organization_url_name=organization_url_name)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Qiita Publisher CLI')
@@ -186,6 +199,7 @@ if __name__ == '__main__':
     parser.add_argument('--file', type=str, help='Path to markdown article file to publish')
     parser.add_argument('--title', type=str, help='Title of the article')
     parser.add_argument('--tags', type=str, help='Comma-separated tags (up to 5 tags, e.g. "Python,PostgreSQL,DX")')
+    parser.add_argument('--org', type=str, default='kigyoulist-inc', help='Organization URL name (default: kigyoulist-inc)')
     parser.add_argument('--private', action='store_true', help='Publish as private (secret item)')
     args = parser.parse_args()
 
@@ -198,7 +212,7 @@ if __name__ == '__main__':
 
     if args.file and args.title:
         tags_list = [t.strip() for t in args.tags.split(',')] if args.tags else ['Python', 'Tech']
-        publish_from_file(args.file, args.title, tags_list[:5], is_private=args.private)
+        publish_from_file(args.file, args.title, tags_list[:5], is_private=args.private, organization_url_name=args.org)
 
     if args.publish_01:
         publish_article_1(is_private=args.private)

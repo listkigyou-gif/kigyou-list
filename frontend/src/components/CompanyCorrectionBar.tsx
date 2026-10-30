@@ -19,7 +19,7 @@ export const CompanyCorrectionBar: React.FC<CompanyCorrectionBarProps> = ({
 
   const handleOpenPortal = () => {
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("open-company-claim-modal"));
+      window.dispatchEvent(new CustomEvent("open-company-correction-modal", { detail: { guestMode: true } }));
     }
   };
 

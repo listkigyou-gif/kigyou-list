@@ -181,6 +181,20 @@ export const WatchlistTab: React.FC<WatchlistTabProps> = ({ onEventsCountChange 
     }
   };
 
+  const handleRemoveCompany = (corporateNumber: string) => {
+    const id = String(corporateNumber).trim();
+    // 1. Optimistic removal from companies list immediately
+    setCompanies((prev) => prev.filter((c) => String(c.corporate_number).trim() !== id));
+    // 2. Optimistic removal of events from this company
+    setEvents((prev) => {
+      const remaining = prev.filter((e) => String(e.corporate_number).trim() !== id);
+      if (onEventsCountChange) onEventsCountChange(remaining.length);
+      return remaining;
+    });
+    // 3. Update global AuthContext state & sync with server database
+    toggleSaveCompany(id);
+  };
+
   // Filtered Events
   const filteredEvents = useMemo(() => {
     if (selectedCategory === "all") return events;
@@ -396,9 +410,10 @@ export const WatchlistTab: React.FC<WatchlistTabProps> = ({ onEventsCountChange 
                     </div>
 
                     <button
-                      onClick={() => toggleSaveCompany(comp.corporate_number)}
+                      onClick={() => handleRemoveCompany(comp.corporate_number)}
                       className="p-1 text-slate-400 hover:text-rose-600 transition-colors shrink-0 cursor-pointer"
-                      title={locale === "ja" ? "監視リストから解除" : "Remove from watchlist"}
+                      title={locale === "ja" ? "監視リストから解除" : locale === "vi" ? "Xóa khỏi danh sách theo dõi" : "Remove from watchlist"}
+                      aria-label={locale === "ja" ? "監視リストから解除" : locale === "vi" ? "Xóa khỏi danh sách theo dõi" : "Remove from watchlist"}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

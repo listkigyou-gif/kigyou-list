@@ -46,72 +46,112 @@ export default function WatchlistLandingPage() {
     {
       id: 1,
       category: "invoice",
-      categoryLabel: "インボイス失効警告",
+      categoryLabel: isJa ? "インボイス失効警告" : isVi ? "Cảnh báo Invoice" : "Invoice Revocation",
       badgeColor: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800",
       companyName: "大和産業株式会社",
       corporateNumber: "1010001088921",
-      date: "本日 08:15",
-      title: "適格請求書発行事業者の登録取消（失効）を検知",
-      description: "国税庁インボイス公表サイトにて「大和産業株式会社」の登録取消・失効が公表されました。仕入税額控除の対象外となる重大リスクがあります。",
-      oldVal: "登録済 (T1010001088921)",
-      newVal: "登録取消・失効 (免税事業者転落)",
-      source: "国税庁 適格請求書発行事業者公表Web-API"
+      date: isJa ? "本日 08:15" : isVi ? "Hôm nay 08:15" : "Today 08:15",
+      title: isJa
+        ? "適格請求書発行事業者の登録取消（失効）を検知"
+        : isVi
+        ? "Phát hiện thu hồi/hủy hiệu lực đăng ký Hóa đơn hợp lệ (Invoice)"
+        : "Qualified Invoice Issuer Registration Revoked",
+      description: isJa
+        ? "国税庁インボイス公表サイトにて「大和産業株式会社」の登録取消・失効が公表されました。仕入税額控除の対象外となる重大リスクがあります。"
+        : isVi
+        ? "Cục thuế Quốc gia Nhật Bản (NTA) vừa công bố thu hồi mã số hóa đơn của doanh nghiệp. Rủi ro đối tác không còn đủ điều kiện khấu trừ thuế đầu vào."
+        : "The National Tax Agency announced the cancellation/revocation of this company's Qualified Invoice status. Transactions risk losing input tax credits.",
+      oldVal: isJa ? "登録済 (T1010001088921)" : isVi ? "Đã đăng ký (T1010001088921)" : "Registered (T1010001088921)",
+      newVal: isJa ? "登録取消・失効 (免税事業者転落)" : isVi ? "Thu hồi / Vô hiệu hóa (Chuyển sang miễn thuế)" : "Revoked / Void (Tax-exempt)",
+      source: isJa ? "国税庁 適格請求書発行事業者公表Web-API" : isVi ? "Cục thuế NTA Web-API" : "NTA Invoice Web-API"
     },
     {
       id: 2,
       category: "representative",
-      categoryLabel: "代表者変更",
+      categoryLabel: isJa ? "代表者変更" : isVi ? "Đổi đại diện" : "CEO Transition",
       badgeColor: "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800",
       companyName: "株式会社日立製作所",
       corporateNumber: "7010001008844",
       date: "2026-10-21",
-      title: "代表執行役 執行役社長兼CEOの異動・就任公表",
-      description: "「株式会社日立製作所」における代表取締役・執行役社長の交代が金融庁EDINET臨時報告書にて公表されました。",
-      oldVal: "東原 敏昭 (前代表執行役)",
-      newVal: "小島 啓二 (現代表執行役 執行役社長兼CEO)",
-      source: "金融庁 EDINET 臨時報告書 / 東証開示"
+      title: isJa
+        ? "代表執行役 執行役社長兼CEOの異動・就任公表"
+        : isVi
+        ? "Công bố bổ nhiệm Tân Giám đốc điều hành & Tổng Giám đốc (CEO)"
+        : "Announcement of Representative Executive Officer, President & CEO Transition",
+      description: isJa
+        ? "「株式会社日立製作所」における代表取締役・執行役社長の交代が金融庁EDINET臨時報告書にて公表されました。"
+        : isVi
+        ? "Việc thay đổi Tổng giám đốc điều hành đã được công bố chính thức qua Báo cáo bất thường EDINET thuộc Cơ quan Dịch vụ Tài chính (FSA)."
+        : "Hitachi, Ltd. announced a transition of Representative Executive Officer and President & CEO via FSA EDINET Extraordinary Report.",
+      oldVal: isJa ? "東原 敏昭 (前代表執行役)" : isVi ? "Toshiaki Higashihara (Nguyên Giám đốc điều hành)" : "Toshiaki Higashihara (Former Representative)",
+      newVal: isJa ? "小島 啓二 (現代表執行役 執行役社長兼CEO)" : isVi ? "Keiji Kojima (Tân Giám đốc điều hành & Tổng giám đốc)" : "Keiji Kojima (Current Representative, President & CEO)",
+      source: isJa ? "金融庁 EDINET 臨時報告書 / 東証開示" : isVi ? "Báo cáo bất thường FSA EDINET / Sàn TSE" : "FSA EDINET Extraordinary Reports / TSE"
     },
     {
       id: 3,
       category: "relocation",
-      categoryLabel: "本店移転",
+      categoryLabel: isJa ? "本店移転" : isVi ? "Chuyển trụ sở" : "HQ Relocation",
       badgeColor: "bg-blue-50 text-[#1B4F8A] border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800",
       companyName: "日本テクノロジーズ株式会社",
       corporateNumber: "2010001054321",
       date: "2026-10-18",
-      title: "本店所在地変更登記の公表",
-      description: "事業規模拡大に伴う本店移転登記が完了しました。契約書および請求書の送付先更新が必要です。",
-      oldVal: "東京都千代田区神田錦町1-1",
-      newVal: "東京都港区六本木6-10-1 六本木ヒルズ森タワー",
-      source: "法務局 商業登記情報 / 国税庁法人番号公表"
+      title: isJa
+        ? "本店所在地変更登記の公表"
+        : isVi
+        ? "Công bố đăng ký thay đổi địa chỉ trụ sở chính"
+        : "Headquarters Relocation Registration Announced",
+      description: isJa
+        ? "事業規模拡大に伴う本店移転登記が完了しました。契約書および請求書の送付先更新が必要です。"
+        : isVi
+        ? "Đăng ký chuyển trụ sở mở rộng quy mô kinh doanh đã hoàn tất. Cần cập nhật địa chỉ gửi hợp đồng và hóa đơn đối tác."
+        : "Headquarters relocation registration completed due to business expansion. Please update recipient address on contracts and invoices.",
+      oldVal: isJa ? "東京都千代田区神田錦町1-1" : isVi ? "1-1 Kanda Nishikicho, Chiyoda-ku, Tokyo" : "1-1 Kanda Nishikicho, Chiyoda-ku, Tokyo",
+      newVal: isJa ? "東京都港区六本木6-10-1 六本木ヒルズ森タワー" : isVi ? "Roppongi Hills Mori Tower, 6-10-1 Roppongi, Minato-ku, Tokyo" : "Roppongi Hills Mori Tower, 6-10-1 Roppongi, Minato-ku, Tokyo",
+      source: isJa ? "法務局 商業登記情報 / 国税庁法人番号公表" : isVi ? "Đăng ký kinh doanh Cục Pháp vụ / Cục thuế NTA" : "Legal Affairs Bureau Registry / NTA Corporate Number"
     },
     {
       id: 4,
       category: "hiring",
-      categoryLabel: "新着求人",
+      categoryLabel: isJa ? "新着求人" : isVi ? "Tuyển dụng mới" : "New Job",
       badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
       companyName: "株式会社共立メンテナンス",
       corporateNumber: "1010001014427",
       date: "2026-10-10",
-      title: "求人募集中・積極採用企業の公表速報",
-      description: "東京都千代田区の「株式会社共立メンテナンス」が公式採用ページまたはハローワークにて新規求人を公開中です。",
+      title: isJa
+        ? "求人募集中・積極採用企業の公表速報"
+        : isVi
+        ? "Tin tuyển dụng mới・Doanh nghiệp đang tuyển dụng tích cực"
+        : "Active Hiring & New Job Opening Detected",
+      description: isJa
+        ? "東京都千代田区の「株式会社共立メンテナンス」が公式採用ページまたはハローワークにて新規求人を公開中です。"
+        : isVi
+        ? "Doanh nghiệp tại Chiyoda, Tokyo vừa đăng thông báo tuyển dụng mới trên cổng chính thức hoặc HelloWork."
+        : "Kyoritsu Maintenance Co., Ltd. in Chiyoda, Tokyo has posted new open positions on official careers portal or HelloWork.",
       oldVal: null,
       newVal: null,
-      source: "ハローワーク / 公式採用ページ収集"
+      source: isJa ? "ハローワーク / 公式採用ページ収集" : isVi ? "HelloWork / Trang tuyển dụng chính thức" : "HelloWork / Official Careers Portal"
     },
     {
       id: 5,
       category: "bankruptcies",
-      categoryLabel: "倒産・閉鎖",
+      categoryLabel: isJa ? "倒産・閉鎖" : isVi ? "Phá sản & Giải thể" : "Bankruptcy",
       badgeColor: "bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800",
       companyName: "東洋物流株式会社",
       corporateNumber: "5010001099887",
       date: "2026-10-05",
-      title: "破産手続開始・解散登記の公表",
-      description: "東京地方裁判所において破産手続開始の決定を受け、登記記録が閉鎖されました。至急売掛金・債権の保全確認を行ってください。",
-      oldVal: "活動中 (正常営業)",
-      newVal: "破産手続開始 / 登記記録閉鎖",
-      source: "官報・法務局商業登記公告"
+      title: isJa
+        ? "破産手続開始・解散登記の公表"
+        : isVi
+        ? "Công bố mở thủ tục phá sản / Đóng sổ đăng ký doanh nghiệp"
+        : "Bankruptcy Proceedings & Registration Closure Announced",
+      description: isJa
+        ? "東京地方裁判所において破産手続開始の決定を受け、登記記録が閉鎖されました。至急売掛金・債権の保全確認を行ってください。"
+        : isVi
+        ? "Tòa án Tokyo đã ban hành quyết định mở thủ tục phá sản và đóng sổ đăng ký. Cần lập tức kiểm tra bảo toàn công nợ chưa thu."
+        : "Tokyo District Court commenced bankruptcy proceedings and registration is closed. Please immediately review receivables protection.",
+      oldVal: isJa ? "活動中 (正常営業)" : isVi ? "Đang hoạt động (Bình thường)" : "Active (Normal Business)",
+      newVal: isJa ? "破産手続開始 / 登記記録閉鎖" : isVi ? "Mở thủ tục phá sản / Đóng đăng ký" : "Bankruptcy Commenced / Closed Registry",
+      source: isJa ? "官報・法務局商業登記公告" : isVi ? "Công báo Chính phủ / Công bố Cục Pháp vụ" : "Official Gazette / Commercial Registry"
     }
   ];
 
@@ -306,19 +346,19 @@ export default function WatchlistLandingPage() {
               {/* Status Pill */}
               <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-xs font-semibold border border-emerald-200/80 dark:border-emerald-800 shrink-0">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span>自動同期中（国税庁・EDINET）</span>
+                <span>{isJa ? "自動同期中（国税庁・EDINET）" : isVi ? "Đang đồng bộ (NTA & EDINET)" : "Live Sync (NTA & EDINET)"}</span>
               </div>
             </div>
 
             {/* Filter Pills */}
             <div className="flex flex-wrap items-center gap-1.5">
               {[
-                { id: "all", labelJa: "すべて (5件)" },
-                { id: "invoice", labelJa: "インボイス失効警告" },
-                { id: "representative", labelJa: "代表者変更" },
-                { id: "relocation", labelJa: "本店移転" },
-                { id: "hiring", labelJa: "新着求人" },
-                { id: "bankruptcies", labelJa: "倒産・閉鎖" }
+                { id: "all", label: isJa ? "すべて (5件)" : isVi ? "Tất cả (5 sự kiện)" : "All (5 Events)" },
+                { id: "invoice", label: isJa ? "インボイス失効警告" : isVi ? "Cảnh báo Invoice" : "Invoice Revocations" },
+                { id: "representative", label: isJa ? "代表者変更" : isVi ? "Đổi đại diện" : "CEO Transitions" },
+                { id: "relocation", label: isJa ? "本店移転" : isVi ? "Chuyển trụ sở" : "HQ Relocations" },
+                { id: "hiring", label: isJa ? "新着求人" : isVi ? "Tuyển dụng mới" : "New Jobs" },
+                { id: "bankruptcies", label: isJa ? "倒産・閉鎖" : isVi ? "Phá sản & Giải thể" : "Bankruptcies" }
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -329,7 +369,7 @@ export default function WatchlistLandingPage() {
                       : "bg-slate-50 text-slate-600 border-slate-200/80 hover:bg-slate-100 dark:bg-[#151B22] dark:text-slate-300 dark:border-slate-800"
                   }`}
                 >
-                  {tab.labelJa}
+                  {tab.label}
                 </button>
               ))}
             </div>
@@ -350,7 +390,7 @@ export default function WatchlistLandingPage() {
                         {ev.companyName}
                       </strong>
                       <span className="text-[10px] text-slate-400 font-mono hidden sm:inline">
-                        法人番号: {ev.corporateNumber}
+                        {isJa ? "法人番号:" : isVi ? "Mã số thuế:" : "Corp No:"} {ev.corporateNumber}
                       </span>
                     </div>
                     <span className="text-[10px] text-slate-400 font-mono">{ev.date}</span>
@@ -367,13 +407,13 @@ export default function WatchlistLandingPage() {
                     <div className="p-2.5 rounded-lg bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-800 text-[11px] space-y-1 font-mono">
                       {ev.oldVal && (
                         <div className="text-slate-500 flex items-start gap-1.5">
-                          <span className="font-semibold text-rose-600 shrink-0 font-sans">変更前:</span>
+                          <span className="font-semibold text-rose-600 shrink-0 font-sans">{isJa ? "変更前:" : isVi ? "Trước:" : "Before:"}</span>
                           <span className="line-through">{ev.oldVal}</span>
                         </div>
                       )}
                       {ev.newVal && (
                         <div className="text-slate-800 dark:text-slate-200 flex items-start gap-1.5 font-medium">
-                          <span className="font-semibold text-emerald-600 shrink-0 font-sans">変更後:</span>
+                          <span className="font-semibold text-emerald-600 shrink-0 font-sans">{isJa ? "変更後:" : isVi ? "Sau:" : "After:"}</span>
                           <span className="text-slate-900 dark:text-white font-bold">{ev.newVal}</span>
                         </div>
                       )}
@@ -381,9 +421,9 @@ export default function WatchlistLandingPage() {
                   )}
 
                   <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-800 flex items-center justify-between text-[10px] text-slate-400">
-                    <span>情報ソース: {ev.source}</span>
+                    <span>{isJa ? "情報ソース:" : isVi ? "Nguồn dữ liệu:" : "Source:"} {ev.source}</span>
                     <span className="text-[#1B4F8A] dark:text-blue-400 font-semibold inline-flex items-center gap-0.5">
-                      企業詳細を照合 ➔
+                      {isJa ? "企業詳細を照合 ➔" : isVi ? "Xem hồ sơ công ty ➔" : "View Profile ➔"}
                     </span>
                   </div>
                 </div>
@@ -402,7 +442,11 @@ export default function WatchlistLandingPage() {
               {isJa ? "検知・監視する6つの重要シグナル" : isVi ? "6 Trụ cột giám sát biến động chuyên sâu" : "6 Critical Event Categories Tracked Daily"}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
-              企業の信用状態、コンプライアンス、営業機会に関わるあらゆる公式変動を網羅。
+              {isJa
+                ? "企業の信用状態、コンプライアンス、営業機会に関わるあらゆる公式変動を網羅。"
+                : isVi
+                ? "Bao quát toàn diện các biến động pháp lý, tín dụng và cơ hội kinh doanh chính thức."
+                : "Comprehensive coverage of official corporate changes affecting credit, compliance, and sales opportunities."}
             </p>
           </div>
 
@@ -414,14 +458,18 @@ export default function WatchlistLandingPage() {
                   <AlertTriangle className="w-5 h-5" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                  1. インボイス失効・取消検知
+                  {isJa ? "1. インボイス失効・取消検知" : isVi ? "1. Cảnh báo thu hồi & hủy Invoice" : "1. Invoice Revocation Alerts"}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                  取引開始時に有効だったT番号も、後に免税事業者への転落や未払いで失効するケースが多発しています。国税庁Web-APIから失効を当日検知し、消費税仕入税額控除の適用否認（自社負担）を防ぎます。
+                  {isJa
+                    ? "取引開始時に有効だったT番号も、後に免税事業者への転落や未払いで失効するケースが多発しています。国税庁Web-APIから失効を当日検知し、消費税仕入税額控除の適用否認（自社負担）を防ぎます。"
+                    : isVi
+                    ? "Mã T-Number có thể bị vô hiệu hóa bất ngờ do chậm nộp thuế hoặc chuyển sang diện miễn thuế. Hệ thống đối soát NTA hàng ngày giúp phát hiện ngay lập tức để tránh bị loại trừ khấu trừ thuế."
+                    : "Valid T-Numbers can be suddenly revoked due to tax delinquency or reversion to tax-exempt status. Daily NTA Web-API sync detects revocations immediately to prevent tax credit disallowance."}
                 </p>
               </div>
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-rose-700 dark:text-rose-400">
-                主な対象: 経理部・財務部・税務調査対策
+                {isJa ? "主な対象: 経理部・財務部・税務調査対策" : isVi ? "Đối tượng: Kế toán, Tài chính & Quyết toán thuế" : "Target: Finance, Accounting & Tax Compliance"}
               </div>
             </div>
 
@@ -432,14 +480,18 @@ export default function WatchlistLandingPage() {
                   <Users className="w-5 h-5" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                  2. 代表取締役・役員の異動速報
+                  {isJa ? "2. 代表取締役・役員の異動速報" : isVi ? "2. Thay đổi Giám đốc đại diện & Lãnh đạo" : "2. Executive & CEO Transitions"}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                  金融庁EDINET臨時報告書（上場企業）および公式登記を直接追跡。新社長就任のタイミングで祝電・挨拶を送ることで競合に先駆けて良好な関係を構築。役員交代に伴う経営方針の変化も察知します。
+                  {isJa
+                    ? "金融庁EDINET臨時報告書（上場企業）および公式登記を直接追跡。新社長就任のタイミングで祝電・挨拶を送ることで競合に先駆けて良好な関係を構築。役員交代に伴う経営方針の変化も察知します。"
+                    : isVi
+                    ? "Theo dõi báo cáo bất thường EDINET và công báo đăng ký kinh doanh. Nhanh chóng gửi thư chúc mừng tân Chủ tịch/CEO và nắm bắt thay đổi định hướng kinh doanh."
+                    : "Directly track FSA EDINET Extraordinary Reports and legal registries. Send congratulatory letters to new CEOs before competitors and stay aware of shifts in executive strategy."}
                 </p>
               </div>
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-purple-700 dark:text-purple-400">
-                主な対象: 営業企画・役員室・キーマン開拓
+                {isJa ? "主な対象: 営業企画・役員室・キーマン開拓" : isVi ? "Đối tượng: Kế hoạch kinh doanh, Ban giám đốc & Sales B2B" : "Target: Sales Planning, Executive Suites & Key Account Sales"}
               </div>
             </div>
 
@@ -450,14 +502,18 @@ export default function WatchlistLandingPage() {
                   <MapPin className="w-5 h-5" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                  3. 本店移転・商号変更の追跡
+                  {isJa ? "3. 本店移転・商号変更の追跡" : isVi ? "3. Chuyển trụ sở & Đổi tên công ty" : "3. HQ Relocation & Legal Name Tracking"}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                  法人の社名変更やオフィスの移転登記を即日補足。旧住所への請求書誤配や契約書の所在地相違を防止。オフィス移転に伴う什器・ITインフラ・通信回線の提案タイミングも捉えられます。
+                  {isJa
+                    ? "法人の社名変更やオフィスの移転登記を即日補足。旧住所への請求書誤配や契約書の所在地相違を防止。オフィス移転に伴う什器・ITインフラ・通信回線の提案タイミングも捉えられます。"
+                    : isVi
+                    ? "Cập nhật tức thời khi công ty đổi tên hoặc chuyển văn phòng. Tránh thất lạc hóa đơn, sai hợp đồng và nắm bắt cơ hội tiếp cận cung cấp thiết bị văn phòng, mạng Internet."
+                    : "Instantly catch corporate name changes and registered address updates. Prevent misdirected invoices and identify prime sales timing for office relocation, IT infrastructure, and network lines."}
                 </p>
               </div>
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-[#1B4F8A] dark:text-blue-400">
-                主な対象: 総務・法務・オフィス移転営業
+                {isJa ? "主な対象: 総務・法務・オフィス移転営業" : isVi ? "Đối tượng: Hành chính, Pháp chế & Bán hàng văn phòng" : "Target: Legal, General Affairs & Office Sales"}
               </div>
             </div>
 
@@ -468,14 +524,18 @@ export default function WatchlistLandingPage() {
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                  4. 倒産・清算・解散登記の速報
+                  {isJa ? "4. 倒産・清算・解散登記の速報" : isVi ? "4. Cảnh báo Phá sản, Thanh lý & Giải thể" : "4. Bankruptcy & Dissolution Alerts"}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                  破産手続開始、特別清算、解散登記の公表をキャッチ。取引先が夜逃げ・破産する前の兆候を早期に検知し、売掛金の即時回収や取引限度額の縮小など、与信管理と債権保全を素早く行えます。
+                  {isJa
+                    ? "破産手続開始、特別清算、解散登記の公表をキャッチ。取引先が夜逃げ・破産する前の兆候を早期に検知し、売掛金の即時回収や取引限度額の縮小など、与信管理と債権保全を素早く行えます。"
+                    : isVi
+                    ? "Nắm bắt công bố thủ tục phá sản, thanh lý đặc biệt và giải thể. Kịp thời thu hồi công nợ và hạ hạn mức tín dụng để bảo toàn dòng vốn trước khi đối tác vỡ nợ."
+                    : "Promptly detect bankruptcy filings, special liquidations, and registry closures. Act swiftly to recover accounts receivable and reduce credit limits before insolvency strikes."}
                 </p>
               </div>
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-rose-700 dark:text-rose-400">
-                主な対象: 与信管理・審査部・債権回収
+                {isJa ? "主な対象: 与信管理・審査部・債権回収" : isVi ? "Đối tượng: Quản trị rủi ro tín dụng, Thẩm định & Thu hồi nợ" : "Target: Credit Risk, Underwriting & Debt Recovery"}
               </div>
             </div>
 
@@ -486,14 +546,18 @@ export default function WatchlistLandingPage() {
                   <Briefcase className="w-5 h-5" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                  5. 新着求人・積極採用シグナル
+                  {isJa ? "5. 新着求人・積極採用シグナル" : isVi ? "5. Tín hiệu Tuyển dụng & Mở rộng quy mô" : "5. Recruitment & Hiring Signals"}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                  ハローワークおよび公式採用ページから最新の採用募集を検知。人材採用に予算を投じている「成長中・資金力のある企業」を素早く特定し、人材紹介・SaaS・福利厚生サービスの高成約アプローチを実現します。
+                  {isJa
+                    ? "ハローワークおよび公式採用ページから最新の採用募集を検知。人材採用に予算を投じている「成長中・資金力のある企業」を素早く特定し、人材紹介・SaaS・福利厚生サービスの高成約アプローチを実現します。"
+                    : isVi
+                    ? "Phát hiện tuyển dụng mới từ HelloWork và trang tuyển dụng chính thức. Định vị nhanh các doanh nghiệp đang tăng trưởng và có ngân sách để chào bán dịch vụ tuyển dụng, phần mềm SaaS."
+                    : "Detect fresh job openings across official portals and HelloWork. Identify cash-rich, expanding companies actively investing in hiring to pitch recruitment, SaaS, and employee benefit solutions."}
                 </p>
               </div>
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
-                主な対象: 人材業界・HRテック・B2B営業
+                {isJa ? "主な対象: 人材業界・HRテック・B2B営業" : isVi ? "Đối tượng: Nhân sự, Tuyển dụng & Bán hàng B2B" : "Target: Staffing, HR Tech & B2B Sales"}
               </div>
             </div>
 
@@ -504,14 +568,18 @@ export default function WatchlistLandingPage() {
                   <Building2 className="w-5 h-5" />
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white mb-2">
-                  6. 新設法人・新規設立企業速報
+                  {isJa ? "6. 新設法人・新規設立企業速報" : isVi ? "6. Doanh nghiệp mới thành lập" : "6. Newly Formed Corporations"}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                  毎週登記される全国の新設企業データを自動集計。設立直後は銀行口座開設、オフィス什器、税理士、Webサイト制作など需要の塊です。競合がまだ接触していない設立直後の段階で最速アプローチが可能です。
+                  {isJa
+                    ? "毎週登記される全国の新設企業データを自動集計。設立直後は銀行口座開設、オフィス什器、税理士、Webサイト制作など需要の塊です。競合がまだ接触していない設立直後の段階で最速アプローチが可能です。"
+                    : isVi
+                    ? "Cập nhật hàng tuần các doanh nghiệp vừa đăng ký kinh doanh tại Nhật Bản. Doanh nghiệp mới luôn có nhu cầu cấp bách về mở tài khoản ngân hàng, kế toán, trang thiết bị và website."
+                    : "Aggregates newly incorporated businesses registered weekly across Japan. Freshly formed entities immediately demand corporate bank accounts, office equipment, tax accountants, and web development."}
                 </p>
               </div>
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-amber-700 dark:text-amber-400">
-                主な対象: 士業・OA機器・Web制作・新規開拓
+                {isJa ? "主な対象: 士業・OA機器・Web制作・新規開拓" : isVi ? "Đối tượng: Kế toán thuế, Thiết bị văn phòng & Thiết kế Web" : "Target: Professional Services, Office Equipment & Web Agencies"}
               </div>
             </div>
           </div>
@@ -521,10 +589,14 @@ export default function WatchlistLandingPage() {
         <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-16 sm:mt-24 space-y-8">
           <div className="text-center max-w-xl mx-auto space-y-2">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-              {isJa ? "従来の手作業管理との圧倒的な違い" : "Why Modern B2B Teams Choose Automated Watchlist"}
+              {isJa ? "従来の手作業管理との圧倒的な違い" : isVi ? "Sự khác biệt vượt trội so với quản lý thủ công" : "Why Modern B2B Teams Choose Automated Watchlist"}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-              毎月の確認工数を90%削減し、見落としによる損失リスクをゼロにします。
+              {isJa
+                ? "毎月の確認工数を90%削減し、見落としによる損失リスクをゼロにします。"
+                : isVi
+                ? "Giảm 90% công sức kiểm tra hàng tháng và loại bỏ hoàn toàn rủi ro bỏ sót đối tác có vấn đề."
+                : "Cut monthly manual checks by 90% and eliminate counterparty risk blind spots."}
             </p>
           </div>
 
@@ -533,40 +605,56 @@ export default function WatchlistLandingPage() {
               <table className="w-full text-left border-collapse text-xs sm:text-sm">
                 <thead>
                   <tr className="bg-slate-50 dark:bg-slate-900/60 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-600 dark:text-slate-400 uppercase">
-                    <th className="py-3.5 px-5">比較項目</th>
-                    <th className="py-3.5 px-5 text-slate-500">従来の手動チェック（Excel・個別照会）</th>
+                    <th className="py-3.5 px-5">{isJa ? "比較項目" : isVi ? "Tiêu chí so sánh" : "Comparison Criteria"}</th>
+                    <th className="py-3.5 px-5 text-slate-500">{isJa ? "従来の手動チェック（Excel・個別照会）" : isVi ? "Kiểm tra thủ công (Excel / Từng công ty)" : "Manual Checks (Excel / 1-by-1)"}</th>
                     <th className="py-3.5 px-5 bg-blue-50/60 dark:bg-blue-950/30 text-[#1B4F8A] dark:text-blue-300 font-bold">
-                      Kigyou-list 企業監視エンジン
+                      {isJa ? "Kigyou-list 企業監視エンジン" : isVi ? "Cỗ máy giám sát Kigyou-list" : "Kigyou-list Monitoring Engine"}
                     </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
                   <tr>
-                    <td className="py-4 px-5 font-bold text-slate-800 dark:text-slate-200">インボイス確認工数</td>
-                    <td className="py-4 px-5 text-slate-500">毎月国税庁サイトで1社ずつ手入力（膨大な時間）</td>
+                    <td className="py-4 px-5 font-bold text-slate-800 dark:text-slate-200">
+                      {isJa ? "インボイス確認工数" : isVi ? "Công sức kiểm tra Invoice" : "Invoice Verification Effort"}
+                    </td>
+                    <td className="py-4 px-5 text-slate-500">
+                      {isJa ? "毎月国税庁サイトで1社ずつ手入力（膨大な時間）" : isVi ? "Gõ thủ công từng công ty trên web Cục thuế hàng tháng (tốn nhiều thời gian)" : "Manual lookup on NTA site one by one each month (huge time drain)"}
+                    </td>
                     <td className="py-4 px-5 bg-blue-50/40 dark:bg-blue-950/20 font-bold text-emerald-600 dark:text-emerald-400">
-                      毎朝自動照合。失効時のみメールでお知らせ（工数ゼロ）
+                      {isJa ? "毎朝自動照合。失効時のみメールでお知らせ（工数ゼロ）" : isVi ? "Tự động đối soát hàng sáng. Chỉ gửi email cảnh báo khi có hủy (0 tốn công sức)" : "Automated daily sync. Email alert only on revocation (zero manual effort)"}
                     </td>
                   </tr>
                   <tr>
-                    <td className="py-4 px-5 font-bold text-slate-800 dark:text-slate-200">失効・倒産への対応速度</td>
-                    <td className="py-4 px-5 text-slate-500">税務調査や未払いで発覚するまで気づけない</td>
+                    <td className="py-4 px-5 font-bold text-slate-800 dark:text-slate-200">
+                      {isJa ? "失効・倒産への対応速度" : isVi ? "Tốc độ ứng phó khi có rủi ro" : "Reaction Speed to Failure/Revocation"}
+                    </td>
+                    <td className="py-4 px-5 text-slate-500">
+                      {isJa ? "税務調査や未払いで発覚するまで気づけない" : isVi ? "Không nhận biết được cho đến khi bị thanh tra thuế hoặc nợ xấu" : "Undetected until tax audits or invoice payment rejections occur"}
+                    </td>
                     <td className="py-4 px-5 bg-blue-50/40 dark:bg-blue-950/20 font-bold text-slate-900 dark:text-white">
-                      公表当日〜翌朝に即座に通知（最速の対応が可能）
+                      {isJa ? "公表当日〜翌朝に即座に通知（最速の対応が可能）" : isVi ? "Thông báo ngay trong ngày hoặc sáng hôm sau khi có công bố chính thức" : "Notified same day or next morning upon official publication"}
                     </td>
                   </tr>
                   <tr>
-                    <td className="py-4 px-5 font-bold text-slate-800 dark:text-slate-200">代表者・役員交代の把握</td>
-                    <td className="py-4 px-5 text-slate-500">ニュースや噂レベルでしか知ることができない</td>
+                    <td className="py-4 px-5 font-bold text-slate-800 dark:text-slate-200">
+                      {isJa ? "代表者・役員交代の把握" : isVi ? "Nắm bắt thay đổi lãnh đạo" : "CEO & Executive Transition Awareness"}
+                    </td>
+                    <td className="py-4 px-5 text-slate-500">
+                      {isJa ? "ニュースや噂レベルでしか知ることができない" : isVi ? "Chỉ biết qua tin tức ngẫu nhiên hoặc truyền miệng" : "Only found through occasional press or word of mouth"}
+                    </td>
                     <td className="py-4 px-5 bg-blue-50/40 dark:bg-blue-950/20 font-bold text-slate-900 dark:text-white">
-                      金融庁EDINET臨時報告書・商業登記から直接捕捉
+                      {isJa ? "金融庁EDINET臨時報告書・商業登記から直接捕捉" : isVi ? "Trích xuất trực tiếp từ Báo cáo bất thường EDINET và công báo tư pháp" : "Directly captured from FSA EDINET reports & commercial registries"}
                     </td>
                   </tr>
                   <tr>
-                    <td className="py-4 px-5 font-bold text-slate-800 dark:text-slate-200">導入コスト・初期費用</td>
-                    <td className="py-4 px-5 text-slate-500">大手帝国系データベースは年間数十万〜数百万円</td>
+                    <td className="py-4 px-5 font-bold text-slate-800 dark:text-slate-200">
+                      {isJa ? "導入コスト・初期費用" : isVi ? "Chi phí ban đầu & Duy trì" : "Cost & Initial Investment"}
+                    </td>
+                    <td className="py-4 px-5 text-slate-500">
+                      {isJa ? "大手帝国系データベースは年間数十万〜数百万円" : isVi ? "Các kho dữ liệu truyền thống thu hàng trăm nghìn đến hàng triệu Yên/năm" : "Legacy databases charge hundreds of thousands to millions of Yen annually"}
+                    </td>
                     <td className="py-4 px-5 bg-blue-50/40 dark:bg-blue-950/20 font-bold text-emerald-600 dark:text-emerald-400">
-                      100社まで初期費用0円・完全無料（クレカ登録不要）
+                      {isJa ? "100社まで初期費用0円・完全無料（クレカ登録不要）" : isVi ? "Hoàn toàn miễn phí 100 công ty, phí ban đầu 0đ, không cần thẻ tín dụng" : "100% Free up to 100 companies, ¥0 setup fee, no credit card required"}
                     </td>
                   </tr>
                 </tbody>
@@ -582,7 +670,7 @@ export default function WatchlistLandingPage() {
               Simple 3-Step Onboarding
             </span>
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-              {isJa ? "かんたん3ステップで見守りを開始" : "Get Started in 3 Easy Steps"}
+              {isJa ? "かんたん3ステップで見守りを開始" : isVi ? "Bắt đầu theo dõi trong 3 bước đơn giản" : "Get Started in 3 Easy Steps"}
             </h2>
           </div>
 
@@ -590,30 +678,42 @@ export default function WatchlistLandingPage() {
             <div className="p-6 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-800 relative">
               <div className="text-3xl font-black text-slate-200 dark:text-slate-800 mb-2">01</div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5">
-                無料アカウント作成 (10秒)
+                {isJa ? "無料アカウント作成 (10秒)" : isVi ? "Tạo tài khoản miễn phí (10s)" : "Create Free Account (10s)"}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                Googleログインまたはメールアドレスのワンタイム認証で即座に完了。クレジットカード登録は不要です。
+                {isJa
+                  ? "Googleログインまたはメールアドレスのワンタイム認証で即座に完了。クレジットカード登録は不要です。"
+                  : isVi
+                  ? "Đăng nhập nhanh qua Google hoặc email OTP. Hoàn toàn không yêu cầu thẻ tín dụng."
+                  : "Instantly sign up with Google or magic link email. No credit card required."}
               </p>
             </div>
 
             <div className="p-6 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-800 relative">
               <div className="text-3xl font-black text-slate-200 dark:text-slate-800 mb-2">02</div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5">
-                取引先企業を登録 (最大100社)
+                {isJa ? "取引先企業を登録 (最大100社)" : isVi ? "Thêm công ty đối tác (Tối đa 100)" : "Register Companies (Up to 100)"}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                企業名検索、またはお手元のExcelからインボイス番号・法人番号をまとめてコピペして一括登録できます。
+                {isJa
+                  ? "企業名検索、またはお手元のExcelからインボイス番号・法人番号をまとめてコピペして一括登録できます。"
+                  : isVi
+                  ? "Tìm theo tên công ty hoặc copy/paste mã số thuế/mã T-Number từ Excel vào hàng loạt."
+                  : "Search by company name or copy & paste corporate / T-numbers directly from your Excel sheet."}
               </p>
             </div>
 
             <div className="p-6 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-800 relative">
               <div className="text-3xl font-black text-slate-200 dark:text-slate-800 mb-2">03</div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5">
-                翌朝から自動見守りスタート
+                {isJa ? "翌朝から自動見守りスタート" : isVi ? "Bắt đầu tự động bảo vệ từ sáng mai" : "Daily Automated Protection Starts"}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                システムが365日バックグラウンドで監視。登録企業に異動が発生した時だけ、朝8:00に速報メールでお知らせします。
+                {isJa
+                  ? "システムが365日バックグラウンドで監視。登録企業に異動が発生した時だけ、朝8:00に速報メールでお知らせします。"
+                  : isVi
+                  ? "Hệ thống giám sát ngầm 365 ngày. Chỉ gửi email cảnh báo lúc 8:00 sáng khi có biến động thực tế."
+                  : "System runs 365 days in background. Receive alerts at 8:00 AM only when significant corporate events occur."}
               </p>
             </div>
           </div>
@@ -624,7 +724,7 @@ export default function WatchlistLandingPage() {
           <div className="text-center max-w-xl mx-auto space-y-2 mb-8">
             <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white flex items-center justify-center gap-2">
               <HelpCircle className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />
-              <span>よくあるご質問 (FAQ)</span>
+              <span>{isJa ? "よくあるご質問 (FAQ)" : isVi ? "Câu hỏi thường gặp (FAQ)" : "Frequently Asked Questions (FAQ)"}</span>
             </h2>
           </div>
 
@@ -665,11 +765,29 @@ export default function WatchlistLandingPage() {
                 100% Free Tier • Max 100 Companies
               </span>
               <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-snug">
-                取引先のインボイス失効・倒産・役員異動を、<br />
-                今日から自動で見守りませんか？
+                {isJa ? (
+                  <>
+                    取引先のインボイス失効・倒産・役員異動を、<br />
+                    今日から自動で見守りませんか？
+                  </>
+                ) : isVi ? (
+                  <>
+                    Bắt đầu tự động giám sát rủi ro Invoice, phá sản<br />
+                    và biến động lãnh đạo đối tác ngay hôm nay
+                  </>
+                ) : (
+                  <>
+                    Automate Counterparty Invoice, Insolvency<br />
+                    & Executive Monitoring Starting Today
+                  </>
+                )}
               </h2>
               <p className="text-xs sm:text-sm text-blue-100 leading-relaxed">
-                毎月の手作業確認から解放され、重要な税務・与信リスクを見逃さない安心の管理体制を手に入れましょう。
+                {isJa
+                  ? "毎月の手作業確認から解放され、重要な税務・与信リスクを見逃さない安心の管理体制を手に入れましょう。"
+                  : isVi
+                  ? "Giải phóng thời gian kiểm tra thủ công và thiết lập hệ thống cảnh báo rủi ro thuế & công nợ chuyên nghiệp."
+                  : "Eliminate tedious monthly manual checks and establish an enterprise-grade credit & tax protection workflow."}
               </p>
             </div>
 
@@ -682,8 +800,8 @@ export default function WatchlistLandingPage() {
                 <ShieldCheck className="w-5 h-5 text-[#1B4F8A]" />
                 <span>
                   {isLoggedIn 
-                    ? "見守り管理ダッシュボードを開く" 
-                    : "今すぐ無料で100社を見守り登録する"}
+                    ? (isJa ? "見守り管理ダッシュボードを開く" : isVi ? "Mở Dashboard Giám Sát" : "Open Watchlist Dashboard")
+                    : (isJa ? "今すぐ無料で100社を見守り登録する" : isVi ? "Đăng ký theo dõi 100 công ty miễn phí" : "Start Watching 100 Companies Free")}
                 </span>
               </button>
 
@@ -692,12 +810,16 @@ export default function WatchlistLandingPage() {
                 className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-sm font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-colors"
               >
                 <FileCheck2 className="w-4 h-4" />
-                <span>インボイス一括照会を試す</span>
+                <span>{isJa ? "インボイス一括照会を試す" : isVi ? "Dùng thử tra cứu Invoice" : "Try Batch Invoice Tool"}</span>
               </Link>
             </div>
 
             <div className="pt-2 text-[11px] text-blue-200/80">
-              ※ クレジットカード登録不要 • いつでも解除可能 • 国税庁Web-API公表データ直接連携
+              {isJa 
+                ? "※ クレジットカード登録不要 • いつでも解除可能 • 国税庁Web-API公表データ直接連携" 
+                : isVi 
+                ? "※ Không yêu cầu thẻ tín dụng • Hủy bất kỳ lúc nào • Đồng bộ trực tiếp Web-API Cục thuế Quốc gia NTA"
+                : "* No credit card required • Cancel anytime • Direct official NTA Web-API integration"}
             </div>
           </div>
         </section>

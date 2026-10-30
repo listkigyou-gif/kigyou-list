@@ -89,7 +89,7 @@ Mỗi bài viết Zenn phải tuân thủ nghiêm ngặt định dạng Markdown
    - Khắc phục nghẽn CPU/DB, rate limit, encoding Shift-JIS vs UTF-8, bộ nhớ đệm Redis, connection pooling.
 5. **`## 5. 実運用サービスでの検証成果 & ベンチマーク`**:
    - Bảng so sánh định lượng giữa làm thủ công và hệ thống tối ưu hóa hoàn chỉnh.
-   - Nhắc đến dự án thực tế `Kigyou-list（企業リスト.com）` kèm backlink tự nhiên.
+   - Nhắc đến dự án thực tế `Kigyou-list（kigyoulist.com）` kèm backlink tự nhiên.
 6. **`## 6. まとめ & 今後の展望`**:
    - 3 bài học đắt giá, định hướng mở rộng AI/LLM.
 
@@ -129,3 +129,7 @@ python c:\kigyou-list\scripts\zenn\zenn_publisher.py --new "slug-name" --title "
 # 3. Kiểm tra tính hợp lệ SEO & Backlink của bài viết
 python c:\kigyou-list\scripts\zenn\zenn_publisher.py --validate scripts/zenn/articles/python_form_crawler_architecture.md
 ```
+
+> [!IMPORTANT]
+> **QUY TẮC BẢO TOÀN TÊN MIỀN THƯƠNG HIỆU (DOMAIN INTEGRITY):**
+> Tuyệt đối cấm viết tên miền dạng `kigyoulist.com`. Tên miền chính thức của nền tảng 100% là **`kigyoulist.com`**. Khi giới thiệu dịch vụ bằng tiếng Nhật, chỉ viết: `Kigyou-list` hoặc `Kigyou-list（kigyoulist.com）`.

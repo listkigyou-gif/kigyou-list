@@ -6,6 +6,7 @@ import { useLanguage } from "@/context/LanguageContext";
 import { Plus, Check, ShieldCheck, CheckCircle2, Printer, Activity, FileText } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { CompanyManagementModal } from "./CompanyManagementModal";
+import { CompanyClaimModal } from "./CompanyClaimModal";
 import { CompanyQuickAuditModal } from "./company/CompanyQuickAuditModal";
 import { isAdminEmail } from "@/lib/adminAuth";
 import { CompanyLicense } from "@/lib/db";
@@ -79,24 +80,44 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
   const isVi = locale === "vi";
   const isUserAdmin = Boolean(user?.email && isAdminEmail(user.email));
   const [mounted, setMounted] = useState(false);
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [manageModalOpen, setManageModalOpen] = useState(false);
+  const [modalGuestMode, setModalGuestMode] = useState(false);
   const [auditModalOpen, setAuditModalOpen] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    // Auto-open unified portal if claim/manage/edit/correction in query params
-    const openParam = searchParams.get("claim") || searchParams.get("manage") || searchParams.get("edit") || searchParams.get("correction");
-    if (openParam === "1" || openParam === "true") {
+    // Auto-open claim modal if action=claim or claim=1 in query params
+    const action = searchParams.get("action");
+    const isClaimAction = action === "claim" || searchParams.get("claim") === "1" || searchParams.get("claim") === "true";
+    if (isClaimAction) {
+      setModalGuestMode(false);
       setManageModalOpen(true);
     }
 
-    const handleOpenPortal = () => setManageModalOpen(true);
+    // Auto-open unified portal if manage/edit/correction in query params
+    const isCorrection = searchParams.get("correction") === "1" || searchParams.get("correction") === "true";
+    const openParam = searchParams.get("manage") || searchParams.get("edit");
+    if (openParam === "1" || openParam === "true" || isCorrection) {
+      setModalGuestMode(isCorrection);
+      setManageModalOpen(true);
+    }
 
-    window.addEventListener("open-company-claim-modal", handleOpenPortal);
-    window.addEventListener("open-company-correction-modal", handleOpenPortal);
+    const handleOpenClaim = () => {
+      setModalGuestMode(false);
+      setManageModalOpen(true);
+    };
+
+    const handleOpenCorrection = () => {
+      setModalGuestMode(true);
+      setManageModalOpen(true);
+    };
+
+    window.addEventListener("open-company-claim-modal", handleOpenClaim);
+    window.addEventListener("open-company-correction-modal", handleOpenCorrection);
     return () => {
-      window.removeEventListener("open-company-claim-modal", handleOpenPortal);
-      window.removeEventListener("open-company-correction-modal", handleOpenPortal);
+      window.removeEventListener("open-company-claim-modal", handleOpenClaim);
+      window.removeEventListener("open-company-correction-modal", handleOpenCorrection);
     };
   }, [searchParams]);
 
@@ -117,13 +138,15 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
           <FileText className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
           <span>{isEn ? "Quick Audit" : isVi ? "Đánh giá nhanh" : "企業クイック診断"}</span>
         </button>
-        <button
-          disabled
-          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-700/80 rounded-lg whitespace-nowrap shrink-0 w-full sm:w-auto"
-        >
-          <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-          <span>{isEn ? "Manage Info" : isVi ? "Quản lý & Sửa thông tin" : "掲載情報の修正・管理"}</span>
-        </button>
+        {isClaimed && (
+          <button
+            disabled
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 rounded-lg whitespace-nowrap shrink-0 w-full sm:w-auto"
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>{isEn ? "Verified" : isVi ? "Đã xác minh" : "公式認証済"}</span>
+          </button>
+        )}
       </div>
     );
   }
@@ -172,23 +195,36 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
           <span>{isEn ? "Quick Audit" : isVi ? "Đánh giá nhanh" : "企業クイック診断"}</span>
         </button>
 
-        {/* BUTTON 3: Unified Management & Correction Portal (掲載情報の修正・管理) */}
-        <button
-          type="button"
-          onClick={() => setManageModalOpen(true)}
-          className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 hover:text-slate-900 dark:text-slate-200 bg-white hover:bg-slate-50 dark:bg-[#161B22] dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700/80 rounded-lg shadow-2xs transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap shrink-0 w-full sm:w-auto"
-          title={isEn ? "Manage & Edit Information" : isVi ? "Quản lý & Chỉnh sửa thông tin" : "掲載情報の修正・公式管理センター"}
-        >
-          {isUserAdmin ? (
-            <ShieldCheck className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
-          ) : isClaimed ? (
-            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-          ) : (
-            <ShieldCheck className="w-3.5 h-3.5 text-slate-400" />
-          )}
-          <span>{isEn ? "Manage Info" : isVi ? "Quản lý & Sửa thông tin" : "掲載情報の修正・管理"}</span>
-        </button>
+        {/* BUTTON 3: Verified Badge (公式認証済) only when company is claimed */}
+        {isClaimed && (
+          <button
+            type="button"
+            onClick={() => {
+              setModalGuestMode(false);
+              setManageModalOpen(true);
+            }}
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:hover:bg-emerald-900/40 border border-emerald-300 dark:border-emerald-800 rounded-lg shadow-2xs transition-all active:scale-[0.98] cursor-pointer whitespace-nowrap shrink-0 w-full sm:w-auto"
+            title={isEn ? "Verified Official Company (Manage Profile)" : isVi ? "Doanh nghiệp đã xác minh (Bảng quản trị)" : "公式認証済企業（自社管理パネル）"}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+            <span>{isEn ? "Verified" : isVi ? "Đã xác minh" : "公式認証済"}</span>
+          </button>
+        )}
       </div>
+
+      {/* Official Company Claim Modal (企業認証モーダル) */}
+      <CompanyClaimModal
+        isOpen={claimModalOpen}
+        onClose={() => setClaimModalOpen(false)}
+        corporateNumber={corporateNumber}
+        companyName={companyName}
+        websiteUrl={websiteUrl}
+        phone={phone}
+        claimToken={searchParams?.get("claim_token") || null}
+        onSuccess={() => {
+          // Success handled in modal
+        }}
+      />
 
       {/* Quick Audit & Risk Report Modal */}
       <CompanyQuickAuditModal
@@ -211,6 +247,7 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
       <CompanyManagementModal
         isOpen={manageModalOpen}
         onClose={() => setManageModalOpen(false)}
+        initialGuestMode={modalGuestMode}
         corporateNumber={corporateNumber}
         companyName={companyName}
         initialPhone={phone}
