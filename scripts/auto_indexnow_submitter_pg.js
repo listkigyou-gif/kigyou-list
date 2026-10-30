@@ -162,6 +162,9 @@ async function fetchTargets(client, limit = 3000) {
     if (r.has_public_tender || r.has_bidding) {
       selectedHubsMap.set('hub:bidding', `${BASE_URL}/ja/search?subsidy=true&bidding=true`);
     }
+    if (r.has_hiring || r.is_hiring) {
+      selectedHubsMap.set('hub:jobs', `${BASE_URL}/ja/jobs/latest`);
+    }
     if (r.prefecture_code) {
       const p = String(r.prefecture_code).padStart(2, '0');
       selectedHubsMap.set(`hub:area:${p}`, `${BASE_URL}/ja/area/${p}`);

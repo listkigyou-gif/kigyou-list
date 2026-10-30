@@ -363,12 +363,12 @@ async function main() {
         }
         if (r.has_financial_report) {
           associatedHubsMap.set('hub:status', { id: 'hub:status', url: `${BASE_URL}/ja/status/bankruptcies`, name: 'Hub: 決算・財務開示 (Financials)', isFromQueue: false });
+        }
         if (r.has_hiring || r.is_hiring) {
-          associatedHubsMap.set('hub:jobs', { id: 'hub:jobs', url: ${BASE_URL}/ja/jobs/latest, name: 'Hub: 最新求人・採用シグナル (Jobs)', isFromQueue: false });
+          associatedHubsMap.set('hub:jobs', { id: 'hub:jobs', url: `${BASE_URL}/ja/jobs/latest`, name: 'Hub: 最新求人・採用シグナル (Jobs)', isFromQueue: false });
         }
         if (r.has_public_tender) {
-          associatedHubsMap.set('hub:bidding', { id: 'hub:bidding', url: ${BASE_URL}/ja/search?subsidy=true&bidding=true, name: 'Hub: 入札・補助金 (Bidding)', isFromQueue: false });
-        }
+          associatedHubsMap.set('hub:bidding', { id: 'hub:bidding', url: `${BASE_URL}/ja/search?subsidy=true&bidding=true`, name: 'Hub: 入札・補助金 (Bidding)', isFromQueue: false });
         }
         if (r.prefecture_code) {
           const pCode = String(r.prefecture_code).padStart(2, '0');
