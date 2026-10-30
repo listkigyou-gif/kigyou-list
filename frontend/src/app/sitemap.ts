@@ -114,6 +114,66 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
         priority: 0.95,
       });
 
+      // Major Office Buildings & Landmark Tower Hubs (超高層オフィスビル名鑑)
+      corePages.push({
+        url: `${baseUrl}/${loc}/building`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+
+      const landmarkBuildings = [
+        'ebisu-garden-place-tower',
+        'roppongi-hills-mori-tower',
+        'toranomon-hills-mori-tower',
+        'shinagawa-intercity',
+        'sunshine-60',
+        'yokohama-landmark-tower',
+        'marunouchi-building',
+        'akasaka-intercity-air',
+        'grand-front-osaka',
+        'shibuya-scramble-square',
+        'tokyo-midtown-tower',
+        'shibuya-hikarie',
+        'abeno-harukas',
+        'shin-marunouchi-building',
+        'shiodome-city-center'
+      ];
+      for (const bSlug of landmarkBuildings) {
+        corePages.push({
+          url: `${baseUrl}/${loc}/building/${bSlug}`,
+          lastModified: new Date(),
+          changeFrequency: 'weekly',
+          priority: 0.90,
+        });
+      }
+
+      // Corporate Rankings Hubs (企業ランキング・年収・勤続年数・従業員数)
+      corePages.push({
+        url: `${baseUrl}/${loc}/ranking`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/ranking/salary`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/ranking/tenure`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/ranking/employees`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+
       // 47 Prefectures Dynamic Hub Pages
       for (const p of PREFECTURES) {
         corePages.push({
