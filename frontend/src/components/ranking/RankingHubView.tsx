@@ -272,7 +272,7 @@ export function RankingHubView({ items, activeType, locale, prefectureCode }: Pr
                     {item.metric_unit}
                   </span>
                 </div>
-                {item.secondary_metric_value !== null && item.secondary_metric_label && (
+                {item.secondary_metric_value !== null && item.secondary_metric_value !== undefined && item.secondary_metric_label && (
                   <span className="block text-[11px] text-slate-500 dark:text-slate-400 font-mono tabular-nums">
                     {item.secondary_metric_label}: {item.secondary_metric_value > 0 ? `+${item.secondary_metric_value}` : item.secondary_metric_value}
                   </span>

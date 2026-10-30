@@ -1,7 +1,7 @@
 {
   "created_at": "2026-10-22T14:51:42.658530",
-  "total_runs": 379,
-  "last_sync_at": "2026-10-31T00:31:21.215312",
+  "total_runs": 380,
+  "last_sync_at": "2026-10-31T01:02:15.572223",
   "layers": {
     "layer_0": {
       "name": "Foundation Entities (NTA & Legal)",
@@ -61,8 +61,8 @@
     "layer_2": {
       "name": "Digital Presence (Website & Contacts)",
       "status": "COMPLETED",
-      "last_run": "2026-10-31T00:30:38.797895",
-      "last_success": "2026-10-31T00:31:05.068509",
+      "last_run": "2026-10-31T01:01:23.713020",
+      "last_success": "2026-10-31T01:01:54.188637",
       "processed": 540751,
       "last_delta": 0,
       "note": "Kho website: 540,751 (811 chờ recrawl)",
@@ -81,5 +81,5 @@
       "last_error": null
     }
   },
-  "updated_at": "2026-10-31T00:31:21.215324"
+  "updated_at": "2026-10-31T01:02:15.572236"
 }

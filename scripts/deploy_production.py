@@ -92,6 +92,8 @@ ITEMS_TO_SYNC = [
     "frontend/src/locales/en.ts",
     "frontend/src/locales/vi.ts",
     "frontend/src/app/globals.css",
+    "data/top_100_office_buildings.json",
+    "scripts/seed_office_buildings.py",
     
     # Master Agents & Docs
     "FEATURES.md",

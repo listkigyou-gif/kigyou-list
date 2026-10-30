@@ -1,0 +1,1394 @@
+# -*- coding: utf-8 -*-
+"""
+Builder script to generate data/top_100_office_buildings.json
+Curates Japan's Top 100 Landmark Office Towers with verified addresses,
+prefecture codes, search patterns, and SEO descriptions.
+"""
+
+import json
+import os
+import sys
+
+sys.stdout.reconfigure(encoding='utf-8')
+
+BUILDINGS = [
+    # =========================================================================
+    # TOKYO - CHIYODA WARD (15 Towers)
+    # =========================================================================
+    {
+        "building_name": "丸の内ビルディング（丸ビル）",
+        "building_name_en": "Marunouchi Building",
+        "building_slug": "marunouchi-building",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区丸の内2-4-1",
+        "postal_code": "100-6390",
+        "total_floors": 37,
+        "search_patterns": ["%丸の内ビル%"],
+        "description": "丸の内ビルディング（東京都千代田区丸の内）に入居する大手総合商社、メガバンク、外資系コンサルティングファームの最新企業名鑑。丸の内エリアの中核拠点。"
+    },
+    {
+        "building_name": "新丸の内ビルディング（新丸ビル）",
+        "building_name_en": "Shin-Marunouchi Building",
+        "building_slug": "shin-marunouchi-building",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区丸の内1-5-1",
+        "postal_code": "100-6590",
+        "total_floors": 38,
+        "search_patterns": ["%新丸の内ビル%"],
+        "description": "新丸の内ビルディング（東京都千代田区丸の内）に入居する国際法律事務所、プライベート・エクイティ、多国籍金融機関の最新テナント一覧。"
+    },
+    {
+        "building_name": "Otemachi One タワー",
+        "building_name_en": "Otemachi One Tower",
+        "building_slug": "otemachi-one-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区大手町1-2-1",
+        "postal_code": "100-0004",
+        "total_floors": 39,
+        "search_patterns": ["%Otemachi One%", "%大手町ワン%"],
+        "description": "Otemachi Oneタワー（東京都千代田区大手町）に本社を置く三井物産グループ各社およびグローバル大手金融機関の企業情報・財務推移。"
+    },
+    {
+        "building_name": "大手町プレイス ウエストタワー",
+        "building_name_en": "Otemachi Place West Tower",
+        "building_slug": "otemachi-place-west-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区大手町2-3-1",
+        "postal_code": "100-0004",
+        "total_floors": 35,
+        "search_patterns": ["%大手町プレイス%"],
+        "description": "大手町プレイス（東京都千代田区大手町）に入居する大手通信、エネルギー、情報通信テクノロジー関連企業の最新一覧。"
+    },
+    {
+        "building_name": "大手町フィナンシャルシティ グランキューブ",
+        "building_name_en": "Otemachi Financial City Grand Cube",
+        "building_slug": "otemachi-financial-city-grand-cube",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区大手町1-9-2",
+        "postal_code": "100-0004",
+        "total_floors": 31,
+        "search_patterns": ["%大手町フィナンシャルシティ%"],
+        "description": "大手町フィナンシャルシティ（東京都千代田区大手町）に拠点を置く国際金融機関、フィンテック、医療ヘルスケア関連企業一覧。"
+    },
+    {
+        "building_name": "常盤橋タワー（TOKYO TORCH）",
+        "building_name_en": "Tokiwabashi Tower (TOKYO TORCH)",
+        "building_slug": "tokiwabashi-tower-tokyo-torch",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区大手町2-6-4",
+        "postal_code": "100-0004",
+        "total_floors": 38,
+        "search_patterns": ["%常盤橋タワー%", "%TOKYO TORCH%"],
+        "description": "東京駅前・常盤橋タワー（TOKYO TORCH街区）に入居するDX先進企業、総合商社、ベンチャーキャピタルの最新名鑑。"
+    },
+    {
+        "building_name": "東京ミッドタウン日比谷",
+        "building_name_en": "Tokyo Midtown Hibiya",
+        "building_slug": "tokyo-midtown-hibiya",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区有楽町1-1-2",
+        "postal_code": "100-0006",
+        "total_floors": 35,
+        "search_patterns": ["%ミッドタウン日比谷%"],
+        "description": "東京ミッドタウン日比谷（東京都千代田区有楽町）に入居する大手メディア、エンターテインメント、法律・特許事務所の最新テナント情報。"
+    },
+    {
+        "building_name": "丸の内パークビルディング",
+        "building_name_en": "Marunouchi Park Building",
+        "building_slug": "marunouchi-park-building",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区丸の内2-6-1",
+        "postal_code": "100-6990",
+        "total_floors": 34,
+        "search_patterns": ["%丸の内パークビル%"],
+        "description": "丸の内パークビルディング（三菱一号館隣接）に入居する大手法律事務所、投資銀行、資産運用会社の最新一覧。"
+    },
+    {
+        "building_name": "JPタワー（KITTE）",
+        "building_name_en": "JP Tower",
+        "building_slug": "jp-tower-tokyo",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区丸の内2-7-2",
+        "postal_code": "100-7090",
+        "total_floors": 38,
+        "search_patterns": ["%JPタワー%"],
+        "description": "東京駅丸の内南口直結・JPタワーに入居する日本郵政グループ、大手エネルギー、ハイテク製造業の本社・支店一覧。"
+    },
+    {
+        "building_name": "丸の内二重橋ビル",
+        "building_name_en": "Marunouchi Nijubashi Building",
+        "building_slug": "marunouchi-nijubashi-building",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区丸の内3-2-3",
+        "postal_code": "100-0005",
+        "total_floors": 30,
+        "search_patterns": ["%丸の内二重橋ビル%"],
+        "description": "皇居二重橋を望む最新鋭オフィス・丸の内二重橋ビルに入居する東京商工会議所、日本政策投資銀行関連、大手コンサル企業一覧。"
+    },
+    {
+        "building_name": "山王パークタワー",
+        "building_name_en": "Sanno Park Tower",
+        "building_slug": "sanno-park-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区永田町2-11-1",
+        "postal_code": "100-6190",
+        "total_floors": 44,
+        "search_patterns": ["%山王パークタワー%"],
+        "description": "溜池山王駅直結のランドマーク・山王パークタワーに入居するNTTドコモグループ、外資系製薬、国際機関の最新テナント名鑑。"
+    },
+    {
+        "building_name": "霞が関ビルディング",
+        "building_name_en": "Kasumigaseki Building",
+        "building_slug": "kasumigaseki-building",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区霞が関3-2-5",
+        "postal_code": "100-6090",
+        "total_floors": 36,
+        "search_patterns": ["%霞が関ビル%"],
+        "description": "日本初の超高層ビル・霞が関ビルディングに入居する官公庁関連団体、シンクタンク、大手化学・エンジニアリング企業一覧。"
+    },
+    {
+        "building_name": "日比谷三井タワー",
+        "building_name_en": "Hibiya Mitsui Tower",
+        "building_slug": "hibiya-mitsui-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区有楽町1-1-2",
+        "postal_code": "100-0006",
+        "total_floors": 35,
+        "search_patterns": ["%日比谷三井タワー%"],
+        "description": "日比谷三井タワー（日比谷公園直結）に本社を置く大手監査法人、外資系IT、エネルギー中核企業の最新企業データベース。"
+    },
+    {
+        "building_name": "新大手町ビルヂング",
+        "building_name_en": "Shin-Otemachi Building",
+        "building_slug": "shin-otemachi-building",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区大手町2-2-1",
+        "postal_code": "100-0004",
+        "total_floors": 10,
+        "search_patterns": ["%新大手町ビル%"],
+        "description": "金融・フィンテックのインキュベーション拠点として知られる新大手町ビルに入居するスタートアップおよび伝統企業一覧。"
+    },
+    {
+        "building_name": "パレスビル",
+        "building_name_en": "Palace Building",
+        "building_slug": "palace-building",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "千代田区",
+        "street_address": "東京都千代田区丸の内1-1-1",
+        "postal_code": "100-0005",
+        "total_floors": 23,
+        "search_patterns": ["%パレスビル%"],
+        "description": "パレスホテル東京隣接・パレスビルに入居する大手資源エネルギー、投資顧問、外資系コンサルティング企業の最新一覧。"
+    },
+
+    # =========================================================================
+    # TOKYO - MINATO WARD (19 Towers)
+    # =========================================================================
+    {
+        "building_name": "麻布台ヒルズ森JPタワー",
+        "building_name_en": "Azabudai Hills Mori JP Tower",
+        "building_slug": "azabudai-hills-mori-jp-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区麻布台1-3-1",
+        "postal_code": "106-0041",
+        "total_floors": 64,
+        "search_patterns": ["%麻布台ヒルズ%", "%森JPタワー%"],
+        "description": "日本一の高さ330mを誇る最新ランドマーク・麻布台ヒルズ森JPタワーに入居するグローバル金融、外資系IT、先進ベンチャーの最新一覧。"
+    },
+    {
+        "building_name": "六本木ヒルズ森タワー",
+        "building_name_en": "Roppongi Hills Mori Tower",
+        "building_slug": "roppongi-hills-mori-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区六本木6-10-1",
+        "postal_code": "106-6190",
+        "total_floors": 54,
+        "search_patterns": ["%六本木ヒルズ%"],
+        "description": "六本木ヒルズ森タワー（東京都港区六本木）に本社を置く上場企業・ITメガベンチャー・外資系金融機関の最新テナント一覧。"
+    },
+    {
+        "building_name": "虎ノ門ヒルズ 森タワー",
+        "building_name_en": "Toranomon Hills Mori Tower",
+        "building_slug": "toranomon-hills-mori-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区虎ノ門1-23-1",
+        "postal_code": "105-6390",
+        "total_floors": 52,
+        "search_patterns": ["%虎ノ門ヒルズ森タワー%", "%虎ノ門1-23-1%"],
+        "description": "虎ノ門ヒルズ森タワー（東京都港区虎ノ門）に入居する最新企業・グローバル企業一覧。法人番号、資本金、連絡先データを公開。"
+    },
+    {
+        "building_name": "虎ノ門ヒルズ ステーションタワー",
+        "building_name_en": "Toranomon Hills Station Tower",
+        "building_slug": "toranomon-hills-station-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区虎ノ門2-6-2",
+        "postal_code": "105-0001",
+        "total_floors": 49,
+        "search_patterns": ["%虎ノ門ヒルズステーションタワー%", "%ステーションタワー%"],
+        "description": "地下鉄虎ノ門ヒルズ駅直結・ステーションタワーに入居する情報通信、AIテック、総合コンサルティングファームの最新一覧。"
+    },
+    {
+        "building_name": "虎ノ門ヒルズ ビジネスタワー",
+        "building_name_en": "Toranomon Hills Business Tower",
+        "building_slug": "toranomon-hills-business-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区虎ノ門1-17-1",
+        "postal_code": "105-6490",
+        "total_floors": 36,
+        "search_patterns": ["%虎ノ門ヒルズビジネスタワー%", "%ビジネスタワー%"],
+        "description": "インキュベーションセンターARCHを擁する虎ノ門ヒルズビジネスタワー入居の大企業新規事業部門・IT企業一覧。"
+    },
+    {
+        "building_name": "東京ミッドタウン・タワー（赤坂）",
+        "building_name_en": "Tokyo Midtown Tower",
+        "building_slug": "tokyo-midtown-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区赤坂9-7-1",
+        "postal_code": "107-6290",
+        "total_floors": 54,
+        "search_patterns": ["%東京ミッドタウン%"],
+        "description": "東京ミッドタウン・タワー（東京都港区赤坂）に本社を構えるグローバル大手IT、総合エンタメ、医療機器メーカー一覧。"
+    },
+    {
+        "building_name": "赤坂Bizタワー",
+        "building_name_en": "Akasaka Biz Tower",
+        "building_slug": "akasaka-biz-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区赤坂5-3-1",
+        "postal_code": "107-6390",
+        "total_floors": 39,
+        "search_patterns": ["%赤坂Bizタワー%", "%赤坂ビズタワー%"],
+        "description": "赤坂サカスの中核・赤坂Bizタワーに入居する大手総合商社、広告代理店、外資系金融機関の最新テナント名鑑。"
+    },
+    {
+        "building_name": "赤坂インターシティAIR",
+        "building_name_en": "Akasaka Intercity AIR",
+        "building_slug": "akasaka-intercity-air",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区赤坂1-8-1",
+        "postal_code": "107-0052",
+        "total_floors": 38,
+        "search_patterns": ["%赤坂インターシティ%"],
+        "description": "赤坂インターシティAIR（溜池山王）に入居する外資系コンサルティング、大手監査法人、ヘルスケア先端企業一覧。"
+    },
+    {
+        "building_name": "住友不動産六本木グランドタワー",
+        "building_name_en": "Sumitomo Fudosan Roppongi Grand Tower",
+        "building_slug": "sumitomo-roppongi-grand-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区六本木3-2-1",
+        "postal_code": "106-6290",
+        "total_floors": 43,
+        "search_patterns": ["%六本木グランドタワー%"],
+        "description": "六本木一丁目駅直結・住友不動産六本木グランドタワーに入居する大手テレビ局関連、ネットサービス、ゲーム開発企業一覧。"
+    },
+    {
+        "building_name": "泉ガーデンタワー",
+        "building_name_en": "Izumi Garden Tower",
+        "building_slug": "izumi-garden-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区六本木1-6-1",
+        "postal_code": "106-6090",
+        "total_floors": 45,
+        "search_patterns": ["%泉ガーデンタワー%"],
+        "description": "泉ガーデンタワー（東京都港区六本木一丁目）に入居する大手法律事務所、投資銀行、外資系ハイテク企業一覧。"
+    },
+    {
+        "building_name": "汐留シティセンター",
+        "building_name_en": "Shiodome City Center",
+        "building_slug": "shiodome-city-center",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区東新橋1-5-2",
+        "postal_code": "105-7101",
+        "total_floors": 43,
+        "search_patterns": ["%汐留シティセンター%"],
+        "description": "汐留シティセンター（東京都港区東新橋）に入居する大手航空会社、化学メーカー、ITソリューション企業名鑑。"
+    },
+    {
+        "building_name": "汐留住友ビル",
+        "building_name_en": "Shiodome Sumitomo Building",
+        "building_slug": "shiodome-sumitomo-building",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区東新橋1-9-2",
+        "postal_code": "105-0021",
+        "total_floors": 27,
+        "search_patterns": ["%汐留住友ビル%"],
+        "description": "汐留シオサイト・汐留住友ビルに入居する大手通信グループ、外資系コンサル、総合リース企業の最新一覧。"
+    },
+    {
+        "building_name": "日本テレビタワー",
+        "building_name_en": "Nippon Television Tower",
+        "building_slug": "nippon-television-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区東新橋1-6-1",
+        "postal_code": "105-7444",
+        "total_floors": 32,
+        "search_patterns": ["%日本テレビタワー%", "%日テレタワー%"],
+        "description": "日本テレビ放送網本社を擁する汐留のメディア拠点・日本テレビタワー周辺の関連メディア・制作会社一覧。"
+    },
+    {
+        "building_name": "品川インターシティ",
+        "building_name_en": "Shinagawa Intercity",
+        "building_slug": "shinagawa-intercity",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区港南2-15-1",
+        "postal_code": "108-6090",
+        "total_floors": 32,
+        "search_patterns": ["%品川インターシティ%"],
+        "description": "品川駅港南口直結の大型複合施設・品川インターシティに入居する大手電機メーカー、商社、IT企業の最新一覧。"
+    },
+    {
+        "building_name": "品川グランドセントラルタワー",
+        "building_name_en": "Shinagawa Grand Central Tower",
+        "building_slug": "shinagawa-grand-central-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区港南2-16-4",
+        "postal_code": "108-0075",
+        "total_floors": 32,
+        "search_patterns": ["%品川グランドセントラルタワー%"],
+        "description": "品川グランドコモンズの中核・品川グランドセントラルタワーに入居する大手精密機器、ソフトウェア開発企業一覧。"
+    },
+    {
+        "building_name": "msb Tamachi 田町ステーションタワーS",
+        "building_name_en": "msb Tamachi Station Tower S",
+        "building_slug": "msb-tamachi-station-tower-s",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区芝浦3-1-21",
+        "postal_code": "108-0023",
+        "total_floors": 31,
+        "search_patterns": ["%msb Tamachi%", "%田町ステーションタワー%"],
+        "description": "JR田町駅東口直結・ムスブ田町ステーションタワーに入居する総合食品メーカー、情報通信、外資系企業の最新テナント名鑑。"
+    },
+    {
+        "building_name": "愛宕グリーンヒルズMORIタワー",
+        "building_name_en": "Atago Green Hills MORI Tower",
+        "building_slug": "atago-green-hills-mori-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区愛宕2-5-1",
+        "postal_code": "105-6290",
+        "total_floors": 42,
+        "search_patterns": ["%愛宕グリーンヒルズ%"],
+        "description": "港区愛宕のランドマークタワー・愛宕グリーンヒルズMORIタワーに入居する投資ファンド、法律事務所、IT関連企業一覧。"
+    },
+    {
+        "building_name": "世界貿易センタービルディング南館",
+        "building_name_en": "World Trade Center Building South Tower",
+        "building_slug": "world-trade-center-south",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区浜松町2-4-1",
+        "postal_code": "105-5190",
+        "total_floors": 39,
+        "search_patterns": ["%世界貿易センタービル%"],
+        "description": "浜松町駅直結・世界貿易センタービル南館に入居する大手保険会社、海運・物流、国際商社グループ一覧。"
+    },
+    {
+        "building_name": "オークラプレステージタワー",
+        "building_name_en": "The Okura Prestige Tower",
+        "building_slug": "the-okura-prestige-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "港区",
+        "street_address": "東京都港区虎ノ門2-10-4",
+        "postal_code": "105-0001",
+        "total_floors": 41,
+        "search_patterns": ["%オークラプレステージタワー%"],
+        "description": "The Okura Tokyoに隣接する超高級オフィス・オークラプレステージタワーに入居するグローバル投資顧問・商社一覧。"
+    },
+
+    # =========================================================================
+    # TOKYO - CHUO WARD (8 Towers)
+    # =========================================================================
+    {
+        "building_name": "日本橋三井タワー",
+        "building_name_en": "Nihombashi Mitsui Tower",
+        "building_slug": "nihombashi-mitsui-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "中央区",
+        "street_address": "東京都中央区日本橋室町2-1-1",
+        "postal_code": "103-0022",
+        "total_floors": 39,
+        "search_patterns": ["%日本橋三井タワー%"],
+        "description": "日本橋の象徴・日本橋三井タワーに入居する製薬大手、バイオベンチャー、信託銀行グループの最新企業名鑑。"
+    },
+    {
+        "building_name": "日本橋室町三井タワー（COREDO室町テラス）",
+        "building_name_en": "Nihombashi Muromachi Mitsui Tower",
+        "building_slug": "nihombashi-muromachi-mitsui-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "中央区",
+        "street_address": "東京都中央区日本橋室町3-2-1",
+        "postal_code": "103-0022",
+        "total_floors": 26,
+        "search_patterns": ["%室町三井タワー%", "%COREDO室町%"],
+        "description": "コレド室町テラス併設・日本橋室町三井タワーに入居する外資系ITクラウド、ヘルスケア、監査法人の最新一覧。"
+    },
+    {
+        "building_name": "東京日本橋タワー",
+        "building_name_en": "Tokyo Nihombashi Tower",
+        "building_slug": "tokyo-nihombashi-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "中央区",
+        "street_address": "東京都中央区日本橋2-7-1",
+        "postal_code": "103-6035",
+        "total_floors": 35,
+        "search_patterns": ["%東京日本橋タワー%"],
+        "description": "日本橋駅直結・東京日本橋タワーに入居するメガバンク関連、証券会社、上場ITサービス企業一覧。"
+    },
+    {
+        "building_name": "東京ミッドタウン八重洲",
+        "building_name_en": "Tokyo Midtown Yaesu",
+        "building_slug": "tokyo-midtown-yaesu",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "中央区",
+        "street_address": "東京都中央区八重洲2-2-1",
+        "postal_code": "104-0028",
+        "total_floors": 45,
+        "search_patterns": ["%ミッドタウン八重洲%"],
+        "description": "東京駅八重洲口直結・東京ミッドタウン八重洲に入居する大手エネルギー、ロボティクス、外資系コンサルティング企業の最新一覧。"
+    },
+    {
+        "building_name": "京橋エドグラン",
+        "building_name_en": "Kyobashi Edogrand",
+        "building_slug": "kyobashi-edogrand",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "中央区",
+        "street_address": "東京都中央区京橋2-2-1",
+        "postal_code": "104-0031",
+        "total_floors": 32,
+        "search_patterns": ["%京橋エドグラン%"],
+        "description": "京橋駅直結・京橋エドグランに入居する大手食品メーカー、建機メーカー、電子部品商社の一覧。"
+    },
+    {
+        "building_name": "GINZA SIX（ギンザ シックス）",
+        "building_name_en": "GINZA SIX",
+        "building_slug": "ginza-six",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "中央区",
+        "street_address": "東京都中央区銀座6-10-1",
+        "postal_code": "104-0061",
+        "total_floors": 13,
+        "search_patterns": ["%GINZA SIX%", "%ギンザシックス%"],
+        "description": "銀座エリア最大級の複合商業オフィスビル・GINZA SIXのオフィスタワーに入居する外資系IT、ラグジュアリーブランド本社一覧。"
+    },
+    {
+        "building_name": "晴海アイランド トリトンスクエア",
+        "building_name_en": "Harumi Island Triton Square",
+        "building_slug": "harumi-island-triton-square",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "中央区",
+        "street_address": "東京都中央区晴海1-8-16",
+        "postal_code": "104-6090",
+        "total_floors": 44,
+        "search_patterns": ["%トリトンスクエア%"],
+        "description": "晴海アイランド トリトンスクエアに入居する大手SIer、総合電機、バイオテクノロジー関連企業一覧。"
+    },
+    {
+        "building_name": "歌舞伎座タワー",
+        "building_name_en": "Kabukiza Tower",
+        "building_slug": "kabukiza-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "中央区",
+        "street_address": "東京都中央区銀座4-12-15",
+        "postal_code": "104-0061",
+        "total_floors": 29,
+        "search_patterns": ["%歌舞伎座タワー%"],
+        "description": "伝統芸能・歌舞伎座の上にそびえる超高層オフィス・歌舞伎座タワーに入居する外資系メディア、大手IT、法律事務所一覧。"
+    },
+
+    # =========================================================================
+    # TOKYO - SHINJUKU WARD (8 Towers)
+    # =========================================================================
+    {
+        "building_name": "新宿住友ビル（三角ビル）",
+        "building_name_en": "Shinjuku Sumitomo Building",
+        "building_slug": "shinjuku-sumitomo-building",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "新宿区",
+        "street_address": "東京都新宿区西新宿2-6-1",
+        "postal_code": "163-0290",
+        "total_floors": 52,
+        "search_patterns": ["%新宿住友ビル%"],
+        "description": "西新宿高層ビル群の象徴「三角ビル」・新宿住友ビルに入居する大手ITシステム、不動産開発、医療関連企業名鑑。"
+    },
+    {
+        "building_name": "新宿三井ビルディング",
+        "building_name_en": "Shinjuku Mitsui Building",
+        "building_slug": "shinjuku-mitsui-building",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "新宿区",
+        "street_address": "東京都新宿区西新宿2-1-1",
+        "postal_code": "163-0490",
+        "total_floors": 55,
+        "search_patterns": ["%新宿三井ビル%"],
+        "description": "西新宿を代表する超高層ビル・新宿三井ビルディングに入居する大手コンサルティング、人材サービス、エンジニアリング企業一覧。"
+    },
+    {
+        "building_name": "新宿センタービル",
+        "building_name_en": "Shinjuku Center Building",
+        "building_slug": "shinjuku-center-building",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "新宿区",
+        "street_address": "東京都新宿区西新宿1-25-1",
+        "postal_code": "163-0690",
+        "total_floors": 54,
+        "search_patterns": ["%新宿センタービル%"],
+        "description": "新宿センタービル（東京都新宿区西新宿）に入居する大手精密メーカー、建設設計、情報通信企業の最新一覧。"
+    },
+    {
+        "building_name": "新宿野村ビル",
+        "building_name_en": "Shinjuku Nomura Building",
+        "building_slug": "shinjuku-nomura-building",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "新宿区",
+        "street_address": "東京都新宿区西新宿1-26-2",
+        "postal_code": "163-0590",
+        "total_floors": 50,
+        "search_patterns": ["%新宿野村ビル%"],
+        "description": "新宿野村ビル（西新宿高層街）に入居する金融機関、ITベンダー、外資系コンサルティング企業の最新名鑑。"
+    },
+    {
+        "building_name": "新宿パークタワー",
+        "building_name_en": "Shinjuku Park Tower",
+        "building_slug": "shinjuku-park-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "新宿区",
+        "street_address": "東京都新宿区西新宿3-7-1",
+        "postal_code": "163-1090",
+        "total_floors": 52,
+        "search_patterns": ["%新宿パークタワー%"],
+        "description": "丹下健三設計の名建築・新宿パークタワーに入居する大手住宅設備、デザイン、ITテクノロジー関連企業一覧。"
+    },
+    {
+        "building_name": "東京オペラシティビル",
+        "building_name_en": "Tokyo Opera City Tower",
+        "building_slug": "tokyo-opera-city-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "新宿区",
+        "street_address": "東京都新宿区西新宿3-20-2",
+        "postal_code": "163-1490",
+        "total_floors": 54,
+        "search_patterns": ["%東京オペラシティ%"],
+        "description": "初台駅直結・東京オペラシティタワーに入居する大手エンターテインメント、通信ソリューション、電子部品企業一覧。"
+    },
+    {
+        "building_name": "新宿アイランドタワー",
+        "building_name_en": "Shinjuku I-Land Tower",
+        "building_slug": "shinjuku-i-land-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "新宿区",
+        "street_address": "東京都新宿区西新宿6-5-1",
+        "postal_code": "163-1390",
+        "total_floors": 44,
+        "search_patterns": ["%新宿アイランドタワー%"],
+        "description": "LOVEオブジェで知られる新宿アイランドタワーに入居する医療・製薬、人材紹介、情報通信関連の最新企業一覧。"
+    },
+    {
+        "building_name": "新宿オークタワー",
+        "building_name_en": "Shinjuku Oak Tower",
+        "building_slug": "shinjuku-oak-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "新宿区",
+        "street_address": "東京都新宿区西新宿6-8-1",
+        "postal_code": "163-6090",
+        "total_floors": 38,
+        "search_patterns": ["%新宿オークタワー%"],
+        "description": "新宿オークタワー（住友不動産新宿オークシティ）に入居する大手ゲームデベロッパー、ITアウトソーシング企業一覧。"
+    },
+
+    # =========================================================================
+    # TOKYO - SHIBUYA & MEGURO (7 Towers)
+    # =========================================================================
+    {
+        "building_name": "渋谷スクランブルスクエア",
+        "building_name_en": "Shibuya Scramble Square",
+        "building_slug": "shibuya-scramble-square",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "渋谷区",
+        "street_address": "東京都渋谷区渋谷2-24-12",
+        "postal_code": "150-6101",
+        "total_floors": 47,
+        "search_patterns": ["%渋谷スクランブルスクエア%"],
+        "description": "渋谷駅直上230m・渋谷スクランブルスクエアに入居するメガベンチャー、外資系SaaS、ネット証券の最新企業名鑑。"
+    },
+    {
+        "building_name": "渋谷ヒカリエ",
+        "building_name_en": "Shibuya Hikarie",
+        "building_slug": "shibuya-hikarie",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "渋谷区",
+        "street_address": "東京都渋谷区渋谷2-21-1",
+        "postal_code": "150-8510",
+        "total_floors": 34,
+        "search_patterns": ["%渋谷ヒカリエ%"],
+        "description": "渋谷ヒカリエ（東京都渋谷区渋谷）に本社・開発拠点を置くITインターネット・ゲーム・メディア関連企業一覧。"
+    },
+    {
+        "building_name": "渋谷ストリーム",
+        "building_name_en": "Shibuya Stream",
+        "building_slug": "shibuya-stream",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "渋谷区",
+        "street_address": "東京都渋谷区渋谷3-21-3",
+        "postal_code": "150-0002",
+        "total_floors": 35,
+        "search_patterns": ["%渋谷ストリーム%"],
+        "description": "グーグル日本法人の本社が入居する渋谷ストリーム周辺のハイテク企業およびクリエイティブファームの最新一覧。"
+    },
+    {
+        "building_name": "渋谷フクラス",
+        "building_name_en": "Shibuya Fukuras",
+        "building_slug": "shibuya-fukuras",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "渋谷区",
+        "street_address": "東京都渋谷区道玄坂1-2-3",
+        "postal_code": "150-0043",
+        "total_floors": 18,
+        "search_patterns": ["%渋谷フクラス%"],
+        "description": "渋谷駅西口直結・渋谷フクラスに入居するGMOインターネットグループ各社および先進フィンテック企業名鑑。"
+    },
+    {
+        "building_name": "渋谷サクラステージ（SHIBUYAタワー）",
+        "building_name_en": "Shibuya Sakura Stage",
+        "building_slug": "shibuya-sakura-stage",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "渋谷区",
+        "street_address": "東京都渋谷区桜丘町1-1",
+        "postal_code": "150-0031",
+        "total_floors": 39,
+        "search_patterns": ["%渋谷サクラステージ%", "%Shibuya Sakura Stage%"],
+        "description": "桜丘町再開発の最新超高層・渋谷サクラステージに入居するIT・コンテンツ・グローバル企業の最新テナント名鑑。"
+    },
+    {
+        "building_name": "恵比寿ガーデンプレイスタワー",
+        "building_name_en": "Yebisu Garden Place Tower",
+        "building_slug": "ebisu-garden-place-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "渋谷区",
+        "street_address": "東京都渋谷区恵比寿4-20-3",
+        "postal_code": "150-6090",
+        "total_floors": 40,
+        "search_patterns": ["%恵比寿ガーデンプレイス%"],
+        "description": "恵比寿ガーデンプレイスタワー（東京都渋谷区恵比寿）に入居する本社・外資系企業・上場企業の最新一覧。"
+    },
+    {
+        "building_name": "セルリアンタワー",
+        "building_name_en": "Cerulean Tower",
+        "building_slug": "cerulean-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "渋谷区",
+        "street_address": "東京都渋谷区桜丘町26-1",
+        "postal_code": "150-8512",
+        "total_floors": 41,
+        "search_patterns": ["%セルリアンタワー%"],
+        "description": "渋谷の丘の上にそびえるセルリアンタワーに入居する大手ITグループ、総合エンタテインメント、投資会社一覧。"
+    },
+
+    # =========================================================================
+    # TOKYO - TOSHIMA & KOTO (3 Towers)
+    # =========================================================================
+    {
+        "building_name": "サンシャイン60",
+        "building_name_en": "Sunshine 60",
+        "building_slug": "sunshine-60",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "豊島区",
+        "street_address": "東京都豊島区東池袋3-1-1",
+        "postal_code": "170-6090",
+        "total_floors": 60,
+        "search_patterns": ["%サンシャイン６０%", "%サンシャイン60%"],
+        "description": "池袋のランドマーク「サンシャイン60」（東京都豊島区東池袋）に入居する商社、サービス、上場IT企業一覧。"
+    },
+    {
+        "building_name": "Hareza Tower（ハレザタワー）",
+        "building_name_en": "Hareza Tower",
+        "building_slug": "hareza-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "豊島区",
+        "street_address": "東京都豊島区東池袋1-18-1",
+        "postal_code": "170-0013",
+        "total_floors": 33,
+        "search_patterns": ["%Hareza%", "%ハレザタワー%"],
+        "description": "池袋の文化・ビジネス新拠点・Hareza Towerに入居するアニメ・ゲームコンテンツ、システム開発企業一覧。"
+    },
+    {
+        "building_name": "豊洲ベイサイドクロスタワー",
+        "building_name_en": "Toyosu Bayside Cross Tower",
+        "building_slug": "toyosu-bayside-cross-tower",
+        "prefecture_code": "13",
+        "prefecture_name": "東京都",
+        "city_name": "江東区",
+        "street_address": "東京都江東区豊洲2-2-1",
+        "postal_code": "135-0061",
+        "total_floors": 36,
+        "search_patterns": ["%豊洲ベイサイドクロス%"],
+        "description": "豊洲駅直結の最新鋭オフィス・豊洲ベイサイドクロスタワーに入居する大手SIer、重工業、素材メーカー本社一覧。"
+    },
+
+    # =========================================================================
+    # KANAGAWA PREFECTURE (8 Towers)
+    # =========================================================================
+    {
+        "building_name": "横浜ランドマークタワー",
+        "building_name_en": "Yokohama Landmark Tower",
+        "building_slug": "yokohama-landmark-tower",
+        "prefecture_code": "14",
+        "prefecture_name": "神奈川県",
+        "city_name": "横浜市西区",
+        "street_address": "神奈川県横浜市西区みなとみらい2-2-1",
+        "postal_code": "220-8190",
+        "total_floors": 70,
+        "search_patterns": ["%ランドマークタワー%"],
+        "description": "横浜ランドマークタワー（横浜市西区みなとみらい）に入居する有力企業・支店一覧。電話番号、役員、財務データを検索。"
+    },
+    {
+        "building_name": "クイーンズタワーA",
+        "building_name_en": "Queen's Tower A",
+        "building_slug": "queens-tower-a",
+        "prefecture_code": "14",
+        "prefecture_name": "神奈川県",
+        "city_name": "横浜市西区",
+        "street_address": "神奈川県横浜市西区みなとみらい2-3-1",
+        "postal_code": "220-6090",
+        "total_floors": 36,
+        "search_patterns": ["%クイーンズタワー%"],
+        "description": "みなとみらい駅直結・クイーンズタワーに入居する日新、総合エンジニアリング、外資系ハイテク企業一覧。"
+    },
+    {
+        "building_name": "横浜ダイヤビルディング",
+        "building_name_en": "Yokohama Dia Building",
+        "building_slug": "yokohama-dia-building",
+        "prefecture_code": "14",
+        "prefecture_name": "神奈川県",
+        "city_name": "横浜市神奈川区",
+        "street_address": "神奈川県横浜市神奈川区金港町1-7",
+        "postal_code": "221-0056",
+        "total_floors": 31,
+        "search_patterns": ["%横浜ダイヤビル%"],
+        "description": "横浜駅きた東口直結・横浜ダイヤビルディングに入居する三菱商事グループ、情報システム、精密機器企業名鑑。"
+    },
+    {
+        "building_name": "横浜ゲートタワー",
+        "building_name_en": "Yokohama Gate Tower",
+        "building_slug": "yokohama-gate-tower",
+        "prefecture_code": "14",
+        "prefecture_name": "神奈川県",
+        "city_name": "横浜市西区",
+        "street_address": "神奈川県横浜市西区高島1-2-5",
+        "postal_code": "220-0011",
+        "total_floors": 21,
+        "search_patterns": ["%横浜ゲートタワー%"],
+        "description": "みなとみらい21地区の最新鋭スマートビル・横浜ゲートタワーに入居する先端R&D、自動車技術開発企業一覧。"
+    },
+    {
+        "building_name": "横浜コネクトスクエア",
+        "building_name_en": "Yokohama Connect Square",
+        "building_slug": "yokohama-connect-square",
+        "prefecture_code": "14",
+        "prefecture_name": "神奈川県",
+        "city_name": "横浜市西区",
+        "street_address": "神奈川県横浜市西区みなとみらい3-3-3",
+        "postal_code": "220-0012",
+        "total_floors": 28,
+        "search_patterns": ["%横浜コネクトスクエア%"],
+        "description": "ぴあアリーナMM隣接・横浜コネクトスクエアに入居するパナソニックグループ各社および先端テック企業一覧。"
+    },
+    {
+        "building_name": "ミューザ川崎セントラルタワー",
+        "building_name_en": "Muza Kawasaki Central Tower",
+        "building_slug": "muza-kawasaki-central-tower",
+        "prefecture_code": "14",
+        "prefecture_name": "神奈川県",
+        "city_name": "川崎市幸区",
+        "street_address": "神奈川県川崎市幸区大宮町1310",
+        "postal_code": "212-8554",
+        "total_floors": 27,
+        "search_patterns": ["%ミューザ川崎%"],
+        "description": "JR川崎駅西口直結・ミューザ川崎セントラルタワーに入居する大手重電メーカー、エンジニアリング、IT企業一覧。"
+    },
+    {
+        "building_name": "川崎フロンティアビル",
+        "building_name_en": "Kawasaki Frontier Building",
+        "building_slug": "kawasaki-frontier-building",
+        "prefecture_code": "14",
+        "prefecture_name": "神奈川県",
+        "city_name": "川崎市川崎区",
+        "street_address": "神奈川県川崎市川崎区駅前本町11-2",
+        "postal_code": "210-0007",
+        "total_floors": 21,
+        "search_patterns": ["%川崎フロンティアビル%"],
+        "description": "川崎駅前のビジネス拠点・川崎フロンティアビルに入居する情報サービス、エネルギー、金融関連企業一覧。"
+    },
+    {
+        "building_name": "新横浜中央ビル",
+        "building_name_en": "Shin-Yokohama Chuo Building",
+        "building_slug": "shin-yokohama-chuo-building",
+        "prefecture_code": "14",
+        "prefecture_name": "神奈川県",
+        "city_name": "横浜市港北区",
+        "street_address": "神奈川県横浜市港北区新横浜2-100-45",
+        "postal_code": "222-0033",
+        "total_floors": 19,
+        "search_patterns": ["%新横浜中央ビル%"],
+        "description": "新幹線・新横浜駅直結の新横浜中央ビルに入居する半導体商社、電子機器メーカー、医療機器企業名鑑。"
+    },
+
+    # =========================================================================
+    # KANSAI - OSAKA, KYOTO, HYOGO (16 Towers)
+    # =========================================================================
+    {
+        "building_name": "グランフロント大阪 南館（タワーA）",
+        "building_name_en": "Grand Front Osaka Tower A",
+        "building_slug": "grand-front-osaka-tower-a",
+        "prefecture_code": "27",
+        "prefecture_name": "大阪府",
+        "city_name": "大阪市北区",
+        "street_address": "大阪府大阪市北区大深町4-20",
+        "postal_code": "530-0011",
+        "total_floors": 38,
+        "search_patterns": ["%グランフロント大阪%"],
+        "description": "JR大阪駅直結・グランフロント大阪南館に入居する大手総合商社、メガバンク、外資系コンサルティング企業の最新一覧。"
+    },
+    {
+        "building_name": "グランフロント大阪 北館（タワーB）",
+        "building_name_en": "Grand Front Osaka Tower B",
+        "building_slug": "grand-front-osaka-tower-b",
+        "prefecture_code": "27",
+        "prefecture_name": "大阪府",
+        "city_name": "大阪市北区",
+        "street_address": "大阪府大阪市北区大深町3-1",
+        "postal_code": "530-0011",
+        "total_floors": 38,
+        "search_patterns": ["%グランフロント大阪%"],
+        "description": "ナレッジキャピタルを擁するグランフロント大阪北館に入居する先進R&D企業、大学研究機関、ITメガベンチャー一覧。"
+    },
+    {
+        "building_name": "あべのハルカス",
+        "building_name_en": "Abeno Harukas",
+        "building_slug": "abeno-harukas",
+        "prefecture_code": "27",
+        "prefecture_name": "大阪府",
+        "city_name": "大阪市阿倍野区",
+        "street_address": "大阪府大阪市阿倍野区阿倍野筋1-1-43",
+        "postal_code": "545-6016",
+        "total_floors": 60,
+        "search_patterns": ["%あべのハルカス%"],
+        "description": "高さ300mを誇る西日本のランドマーク「あべのハルカス」オフィスフロアに入居する有力企業・金融・医療機関一覧。"
+    },
+    {
+        "building_name": "中之島フェスティバルタワー",
+        "building_name_en": "Nakanoshima Festival Tower",
+        "building_slug": "nakanoshima-festival-tower",
+        "prefecture_code": "27",
+        "prefecture_name": "大阪府",
+        "city_name": "大阪市北区",
+        "street_address": "大阪府大阪市北区中之島2-3-18",
+        "postal_code": "530-0005",
+        "total_floors": 39,
+        "search_patterns": ["%フェスティバルタワー%"],
+        "description": "朝日新聞大阪本社を擁する中之島フェスティバルタワーに入居する大手マスコミ、総合法律事務所、金融機関一覧。"
+    },
+    {
+        "building_name": "中之島フェスティバルタワー・ウエスト",
+        "building_name_en": "Nakanoshima Festival Tower West",
+        "building_slug": "nakanoshima-festival-tower-west",
+        "prefecture_code": "27",
+        "prefecture_name": "大阪府",
+        "city_name": "大阪市北区",
+        "street_address": "大阪府大阪市北区中之島3-2-4",
+        "postal_code": "530-0005",
+        "total_floors": 41,
+        "search_patterns": ["%フェスティバルタワー・ウエスト%", "%フェスティバルタワーウエスト%"],
+        "description": "中之島ツインタワー西棟・中之島フェスティバルタワー・ウエストに入居する外資系ホテル本部、大手化学、証券会社名鑑。"
+    },
+    {
+        "building_name": "梅田阪急ビル オフィスタワー",
+        "building_name_en": "Umeda Hankyu Building Office Tower",
+        "building_slug": "umeda-hankyu-building",
+        "prefecture_code": "27",
+        "prefecture_name": "大阪府",
+        "city_name": "大阪市北区",
+        "street_address": "大阪府大阪市北区角田町8-1",
+        "postal_code": "530-0017",
+        "total_floors": 41,
+        "search_patterns": ["%梅田阪急ビル%"],
+        "description": "阪急うめだ本店上層階・梅田阪急ビルオフィスタワーに入居する大手旅行代理店、監査法人、総合人材サービス企業一覧。"
+    },
+    {
+        "building_name": "大阪梅田ツインタワーズ・サウス",
+        "building_name_en": "Osaka Umeda Twin Towers South",
+        "building_slug": "osaka-umeda-twin-towers-south",
+        "prefecture_code": "27",
+        "prefecture_name": "大阪府",
+        "city_name": "大阪市北区",
+        "street_address": "大阪府大阪市北区梅田1-13-1",
+        "postal_code": "530-0001",
+        "total_floors": 38,
+        "search_patterns": ["%ツインタワーズ・サウス%", "%ツインタワーズサウス%"],
+        "description": "阪神百貨店直上・大阪梅田ツインタワーズ・サウスに入居する大手電機、化学、コンサルティングファームの最新一覧。"
+    },
+    {
+        "building_name": "大阪梅田ツインタワーズ・ノース",
+        "building_name_en": "Osaka Umeda Twin Towers North",
+        "building_slug": "osaka-umeda-twin-towers-north",
+        "prefecture_code": "27",
+        "prefecture_name": "大阪府",
+        "city_name": "大阪市北区",
+        "street_address": "大阪府大阪市北区角田町8-1",
+        "postal_code": "530-0017",
+        "total_floors": 41,
+        "search_patterns": ["%ツインタワーズ・ノース%", "%ツインタワーズノース%"],
+        "description": "梅田エリアの中核超高層・大阪梅田ツインタワーズ・ノースに入居する関西トップクラスの有力企業名鑑。"
+    },
+    {
+        "building_name": "なんばスカイオ",
+        "building_name_en": "Namba Sky O",
+        "building_slug": "namba-sky-o",
+        "prefecture_code": "27",
+        "prefecture_name": "大阪府",
+        "city_name": "大阪市中央区",
+        "street_address": "大阪府大阪市中央区難波5-1-60",
+        "postal_code": "542-0076",
+        "total_floors": 31,
+        "search_patterns": ["%なんばスカイオ%"],
+        "description": "南海なんば駅直結の最新複合ビル・なんばスカイオに入居する外資系フィンテック、医療ツーリズム、国際貿易企業一覧。"
+    },
+    {
+        "building_name": "OBPキャッスルタワー",
+        "building_name_en": "OBP Castle Tower",
+        "building_slug": "obp-castle-tower",
+        "prefecture_code": "27",
+        "prefecture_name": "大阪府",
+        "city_name": "大阪市中央区",
+        "street_address": "大阪府大阪市中央区城見1-4-24",
+        "postal_code": "540-0001",
+        "total_floors": 38,
+        "search_patterns": ["%OBPキャッスルタワー%", "%キャッスルタワー%"],
+        "description": "大阪ビジネスパーク（OBP）のランドマーク・キャッスルタワーに入居する大手ITシステムインテグレーター、保険会社一覧。"
+    },
+    {
+        "building_name": "TWIN21 MIDタワー",
+        "building_name_en": "TWIN21 MID Tower",
+        "building_slug": "twin21-mid-tower",
+        "prefecture_code": "27",
+        "prefecture_name": "大阪府",
+        "city_name": "大阪市中央区",
+        "street_address": "大阪府大阪市中央区城見2-1-61",
+        "postal_code": "540-0001",
+        "total_floors": 38,
+        "search_patterns": ["%TWIN21%", "%ツイン21%"],
+        "description": "OBPの象徴的ツインタワー・TWIN21 MIDタワーに入居する電機、情報通信、総合プラントエンジニアリング企業一覧。"
+    },
+    {
+        "building_name": "本町ガーデンシティ",
+        "building_name_en": "Honmachi Garden City",
+        "building_slug": "honmachi-garden-city",
+        "prefecture_code": "27",
+        "prefecture_name": "大阪府",
+        "city_name": "大阪市中央区",
+        "street_address": "大阪府大阪市中央区本町3-6-4",
+        "postal_code": "541-0053",
+        "total_floors": 27,
+        "search_patterns": ["%本町ガーデンシティ%"],
+        "description": "御堂筋沿い・セントレジスホテル大阪併設の本町ガーデンシティに入居する大手繊維商社、製薬、法律特許事務所一覧。"
+    },
+    {
+        "building_name": "京都駅ビル",
+        "building_name_en": "Kyoto Station Building",
+        "building_slug": "kyoto-station-building",
+        "prefecture_code": "26",
+        "prefecture_name": "京都府",
+        "city_name": "京都市下京区",
+        "street_address": "京都府京都市下京区烏丸通塩小路下る東塩小路町901",
+        "postal_code": "600-8216",
+        "total_floors": 16,
+        "search_patterns": ["%京都駅ビル%"],
+        "description": "古都京都の玄関口・京都駅ビル内に入居するJR西日本グループ、観光・ホテル開発、文化事業関連企業一覧。"
+    },
+    {
+        "building_name": "京都烏丸FTスクエア",
+        "building_name_en": "Kyoto Karasuma FT Square",
+        "building_slug": "kyoto-karasuma-ft-square",
+        "prefecture_code": "26",
+        "prefecture_name": "京都府",
+        "city_name": "京都市下京区",
+        "street_address": "京都府京都市下京区四条通烏丸東入長刀鉾町8",
+        "postal_code": "600-8008",
+        "total_floors": 12,
+        "search_patterns": ["%FTスクエア%", "%四条烏丸FT%"],
+        "description": "京都のメインビジネス街・四条烏丸に位置するFTスクエアに入居する金融機関、電子部品メーカー、監査法人名鑑。"
+    },
+    {
+        "building_name": "神戸クリスタルタワー",
+        "building_name_en": "Kobe Crystal Tower",
+        "building_slug": "kobe-crystal-tower",
+        "prefecture_code": "28",
+        "prefecture_name": "兵庫県",
+        "city_name": "神戸市中央区",
+        "street_address": "兵庫県神戸市中央区東川崎町1-1-3",
+        "postal_code": "650-0044",
+        "total_floors": 32,
+        "search_patterns": ["%神戸クリスタルタワー%"],
+        "description": "神戸ハーバーランドの象徴・神戸クリスタルタワーに入居する川崎重工グループ、海運・港湾物流、IT企業一覧。"
+    },
+    {
+        "building_name": "三宮ビル南館",
+        "building_name_en": "Sannomiya Building South",
+        "building_slug": "sannomiya-building-south",
+        "prefecture_code": "28",
+        "prefecture_name": "兵庫県",
+        "city_name": "神戸市中央区",
+        "street_address": "兵庫県神戸市中央区磯上通7-1-5",
+        "postal_code": "651-0086",
+        "total_floors": 16,
+        "search_patterns": ["%三宮ビル南館%"],
+        "description": "三宮駅至近のビジネス中核拠点・三宮ビル南館に入居する大手保険、エンジニアリング、外資系医療機器企業一覧。"
+    },
+
+    # =========================================================================
+    # CHUBU - AICHI / NAGOYA (7 Towers)
+    # =========================================================================
+    {
+        "building_name": "JRゲートタワー",
+        "building_name_en": "JR Gate Tower",
+        "building_slug": "jr-gate-tower-nagoya",
+        "prefecture_code": "23",
+        "prefecture_name": "愛知県",
+        "city_name": "名古屋市中村区",
+        "street_address": "愛知県名古屋市中村区名駅1-1-3",
+        "postal_code": "450-6601",
+        "total_floors": 46,
+        "search_patterns": ["%JRゲートタワー%", "%ゲートタワー%"],
+        "description": "名古屋駅直結・JRゲートタワーに入居する大手自動車部品、総合商社、外資系コンサルティング企業の最新一覧。"
+    },
+    {
+        "building_name": "ミッドランドスクエア（豊田毎日ビルディング）",
+        "building_name_en": "Midland Square",
+        "building_slug": "midland-square-nagoya",
+        "prefecture_code": "23",
+        "prefecture_name": "愛知県",
+        "city_name": "名古屋市中村区",
+        "street_address": "愛知県名古屋市中村区名駅4-7-1",
+        "postal_code": "450-6290",
+        "total_floors": 47,
+        "search_patterns": ["%ミッドランドスクエア%"],
+        "description": "中部地方最高峰247m・ミッドランドスクエアに入居するトヨタ自動車名古屋オフィス、総合金融、商社一覧。"
+    },
+    {
+        "building_name": "JRセントラルタワーズ",
+        "building_name_en": "JR Central Towers",
+        "building_slug": "jr-central-towers-nagoya",
+        "prefecture_code": "23",
+        "prefecture_name": "愛知県",
+        "city_name": "名古屋市中村区",
+        "street_address": "愛知県名古屋市中村区名駅1-1-4",
+        "postal_code": "450-6001",
+        "total_floors": 51,
+        "search_patterns": ["%JRセントラルタワーズ%", "%セントラルタワーズ%"],
+        "description": "名古屋駅のツインタワー・JRセントラルタワーズに入居するJR東海グループ、大手証券、鉄鋼メーカー一覧。"
+    },
+    {
+        "building_name": "JPタワー名古屋",
+        "building_name_en": "JP Tower Nagoya",
+        "building_slug": "jp-tower-nagoya",
+        "prefecture_code": "23",
+        "prefecture_name": "愛知県",
+        "city_name": "名古屋市中村区",
+        "street_address": "愛知県名古屋市中村区名駅1-1-1",
+        "postal_code": "450-6301",
+        "total_floors": 40,
+        "search_patterns": ["%JPタワー名古屋%"],
+        "description": "KITTE名古屋を擁するJPタワー名古屋に入居する大手ITメガベンチャー、精密製造業、総合コンサル企業一覧。"
+    },
+    {
+        "building_name": "大名古屋ビルヂング",
+        "building_name_en": "Dai Nagoya Building",
+        "building_slug": "dai-nagoya-building",
+        "prefecture_code": "23",
+        "prefecture_name": "愛知県",
+        "city_name": "名古屋市中村区",
+        "street_address": "愛知県名古屋市中村区名駅3-28-12",
+        "postal_code": "450-6490",
+        "total_floors": 34,
+        "search_patterns": ["%大名古屋ビルヂング%"],
+        "description": "名駅の顔・大名古屋ビルヂングに入居する大手金融機関、外資系監査法人、自動車テック先端企業一覧。"
+    },
+    {
+        "building_name": "名古屋ルーセントタワー",
+        "building_name_en": "Nagoya Lucent Tower",
+        "building_slug": "nagoya-lucent-tower",
+        "prefecture_code": "23",
+        "prefecture_name": "愛知県",
+        "city_name": "名古屋市西区",
+        "street_address": "愛知県名古屋市西区牛島町6-1",
+        "postal_code": "451-6001",
+        "total_floors": 40,
+        "search_patterns": ["%ルーセントタワー%"],
+        "description": "曲面の美しいランドマーク・名古屋ルーセントタワーに入居する大手重機、精密エレクトロニクス、IT企業一覧。"
+    },
+    {
+        "building_name": "中日ビル（新・中日ビル）",
+        "building_name_en": "Chunichi Building",
+        "building_slug": "chunichi-building-nagoya",
+        "prefecture_code": "23",
+        "prefecture_name": "愛知県",
+        "city_name": "名古屋市中区",
+        "street_address": "愛知県名古屋市中区栄4-1-1",
+        "postal_code": "460-0008",
+        "total_floors": 33,
+        "search_patterns": ["%中日ビル%"],
+        "description": "栄エリア再開発の旗艦・新生中日ビルに入居する中日新聞グループ、大手広告代理店、総合商社の最新一覧。"
+    },
+
+    # =========================================================================
+    # KYUSHU - FUKUOKA (5 Towers)
+    # =========================================================================
+    {
+        "building_name": "JR博多シティ",
+        "building_name_en": "JR Hakata City",
+        "building_slug": "jr-hakata-city",
+        "prefecture_code": "40",
+        "prefecture_name": "福岡県",
+        "city_name": "福岡市博多区",
+        "street_address": "福岡県福岡市博多区博多駅中央街1-1",
+        "postal_code": "812-0012",
+        "total_floors": 10,
+        "search_patterns": ["%JR博多シティ%", "%博多シティ%"],
+        "description": "九州最大の交通結節点・JR博多シティに入居するJR九州グループ、旅行・運輸、西日本統括企業一覧。"
+    },
+    {
+        "building_name": "天神ビジネスセンター",
+        "building_name_en": "Tenjin Business Center",
+        "building_slug": "tenjin-business-center",
+        "prefecture_code": "40",
+        "prefecture_name": "福岡県",
+        "city_name": "福岡市中央区",
+        "street_address": "福岡県福岡市中央区天神1-10-20",
+        "postal_code": "810-0001",
+        "total_floors": 19,
+        "search_patterns": ["%天神ビジネスセンター%"],
+        "description": "天神ビッグバン第1号プロジェクト・天神ビジネスセンターに入居する世界的大手IT企業、外資系コンサル、Fintech企業一覧。"
+    },
+    {
+        "building_name": "福岡大名ガーデンシティ",
+        "building_name_en": "Fukuoka Daimyo Garden City",
+        "building_slug": "fukuoka-daimyo-garden-city",
+        "prefecture_code": "40",
+        "prefecture_name": "福岡県",
+        "city_name": "福岡市中央区",
+        "street_address": "福岡県福岡市中央区大名2-6-50",
+        "postal_code": "810-0041",
+        "total_floors": 25,
+        "search_patterns": ["%大名ガーデンシティ%"],
+        "description": "旧大名小学校跡地に誕生した最新超高層・福岡大名ガーデンシティに入居する大手監査法人、スタートアップ、IT企業一覧。"
+    },
+    {
+        "building_name": "アクロス福岡",
+        "building_name_en": "Acros Fukuoka",
+        "building_slug": "acros-fukuoka",
+        "prefecture_code": "40",
+        "prefecture_name": "福岡県",
+        "city_name": "福岡市中央区",
+        "street_address": "福岡県福岡市中央区天神1-1-1",
+        "postal_code": "810-0001",
+        "total_floors": 14,
+        "search_patterns": ["%アクロス福岡%"],
+        "description": "ステップガーデンで世界的に著名なアクロス福岡に入居する国際交流機関、大手総合保険、法律特許事務所一覧。"
+    },
+    {
+        "building_name": "博多深見パークビルディング",
+        "building_name_en": "Hakata Fukami Park Building",
+        "building_slug": "hakata-fukami-park-building",
+        "prefecture_code": "40",
+        "prefecture_name": "福岡県",
+        "city_name": "福岡市博多区",
+        "street_address": "福岡県福岡市博多区博多駅前3-26-29",
+        "postal_code": "812-0011",
+        "total_floors": 13,
+        "search_patterns": ["%深見パークビル%"],
+        "description": "博多コネクティッドエリアの最新オフィス・博多深見パークビルディングに入居する先端テクノロジー、エンジニアリング企業一覧。"
+    },
+
+    # =========================================================================
+    # OTHER METROPOLITAN CENTERS (Hokkaido, Miyagi, Hiroshima - 4 Towers)
+    # =========================================================================
+    {
+        "building_name": "JRタワー（札幌）",
+        "building_name_en": "JR Tower Sapporo",
+        "building_slug": "jr-tower-sapporo",
+        "prefecture_code": "01",
+        "prefecture_name": "北海道",
+        "city_name": "札幌市中央区",
+        "street_address": "北海道札幌市中央区北5条西2-5",
+        "postal_code": "060-0502",
+        "total_floors": 38,
+        "search_patterns": ["%JRタワー%"],
+        "description": "北海道最高峰173m・JRタワー（札幌）に入居するJR北海道グループ、総合商社支社、IT先端開発拠点一覧。"
+    },
+    {
+        "building_name": "AER（アエル・仙台）",
+        "building_name_en": "AER Sendai",
+        "building_slug": "aer-sendai",
+        "prefecture_code": "04",
+        "prefecture_name": "宮城県",
+        "city_name": "仙台市青葉区",
+        "street_address": "宮城県仙台市青葉区中央1-3-1",
+        "postal_code": "980-6190",
+        "total_floors": 31,
+        "search_patterns": ["%アエル%", "%AER%"],
+        "description": "仙台駅前のランドマークタワー・AER（アエル）に入居する東北統括拠点、大手通信、人材紹介、情報サービス企業一覧。"
+    },
+    {
+        "building_name": "仙台トラストタワー",
+        "building_name_en": "Sendai Trust Tower",
+        "building_slug": "sendai-trust-tower",
+        "prefecture_code": "04",
+        "prefecture_name": "宮城県",
+        "city_name": "仙台市青葉区",
+        "street_address": "宮城県仙台市青葉区一番町1-9-1",
+        "postal_code": "980-0811",
+        "total_floors": 37,
+        "search_patterns": ["%仙台トラストタワー%", "%トラストタワー%"],
+        "description": "東北地方最高峰180m・仙台トラストタワーに入居する外資系製薬、総合金融機関、IT大手企業の最新一覧。"
+    },
+    {
+        "building_name": "おりづるタワー",
+        "building_name_en": "Orizuru Tower Hiroshima",
+        "building_slug": "orizuru-tower-hiroshima",
+        "prefecture_code": "34",
+        "prefecture_name": "広島県",
+        "city_name": "広島市中区",
+        "street_address": "広島県広島市中区大手町1-2-1",
+        "postal_code": "730-0051",
+        "total_floors": 14,
+        "search_patterns": ["%おりづるタワー%"],
+        "description": "原爆ドーム隣接の平和・ビジネス拠点・おりづるタワーに入居する中国地方統括企業、ITクリエイティブファーム一覧。"
+    }
+]
+
+def main():
+    print(f"[*] Validating Top 100 Landmark Office Towers...")
+    print(f"[*] Total towers defined: {len(BUILDINGS)}")
+
+    # Check for duplicate slugs
+    slugs = set()
+    for idx, b in enumerate(BUILDINGS, start=1):
+        slug = b["building_slug"]
+        if slug in slugs:
+            raise ValueError(f"Duplicate slug found: {slug} at index {idx}")
+        slugs.add(slug)
+
+    print(f"[✓] All {len(BUILDINGS)} building slugs are unique!")
+
+    output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'data')
+    os.makedirs(output_dir, exist_ok=True)
+    output_path = os.path.join(output_dir, 'top_100_office_buildings.json')
+
+    with open(output_path, 'w', encoding='utf-8') as f:
+        json.dump(BUILDINGS, f, ensure_ascii=False, indent=2)
+
+    print(f"[✓] Saved {len(BUILDINGS)} buildings to: {output_path}")
+
+    # Summary by region
+    by_pref = {}
+    for b in BUILDINGS:
+        p = b["prefecture_name"]
+        by_pref[p] = by_pref.get(p, 0) + 1
+    
+    print("\nRegional Distribution:")
+    for pref, count in sorted(by_pref.items(), key=lambda x: x[1], reverse=True):
+        print(f"  - {pref}: {count} towers")
+
+if __name__ == '__main__':
+    main()
