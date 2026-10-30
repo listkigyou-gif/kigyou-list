@@ -45,10 +45,17 @@ Quy tắc này áp dụng tự động cho mọi tác nhân và subagent trong d
   - Chỉ đưa vào sitemap những công ty đạt chuẩn chất lượng: có Hotline, Website chính thức, Giấy phép kinh doanh, Hóa đơn Invoice T-Number, Tuyển dụng HelloWork, hoặc Báo cáo tài chính EDINET (~463,800 công ty tinh hoa trong bảng `sitemap_companies`).
 
 ## 7. Bộ Nhớ Bất Biến: Vận Hành Crawler, Indexing Tuyển Dụng & Làm Giàu Dữ Liệu
-- **Chu kỳ Bắn API Indexing Tự Động (Nightly Mega-Batch at 02:00 AM JST)**:
-  - Khi cào được tin tuyển dụng HelloWork mới, **không bắn API tức thì ngay từng giây** để tránh làm nghẽn CPU/Nginx và bảo toàn hạn mức (Google chỉ cho 1,000 URLs/ngày qua cụm 5 keys).
-  - Hệ thống tự động gom vào chu kỳ ban đêm: **02:00 AM JST (Bing IndexNow 5,000 URLs)** và **02:15 AM JST (Google VIP 1,000 URLs)** theo mô hình Trục bánh xe (Hub & Spoke).
-  - Biến động tuyển dụng HelloWork được gán mức ưu tiên cao nhất **75 điểm** trong bộ lọc Hot Delta 48h.
+- **Kiến Trúc Lai 2 Tốc Độ (Hybrid Dual-Speed Indexing Engine - ĐÃ KÍCH HOẠT 100%)**:
+  - **Nhánh Bing (Tốc độ thời gian thực - Real-time Micro-Batch)**:
+    - Tích hợp trực tiếp vào `hellowork_drip_daemon.py`.
+    - Cứ cào xong 1 tỉnh thành (hoặc khi tích lũy đủ 30 công ty mới) $\rightarrow$ Tự động đóng gói gửi ngay lên Bing IndexNow API (`https://api.indexnow.org/indexnow`).
+    - Luôn tiêm kèm 2 Parent Hubs: Hub Khu vực tỉnh (`/ja/area/{pref}`) + Hub Tuyển dụng mới nhất (`/ja/jobs/latest`).
+    - Ghi nhận ngay vào `indexnow_submissions` trên PostgreSQL để tránh gửi trùng lặp.
+  - **Nhánh Google VIP (Chất lượng chọn lọc - Nightly Mega-Batch 02:15 AM JST)**:
+    - Gom chọn lọc 1,000 URLs tinh hoa nhất trong ngày từ cụm 5 Service Account Keys.
+    - Bộ lọc Hot Delta 48h gán **75 điểm ưu tiên** cho tin tuyển dụng HelloWork chuẩn JobPosting.
+    - Tự động tiêm 50 Parent Hubs (Jobs, Licenses, Invoice, Di dời, Ngành, Khu vực) đi kèm 950 trang công ty con.
+    - Biến động dôi dư tự động lưu vào hàng đợi cuốn chiếu `google_vip_queue`.
 - **Quy Chuẩn Làm Giàu Dữ Liệu B2B (Conflict Resolution Precedence)**:
   - Trường `manually_locked_fields` (Admin duyệt / Chủ DN Claim): 100% bất biến, bot tuyệt đối **KHÔNG ghi đè**.
   - Nếu công ty chưa có dữ liệu: Tự động bổ sung Website, Phone, FAX, Email, Đại diện, Nhân sự, Vốn điều lệ và kích hoạt cờ boolean (`has_website`, `has_phone`, `has_fax`, `has_email`, `has_hiring`).
