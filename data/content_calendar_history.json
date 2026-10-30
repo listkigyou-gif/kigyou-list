@@ -1,0 +1,139 @@
+{
+  "system": "Kigyou-List Omnichannel Content & SEO Coverage Ledger",
+  "version": "2.0.0",
+  "updated_at": "2026-10-30T15:22:00+07:00",
+  "rotation_pillars": [
+    {
+      "code": "PILLAR_01_COST_DISRUPTION",
+      "name": "Bóc trần chi phí & Xóa bỏ hợp đồng năm",
+      "primary_landing_page": "/ja/compare",
+      "core_keywords": ["企業リスト 料金比較", "法人データベース 初期費用0円", "営業名簿 格安", "営業リスト作成 縛りなし"],
+      "last_covered": "2026-10-19"
+    },
+    {
+      "code": "PILLAR_02_INVOICE_COMPLIANCE",
+      "name": "Tra cứu & Đối soát Hóa đơn điện tử Invoice (T-Number)",
+      "primary_landing_page": "/ja/invoice",
+      "core_keywords": ["インボイス 登録番号 検索", "適格請求書発行事業者 一括照会", "インボイス失効 確認", "国税庁 インボイスAPI"],
+      "last_covered": "2026-10-25"
+    },
+    {
+      "code": "PILLAR_03_WATCHLIST_ALERTS",
+      "name": "Giám sát Doanh nghiệp & Cảnh báo Sớm Rủi ro Tín dụng",
+      "primary_landing_page": "/ja/watchlist",
+      "core_keywords": ["企業監視 ツール", "取引先 倒産 予兆 検知", "本店移転 登記変更 アラート", "与信管理 DX 無料"],
+      "last_covered": "2026-10-29"
+    },
+    {
+      "code": "PILLAR_04_FORM_MARKETING",
+      "name": "AI Form Marketing & Tiếp cận Doanh nghiệp Tự động",
+      "primary_landing_page": "/ja/form-marketing",
+      "core_keywords": ["問い合わせフォーム営業 代行", "フォーム営業 自動化 AI", "B2B 新規開拓 コスト削減", "テレアポ 代替 フォーム送信"],
+      "last_covered": "2026-10-30"
+    },
+    {
+      "code": "PILLAR_05_INTENT_DATA_SIGNALS",
+      "name": "Intent Data & Tín hiệu Mua hàng (Tuyển dụng / Trợ cấp METI)",
+      "primary_landing_page": "/ja/search",
+      "core_keywords": ["インテントデータ 営業", "シグナル営業 ハローワーク求人", "助成金採択 企業リスト", "動意シグナル B2B"],
+      "last_covered": "2026-10-20"
+    },
+    {
+      "code": "PILLAR_06_INDUSTRY_VERTICALS",
+      "name": "Thư mục Ngành nghề Trọng điểm (IT, Xây dựng, BĐS, Sản xuất)",
+      "primary_landing_page": "/ja/directory",
+      "core_keywords": ["全国企業一覧 業種別", "IT企業 営業リスト", "建設業 データベース", "製造業 調達先一覧"],
+      "last_covered": "2026-10-22"
+    },
+    {
+      "code": "PILLAR_07_REGIONAL_EXPANSION",
+      "name": "Bao phủ Địa phương 47 Tỉnh Thành (Tokyo, Osaka, Aichi...)",
+      "primary_landing_page": "/ja/area/tokyo",
+      "core_keywords": ["東京都 企業データベース", "大阪 営業リスト", "愛知県 法人一覧", "地方企業 新規開拓"],
+      "last_covered": "2026-10-23"
+    },
+    {
+      "code": "PILLAR_08_TECH_DATA_ENGINEERING",
+      "name": "Kiến trúc Kỹ thuật & Big Data Pipeline 500万社 (Qiita/Zenn)",
+      "primary_landing_page": "/ja",
+      "core_keywords": ["PostgreSQL 500万件 チューニング", "FastAPI キャッシュ設計", "Playwright クローリング 自動化", "pgvector 類似企業検索"],
+      "last_covered": "2026-10-28"
+    }
+  ],
+  "history": [
+    {
+      "id": "CAMP-20261019-01",
+      "date": "2026-10-19",
+      "pillar": "PILLAR_01_COST_DISRUPTION",
+      "title_ja": "【70%OFFキャンペーン開始】国内500万社DB『Kigyou-list』、初月1,260円で営業リスト全開放。中小企業の新規開拓を支援する「月50件永久無料プラン」も同時提供",
+      "target_landing_page": "https://kigyoulist.com/ja/compare",
+      "channels": {
+        "pr_free": "https://pr-free.jp/",
+        "note": "https://note.com/kigyoulist/",
+        "x": "@kigyoulist"
+      }
+    },
+    {
+      "id": "CAMP-20261021-02",
+      "date": "2026-10-21",
+      "pillar": "PILLAR_08_TECH_DATA_ENGINEERING",
+      "title_ja": "【2026年最新】日本のB2B / SaaS カオスマップ：データ統合・インテントデータ・AI営業自動化の全体像と技術的変遷",
+      "target_landing_page": "https://kigyoulist.com/ja",
+      "channels": {
+        "qiita": "https://qiita.com/listkigyou/items/8dc476895ec411a8f5d0",
+        "zero_press": "https://zero-press.net/",
+        "note": "https://note.com/kigyoulist/"
+      }
+    },
+    {
+      "id": "CAMP-20261025-03",
+      "date": "2026-10-25",
+      "pillar": "PILLAR_02_INVOICE_COMPLIANCE",
+      "title_ja": "【完全無料】国内500万社DB『Kigyou-list』、CSVドラッグ＆ドロップで数百社のT番号を10秒判定する「インボイス一括照会機能」を正式公開",
+      "target_landing_page": "https://kigyoulist.com/ja/invoice",
+      "channels": {
+        "free_pressrelease": "https://free-pressrelease.com/",
+        "note": "https://note.com/kigyoulist/",
+        "x": "@kigyoulist"
+      }
+    },
+    {
+      "id": "CAMP-20261028-04",
+      "date": "2026-10-28",
+      "pillar": "PILLAR_08_TECH_DATA_ENGINEERING",
+      "title_ja": "【FastAPI/PostgreSQL】500万件規模の法人データ検索APIをレイテンシ50ms以下で捌くキャッシュ＆インデックス設計の実践",
+      "target_landing_page": "https://kigyoulist.com/ja",
+      "channels": {
+        "qiita": "https://qiita.com/listkigyou/items/0ece0909675b8da7a4f9",
+        "pressnow": "https://pressnow.jp/"
+      }
+    },
+    {
+      "id": "CAMP-20261029-05",
+      "date": "2026-10-29",
+      "pillar": "PILLAR_03_WATCHLIST_ALERTS",
+      "title_ja": "【与信管理DX】取引先の夜逃げ・代表変更・インボイス失効を放置していませんか？全国500万社を24時間自動検知する「企業監視ツール」の実践法",
+      "target_landing_page": "https://kigyoulist.com/ja/watchlist",
+      "channels": {
+        "note": "https://note.com/kigyoulist/n/n66887389b38d",
+        "zero_press": "https://zero-press.net/p/r-mvt9evr9x9qd",
+        "facebook_fanpage": "https://www.facebook.com/kigyoulist/",
+        "linkedin": "Manual Post Ready"
+      }
+    },
+    {
+      "id": "CAMP-20261030-06",
+      "date": "2026-10-30",
+      "pillar": "PILLAR_04_FORM_MARKETING",
+      "title_ja": "テレアポの限界を超える：開封率80%超・1件16.1円の「AI問い合わせフォーム営業」× 全国500万社インテントデータ",
+      "target_landing_page": "https://kigyoulist.com/ja/form-marketing",
+      "channels": {
+        "note": "Scheduled",
+        "pr_free": "Scheduled",
+        "x": "Scheduled",
+        "facebook_fanpage": "Scheduled",
+        "linkedin": "Ready-to-Post"
+      }
+    }
+  ]
+}

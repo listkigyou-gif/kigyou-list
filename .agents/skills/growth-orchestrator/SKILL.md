@@ -99,6 +99,31 @@ Không chia lẻ kênh, mỗi ngày Agent sẽ lấy **1 Chủ Đề Cốt Lõi 
 
 ---
 
+## 2.2. Cơ Chế Lưu Trữ Lịch Sử & Xoay Vòng Chủ Đề Chống Trùng Lặp (Anti-Duplication & Keyword Coverage Ledger)
+
+Để tránh hiện tượng "ăn thịt từ khóa" (Keyword Cannibalization), trùng lặp nội dung gây giảm điểm SEO Google/Bing, và đảm bảo bao phủ 100% các từ khóa thương mại B2B:
+
+1. **Sổ cái Lịch sử Xuất bản (Master Content Ledger):**
+   - File quản trị tập trung: [`data/content_calendar_history.json`](file:///c:/kigyou-list/data/content_calendar_history.json).
+   - Mỗi lần lên kế hoạch hoặc xuất bản, Agent **BẮT BUỘC** đối soát lịch sử để kiểm tra chủ đề của các ngày gần nhất.
+   - Sau khi hoàn thành xuất bản, Agent tự động cập nhật ID chiến dịch, ngày, tiêu đề, landing page và các liên kết bài đăng thực tế vào sổ cái này.
+
+2. **Ma Trận 8 Trụ Cột Xoay Vòng (8-Pillar Rotation Matrix):**
+   - **Trụ cột 1:** Bóc trần chi phí & Xóa hợp đồng năm (`/ja/compare`)
+   - **Trụ cột 2:** Tra cứu & Đối soát Hóa đơn điện tử Invoice T-Number (`/ja/invoice`)
+   - **Trụ cột 3:** Giám sát Doanh nghiệp & Cảnh báo Sớm rủi ro phá sản (`/ja/watchlist`)
+   - **Trụ cột 4:** AI Form Marketing tự động 16.1 Yên (`/ja/form-marketing`)
+   - **Trụ cột 5:** Intent Data & Tín hiệu Tuyển dụng HelloWork / Trợ cấp METI (`/ja/search`)
+   - **Trụ cột 6:** Thư mục Ngành nghề Trọng điểm: IT, Xây dựng, BĐS, Sản xuất (`/ja/directory`)
+   - **Trụ cột 7:** Bao phủ Địa phương 47 Tỉnh Thành: Tokyo, Osaka, Aichi... (`/ja/area/...`)
+   - **Trụ cột 8:** Kiến trúc Kỹ thuật Big Data 500万社 & Benchmark < 50ms (`/ja` trên Qiita/Zenn)
+
+> 🚫 **QUY TẮC CẤM TRÙNG LẶP NỘI DUNG (ZERO-DUPLICATION RULE):**
+> - Không bao giờ lặp lại cùng 1 chủ đề cốt lõi trong các ngày liền kề.
+> - Tiêu đề (Hook Title), góc nhìn phân tích (Angle), ảnh eyecatch và bộ từ khóa SEO mỗi ngày **phải hoàn toàn mới và độc bản 100%**.
+
+---
+
 ## 3. Bảng Kiểm Soát Hạn Ngạch & Tần Suất Cổng Báo Chí (PR Quota Governance)
 
 ⚠️ **QUY TẮC CỨNG VỀ BÁO CHÍ (TUYỆT ĐỐI KHÔNG QUÊN):**
