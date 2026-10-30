@@ -18,13 +18,13 @@ Tài liệu này xác lập **Quy chuẩn Kiến trúc & Cẩm nang Vận hành 
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                      HỆ THỐNG 5 ĐÒN BẨY TĂNG TỐC SEO & CRAWL BUDGET                    │
 ├─────────────────────────┬─────────────────────────┬────────────────────────────────────┤
-│ 1. ÁO GIÁP CACHE 2 LỚP  │ 2. ÉP TRẦN BING 24/7    │ 3. MA TRẬN PHÂN MẢNH SITEMAPS      │
-│    CLOUDFLARE + NGINX   │    MAX CRAWL RATE 10/10 │    500,000 URLS GSC & BING         │
+│ 1. ÁO GIÁP CACHE 2 LỚP  │ 2. ÉP TRẦN BING 24/7    │ 3. MASTER SITEMAP INDEX GSC/BING   │
+│    CLOUDFLARE + NGINX   │    MAX CRAWL RATE 10/10 │    100% TIẾNG NHẬT + ZERO DILUTION │
 ├─────────────────────────┼─────────────────────────┼────────────────────────────────────┤
-│ • Cloudflare Edge: 7 ngày│ • Bing API: 10/10 trọn  │ • 12 Sitemaps con (0.xml - 9.xml)  │
-│   Cache Everything      │   vẹn 24/24 giờ         │ • sitemap.xml & sitemap-index.xml  │
-│ • Nginx VPS: 8.9ms NVMe │ • Smart Tiered Cache: ON│ • sitemap_recent_updates.xml Delta │
-│ • Bypass: /api, /admin  │ • 15 Feeds Bing Success │ • Google Search Console tự nạp     │
+│ • Cloudflare Edge: 7 ngày│ • Bing API: 10/10 trọn  │ • Chỉ nộp duy nhất sitemap.xml     │
+│   Cache Everything      │   vẹn 24/24 giờ         │ • Tự mở core.xml + 46 mảnh con     │
+│ • Nginx VPS: 8.9ms NVMe │ • Smart Tiered Cache: ON│ • 100% Locale tiếng Nhật (ja)      │
+│ • Bypass: /api, /admin  │ • 15 Feeds Bing Success │ • Lọc Thin Content (Score >= 3)    │
 ├─────────────────────────┼─────────────────────────┼────────────────────────────────────┤
 │ 4. THỰC THỂ DATA SÂU    │ 5. BẮN INDEX CHUẨN HÓA  │ 6. BẢO TỒN KHI NÂNG CẤP UI         │
 │    SCHEMA.ORG + ZERO 404│    INDEXNOW + GOOGLE VIP│    ANTI-SEO-BREAK PROTOCOL         │
@@ -108,13 +108,14 @@ Hệ thống chạy tự động hàng đêm theo cơ chế **Hybrid Indexing (B
 
 ---
 
-### C. Ma Trận Khai Báo Sitemaps (Sitemap Sharding Matrix)
+### C. Ma Trận Khai Báo Sitemaps & Quy Chuẩn Master Index (Sitemap Index Protocol)
 
-* **Google Search Console & Bing:** Khai báo các Sitemaps chính thức:
-  1. `https://kigyoulist.com/sitemap.xml` (Master Sitemap Index)
-  2. `https://kigyoulist.com/sitemap/core.xml` (~4,980 URLs tinh hoa 100% tiếng Nhật)
-  3. `https://kigyoulist.com/sitemap-index.xml` (Backup Index)
-  4. `https://kigyoulist.com/sitemap/0.xml` đến `9.xml` (10 phân mảnh, mỗi file ~50,000 URLs bao phủ 500,000 doanh nghiệp hàng đầu Nhật Bản).
+* **Google Search Console & Bing: CHỈ NỘP DUY NHẤT MASTER SITEMAP INDEX**:
+  1. `https://kigyoulist.com/sitemap.xml` (Master Sitemap Index chính thức - Đã nộp và hợp lệ 100% trên GSC/Bing)
+  2. `https://kigyoulist.com/sitemap/core.xml` (~4,980 URLs Hubs cốt lõi 100% tiếng Nhật - Đã nộp)
+* **TUYỆT ĐỐI KHÔNG NỘP TRỰC TIẾP TỪNG SITEMAP CON LÊN GSC**:
+  - *Lưu ý bộ nhớ*: Trước đây từng thử nộp riêng lẻ `sitemap/0.xml` đến `sitemap/9.xml` lên GSC dẫn đến lỗi Pending, cảnh báo lỗi và phân tán sự chú ý của Googlebot.
+  - *Cơ chế chuẩn*: Khi Googlebot đọc `https://kigyoulist.com/sitemap.xml`, nó sẽ tự động tìm thấy `core.xml` và các phân mảnh từ `0.xml` đến `46.xml` (~463,800 công ty tinh hoa) theo cấu trúc XML sitemapindex tiêu chuẩn quốc tế mà không gây nghẽn hay phân tán Crawl Budget.
 
 ---
 
