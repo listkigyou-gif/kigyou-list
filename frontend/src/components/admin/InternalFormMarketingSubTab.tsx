@@ -72,14 +72,13 @@ export function InternalFormMarketingSubTab({
   const [targetCount, setTargetCount] = useState<number | null>(null);
   const [calculatingCount, setCalculatingCount] = useState(false);
 
-  // Sender Info & Content
   // Sender Info & Content (Default: TQC株式会社 / Kigyou-list)
   const [campaignName, setCampaignName] = useState("");
   const [senderCompany, setSenderCompany] = useState("TQC株式会社（Kigyou-list 運営事務局）");
-  const [senderName, setSenderName] = useState("栗本 賢之");
+  const [senderName, setSenderName] = useState("栗本 善之");
   const [senderFurigana, setSenderFurigana] = useState("クリモト ヨシユキ");
   const [senderEmail, setSenderEmail] = useState("info@kigyoulist.com");
-  const [senderPhone, setSenderPhone] = useState("03-6907-1219");
+  const [senderPhone, setSenderPhone] = useState("080-7746-0793");
   const [senderWebsite, setSenderWebsite] = useState("https://kigyoulist.com");
   const [subject, setSubject] = useState("");
   const [messageBody, setMessageBody] = useState("");

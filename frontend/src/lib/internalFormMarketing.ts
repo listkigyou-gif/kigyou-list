@@ -95,10 +95,10 @@ export const INTERNAL_CAMPAIGN_PRESETS: InternalCampaignPreset[] = [
       exclude_recent_days: 60,
     },
     sender_company: "TQC株式会社（Kigyou-list 運営事務局）",
-    sender_name: "栗本 賢之",
+    sender_name: "栗本 善之",
     sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
-    sender_phone: "",
+    sender_phone: "080-7746-0793",
     sender_website: "https://kigyoulist.com",
     subject: "【新規開拓の効率化】国内500万社・Webフォーム窓口付き企業リストのご案内",
     body: `{{company_name}}
@@ -130,7 +130,8 @@ https://kigyoulist.com/ja?utm_source=form_dm&utm_medium=outreach&utm_campaign=b2
 販売業者：TQC株式会社（登録番号: T4013301048678）
 サービス名：Kigyou-list（500万社企業データベース）
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
-担当責任者：栗本 賢之
+担当責任者：栗本 善之
+電話番号：080-7746-0793
 メール：info@kigyoulist.com
 URL：https://kigyoulist.com
 
@@ -152,10 +153,10 @@ URL：https://kigyoulist.com
       exclude_recent_days: 60,
     },
     sender_company: "TQC株式会社（Kigyou-list 営業推進部）",
-    sender_name: "栗本 賢之",
+    sender_name: "栗本 善之",
     sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
-    sender_phone: "",
+    sender_phone: "080-7746-0793",
     sender_website: "https://kigyoulist.com/ja/form-marketing",
     subject: "【アポ獲得DX】AI安全除外付き・問い合わせフォーム営業代行のご提案",
     body: `{{company_name}}
@@ -189,7 +190,8 @@ https://kigyoulist.com/ja/form-marketing?utm_source=form_dm&utm_medium=outreach&
 【特定商取引法第11条に基づく送信者情報】
 販売業者：TQC株式会社（登録番号: T4013301048678）
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
-担当責任者：栗本 賢之
+担当責任者：栗本 善之
+電話番号：080-7746-0793
 メール：info@kigyoulist.com
 サービスURL：https://kigyoulist.com/ja/form-marketing
 
@@ -210,10 +212,10 @@ https://kigyoulist.com/ja/form-marketing?utm_source=form_dm&utm_medium=outreach&
       exclude_recent_days: 90,
     },
     sender_company: "TQC株式会社（Kigyou-list 企業情報管理チーム）",
-    sender_name: "栗本 賢之",
+    sender_name: "栗本 善之",
     sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
-    sender_phone: "",
+    sender_phone: "080-7746-0793",
     sender_website: "https://kigyoulist.com",
     subject: "【公式認証・無料掲載】国内最大級企業DB「Kigyou-list」掲載情報のご確認のお願い",
     body: `{{company_name}}
@@ -248,7 +250,8 @@ https://kigyoulist.com/ja
 【発信元・特定商取引法表示】
 TQC株式会社・Kigyou-list 企業情報管理チーム
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
-担当責任者：栗本 賢之
+担当責任者：栗本 善之
+電話番号：080-7746-0793
 メールアドレス：info@kigyoulist.com
 URL：https://kigyoulist.com
 
@@ -269,10 +272,10 @@ URL：https://kigyoulist.com
       exclude_recent_days: 60,
     },
     sender_company: "TQC株式会社（Kigyou-list APIソリューション事業部）",
-    sender_name: "栗本 賢之",
+    sender_name: "栗本 善之",
     sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
-    sender_phone: "",
+    sender_phone: "080-7746-0793",
     sender_website: "https://kigyoulist.com",
     subject: "【開発工数削減】国内500万社・法人データAPI連携（REST API）のご案内",
     body: `{{company_name}}
@@ -307,7 +310,8 @@ https://kigyoulist.com/ja/pricing?utm_source=form_dm&utm_medium=outreach&utm_cam
 【特定商取引法に基づく表記】
 販売業者：TQC株式会社（登録番号: T4013301048678）
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
-担当責任者：栗本 賢之
+担当責任者：栗本 善之
+電話番号：080-7746-0793
 メール：info@kigyoulist.com
 URL：https://kigyoulist.com
 ▼配信停止（オプトアウト）はこちら：
@@ -327,10 +331,10 @@ URL：https://kigyoulist.com
       exclude_recent_days: 60,
     },
     sender_company: "TQC株式会社（Kigyou-list 採用ソリューション部）",
-    sender_name: "栗本 賢之",
+    sender_name: "栗本 善之",
     sender_furigana: "クリモト ヨシユキ",
     sender_email: "info@kigyoulist.com",
-    sender_phone: "",
+    sender_phone: "080-7746-0793",
     sender_website: "https://kigyoulist.com",
     subject: "【採用ニーズ検知】直近で求人募集中の企業リスト・人材紹介開拓のご案内",
     body: `{{company_name}}
@@ -363,13 +367,87 @@ https://kigyoulist.com/ja/search?utm_source=form_dm&utm_medium=outreach&utm_camp
 【特定商取引法第11条に基づく送信者情報】
 販売業者：TQC株式会社（登録番号: T4013301048678）
 所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
-担当責任者：栗本 賢之
+担当責任者：栗本 善之
+電話番号：080-7746-0793
 メール：info@kigyoulist.com
 URL：https://kigyoulist.com
 ▼配信停止（オプトアウト）はこちら：
 {{opt_out_url}}
 --------------------------------------------------`
-  }
+  },
+  {
+    id: "preset_kigyou_pr_badge_claim",
+    name: "【公式認証・被リンク獲得型】アクセス急増通知＆無料PR枠・認証バッジ案内",
+    category: "badge_claim",
+    target_recommendation: "公式Webサイトを持つ日本全国の企業（被リンク獲得・SEO強化特化）",
+    default_filters: {
+      prefecture_name: "all",
+      industry_code: "all",
+      min_employees: 0,
+      has_website: true,
+      exclude_recent_days: 60,
+    },
+    sender_company: "TQC株式会社（Kigyou-list 運営事務局）",
+    sender_name: "栗本 善之",
+    sender_furigana: "クリモト ヨシユキ",
+    sender_email: "info@kigyoulist.com",
+    sender_phone: "080-7746-0793",
+    sender_website: "https://kigyoulist.com",
+    subject: "【企業情報ご確認のお願い】貴社ページへのアクセス急増および公式認証・無料PR枠のご案内",
+    body: `{{company_name}}
+広報・マーケティング責任者様 / 経営企画室ご担当者様
+（Webサイト運営ご担当者様）
+
+突然のメッセージにて大変恐縮でございます。
+国内500万社の法人データベースポータル「Kigyou-list」運営事務局（TQC株式会社）の栗本と申します。
+
+国税庁法人番号および厚生労働省・官公庁オープンデータに基づき、
+弊社プラットフォーム上に掲載されております【{{company_name}} 様の企業詳細ページ】におきまして、
+近頃、B2B取引先選定および採用関連のビジネスアクセスが急増しておりますことをご報告申し上げます。
+
+現在、弊社サイトでは貴社の公式Webサイト（{{website_url}}）への直接リンク（SEO効果の高いDoFollowリンク）を無償設置し、検索エンジン経由での貴社認知度向上をご支援しております。
+
+つきましては、貴社のより正確な情報発信とさらなる露出拡大のため、
+完全無料の【公式企業認証（オーナー登録）】および【公式PRメッセージ掲載枠】をご案内させていただきたく存じます。
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+■ 公式企業認証（無料）による3大メリット
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 【企業公式PR・メッセージ枠の無料掲載】
+   貴社の強み、主力サービス、最新の採用情報を企業ページ最上部に常時優先掲載。
+   アクセス急増中のビジネスユーザーにダイレクトにアピールできます。
+
+2. 【社会的信頼性の向上（公式認証バッジの付与）】
+   公的データ照合済みの証として「公式確認企業」マークを付与。
+   なりすましや誤情報の防止に繋がります。
+
+3. 【自社ホームページ用「公式認証バッジ」の無料提供】
+   貴社コーポレートサイトのフッターや会社概要ページに埋め込み可能な
+   「Kigyou-list 公式認証企業バッジ」のHTMLタグを発行いたします。
+   貴社の透明性・信頼性を対外的に証明するエンブレムとしてご活用いただけます。
+
+※認証手続き、PR枠の掲載、バッジのご利用に際し、費用（初期・月額）は一切発生いたしません。
+
+▼ 貴社ページの確認および公式認証はこちらから（所要時間：1分）
+https://kigyoulist.com/ja/company/{{corporate_number}}
+
+貴社のWebプレゼンス拡大およびビジネスマッチングの一助となりましたら幸いに存じます。
+ご多忙の折、ご一読いただき誠にありがとうございました。
+
+--------------------------------------------------
+【発信元・特定商取引法に基づく表記】
+TQC株式会社（国税庁法人番号: 4013301048678）
+サービス名：Kigyou-list（企業リスト）運営事務局
+所在地：〒171-0022 東京都豊島区南池袋２丁目３３－６ 佐藤ビル３F
+担当責任者：栗本 善之
+電話番号：080-7746-0793
+公式サイト：https://kigyoulist.com
+
+※本案内は貴社Webサイト上の公開問い合わせ窓口の趣旨に基づきお送りしております。
+▼今後の配信停止（オプトアウト）をご希望の場合はこちら：
+{{opt_out_url}}
+--------------------------------------------------`
+  },
 ];
 
 // Persistent process-level cache for internal form marketing stats (TTL: 15 minutes)
