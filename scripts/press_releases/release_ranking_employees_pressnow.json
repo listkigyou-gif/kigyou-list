@@ -1,0 +1,29 @@
+{
+  "listing_type": "無料掲載",
+  "company_name": "TQC株式会社",
+  "your_name": "高橋 里佳",
+  "your_tel": "03-6907-1219",
+  "your_email": "info@kigyoulist.com",
+  "category": "ＩＴ・通信",
+  "sub_category_it": "SaaS・クラウド",
+  "title": "【厚生年金データ分析】実質的な雇用規模トップ100社ランキング公表。500万社データ基盤『Kigyou-list』が企業規模の実態を可視化",
+  "subtitle": "日本年金機構の公表データを独自解析。非正規・パートを含む名目上の従業員数ではなく、「厚生年金被保険者数」に基づく実質雇用規模を網羅。",
+  "lead": "全国500万社超の法人データベースを提供する『Kigyou-list（kigyoulist.com）』（運営：TQC株式会社、本社：東京都豊島区、代表取締役：キム バン チュン）は、日本年金機構のオープンデータを独自解析し、日本国内における実質的な正規雇用規模を浮き彫りにする【厚生年金被保険者数ランキングTOP100】を正式公開いたしました。",
+  "body_heading1": "1. 調査の背景：名目上の従業員数と「実質的な雇用規模」のギャップ",
+  "body_text1": "従来の企業情報や会社四季報等に記載される「従業員数」には、パート・アルバイト・派遣社員のカウント基準が企業ごとに異なり、実質的な正規雇用規模が正確に把握できない課題がありました。日本年金機構が公表する「厚生年金被保険者数」は、公的な社会保険適用者数であるため、ごまかしの利かない真の雇用創出力と企業体力を正確に反映します。",
+  "body_heading2": "2. 雇用規模ランキングTOP100の主要ハイライト",
+  "body_text2": "① 国内メガ企業による圧倒的な雇用基盤：製造業・通信・総合小売大手が数万人規模の被保険者を抱え、日本経済の雇用を力強く牽引。\n② 人材派遣・BPO大手の台頭：働き方の多様化に伴い、アウトソーシング・総合サービス企業が上位に多数ランクイン。\n③ 安定性と成長性の指標：被保険者数の推移から、企業の純粋な組織拡大・事業成長トレンドをリアルタイムに把握可能。",
+  "body_heading3": "3. Kigyou-list ランキングハブの概要・無料公開",
+  "body_text3": "本ランキングは、Kigyou-listの特設ハブにて全量無料で一般公開されております。企業名、所在地、被保険者数、および該当企業の詳細プロフィールをワンクリックでご確認いただけます。\n\n※本調査データを引用・転載される際は、【出典：Kigyou-list（kigyoulist.com）】のクレジット表記と下記URLへのリンクをお願い申し上げます。",
+  "remarks": "厚生年金被保険者数ランキング： https://kigyoulist.com/ja/ranking/employees?utm_source=pressnow&utm_medium=pr_ranking\n公式サイト： https://kigyoulist.com/ja",
+  "official": {
+    "company": "TQC株式会社",
+    "address": "東京都豊島区東池袋1-34-5 いちご東池袋ビル6階",
+    "person": "高橋 里佳",
+    "tel": "03-6907-1219",
+    "site": "https://kigyoulist.com/ja",
+    "email": "info@kigyoulist.com"
+  },
+  "image_path": "c:\\kigyou-list\\scripts\\press_releases\\eyecatch_ranking_2026.jpg",
+  "confirm_site_url": "https://kigyoulist.com/ja"
+}
