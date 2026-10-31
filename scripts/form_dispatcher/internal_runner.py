@@ -26,6 +26,7 @@ if sys.platform == "win32":
         pass
 
 import json
+import random
 import argparse
 import csv
 import queue
@@ -141,7 +142,6 @@ def fetch_target_companies_pg(filters: Dict[str, Any], limit: int = 50, campaign
             c.employee_count
         FROM companies c
         WHERE {where_clause}
-        ORDER BY RANDOM()
         LIMIT %s
     """
     params.append(limit)
@@ -149,7 +149,9 @@ def fetch_target_companies_pg(filters: Dict[str, Any], limit: int = 50, campaign
     c.execute(query, tuple(params))
     rows = c.fetchall()
     conn.close()
-    return [dict(r) for r in rows]
+    result = [dict(r) for r in rows]
+    random.shuffle(result)
+    return result
 
 def record_log_pg(campaign_id: str, company: Dict[str, Any], status: str, message: str):
     corp_num = company.get("corporate_number")
