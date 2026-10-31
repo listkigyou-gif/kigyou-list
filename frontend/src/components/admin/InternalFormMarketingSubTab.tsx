@@ -573,6 +573,7 @@ export function InternalFormMarketingSubTab({
                     className="w-full text-sm rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-slate-900 dark:text-white"
                   >
                     <option value="0">{isJa ? "除外しない（全件）" : "Không loại trừ"}</option>
+                    <option value="7">{isJa ? "過去7日以内に送信済みを除外" : "7 ngày qua"}</option>
                     <option value="30">{isJa ? "過去30日以内に送信済みを除外" : "30 ngày qua"}</option>
                     <option value="60">{isJa ? "過去60日以内に送信済みを除外（推奨）" : "60 ngày qua (Khuyên dùng)"}</option>
                     <option value="90">{isJa ? "過去90日以内に送信済みを除外" : "90 ngày qua"}</option>
