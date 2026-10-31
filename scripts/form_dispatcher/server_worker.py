@@ -159,6 +159,12 @@ def fetch_target_companies_pg(filters: Dict[str, Any], limit: int = 50, campaign
     )""")
     params.append(user_scope)
 
+    # Exclude all known broken forms, permanent captchas, dead websites, and anti-spam disclaimers
+    conditions.append("""NOT EXISTS (
+        SELECT 1 FROM form_marketing_global_suppressions sup
+        WHERE sup.corporate_number = c.corporate_number
+    )""")
+
     where_clause = " AND ".join(conditions)
     query = f"""
         SELECT 

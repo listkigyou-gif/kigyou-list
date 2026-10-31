@@ -122,6 +122,12 @@ def fetch_target_companies_pg(filters: Dict[str, Any], limit: int = 50, campaign
     )""")
     params.append(user_scope)
 
+    # Exclude all known broken forms, permanent captchas, dead websites, and anti-spam disclaimers
+    conditions.append("""NOT EXISTS (
+        SELECT 1 FROM form_marketing_global_suppressions sup
+        WHERE sup.corporate_number = c.corporate_number
+    )""")
+
     where_clause = " AND ".join(conditions)
     query = f"""
         SELECT 
@@ -185,7 +191,7 @@ def record_log_pg(campaign_id: str, company: Dict[str, Any], status: str, messag
             conn.close()
 
             # Automatically persist compliance and captcha protections into global suppression list
-            if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT") and corp_num:
+            if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT", "FORM_PARSE_ERROR", "NO_SUBMIT_BUTTON", "DEAD_WEBSITE") and corp_num:
                 record_suppression_pg(corp_num, company.get("company_name"), company.get("contact_form_url"), status, message)
             break
         except Exception as e:
@@ -209,7 +215,7 @@ def load_global_suppressions() -> Dict[str, Dict[str, Any]]:
 
 def record_suppression_pg(corp_num: str, comp_name: str, form_url: str, status: str, message: str):
     """Automatically persists newly detected compliance/captcha protections into global suppression list with 2-level classification."""
-    if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT") and corp_num:
+    if status in ("SKIPPED_DISCLAIMER", "BLOCKED_CAPTCHA", "NO_FORM_ELEMENT", "FORM_PARSE_ERROR", "NO_SUBMIT_BUTTON", "DEAD_WEBSITE") and corp_num:
         reason_type = "DISCLAIMER" if status == "SKIPPED_DISCLAIMER" else ("CAPTCHA" if "CAPTCHA" in status else "NO_FORM")
         severity_level = "PERMANENT" if reason_type in ("DISCLAIMER", "CAPTCHA") else "TEMPORARY"
         for attempt in range(2):
