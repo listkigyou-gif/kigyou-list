@@ -1041,7 +1041,7 @@ export function InternalFormMarketingSubTab({
                         <span>{isJa ? "プレビュー表示" : "Xem trước"}</span>
                       </button>
                       <span className="text-[11px] text-slate-400 font-mono">
-                        {isJa ? "変数 {{company_name}} を使用可能" : "Hỗ trợ biến {{company_name}}"}
+                        {isJa ? "変数: {{company_name}}, {{website_url}}, {{corporate_number}}" : "Biến: {{company_name}}, {{website_url}}, {{corporate_number}}"}
                       </span>
                     </div>
                   </div>
@@ -1436,12 +1436,27 @@ export function InternalFormMarketingSubTab({
             {/* Modal Body */}
             <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50 dark:bg-black/20">
               {(() => {
-                const renderedSubject = subject
-                  ? subject.replace(/\{\{company_name\}\}/g, previewTargetName)
-                  : "";
-                const renderedBody = messageBody
-                  ? messageBody.replace(/\{\{company_name\}\}/g, previewTargetName)
-                  : "";
+                const renderWithSampleVars = (text: string) => {
+                  if (!text) return "";
+                  const sampleVars: [RegExp, string][] = [
+                    [/\{\{company_name\}\}|\{company_name\}|\{\{corporate_name\}\}|\{corporate_name\}|\{\{target_company\}\}|\{target_company\}/g, previewTargetName],
+                    [/\{\{website_url\}\}|\{website_url\}/g, "https://www.example-target.co.jp"],
+                    [/\{\{corporate_number\}\}|\{corporate_number\}/g, "1010001007003"],
+                    [/\{\{company_page_url\}\}|\{company_page_url\}/g, "https://kigyoulist.com/ja/company/1010001007003"],
+                    [/\{\{representative_name\}\}|\{representative_name\}/g, "代表取締役社長"],
+                    [/\{\{prefecture\}\}|\{prefecture\}/g, "東京都"],
+                    [/\{\{city\}\}|\{city\}/g, "千代田区"],
+                    [/\{\{opt_out_url\}\}|\{opt_out_url\}/g, "https://kigyoulist.com/ja/opt-out?sample=1"],
+                  ];
+                  let res = text;
+                  for (const [regex, val] of sampleVars) {
+                    res = res.replace(regex, val);
+                  }
+                  return res;
+                };
+
+                const renderedSubject = renderWithSampleVars(subject);
+                const renderedBody = renderWithSampleVars(messageBody);
 
                 if (previewTab === "email") {
                   return (

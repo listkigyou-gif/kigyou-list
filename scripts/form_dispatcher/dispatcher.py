@@ -587,11 +587,32 @@ class FormDispatcher:
                 'input[placeholder*="件名" i]', 'input[placeholder*="題名" i]',
                 'tr:has-text("件名") input:not([type="hidden"])', 'dl:has-text("件名") input:not([type="hidden"])'
             ]
+            # Prepare dynamic variable substitutions
+            target_website = str(company.get("website_url") or "").strip()
+            target_rep = str(company.get("representative_name") or "").strip()
+            target_pref = str(company.get("prefecture_name") or "").strip()
+            target_city = str(company.get("city_name") or "").strip()
+            corp_num_str = str(corp_num).strip() if corp_num and corp_num != "unknown" else ""
+            company_page_url = f"https://kigyoulist.com/ja/company/{corp_num_str}" if corp_num_str else "https://kigyoulist.com/ja"
+
+            var_substitutions = [
+                ("company_name", comp_name),
+                ("corporate_name", comp_name),
+                ("target_company", comp_name),
+                ("corporate_number", corp_num_str),
+                ("website_url", target_website or "貴社公式ホームページ"),
+                ("company_page_url", company_page_url),
+                ("representative_name", target_rep or "ご担当者様"),
+                ("prefecture", target_pref),
+                ("city", target_city),
+            ]
+
             for sel in subject_selectors:
                 sub_loc = scope.locator(sel)
                 if sub_loc.count() > 0 and sub_loc.first.is_visible():
-                    raw_sub = self.sender.get("subject", "貴社事業に関する協業のご提案")
-                    rendered_sub = raw_sub.replace("{{company_name}}", comp_name).replace("{company_name}", comp_name)
+                    rendered_sub = self.sender.get("subject", "貴社事業に関する協業のご提案")
+                    for k, v in var_substitutions:
+                        rendered_sub = rendered_sub.replace(f"{{{{{k}}}}}", v).replace(f"{{{k}}}", v)
                     safe_fill(sub_loc.first, rendered_sub)
                     break
 
@@ -646,15 +667,14 @@ class FormDispatcher:
             opt_token = generate_opt_out_token(str(corp_num), user_scope)
             opt_out_url = f"https://kigyoulist.com/ja/opt-out?u={quote(user_scope)}&c={quote(str(corp_num))}&cmp={quote(camp_scope)}&token={opt_token}"
 
-            # Dynamic variable replacement: {{company_name}}, {company_name}, {{opt_out_url}}
-            rendered_body = body_template.replace("{{company_name}}", comp_name)
-            rendered_body = rendered_body.replace("{company_name}", comp_name)
-            rendered_body = rendered_body.replace("{{corporate_name}}", comp_name)
-            rendered_body = rendered_body.replace("{corporate_name}", comp_name)
-            rendered_body = rendered_body.replace("{{target_company}}", comp_name)
-            rendered_body = rendered_body.replace("{target_company}", comp_name)
-            rendered_body = rendered_body.replace("{{opt_out_url}}", opt_out_url)
-            rendered_body = rendered_body.replace("{opt_out_url}", opt_out_url)
+            # Dynamic variable replacement: all template variables
+            rendered_body = body_template
+            if not corp_num_str:
+                rendered_body = rendered_body.replace("https://kigyoulist.com/ja/company/{{corporate_number}}", "https://kigyoulist.com/ja")
+                rendered_body = rendered_body.replace("https://kigyoulist.com/ja/company/{corporate_number}", "https://kigyoulist.com/ja")
+
+            for k, v in var_substitutions + [("opt_out_url", opt_out_url)]:
+                rendered_body = rendered_body.replace(f"{{{{{k}}}}}", v).replace(f"{{{k}}}", v)
 
             # Tokushōhō Legal Safety Net: If body does not contain opt-out link, automatically append it
             if opt_out_url not in rendered_body and "opt-out" not in rendered_body and "配信停止" not in rendered_body:
