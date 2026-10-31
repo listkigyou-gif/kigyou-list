@@ -362,7 +362,7 @@ export function InternalFormMarketingSubTab({
   return (
     <div className="flex flex-col gap-6">
       {/* Top Form DM KPI Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
@@ -405,41 +405,20 @@ export function InternalFormMarketingSubTab({
           </p>
         </div>
 
-        <div className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm">
+        {/* Card 3: AI自動除外リスト (Global Suppressions) */}
+        <div
+          onClick={() => setShowSuppressionBreakdown(true)}
+          className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:border-amber-400 dark:hover:border-amber-700/60 transition-all cursor-pointer group"
+        >
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-              {isJa ? "安全除外（営業お断り・Captcha）" : "Đã Né Tránh An Toàn"}
+            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider group-hover:text-amber-600 transition-colors">
+              {isJa ? "AI自動除外リスト" : "AI Tự Động Chặn Toàn Cầu"}
             </span>
-            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <div className="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 flex items-center justify-center group-hover:scale-105 transition-transform">
               <ShieldCheck className="w-5 h-5" />
             </div>
           </div>
-          <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-2">
-            {loadingStats ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
-            ) : (
-              stats?.total_skipped.toLocaleString() || "0"
-            )}
-          </div>
-          <p className="text-xs text-slate-500 mt-1">
-            {isJa ? "法令遵守・スパム防止AI自動スキップ" : "Bảo vệ an toàn thương hiệu"}
-          </p>
-        </div>
-
-        {/* Card 4: AI自動除外リスト (Global Suppressions) */}
-        <div
-          onClick={() => setShowSuppressionBreakdown(true)}
-          className="bg-white dark:bg-[#1C2128] border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm hover:border-rose-400 dark:hover:border-rose-700/60 transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider group-hover:text-rose-600 transition-colors">
-              {isJa ? "AI自動除外リスト" : "AI Tự Động Chặn Toàn Cầu"}
-            </span>
-            <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 flex items-center justify-center group-hover:scale-105 transition-transform">
-              <Ban className="w-5 h-5" />
-            </div>
-          </div>
-          <div className="text-2xl font-black text-rose-600 dark:text-rose-400 mt-2 flex items-baseline justify-between">
+          <div className="text-2xl font-black text-amber-600 dark:text-amber-400 mt-2 flex items-baseline justify-between">
             <span>
               {loadingStats ? (
                 <Loader2 className="w-5 h-5 animate-spin" />
@@ -447,12 +426,12 @@ export function InternalFormMarketingSubTab({
                 (stats?.total_global_suppressed || 121028).toLocaleString()
               )}
             </span>
-            <span className="text-[10px] font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/60 px-1.5 py-0.5 rounded border border-rose-200 dark:border-rose-900">
+            <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-900">
               {isJa ? "内訳確認 ➔" : "Chi tiết ➔"}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            {isJa ? "無効・エラー・スパム事前スキップ" : "Bỏ qua vĩnh viễn không quét lại"}
+            {isJa ? "法令遵守・無効・エラー事前除外" : "Tuân thủ pháp luật & Loại trừ lỗi"}
           </p>
         </div>
 
