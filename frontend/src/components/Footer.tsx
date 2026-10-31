@@ -311,7 +311,7 @@ export const Footer: React.FC = () => {
         <div className="flex flex-col md:flex-row items-center justify-between gap-5 pt-4 border-t border-slate-200/60 dark:border-slate-800/60 text-xs">
           <div className="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
             <LocaleLink href="/" className="flex items-center gap-2 active:scale-98 transition-transform">
-              <div className="w-6 h-6 rounded-md bg-[#1B4F8A] flex items-center justify-center shadow-xs shrink-0">
+              <div className="w-6 h-6 rounded-md bg-[#1B4F8A] flex items-center justify-center shadow-xs shrink-0 overflow-hidden" style={{ width: "24px", height: "24px" }}>
                 <LogoIcon className="w-3 h-3 text-white" />
               </div>
               <span className="font-extrabold text-slate-900 dark:text-white tracking-tight text-sm">

@@ -8,12 +8,15 @@ export const LogoIcon: React.FC<LogoIconProps> = ({ className = "w-5 h-5 text-wh
   return (
     <svg
       viewBox="0 0 24 24"
+      width="20"
+      height="20"
       fill="none"
       stroke="currentColor"
       strokeWidth="2.5"
       strokeLinecap="round"
       strokeLinejoin="round"
       className={className}
+      style={{ display: "inline-block", maxWidth: "100%", maxHeight: "100%" }}
     >
       {/* Left corporate block */}
       <rect x="3" y="9" width="5" height="11" rx="1" />

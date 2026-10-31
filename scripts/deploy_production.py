@@ -20,6 +20,7 @@ ITEMS_TO_SYNC = [
     "frontend/src/components/CompanyManagementModal.tsx",
     "frontend/src/components/CompanyClaimModal.tsx",
     "frontend/src/components/CompanyLogo.tsx",
+    "frontend/src/components/LogoIcon.tsx",
     "frontend/src/auth.ts",
     "frontend/src/middleware.ts",
     "frontend/src/app/api/auth/signout-direct/route.ts",
@@ -157,6 +158,14 @@ def main():
         
     print("\n[SUCCESS] Deployed All Upgrades to Production VPS (kigyoulist.com)!")
     ssh.close()
+    
+    print("\n--- Purging Two-Tier Global Edge Cache (Cloudflare + Nginx) ---")
+    try:
+        from cache_purger import purge_all_cache
+        purge_all_cache(verbose=True)
+    except Exception as e:
+        print(f"Warning: Cache purge post-deploy failed: {e}")
+    return
 
 if __name__ == "__main__":
     main()

@@ -159,7 +159,7 @@ export const Header: React.FC = () => {
           
           {/* Left: Brand Logo */}
           <LocaleLink href="/" className="flex items-center gap-2.5 shrink-0 active:scale-98 transition-transform">
-            <div className="w-9 h-9 rounded-xl bg-[#1B4F8A] flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 shrink-0 overflow-hidden rounded-xl bg-[#1B4F8A] flex items-center justify-center shadow-xs" style={{ width: "36px", height: "36px" }}>
               <LogoIcon className="w-5 h-5 text-white" />
             </div>
             <div className="flex flex-col">
