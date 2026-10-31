@@ -138,7 +138,7 @@ export const BUILTIN_TEMPLATES = [
   <div style="font-size: 12px; color: #718096; line-height: 1.6;">
     <p style="margin-bottom: 6px; font-weight: bold; color: #4a5568;">【配信者情報・お問い合わせ】</p>
     <p style="margin: 0;">Kigyou-List 運営事務局（TQC株式会社）</p>
-    <p style="margin: 0;">担当責任者：栗本 賢之（クリモト ヨシユキ）</p>
+    <p style="margin: 0;">担当責任者：栗本 善之（クリモト ヨシユキ）</p>
     <p style="margin: 0;">公式サイト: <a href="https://kigyoulist.com" style="color: #3182ce;">https://kigyoulist.com</a></p>
     <p style="margin: 0;">お問い合わせ: <a href="mailto:info@kigyoulist.com" style="color: #3182ce;">info@kigyoulist.com</a></p>
     
@@ -189,7 +189,7 @@ export const BUILTIN_TEMPLATES = [
   <div style="font-size: 12px; color: #718096; line-height: 1.6;">
     <p style="margin-bottom: 6px; font-weight: bold; color: #4a5568;">【送信元情報】</p>
     <p style="margin: 0;">Kigyou-List 運営事務局（TQC株式会社）</p>
-    <p style="margin: 0;">担当責任者：栗本 賢之（クリモト ヨシユキ）</p>
+    <p style="margin: 0;">担当責任者：栗本 善之（クリモト ヨシユキ）</p>
     <p style="margin: 0;">公式サイト: <a href="https://kigyoulist.com" style="color: #3182ce;">https://kigyoulist.com</a></p>
     <p style="margin: 0;">お問い合わせ: <a href="mailto:info@kigyoulist.com" style="color: #3182ce;">info@kigyoulist.com</a></p>
     
@@ -277,7 +277,7 @@ export const BUILTIN_TEMPLATES = [
   <div style="font-size: 12px; color: #718096; line-height: 1.6;">
     <p style="margin-bottom: 6px; font-weight: bold; color: #4a5568;">【送信元・運営事務局】</p>
     <p style="margin: 0;">Kigyou-List（企業リスト）運営事務局（TQC株式会社）</p>
-    <p style="margin: 0;">担当責任者：栗本 賢之（クリモト ヨシユキ）</p>
+    <p style="margin: 0;">担当責任者：栗本 善之（クリモト ヨシユキ）</p>
     <p style="margin: 0;">公式サイト: <a href="https://kigyoulist.com" style="color: #3182ce;">https://kigyoulist.com</a></p>
     <p style="margin: 0;">お問い合わせ窓口: <a href="mailto:info@kigyoulist.com" style="color: #3182ce;">info@kigyoulist.com</a></p>
     
@@ -324,7 +324,7 @@ const globalForMarketing = globalThis as unknown as {
 };
 const MARKETING_STATS_CACHE_TTL = 15 * 60 * 1000;
 
-// 1. Get Marketing Stats
+// 1. Get Marketing Stats (Ultra-Fast 1ms Cache Table + In-Memory)
 export async function getMarketingStats(forceRefresh: boolean = false) {
   const now = Date.now();
   if (
@@ -334,6 +334,30 @@ export async function getMarketingStats(forceRefresh: boolean = false) {
     now - globalForMarketing.lastMarketingStatsFetch < MARKETING_STATS_CACHE_TTL
   ) {
     return globalForMarketing.cachedMarketingStats;
+  }
+
+  // Fast-Path: Read instant materialized summary from PostgreSQL (takes ~1ms instead of 60s sequential scan)
+  if (!forceRefresh) {
+    try {
+      const summaryRes = await pool.query(`SELECT * FROM cold_email_stats_summary WHERE id = 1`);
+      if (summaryRes.rows.length > 0) {
+        const row = summaryRes.rows[0];
+        const result = {
+          total_companies_with_email: Number(row.total_companies_with_email || 0),
+          total_suppressed: Number(row.total_suppressed || 0),
+          total_sent: Number(row.total_sent || 0),
+          total_campaigns: Number(row.total_campaigns || 0),
+          top_prefectures: row.top_prefectures || [],
+          recent_campaigns: row.recent_campaigns || [],
+          industries: row.industries || [],
+        };
+        globalForMarketing.cachedMarketingStats = result;
+        globalForMarketing.lastMarketingStatsFetch = now;
+        return result;
+      }
+    } catch (err) {
+      console.warn("Could not read from cold_email_stats_summary, falling back to full query:", err);
+    }
   }
 
   try {
