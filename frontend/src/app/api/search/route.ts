@@ -110,6 +110,7 @@ export async function GET(request: NextRequest) {
     if (searchParams.get("hiring") === "true") filters.has_hiring = true;
     if (searchParams.get("subsidy") === "true") filters.has_subsidy = true;
     if (searchParams.get("bidding") === "true") filters.has_bidding = true;
+    if (searchParams.get("invoice") === "true") filters.has_invoice = true;
     if (searchParams.get("award") === "true") filters.has_award = true;
     if (searchParams.get("certification") === "true") filters.has_certification = true;
     if (searchParams.get("patent") === "true") filters.has_patent = true;

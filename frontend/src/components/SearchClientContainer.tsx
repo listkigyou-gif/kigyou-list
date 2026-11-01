@@ -136,6 +136,7 @@ interface SearchClientContainerProps {
     hasHiring?: boolean;
     hasSubsidy?: boolean;
     hasBidding?: boolean;
+    hasInvoice?: boolean;
     minEstYear?: number;
     maxEstYear?: number;
     hasAward?: boolean;
@@ -278,6 +279,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   const [hasHiring, setHasHiring] = useState(!!initialFilters.hasHiring);
   const [hasSubsidy, setHasSubsidy] = useState(!!initialFilters.hasSubsidy);
   const [hasBidding, setHasBidding] = useState(!!initialFilters.hasBidding);
+  const [hasInvoice, setHasInvoice] = useState(!!initialFilters.hasInvoice);
   const [minEstYear, setMinEstYear] = useState(initialFilters.minEstYear);
   const [maxEstYear, setMaxEstYear] = useState(initialFilters.maxEstYear);
   const [hasAward, setHasAward] = useState(!!initialFilters.hasAward);
@@ -363,6 +365,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     if (initialFilters.hasHiring) initialParams.set("hiring", "true");
     if (initialFilters.hasSubsidy) initialParams.set("subsidy", "true");
     if (initialFilters.hasBidding) initialParams.set("bidding", "true");
+    if (initialFilters.hasInvoice) initialParams.set("invoice", "true");
     if (initialFilters.minEstYear != null) initialParams.set("min_establishment_year", String(initialFilters.minEstYear));
     if (initialFilters.maxEstYear != null) initialParams.set("max_establishment_year", String(initialFilters.maxEstYear));
     if (initialFilters.hasAward) initialParams.set("award", "true");
@@ -418,6 +421,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     const newHasHiring = overrides.hasHiring !== undefined ? overrides.hasHiring : hasHiring;
     const newHasSubsidy = overrides.hasSubsidy !== undefined ? overrides.hasSubsidy : hasSubsidy;
     const newHasBidding = overrides.hasBidding !== undefined ? overrides.hasBidding : hasBidding;
+    const newHasInvoice = overrides.hasInvoice !== undefined ? overrides.hasInvoice : hasInvoice;
     const newMinEstYear = overrides.minEstYear !== undefined ? overrides.minEstYear : minEstYear;
     const newMaxEstYear = overrides.maxEstYear !== undefined ? overrides.maxEstYear : maxEstYear;
     const newHasAward = overrides.hasAward !== undefined ? overrides.hasAward : hasAward;
@@ -462,6 +466,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     if (newHasHiring) apiParams.set("hiring", "true");
     if (newHasSubsidy) apiParams.set("subsidy", "true");
     if (newHasBidding) apiParams.set("bidding", "true");
+    if (newHasInvoice) apiParams.set("invoice", "true");
     if (newMinEstYear != null) apiParams.set("min_establishment_year", String(newMinEstYear));
     if (newMaxEstYear != null) apiParams.set("max_establishment_year", String(newMaxEstYear));
     if (newHasAward) apiParams.set("award", "true");
@@ -519,6 +524,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       if (newHasHiring) browserParams.set("hiring", "true");
       if (newHasSubsidy) browserParams.set("subsidy", "true");
       if (newHasBidding) browserParams.set("bidding", "true");
+      if (newHasInvoice) browserParams.set("invoice", "true");
       if (newMinEstYear != null) browserParams.set("min_establishment_year", String(newMinEstYear));
       if (newMaxEstYear != null) browserParams.set("max_establishment_year", String(newMaxEstYear));
       if (newHasAward) browserParams.set("award", "true");
@@ -605,6 +611,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       if (newHasHiring) browserParams.set("hiring", "true");
       if (newHasSubsidy) browserParams.set("subsidy", "true");
       if (newHasBidding) browserParams.set("bidding", "true");
+      if (newHasInvoice) browserParams.set("invoice", "true");
       if (newMinEstYear != null) browserParams.set("min_establishment_year", String(newMinEstYear));
       if (newMaxEstYear != null) browserParams.set("max_establishment_year", String(newMaxEstYear));
       if (newHasAward) browserParams.set("award", "true");
@@ -707,6 +714,9 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     if (updates.bidding !== undefined) {
       setHasBidding(!!updates.bidding);
     }
+    if (updates.invoice !== undefined) {
+      setHasInvoice(!!updates.invoice);
+    }
     if (updates.min_establishment_year !== undefined) {
       setMinEstYear(updates.min_establishment_year ? parseInt(updates.min_establishment_year, 10) : undefined);
     }
@@ -808,6 +818,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       if (updates.hiring !== undefined) overrides.hasHiring = !!updates.hiring;
       if (updates.subsidy !== undefined) overrides.hasSubsidy = !!updates.subsidy;
       if (updates.bidding !== undefined) overrides.hasBidding = !!updates.bidding;
+      if (updates.invoice !== undefined) overrides.hasInvoice = !!updates.invoice;
       if (updates.min_establishment_year !== undefined) overrides.minEstYear = updates.min_establishment_year ? parseInt(updates.min_establishment_year, 10) : undefined;
       if (updates.max_establishment_year !== undefined) overrides.maxEstYear = updates.max_establishment_year ? parseInt(updates.max_establishment_year, 10) : undefined;
       if (updates.award !== undefined) overrides.hasAward = !!updates.award;
@@ -979,6 +990,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             hasHiring={hasHiring}
             hasSubsidy={hasSubsidy}
             hasBidding={hasBidding}
+            hasInvoice={hasInvoice}
             minEstYear={minEstYear}
             maxEstYear={maxEstYear}
             hasAward={hasAward}
@@ -1030,6 +1042,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             hasHiring={hasHiring}
             hasSubsidy={hasSubsidy}
             hasBidding={hasBidding}
+            hasInvoice={hasInvoice}
             minEstYear={minEstYear}
             maxEstYear={maxEstYear}
             hasAward={hasAward}
@@ -1100,7 +1113,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
         {(() => {
           const activeFiltersCount = [
             keyword, prefCode, city, indCode, minEmp, maxEmp, minCap, maxCap,
-            hasHiring, hasSubsidy, hasBidding, minEstYear, maxEstYear,
+            hasHiring, hasSubsidy, hasBidding, hasInvoice, minEstYear, maxEstYear,
             hasAward, hasCertification, hasPatent, hasFinancials, isListed,
             minSales, maxSales, hasEmail, hasPhone, hasWebsite, hasFax,
             hasContactForm, emailType, companyStatus, minOpIncome, maxOpIncome,
@@ -1277,6 +1290,13 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     <Zap className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                     <span>{t.search.bidding}</span>
                     <button type="button" onClick={() => handleFilterChange({ bidding: false }, true)} className="p-0.5 rounded-full hover:bg-amber-200/60 dark:hover:bg-amber-900 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-amber-700 dark:text-amber-300" /></button>
+                  </span>
+                )}
+                {hasInvoice && (
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 text-blue-950 border border-blue-200 dark:bg-blue-950/50 dark:text-blue-200 dark:border-blue-800 text-xs font-semibold shadow-2xs">
+                    <FileCheck2 className="w-3 h-3 text-[#1B4F8A] dark:text-blue-400" />
+                    <span>{locale === 'en' ? 'Invoice Registered' : locale === 'vi' ? 'Đã đăng ký Invoice' : '適格インボイス登録'}</span>
+                    <button type="button" onClick={() => handleFilterChange({ invoice: false }, true)} className="p-0.5 rounded-full hover:bg-blue-200/60 dark:hover:bg-blue-800 transition-colors cursor-pointer" title="Remove"><X className="w-3 h-3 text-blue-700 dark:text-blue-300" /></button>
                   </span>
                 )}
                 {hasAward && (

@@ -46,6 +46,7 @@ interface SearchSidebarProps {
   hasHiring: boolean;
   hasSubsidy: boolean;
   hasBidding: boolean;
+  hasInvoice?: boolean;
   minEstYear?: number;
   maxEstYear?: number;
   hasAward: boolean;
@@ -93,6 +94,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   hasHiring,
   hasSubsidy,
   hasBidding,
+  hasInvoice = false,
   minEstYear,
   maxEstYear,
   hasAward,
@@ -139,7 +141,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 
   const activeCount = [
     prefCode, city, indCode, minEmp, maxEmp, minCap, maxCap,
-    hasHiring, hasSubsidy, hasBidding, minEstYear, maxEstYear,
+    hasHiring, hasSubsidy, hasBidding, hasInvoice, minEstYear, maxEstYear,
     hasAward, hasCertification, hasPatent, hasFinancials, isListed,
     hasTokuteiLic, hasShigyoLic, hasRealEstateLic, hasKobutsuLic, hasConstructionLic,
     minSales, maxSales, hasEmail, hasPhone, hasWebsite, hasFax,
@@ -191,6 +193,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         else if (key === "hiring") updates.hiring = val === "true";
         else if (key === "subsidy") updates.subsidy = val === "true";
         else if (key === "bidding") updates.bidding = val === "true";
+        else if (key === "invoice") updates.invoice = val === "true";
         else if (key === "min_establishment_year") updates.min_establishment_year = val;
         else if (key === "max_establishment_year") updates.max_establishment_year = val;
         else if (key === "award") updates.award = val === "true";
@@ -233,6 +236,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         hiring: hasHiring ? "true" : undefined,
         subsidy: hasSubsidy ? "true" : undefined,
         bidding: hasBidding ? "true" : undefined,
+        invoice: hasInvoice ? "true" : undefined,
         min_establishment_year: minEstYear != null ? String(minEstYear) : undefined,
         max_establishment_year: maxEstYear != null ? String(maxEstYear) : undefined,
         award: hasAward ? "true" : undefined,
@@ -283,6 +287,7 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
         hiring: false,
         subsidy: false,
         bidding: false,
+        invoice: false,
         min_establishment_year: null,
         max_establishment_year: null,
         award: false,
@@ -741,6 +746,17 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                   className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
                 />
                 <span>{locale === 'ja' ? '官公庁入札・落札実績あり (GEPS)' : locale === 'vi' ? 'Trúng thầu cơ quan chính phủ (GEPS)' : 'Public Procurement & Bids (GEPS)'}</span>
+              </label>
+
+              {/* Invoice Registered */}
+              <label className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 cursor-pointer hover:text-slate-900 dark:hover:text-white py-1">
+                <input
+                  type="checkbox"
+                  checked={hasInvoice}
+                  onChange={(e) => navigate({ invoice: e.target.checked ? "true" : null }, true)}
+                  className="w-4 h-4 rounded text-[#1B4F8A] focus:ring-[#1B4F8A] dark:border-slate-700 dark:bg-slate-800 cursor-pointer"
+                />
+                <span>{locale === 'ja' ? '適格請求書発行事業者（インボイス登録）' : locale === 'vi' ? 'Đã đăng ký doanh nghiệp Invoice' : 'Qualified Invoice Issuer'}</span>
               </label>
 
               {/* Subsidy */}

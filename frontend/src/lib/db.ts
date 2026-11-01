@@ -408,6 +408,7 @@ export interface SearchFilters {
   has_hiring?: boolean;
   has_subsidy?: boolean;
   has_bidding?: boolean;
+  has_invoice?: boolean;
   has_award?: boolean;
   has_certification?: boolean;
   has_patent?: boolean;
@@ -1237,6 +1238,9 @@ function buildSearchQuery(
     whereClauses.push(isPG
       ? "c.has_patent = true"
       : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '特許')");
+  }
+  if (filters.has_invoice) {
+    whereClauses.push(isPG ? "c.has_invoice = true" : "c.has_invoice = 1");
   }
   if (filters.has_financials) {
     whereClauses.push(isPG ? "c.has_financials = true" : "c.corporate_number IN (SELECT fr.corporate_number FROM financial_records fr)");

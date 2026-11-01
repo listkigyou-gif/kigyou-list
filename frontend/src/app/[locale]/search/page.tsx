@@ -77,6 +77,7 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
   const hasHiring = searchParamsVal.hiring === 'true';
   const hasSubsidy = searchParamsVal.subsidy === 'true';
   const hasBidding = searchParamsVal.bidding === 'true';
+  const hasInvoice = searchParamsVal.invoice === 'true';
   const hasFinancials = searchParamsVal.financials === 'true';
   const isListed = searchParamsVal.is_listed === 'true' || searchParamsVal.listed === 'true';
   
@@ -177,6 +178,7 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
     has_hiring: hasHiring,
     has_subsidy: hasSubsidy,
     has_bidding: hasBidding,
+    has_invoice: hasInvoice ? true : undefined,
     has_award: hasAward,
     has_certification: hasCertification,
     has_patent: hasPatent,
@@ -270,6 +272,7 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
     hasHiring,
     hasSubsidy,
     hasBidding,
+    hasInvoice,
     hasFinancials,
     isListed,
     hasTokuteiLic,

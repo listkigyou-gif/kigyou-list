@@ -300,10 +300,10 @@ export default async function Home({ params }: PageParams) {
               </form>
             </div>
 
-            {/* Quick Intent Filter Chips (Tối giản thanh lịch, xóa bỏ emoji chìa khóa 🔑) */}
-            <div className="flex flex-wrap items-center justify-center gap-2 max-w-2xl mx-auto text-xs text-slate-500 dark:text-slate-400 mb-8">
+            {/* Quick Intent Filter Chips (Tối giản thanh lịch chuẩn B2B) */}
+            <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto text-xs text-slate-500 dark:text-slate-400 mb-8">
               <span className="font-semibold text-slate-400 dark:text-slate-500 text-[11px] uppercase tracking-wider mr-1">
-                {isJa ? "人気の絞り込み:" : isVi ? "Bộ lọc phổ biến:" : "Quick Filters:"}
+                {isJa ? "条件から探す:" : isVi ? "Bộ lọc theo tiêu chí:" : "Quick Filter by:"}
               </span>
               <Link 
                 href={`/${locale}/search?contact_form=true`} 
@@ -315,19 +315,25 @@ export default async function Home({ params }: PageParams) {
                 href={`/${locale}/search?hiring=true`} 
                 className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors text-[11px]"
               >
-                {isJa ? "求人活動中" : isVi ? "Đang tuyển dụng" : "Actively Hiring"}
+                {isJa ? "求人募集中" : isVi ? "Đang tuyển dụng" : "Actively Hiring"}
+              </Link>
+              <Link 
+                href={`/${locale}/search?invoice=true`} 
+                className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors text-[11px]"
+              >
+                {isJa ? "適格インボイス登録" : isVi ? "Đăng ký Invoice" : "Qualified Invoice"}
               </Link>
               <Link 
                 href={`/${locale}/search?subsidy=true`} 
                 className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors text-[11px]"
               >
-                {isJa ? "補助金受給企業" : isVi ? "Nhận trợ cấp" : "Subsidy Recipients"}
+                {isJa ? "補助金受給" : isVi ? "Nhận trợ cấp" : "Subsidies"}
               </Link>
               <Link 
                 href={`/${locale}/search?bidding=true`} 
                 className="px-2.5 py-1 rounded-md bg-slate-50 border border-slate-200 hover:border-[#1B4F8A] hover:text-[#1B4F8A] dark:bg-slate-800 dark:border-slate-700 dark:hover:border-blue-400 dark:hover:text-blue-400 font-medium transition-colors text-[11px]"
               >
-                {isJa ? "公共入札実績" : isVi ? "Đấu thầu công" : "Public Bidders"}
+                {isJa ? "公共入札実績" : isVi ? "Đấu thầu công" : "Public Bids"}
               </Link>
             </div>
 
