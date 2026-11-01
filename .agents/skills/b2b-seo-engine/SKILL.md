@@ -342,4 +342,43 @@ Hệ thống áp dụng cơ chế phân tách minh bạch 2 tầng cho trường
    * Tự động tính toán theo đúng quy định pháp lý của Bộ Y tế, Lao động và Phúc lợi Nhật Bản (MHLW - 厚生労働省): **`受理日の翌々月末日`** (Ngày cuối cùng của tháng thứ 2 kể từ ngày tiếp nhận hồ sơ `signal_date`).
    * Trên giao diện người dùng (UI): Hiển thị nhãn **`紹介期限日（目安）`** kèm chú thích minh bạch (*「※ハローワークの原則（受理日の翌々月末）に基づく目安であり、企業の独自採用期限とは異なる場合があります」*) để người dùng không hiểu lầm đây là hạn nộp hồ sơ riêng của doanh nghiệp.
 
+---
+
+## 12. KIẾN TRÚC NGHIÊN CỨU TỪ KHÓA DỰA TRÊN NHU CẦU THỰC & BẢN ĐỒ SEARCH INTENT (DEMAND-DRIVEN KEYWORD RESEARCH & SEARCH INTENT ENGINE)
+
+> [!CRITICAL]
+> **QUY CHUẨN TỐI CAO VỀ TỐI ƯU HÓA SEO & NỘI DUNG (DEMAND-FIRST PROTOCOL):**
+> Tuyệt đối **CẤM** suy đoán cảm tính hoặc tự nghĩ ra từ khóa bằng trí tưởng tượng. Mọi quyết định tạo trang mới, mở Hub chuyên đề, tinh chỉnh Title Tag hay Meta Snippet **BẮT BUỘC** phải dựa trên dữ liệu nhu cầu tìm kiếm thực tế (Search Volume & Search Intent) của người dùng Nhật Bản trên Google Japan & Bing.
+
+### 12.1. Bản Đồ 4 Cụm Ý Định Tìm Kiếm Cốt Lõi (The 4 Search Intent Clusters)
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│             BẢN ĐỒ NHU CẦU TÌM KIẾM B2B DATA TẠI NHẬT BẢN (SEARCH INTENT MATRIX)       │
+├─────────────────────────┬─────────────────────────┬────────────────────────────────────┤
+│ 1. TRANSACTIONAL        │ 2. INVESTIGATION        │ 3. RISK & COMPLIANCE               │
+│    (Tạo danh sách & Mua)│    (Tra cứu tài chính)  │    (Quản trị rủi ro & Nợ xấu)      │
+├─────────────────────────┼─────────────────────────┼────────────────────────────────────┤
+│ • 企業リスト 無料 / 作成│ • [Tên cty / Ngành]     │ • 倒産情報 [Tỉnh] (大阪, 宮城...)  │
+│ • 営業リスト エクセル   │   売上高 (Doanh thu)    │ • 倒産情報 速報 / 最近の倒産企業   │
+│ • テレアポ リスト       │ • [Tên cty] 平均年収    │ • 反社チェック (Hansha check)      │
+│ • 問い合わせフォーム営業│ • [Tên cty] 従業員数    │ • 本店移転 一覧 / 代表者変更       │
+│ • 法人リスト ダウンロード│ • 企業 評判 / 会社概要  │ • 休眠会社 / 解散企業              │
+│ ➔ Đích: /ja/search,     │ ➔ Đích: /ja/company/[id]│ ➔ Đích: /ja/status/bankruptcies,   │
+│   /ja/form-marketing    │   /ja/ranking/*         │   /ja/changes/*                    │
+├─────────────────────────┴─────────────────────────┴────────────────────────────────────┤
+│ 4. PROGRAMMATIC MATRIX (TÌM KIẾM MA TRẬN ĐA CHIỀU: NGÀNH NGHỀ × ĐỊA PHƯƠNG)           │
+│ • [Ngành nghề] × [Tỉnh/Quận] 企業一覧 (VD: IT企業 東京都 / 製造業 愛知県 / 建設業 大阪府)  │
+│ • 許認可企業一覧 (登録支援機関, 宅建業者, 建設業許可, 古物商...)                       │
+│ • 新設法人一覧 [Tỉnh] (Doanh nghiệp mới mở theo tháng)                                │
+│ ➔ Đích: /ja/area/[code], /ja/industry/[code], /ja/licenses                            │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### 12.2. Hệ Thống Thu Thập Dữ Liệu Thời Gian Thực (Live Scraping Pipeline)
+Hệ thống sử dụng bộ công cụ Python chuẩn hóa [japanese_b2b_keyword_researcher.py](file:///c:/kigyou-list/scripts/japanese_b2b_keyword_researcher.py):
+1. **Google Japan Suggest Engine:** Gọi API tự động hoàn thành từ khóa của Google Nhật Bản (`client=chrome&hl=ja&gl=jp`) kết hợp quét đệ quy các phụ tố Hiragana và Modifiers mua hàng (`無料`, `作成`, `ダウンロード`, `エクセル`, `売上高`, `年収`, `速報`...).
+2. **Loại trừ 100% Truy Vấn Nội Bộ:** Tự động loại trừ các từ khóa kiểm thử của Developer (`TQC`, hotline, địa bàn test) theo Điều 7 của GSC Skill.
+3. **Phân cụm Ý định (Intent Clustering):** Tự động phân chia từ khóa thành 4 nhóm để lập trình viên và SEO Sub-Agents biết chính xác phải đặt từ khóa vào đâu trên website.
+
 
