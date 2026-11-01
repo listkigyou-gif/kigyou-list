@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getCorporateRankings } from "@/lib/db";
+import { PREFECTURES, getPrefectureLabel } from "@/lib/hubUtils";
 import { RankingHubView } from "@/components/ranking/RankingHubView";
 import { Users, ChevronRight, ShieldCheck, Award, ArrowRight } from "lucide-react";
 import { Metadata } from "next";
@@ -19,18 +20,22 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const resolvedSearch = await searchParams;
   const locale = resolvedParams.locale || "ja";
   const currentYear = new Date().getFullYear();
+  const prefCode = resolvedSearch.prefecture;
+  const prefMeta = prefCode ? (PREFECTURES.find((p) => p.code === prefCode) || null) : null;
+  const prefLabel = getPrefectureLabel(prefMeta, locale);
+  const isTargetPref = Boolean(prefMeta);
 
   const title = locale === "en"
-    ? `Top Japanese Corporations by Employees (${currentYear}) | Kigyou-list`
+    ? `${isTargetPref ? prefLabel + ': ' : ''}Top Corporations by Employees (${currentYear}) | Kigyou-list`
     : locale === "vi"
-    ? `Top Doanh Nghiệp Quy Mô Nhân Sự Lớn Nhất (${currentYear}) | Kigyou-list`
-    : `【${currentYear}年最新】全国企業の厚生年金被保険者数TOP100 | Kigyou-list`;
+    ? `Top Doanh Nghiệp Quy Mô Nhân Sự Lớn Nhất tại ${prefLabel} (${currentYear}) | Kigyou-list`
+    : `【${currentYear}年最新】${prefLabel}${isTargetPref ? '' : '企業'}の厚生年金被保険者数TOP100 | Kigyou-list`;
 
   const description = locale === "en"
-    ? `Official corporate size ranking based on the verified number of insured regular employees published by the Japan Pension Service. Screen large enterprises, corporate groups, and subsidiaries with CSV export.`
+    ? `Official corporate size ranking based on the verified number of insured regular employees in ${prefLabel} published by the Japan Pension Service. Screen large enterprises, corporate groups, and subsidiaries with CSV export.`
     : locale === "vi"
-    ? `Bảng xếp hạng quy mô doanh nghiệp Nhật Bản theo số lượng nhân sự tham gia Bảo hiểm Phúc lợi 厚生年金 từ Cơ quan Hưu trí Nhật Bản. Xuất danh sách CSV gồm ban lãnh đạo và số điện thoại.`
-    : `日本年金機構（厚生年金適用事業所公表情報）に基づく全国企業の厚生年金被保険者数ランキングTOP100。実質的な正規雇用規模を正確に把握できる法人リストのCSV一括ダウンロードに対応。`;
+    ? `Bảng xếp hạng quy mô doanh nghiệp tại ${prefLabel} theo số lượng nhân sự tham gia Bảo hiểm Phúc lợi 厚生年金 từ Cơ quan Hưu trí Nhật Bản. Xuất danh sách CSV gồm ban lãnh đạo và số điện thoại.`
+    : `日本年金機構（厚生年金適用事業所公表情報）に基づく${prefLabel}${isTargetPref ? '' : '企業'}の厚生年金被保険者数ランキングTOP100。実質的な正規雇用規模を正確に把握できる法人リストのCSV一括ダウンロードに対応。`;
 
   const canonicalUrl = `/${locale}/ranking/employees${resolvedSearch.prefecture ? `?prefecture=${resolvedSearch.prefecture}` : ''}`;
 

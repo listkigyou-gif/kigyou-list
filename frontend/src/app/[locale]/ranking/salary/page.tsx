@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getCorporateRankings, CorporateRankingItem } from "@/lib/db";
+import { PREFECTURES, getPrefectureLabel } from "@/lib/hubUtils";
 import { RankingHubView } from "@/components/ranking/RankingHubView";
 import { Coins, ChevronRight, ShieldCheck, Database, Award, ArrowRight } from "lucide-react";
 import { Metadata } from "next";
@@ -19,18 +20,22 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const resolvedSearch = await searchParams;
   const locale = resolvedParams.locale || "ja";
   const currentYear = new Date().getFullYear();
+  const prefCode = resolvedSearch.prefecture;
+  const prefMeta = prefCode ? (PREFECTURES.find((p) => p.code === prefCode) || null) : null;
+  const prefLabel = getPrefectureLabel(prefMeta, locale);
+  const isTargetPref = Boolean(prefMeta);
 
   const title = locale === "en"
-    ? `Top Japanese Companies by Salary (${currentYear}) | Kigyou-list`
+    ? `${isTargetPref ? prefLabel + ': ' : ''}Top Companies by Salary (${currentYear}) | Kigyou-list`
     : locale === "vi"
-    ? `Top Doanh Nghiệp Thu Nhập Cao Nhất Nhật Bản (${currentYear}) | Kigyou-list`
-    : `【${currentYear}年最新】全国企業の平均年間給与ランキングTOP50 | Kigyou-list`;
+    ? `Top Doanh Nghiệp Thu Nhập Cao Nhất tại ${prefLabel} (${currentYear}) | Kigyou-list`
+    : `【${currentYear}年最新】${prefLabel}${isTargetPref ? '' : '企業'}の平均年間給与ランキングTOP50 | Kigyou-list`;
 
   const description = locale === "en"
-    ? `Official ranking of Japanese corporations by average annual salary based on audited securities reports filed with the Financial Services Agency (FSA). Export full lists with corporate numbers and contacts.`
+    ? `Official ranking of corporations in ${prefLabel} by average annual salary based on audited securities reports filed with the Financial Services Agency (FSA). Export full lists with corporate numbers and contacts.`
     : locale === "vi"
-    ? `Bảng xếp hạng thu nhập bình quân năm của các tập đoàn hàng đầu Nhật Bản trích xuất từ Báo cáo tài chính FSA EDINET có kiểm toán. Cho phép tải danh sách CSV có số điện thoại và ban giám đốc.`
-    : `金融庁EDINET開示の有価証券報告書に基づく全国企業の平均年間給与ランキングTOP50。役員名、公式電話番号、被保険者数、所在地を含む法人リストのCSV一括ダウンロードに対応。`;
+    ? `Bảng xếp hạng thu nhập bình quân năm của các tập đoàn hàng đầu tại ${prefLabel} trích xuất từ Báo cáo tài chính FSA EDINET có kiểm toán. Cho phép tải danh sách CSV có số điện thoại và ban giám đốc.`
+    : `金融庁EDINET開示の有価証券報告書に基づく${prefLabel}${isTargetPref ? '' : '企業'}の平均年間給与ランキングTOP50。役員名、公式電話番号、被保険者数、所在地を含む法人リストのCSV一括ダウンロードに対応。`;
 
   const canonicalUrl = `/${locale}/ranking/salary${resolvedSearch.prefecture ? `?prefecture=${resolvedSearch.prefecture}` : ''}`;
 

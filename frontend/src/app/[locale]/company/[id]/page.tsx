@@ -300,9 +300,9 @@ function generateDynamicSummary(
     if (company.employee_count) metaKpis.push(`従業員:${company.employee_count.toLocaleString('ja-JP')}名`);
     if (company.phone_number) metaKpis.push(`TEL:${company.phone_number}`);
     if (repClean) metaKpis.push(`代表:${repClean}`);
-    const kpiText = metaKpis.length > 0 ? `。${metaKpis.join('、')}` : '';
+    const kpiSummary = metaKpis.length > 0 ? `【${metaKpis.join(' / ')}】` : '';
 
-    return `【${currentYear}年最新】${companyName}${kanaPart}（${prefectureName || '日本'}）の企業概要・信用調査。法人番号:${company.corporate_number}・インボイス:${invoiceNumber}${kpiText}。財務諸表・役員・連絡先を無料掲載中。`;
+    return `【${currentYear}年最新】${companyName}${kanaPart}${kpiSummary}。所在地:${prefectureName || '日本'}。法人番号:${company.corporate_number}・適格請求書(インボイス)。会社概要、決算財務、役員、信用調査データを無料公開。`;
   }
 }
 

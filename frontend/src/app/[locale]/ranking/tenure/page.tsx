@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import { getCorporateRankings } from "@/lib/db";
+import { PREFECTURES, getPrefectureLabel } from "@/lib/hubUtils";
 import { RankingHubView } from "@/components/ranking/RankingHubView";
 import { Clock, ChevronRight, ShieldCheck, Award, ArrowRight } from "lucide-react";
 import { Metadata } from "next";
@@ -19,18 +20,22 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const resolvedSearch = await searchParams;
   const locale = resolvedParams.locale || "ja";
   const currentYear = new Date().getFullYear();
+  const prefCode = resolvedSearch.prefecture;
+  const prefMeta = prefCode ? (PREFECTURES.find((p) => p.code === prefCode) || null) : null;
+  const prefLabel = getPrefectureLabel(prefMeta, locale);
+  const isTargetPref = Boolean(prefMeta);
 
   const title = locale === "en"
-    ? `Top White Companies by Service Tenure (${currentYear}) | Kigyou-list`
+    ? `${isTargetPref ? prefLabel + ': ' : ''}Top White Companies by Service Tenure (${currentYear}) | Kigyou-list`
     : locale === "vi"
-    ? `Top Doanh Nghiệp Thâm Niên Cao Nhất Nhật Bản (${currentYear}) | Kigyou-list`
-    : `【${currentYear}年最新】全国ホワイト企業・平均勤続年数TOP100 | Kigyou-list`;
+    ? `Top Doanh Nghiệp Thâm Niên Cao Nhất tại ${prefLabel} (${currentYear}) | Kigyou-list`
+    : `【${currentYear}年最新】${prefLabel}ホワイト企業・平均勤続年数TOP100 | Kigyou-list`;
 
   const description = locale === "en"
-    ? `Official ranking of Japanese corporations by average tenure of regular employees published by the Ministry of Health, Labour and Welfare (MHLW). Discover companies with high retention and worker satisfaction.`
+    ? `Official ranking of corporations in ${prefLabel} by average tenure of regular employees published by the Ministry of Health, Labour and Welfare (MHLW). Discover companies with high retention and worker satisfaction.`
     : locale === "vi"
-    ? `Bảng xếp hạng các doanh nghiệp uy tín (White Company) có thời gian gắn bó và thâm niên nhân viên cao nhất Nhật Bản công bố bởi Bộ Y tế, Lao động & Phúc lợi (MHLW). Xuất danh sách CSV đầy đủ.`
-    : `厚生労働省「職場情報総合サイト」公表データに基づく全国ホワイト企業・正社員平均勤続年数ランキングTOP100。高い定着率と安定雇用を誇る優良法人の電話番号、役員名、被保険者数を含むCSV出力に対応。`;
+    ? `Bảng xếp hạng các doanh nghiệp uy tín (White Company) có thời gian gắn bó và thâm niên nhân viên cao nhất tại ${prefLabel} công bố bởi Bộ Y tế, Lao động & Phúc lợi (MHLW). Xuất danh sách CSV đầy đủ.`
+    : `厚生労働省「職場情報総合サイト」公表データに基づく${prefLabel}ホワイト企業・正社員平均勤続年数ランキングTOP100。高い定着率と安定雇用を誇る優良法人の電話番号、役員名、被保険者数を含むCSV出力に対応。`;
 
   const canonicalUrl = `/${locale}/ranking/tenure${resolvedSearch.prefecture ? `?prefecture=${resolvedSearch.prefecture}` : ''}`;
 
