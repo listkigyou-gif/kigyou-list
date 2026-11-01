@@ -163,17 +163,15 @@ export default async function LocalizedLayout({
       className={`h-full antialiased ${notoSansJP.variable}`}
       suppressHydrationWarning
     >
-      <head>
+      <body 
+        className="min-h-full flex flex-col font-sans bg-bg-light text-slate-900 dark:bg-[#0D1117] dark:text-slate-100"
+        suppressHydrationWarning
+      >
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{if(window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark');}}catch(e){}})();`
           }}
         />
-      </head>
-      <body 
-        className="min-h-full flex flex-col font-sans bg-bg-light text-slate-900 dark:bg-[#0D1117] dark:text-slate-100"
-        suppressHydrationWarning
-      >
         <script
           id="organization-schema"
           type="application/ld+json"

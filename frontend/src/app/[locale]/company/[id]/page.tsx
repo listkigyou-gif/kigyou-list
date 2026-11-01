@@ -370,6 +370,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // Rich Entity (>= 3 điểm) -> index: true, follow: true (Đạt chuẩn giá trị B2B từ Phone, Web, Vốn, Giấy phép)
   // Thin Entity (< 3 điểm) -> index: false, follow: true (Giữ luồng cào liên kết nội bộ nhưng không rác Google index)
   const isIndexable = richnessScore >= 3;
+  const ogImageUrl = `https://kigyoulist.com/api/og/company/${companyId}?locale=${locale}`;
 
   return {
     title: pageTitle,
@@ -410,10 +411,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       type: 'profile',
       images: [
         {
-          url: '/og-image.png',
+          url: ogImageUrl,
           width: 1200,
           height: 630,
-          alt: `${companyName} - Kigyou-list`,
+          alt: `${companyName}の企業概要・法人番号・業績データ | Kigyou-list`,
         },
       ],
     },
@@ -421,7 +422,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       card: 'summary_large_image',
       title: pageTitle,
       description: summary,
-      images: ['/og-image.png'],
+      images: [ogImageUrl],
     },
   };
 }
@@ -624,12 +625,14 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   const snsUrlList = Object.values(snsMap).filter(Boolean);
 
   // 5. Generate Schema Markup JSON-LD for Corporation
+  const ogImageUrl = `https://kigyoulist.com/api/og/company/${company.corporate_number}?locale=${locale}`;
   const schemaMarkup = {
     "@context": "https://schema.org",
     "@type": "Corporation",
     "name": companyName,
     "legalName": company.company_name,
     "taxID": company.corporate_number,
+    "image": ogImageUrl,
     "identifier": [
       company.corporate_number,
       {
