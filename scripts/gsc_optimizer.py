@@ -21,6 +21,19 @@ KEY_FILE = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", r"c:\kigyou-list\google_c
 DEFAULT_SITE = "sc-domain:kigyoulist.com"
 SCOPES = ['https://www.googleapis.com/auth/webmasters']
 
+# Bộ lọc loại trừ các từ khóa truy vấn nội bộ của Developer / Đơn vị vận hành (TQC株式会社 & SĐT 03-6907-1219)
+# Theo yêu cầu của dự án: Các từ khóa này do quá trình phát triển tự click/test nên không được dùng cho phân tích SEO.
+INTERNAL_EXCLUDED_PATTERNS = [
+    "tqc", "03-6907-1219", "0369071219", "tcq", "tqa", "tqq", "tqcs", "tqi", "tqr", "ｔｑｃ"
+]
+
+def is_internal_query(query: str) -> bool:
+    q = query.strip().lower()
+    for pat in INTERNAL_EXCLUDED_PATTERNS:
+        if pat in q or q in pat:
+            return True
+    return False
+
 
 class GSCOptimizer:
     def __init__(self, key_file: str = KEY_FILE, site_url: str = DEFAULT_SITE):
@@ -85,6 +98,8 @@ class GSCOptimizer:
             if len(keys) < 2:
                 continue
             query, page = keys[0], keys[1]
+            if is_internal_query(query):
+                continue
             clicks = int(r.get('clicks', 0))
             impressions = int(r.get('impressions', 0))
             ctr = round(float(r.get('ctr', 0)) * 100, 2)
@@ -131,6 +146,8 @@ class GSCOptimizer:
             if len(keys) < 2:
                 continue
             query, page = keys[0], keys[1]
+            if is_internal_query(query):
+                continue
             query_map.setdefault(query, []).append({
                 "page": page,
                 "clicks": int(r.get('clicks', 0)),
@@ -176,6 +193,8 @@ class GSCOptimizer:
 
         decay_list = []
         for q, p_data in prev_rows.items():
+            if is_internal_query(q):
+                continue
             p_impr = int(p_data.get('impressions', 0))
             p_clicks = int(p_data.get('clicks', 0))
             p_pos = round(float(p_data.get('position', 0)), 1)

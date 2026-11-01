@@ -19,6 +19,17 @@ KEY_FILE = r"c:\kigyou-list\google_credentials.json"
 DEFAULT_SITE = "sc-domain:kigyoulist.com"
 SCOPES = ['https://www.googleapis.com/auth/webmasters.readonly']
 
+INTERNAL_EXCLUDED_PATTERNS = [
+    "tqc", "03-6907-1219", "0369071219", "tcq", "tqa", "tqq", "tqcs", "tqi", "tqr", "ｔｑｃ"
+]
+
+def is_internal_query(query: str) -> bool:
+    q = query.strip().lower()
+    for pat in INTERNAL_EXCLUDED_PATTERNS:
+        if pat in q or q in pat:
+            return True
+    return False
+
 class GoogleSearchConsoleClient:
     def __init__(self, key_file: str = KEY_FILE, site_url: str = DEFAULT_SITE):
         self.key_file = key_file
@@ -76,17 +87,22 @@ class GoogleSearchConsoleClient:
             raise RuntimeError(f"GSC API Summary Error: {str(e)}")
 
     def get_top_queries(self, days: int = 28, limit: int = 30) -> List[Dict[str, Any]]:
-        """Lấy top từ khóa tìm kiếm trên Google"""
-        rows = self.get_search_analytics(days=days, dimensions=['query'], limit=limit)
+        """Lấy top từ khóa tìm kiếm trên Google (tự động loại trừ truy vấn nội bộ của developer)"""
+        rows = self.get_search_analytics(days=days, dimensions=['query'], limit=limit * 2)
         results = []
         for r in rows:
+            q = r.get('keys', [''])[0]
+            if is_internal_query(q):
+                continue
             results.append({
-                "query": r.get('keys', [''])[0],
+                "query": q,
                 "clicks": r.get('clicks', 0),
                 "impressions": r.get('impressions', 0),
                 "ctr": round(r.get('ctr', 0) * 100, 2),
                 "position": round(r.get('position', 0), 1)
             })
+            if len(results) >= limit:
+                break
         return results
 
     def get_top_pages(self, days: int = 28, limit: int = 30) -> List[Dict[str, Any]]:

@@ -126,5 +126,16 @@ Theo tài liệu chính thức từ Google Search Console, hệ thống tuân th
 ## 6. PHỐI HỢP ĐỒNG BỘ ĐA KÊNH TRONG HỆ SINH THÁI KIGYOU-LIST
 
 * **Phối hợp với `b2b-seo-engine`:** Khi `gsc_optimizer.py` phát hiện trang có lỗi `Crawled - currently not indexed`, tự động kích hoạt Cloudflare cache purge và bổ sung trang đó vào hàng đợi ưu tiên của `auto_google_indexing_pg.js`.
-* **Phối hợp với `growth-orchestrator`:** Khi phát hiện các từ khóa Top Queries trên GSC (như `tqc株式会社`, `IT企業 東京都豊島区`, số điện thoại công ty), tự động đưa danh sách này vào kế hoạch bài viết trên Note.com, Zenn, Qiita và Press Release để thâu tóm toàn bộ trang 1 Google.
+* **Phối hợp với `growth-orchestrator`:** Khi phát hiện các từ khóa Top Queries trên GSC (như `IT企業 東京都豊島区`, ngành nghề, tỉnh thành, tín hiệu B2B), tự động đưa danh sách này vào kế hoạch bài viết trên Note.com, Zenn, Qiita và Press Release để thâu tóm toàn bộ trang 1 Google (Lưu ý: Luôn loại trừ các truy vấn nội bộ TQC/SĐT).
 * **Phối hợp với `bing-webmaster`:** So sánh chéo tỷ lệ index giữa Googlebot và Bingbot để đánh giá thuật toán đánh giá chất lượng trang của hai công cụ tìm kiếm lớn nhất thế giới.
+
+---
+
+## 7. BỘ LỌC LOẠI TRỪ TỪ KHÓA NỘI BỘ (INTERNAL DEVELOPER TRAFFIC EXCLUSION)
+
+> [!IMPORTANT]
+> **QUY TẮC BẤT DI BẤT DỊCH KHI PHÂN TÍCH SEO CHO KIGYOU-LIST:**
+> Toàn bộ các truy vấn liên quan đến đơn vị chủ quản **TQC株式会社** và số hotline **`03-6907-1219`** (bao gồm: `tqc`, `tqc株式会社`, `03-6907-1219`, `0369071219`, `tcq`, `tqa`, `tqq`, `tqcs`, `tqi`, `tqr`, `ｔｑｃ`) là **lưu lượng click và tìm kiếm nội bộ do Developer thực hiện trong quá trình phát triển và kiểm thử dự án**.
+> 
+> * **Tuyệt đối KHÔNG sử dụng** các từ khóa này để phân tích thị trường, không đánh giá là cơ hội Quick-Wins, và không dùng làm căn cứ định hướng kế hoạch SEO/content.
+> * Mọi báo cáo và thuật toán tối ưu hóa tự động phải chủ động **loại trừ (filter out)** nhóm từ khóa này để đảm bảo dữ liệu phản ánh 100% nhu cầu tìm kiếm thực tế của khách hàng B2B Nhật Bản.
