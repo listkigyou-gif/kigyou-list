@@ -1,0 +1,29 @@
+{
+  "listing_type": "無料掲載",
+  "company_name": "TQC株式会社",
+  "your_name": "高橋 里佳",
+  "your_tel": "03-6907-1219",
+  "your_email": "info@kigyoulist.com",
+  "category": "ＩＴ・通信",
+  "sub_category_it": "SaaS・クラウド",
+  "title": "国内最大500万社データベース「Kigyou-list」、ChatGPT・Claude等の生成AI連携に特化した営業リスト作成機能を正式公開",
+  "subtitle": "AIのハルシネーション（架空企業・無効連絡先）を完全解決。500万社正規法人データ×実戦プロンプト連携でB2B新規開拓の成約率を最大化。",
+  "lead": "全国500万社超の法人データベースを提供する『Kigyou-list（kigyoulist.com）』は、ChatGPTやClaude等の生成AIを活用した営業活動を支援する【AI営業リスト作成ソリューション＆プロンプト連携機能】を2026年最新機能として正式リリースいたしました。",
+  "body_heading1": "1. 開発の背景：営業現場における「生成AI活用」の深刻な3つの課題",
+  "body_text1": "昨今、多くの営業組織がChatGPTやClaudeを活用した営業リストの作成やアプローチ自動化を試みています。しかし、①存在しない架空企業や閉業法人を出力する「ハルシネーション」、②問い合わせフォームURLや代表番号の欠落、③AIの出力制限による大量リスト化の困難、という3大ボトルネックが存在していました。Kigyou-listは、国税庁の全法人オープンデータをリアルタイムに集約した一次データを提供することで、AI営業の「質の高い燃料」として本課題を抜本的に解決します。",
+  "body_heading2": "2. AI営業リスト作成ソリューションの主要特徴",
+  "body_text2": "① 全国500万社・全法人完全網羅：国税庁法人番号に100%準拠し、実在する企業のみを高精度に抽出。\n② 問い合わせフォームURL標準装備：AIで作成したパーソナライズ文面をそのまま営業現場へ投入可能。\n③ 業界最安クラス・契約縛りなし：初月わずか¥1,260（70% OFF・通常¥4,200/月）。年縛りなしで1クリック解約可能。\n④ 毎月50社CSV無料ダウンロード：無料プランで手軽にAIプロンプトとの連携精度を検証可能。\n⑤ フォーム自動送信連携（1通5.9円〜）：AIによるオプトアウト検知機能を備え、安全かつ大規模な新規開拓を実現。",
+  "body_heading3": "3. 実戦AI営業プロンプト集の無料公開と今後の展望",
+  "body_text3": "機能リリースに伴い、Kigyou-listの特設ソリューションページ（ https://kigyoulist.com/ja/tools/ai-sales-list ）にて、理想顧客（ICP）抽出・フォーム専用文面生成・Notion/Excelクレンジング等の「実戦AIプロンプト集」を完全無料で公開いたします。Kigyou-listは今後も、日本のB2B取引におけるデータ民主化を推進してまいります。\n\n※本リリースデータを引用・転載される際は、【出典：Kigyou-list（kigyoulist.com）】のクレジット表記をお願い申し上げます。",
+  "remarks": "AI営業リスト作成特設ページ： https://kigyoulist.com/ja/tools/ai-sales-list\n問い合わせフォーム自動営業： https://kigyoulist.com/ja/form-marketing\nサービス比較・料金一覧： https://kigyoulist.com/ja/compare\n公式サイト： https://kigyoulist.com/ja",
+  "official": {
+    "company": "TQC株式会社",
+    "address": "東京都豊島区東池袋1-34-5 いちご東池袋ビル6階",
+    "person": "高橋 里佳",
+    "tel": "03-6907-1219",
+    "site": "https://kigyoulist.com/ja",
+    "email": "info@kigyoulist.com"
+  },
+  "image_path": "c:\\kigyou-list\\scripts\\images\\note_ai_sales_list.jpg",
+  "confirm_site_url": "https://kigyoulist.com/ja"
+}

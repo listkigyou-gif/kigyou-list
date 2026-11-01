@@ -58,6 +58,12 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
         priority: 0.9,
       });
       corePages.push({
+        url: `${baseUrl}/${loc}/tools/ai-sales-list`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.95,
+      });
+      corePages.push({
         url: `${baseUrl}/${loc}/form-marketing`,
         lastModified: new Date(),
         changeFrequency: 'weekly',

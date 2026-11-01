@@ -14,9 +14,9 @@ export async function generateMetadata({
   const isEn = locale === "en";
   const isVi = locale === "vi";
 
-  let title = "問い合わせフォーム送信代行サービス | 500万社DB連携の自動フォーム営業 | Kigyou-list";
-  let description = "テレアポや迷惑メールを完全回避。500万社データベースからターゲット企業を抽出し、事前法令・NGワード審査付きで問い合わせフォームへ自動アプローチ。1通5.9円〜（初回限定70%OFF）の業界最安値水準で新規商談を獲得。";
-  let keywords = ["フォーム営業", "問い合わせフォーム代行", "フォームマーケティング", "新規開拓", "B2B営業", "営業リスト"];
+  let title = "問い合わせフォーム送信代行・自動営業サービス | 500万社DB・AI営業リスト連携 | Kigyou-list";
+  let description = "テレアポや迷惑メールを完全回避。500万社データベースからターゲット企業を抽出し、事前法令・NGワード審査付きで問い合わせフォームへ自動アプローチ。ChatGPTやClaudeで作成した営業文面の自動投入に対応。1通5.9円〜（初回限定70%OFF）で新規商談を獲得。";
+  let keywords = ["フォーム営業", "問い合わせフォーム代行", "フォームマーケティング", "新規開拓", "B2B営業", "営業リスト", "ChatGPT 営業リスト", "AI 営業リスト 作成", "Musubu 代替"];
   let ogLocale = "ja_JP";
 
   if (isEn) {

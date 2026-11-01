@@ -194,6 +194,12 @@ export const Footer: React.FC = () => {
             </h3>
             <ul className="space-y-2.5 text-slate-600 dark:text-slate-400 font-normal">
               <li>
+                <LocaleLink href="/tools/ai-sales-list" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors flex items-center gap-1">
+                  <span>{locale === "en" ? "AI & ChatGPT Sales Lists" : locale === "vi" ? "Tạo danh sách bằng AI & ChatGPT" : "AI・ChatGPT営業リスト作成"}</span>
+                  <span className="text-[9px] bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-bold px-1 rounded">HOT</span>
+                </LocaleLink>
+              </li>
+              <li>
                 <LocaleLink href="/form-marketing" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
                   {locale === "en" ? "Form DM Automation" : locale === "vi" ? "Tự động gửi Form Marketing" : "フォーム自動営業 (Form DM)"}
                 </LocaleLink>
