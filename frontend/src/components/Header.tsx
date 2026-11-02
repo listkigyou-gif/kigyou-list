@@ -95,8 +95,15 @@ export const Header: React.FC = () => {
     router.push(newPath);
   };
 
-  const fetchHeaderQuota = useCallback(async () => {
+  const lastQuotaFetchRef = useRef<number>(0);
+  const fetchHeaderQuota = useCallback(async (force = false) => {
     if (!isLoggedIn || !user?.email) return;
+    const now = Date.now();
+    // Throttle quota calls so rapid page navigation doesn't hammer /api/export/quota-check
+    if (!force && now - lastQuotaFetchRef.current < 20000 && quotaRemaining !== null) {
+      return;
+    }
+    lastQuotaFetchRef.current = now;
     try {
       const res = await fetch(`/api/export/quota-check?email=${encodeURIComponent(user.email)}`);
       if (res.ok) {
@@ -111,7 +118,7 @@ export const Header: React.FC = () => {
     } catch (e) {
       console.error("Failed to fetch header quota", e);
     }
-  }, [isLoggedIn, user]);
+  }, [isLoggedIn, user, quotaRemaining]);
 
   useEffect(() => {
     setMounted(true);
@@ -126,7 +133,7 @@ export const Header: React.FC = () => {
     }
 
     const handleQuotaUpdate = () => {
-      fetchHeaderQuota();
+      fetchHeaderQuota(true);
     };
 
     window.addEventListener("quotaUpdated", handleQuotaUpdate);

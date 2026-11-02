@@ -210,32 +210,59 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
     cursor_corp: cursorCorp,
   };
 
-  // 2. Fetch filters lists, companies search, and industry map in parallel
-  const [
-    prefecturesResult,
-    industriesResult,
-    citiesResult,
-    searchResult,
-    industryMapResult
-  ] = await Promise.all([
-    getPrefecturesWithCounts(),
-    getIndustriesHierarchy(),
-    prefCode ? getCitiesWithCounts(prefCode) : Promise.resolve([]),
-    searchCompanies(keyword, filters, limit, offset),
-    getIndustryMap()
-  ]);
+  // 2. Fetch filters lists, companies search, and industry map in parallel with individual error protection
+  let prefecturesResult: any[] = [];
+  let industriesResult: any[] = [];
+  let citiesResult: any[] = [];
+  let searchResult: { companies: any[]; totalCount: number } = { companies: [], totalCount: 0 };
+  let industryMapResult: Record<string, string> = {};
+
+  try {
+    const results = await Promise.all([
+      getPrefecturesWithCounts().catch(err => {
+        console.error('[SearchPage] getPrefecturesWithCounts failed:', err);
+        return [];
+      }),
+      getIndustriesHierarchy().catch(err => {
+        console.error('[SearchPage] getIndustriesHierarchy failed:', err);
+        return [];
+      }),
+      prefCode
+        ? getCitiesWithCounts(prefCode).catch(err => {
+            console.error('[SearchPage] getCitiesWithCounts failed:', err);
+            return [];
+          })
+        : Promise.resolve([]),
+      searchCompanies(keyword, filters, limit, offset).catch(err => {
+        console.error('[SearchPage] searchCompanies failed:', err);
+        return { companies: [], totalCount: 0 };
+      }),
+      getIndustryMap().catch(err => {
+        console.error('[SearchPage] getIndustryMap failed:', err);
+        return {};
+      }),
+    ]);
+
+    prefecturesResult = results[0] || [];
+    industriesResult = results[1] || [];
+    citiesResult = results[2] || [];
+    searchResult = results[3] || { companies: [], totalCount: 0 };
+    industryMapResult = results[4] || {};
+  } catch (err) {
+    console.error('[SearchPage] Parallel fetch unexpected rejection:', err);
+  }
 
   const prefectures = JSON.parse(JSON.stringify(prefecturesResult));
   const industries = JSON.parse(JSON.stringify(industriesResult));
   const cities = JSON.parse(JSON.stringify(citiesResult));
-  const companies = searchResult.companies.map((c: any) => ({
+  const companies = (searchResult.companies || []).map((c: any) => ({
     ...c,
     has_email: Boolean(c.email_address),
     has_contact_form: Boolean(c.contact_form_url),
     email_address: null,
     contact_form_url: null,
   }));
-  const totalCount = searchResult.totalCount;
+  const totalCount = searchResult.totalCount || 0;
   const industryMap = { ...industryMapResult };
 
   // Translate prefectures & industries if locale is English

@@ -36,7 +36,7 @@ export const LocaleLink: React.FC<LocaleLinkProps> = ({ href, children, ...props
   }
 
   return (
-    <Link href={targetHref} {...props}>
+    <Link href={targetHref} prefetch={props.prefetch ?? false} {...props}>
       {children}
     </Link>
   );

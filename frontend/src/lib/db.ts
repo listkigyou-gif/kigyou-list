@@ -141,9 +141,9 @@ function getPGPool(): Pool {
     }
     pgPool = new Pool({
       connectionString: DATABASE_URL,
-      max: 20,
-      idleTimeoutMillis: 1000,
-      connectionTimeoutMillis: 5000,
+      max: 35,
+      idleTimeoutMillis: 10000,
+      connectionTimeoutMillis: 10000,
       options: "-c statement_timeout=20000"
     });
   }
