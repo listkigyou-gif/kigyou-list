@@ -279,7 +279,14 @@ class FormDispatcher:
                 if page.locator('textarea, input[type="email"], input[name*="mail" i]').count() == 0:
                     for frame in page.frames:
                         try:
-                            if frame != page.main_frame and frame.locator('textarea, input[type="email"], input[name*="mail" i]').count() > 0:
+                            if frame == page.main_frame or frame.is_detached():
+                                continue
+                            f_url = (frame.url or "").strip().lower()
+                            if not f_url or f_url.startswith("about:") or f_url.startswith("javascript:"):
+                                continue
+                            if any(td in f_url for td in ('google.com/recaptcha', 'google.com/maps', 'doubleclick.net', 'googletagmanager.com', 'facebook.com', 'twitter.com', 'analytics')):
+                                continue
+                            if frame.locator('textarea, input[type="email"], input[name*="mail" i]').count() > 0:
                                 scope = frame
                                 print(f"  [↳] Embedded form detected inside iframe: {frame.url[:80]}...")
                                 break
