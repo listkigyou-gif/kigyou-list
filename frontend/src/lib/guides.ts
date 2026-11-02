@@ -559,3 +559,4 @@ export function getGuidesByCategory(category: string): GuideArticle[] {
   if (category === 'all') return GUIDE_ARTICLES;
   return GUIDE_ARTICLES.filter(article => article.category === category);
 }
+

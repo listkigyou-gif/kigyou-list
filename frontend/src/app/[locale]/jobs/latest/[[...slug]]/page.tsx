@@ -19,6 +19,44 @@ import { Footer } from '@/components/Footer';
 
 export const revalidate = 3600; // Cache for 1 hour with ISR
 
+interface HiringDetails {
+  wages?: string | null;
+  salary_min?: number | null;
+  salary_max?: number | null;
+  employment_type?: string | null;
+  job_description?: string | null;
+  working_hours?: string | null;
+  holidays?: string | null;
+  work_location?: string | null;
+  expiry_date?: string | null;
+  job_number?: string | null;
+  raw_industry?: string | null;
+  annual_holidays?: number | string | null;
+  monthly_overtime?: number | string | null;
+}
+
+function parseHiringDetails(raw: string | null): {
+  isJson: boolean;
+  text?: string;
+  data?: HiringDetails;
+} {
+  if (!raw) {
+    return { isJson: false, text: '' };
+  }
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('{') && trimmed.endsWith('}')) {
+    try {
+      const obj = JSON.parse(trimmed);
+      if (typeof obj === 'object' && obj !== null) {
+        return { isJson: true, data: obj };
+      }
+    } catch {
+      // fallback to plain text
+    }
+  }
+  return { isJson: false, text: raw };
+}
+
 interface PageProps {
   params: Promise<{
     locale: string;
@@ -411,25 +449,126 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                       </span>
                     </div>
 
-                    {/* Hiring Context Box */}
-                    <div className="p-2.5 rounded-lg bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40 text-xs mb-3">
-                      <div className="text-emerald-900 dark:text-emerald-300 font-medium">
-                        {ev.description_ja || (isVi ? 'Đang triển khai hoạt động tuyển dụng.' : isEn ? 'Currently hiring new personnel.' : '採用活動を実施中。')}
-                      </div>
-                      {ev.new_value && ev.new_value.startsWith('http') && (
-                        <div className="mt-1">
-                          <a
-                            href={ev.new_value}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 text-[11px] text-[#1B4F8A] dark:text-blue-400 font-semibold hover:underline"
-                          >
-                            <span>{isVi ? 'Mở trang tuyển dụng chính thức' : isEn ? 'Open Careers Page' : '公式採用ページを開く'}</span>
-                            <ArrowUpRight className="w-3 h-3" />
-                          </a>
+                    {/* Hiring Context Box - Japanese B2B Minimalist Style */}
+                    {(() => {
+                      const parsed = parseHiringDetails(ev.description_ja);
+                      if (parsed.isJson && parsed.data) {
+                        const d = parsed.data;
+                        const jobTitle = ev.title_ja && ev.title_ja !== '求人募集中' && !ev.title_ja.includes('積極採用企業')
+                          ? ev.title_ja
+                          : (d.employment_type || (isVi ? 'Thông tin tuyển dụng' : isEn ? 'Job Opening' : '求人募集'));
+
+                        return (
+                          <div className="p-3 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800/80 text-xs mb-3 space-y-2">
+                            {/* Job Title & Employment Type */}
+                            <div className="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-200/60 dark:border-slate-800">
+                              <span className="font-bold text-slate-900 dark:text-slate-100 line-clamp-1">
+                                {jobTitle}
+                              </span>
+                              {d.employment_type && (
+                                <span className="shrink-0 text-[10px] font-medium px-2 py-0.5 rounded bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600">
+                                  {d.employment_type.replace(/（.*?）/g, '')}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Wages */}
+                            {d.wages && (
+                              <div className="flex items-baseline gap-2">
+                                <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400 shrink-0">
+                                  {isVi ? 'Mức lương:' : isEn ? 'Salary:' : '給与・賃金:'}
+                                </span>
+                                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 tabular-nums">
+                                  {d.wages}
+                                </span>
+                              </div>
+                            )}
+
+                            {/* Job Description Brief */}
+                            {d.job_description && (
+                              <div className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed line-clamp-2">
+                                {d.job_description.replace(/^[・\s*]+/, '')}
+                              </div>
+                            )}
+
+                            {/* Working Hours & Holidays */}
+                            {(d.working_hours || d.holidays) && (
+                              <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-800/80 grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-slate-500 dark:text-slate-400">
+                                {d.working_hours && (
+                                  <div className="truncate">
+                                    <span className="font-medium text-slate-600 dark:text-slate-300">
+                                      {isVi ? 'Giờ làm: ' : isEn ? 'Hours: ' : '就業時間: '}
+                                    </span>
+                                    <span>{d.working_hours.replace(/^交替制（シフト制）\s*又は\s*/, '')}</span>
+                                  </div>
+                                )}
+                                {d.holidays && (
+                                  <div className="truncate">
+                                    <span className="font-medium text-slate-600 dark:text-slate-300">
+                                      {isVi ? 'Ngày nghỉ: ' : isEn ? 'Holidays: ' : '休日: '}
+                                    </span>
+                                    <span>{d.holidays.split(' ')[0]}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* HelloWork Job ID / Expiry */}
+                            {d.job_number && (
+                              <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
+                                <span className="font-mono">
+                                  {isVi ? 'Mã HelloWork: ' : isEn ? 'HelloWork ID: ' : '求人番号: '}
+                                  {d.job_number}
+                                </span>
+                                {d.expiry_date && (
+                                  <span>
+                                    {isVi ? 'Hạn: ' : isEn ? 'Expiry: ' : '有効期限: '}
+                                    {d.expiry_date}
+                                  </span>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Official Careers Page Link */}
+                            {ev.new_value && ev.new_value.startsWith('http') && (
+                              <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-800">
+                                <a
+                                  href={ev.new_value}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] text-[#1B4F8A] dark:text-blue-400 font-semibold hover:underline"
+                                >
+                                  <span>{isVi ? 'Mở trang tuyển dụng chính thức' : isEn ? 'Open Careers Page' : '公式採用ページを開く'}</span>
+                                  <ArrowUpRight className="w-3 h-3" />
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
+                      // Plain text fallback
+                      return (
+                        <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800/80 text-xs mb-3">
+                          <div className="text-slate-700 dark:text-slate-300">
+                            {parsed.text || (isVi ? 'Đang triển khai hoạt động tuyển dụng.' : isEn ? 'Currently hiring new personnel.' : '採用活動を実施中。')}
+                          </div>
+                          {ev.new_value && ev.new_value.startsWith('http') && (
+                            <div className="mt-1">
+                              <a
+                                href={ev.new_value}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-[11px] text-[#1B4F8A] dark:text-blue-400 font-semibold hover:underline"
+                              >
+                                <span>{isVi ? 'Mở trang tuyển dụng chính thức' : isEn ? 'Open Careers Page' : '公式採用ページを開く'}</span>
+                                <ArrowUpRight className="w-3 h-3" />
+                              </a>
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
+                      );
+                    })()}
                   </div>
 
                   {/* Bottom Action Footer */}

@@ -538,11 +538,28 @@ export const WatchlistTab: React.FC<WatchlistTabProps> = ({ onEventsCountChange 
                     {ev.title_ja}
                   </h4>
 
-                  {ev.description_ja && (
-                    <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-2">
-                      {ev.description_ja}
-                    </p>
-                  )}
+                  {ev.description_ja && (() => {
+                    if (ev.description_ja.trim().startsWith('{')) {
+                      try {
+                        const parsed = JSON.parse(ev.description_ja);
+                        const parts = [
+                          parsed.employment_type ? `[${parsed.employment_type.replace(/（.*?）/g, '')}]` : '',
+                          parsed.wages ? `給与: ${parsed.wages}` : '',
+                          parsed.job_description ? parsed.job_description.replace(/^[・\s*]+/, '').slice(0, 100) : ''
+                        ].filter(Boolean);
+                        return (
+                          <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-2">
+                            {parts.join(' ')}
+                          </p>
+                        );
+                      } catch {}
+                    }
+                    return (
+                      <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed mb-2">
+                        {ev.description_ja}
+                      </p>
+                    );
+                  })()}
 
                   {ev.event_category !== "hiring" && (ev.old_value || ev.new_value) && (
                     <div className="p-2.5 rounded bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800 text-[11px] space-y-1.5">
