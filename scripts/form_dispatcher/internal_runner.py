@@ -522,8 +522,10 @@ def main():
 
     parser = argparse.ArgumentParser(description="Kigyou-List Internal Form DM Multi-Worker + Rotating Proxy Runner")
     parser.add_argument("--campaign-id", type=str, required=True, help="UUID of internal form campaign")
-    parser.add_argument("--limit", type=int, default=10, help="Number of companies to dispatch")
+    parser.add_argument("--limit", type=int, default=10, help="Number of companies to dispatch (0 or >10000 enables continuous batch mode)")
     parser.add_argument("--concurrency", "-c", "--workers", type=int, default=3, help="Concurrent worker threads (default: 3)")
+    parser.add_argument("--continuous", action="store_true", help="Continuously dispatch until all available database records are exhausted")
+    parser.add_argument("--batch-size", type=int, default=5000, help="Batch size per dispatch cycle (default: 5000)")
     parser.add_argument("--rotate-every", "-r", type=int, default=5, help="Rotate to next proxy in pool after N form dispatches (default: 5)")
     parser.add_argument("--live", action="store_true", help="Submit forms for real (Default is dry-run)")
     parser.add_argument("--warp", action="store_true", help="Use Cloudflare WARP (Auto-detects Docker WARP proxy pool or System WARP)")
@@ -594,111 +596,143 @@ def main():
     conn.commit()
     conn.close()
 
-    # 4. Fetch Target Companies
+    # 4. Filters & Compliance Map
     filters = campaign.get("target_filters") or {}
     if isinstance(filters, str):
         filters = json.loads(filters)
 
-    targets = fetch_target_companies_pg(filters, limit=args.limit, campaign_id=args.campaign_id, user_id="admin")
-    print(f"[*] Fetched {len(targets)} target companies matching audience criteria.")
-
-    if not targets:
-        print("[!] No target companies found. Marking campaign completed.")
-        complete_campaign_pg(args.campaign_id, 0, "")
-        sys.exit(0)
-
-    # 4.1 Load Global Compliance Suppressions
     suppressed_map = load_global_suppressions()
     print(f"[*] Loaded {len(suppressed_map):,} globally suppressed companies into AI Compliance Guard.")
 
-    # 5. Populate Task Queue
-    task_queue = queue.Queue()
-    for t in targets:
-        task_queue.put(t)
-
-    results: List[Dict[str, Any]] = []
-    lock = threading.Lock()
-    progress_counter = {"done": 0}
-    start_time = time.time()
-
-    concurrency = min(args.concurrency, len(targets))
-    threads: List[threading.Thread] = []
-
-    print(f"[*] Launching {concurrency} concurrent browser workers with auto-rotation...\n")
-
-    for w_id in range(1, concurrency + 1):
-        t = threading.Thread(
-            target=worker_routine,
-            args=(
-                w_id,
-                concurrency,
-                task_queue,
-                len(targets),
-                args.campaign_id,
-                sender_profile,
-                warp_ports,
-                args.proxy,
-                args.warp,
-                args.rotate_every,
-                is_dry_run,
-                args.screenshot,
-                results,
-                lock,
-                progress_counter,
-                suppressed_map
-            ),
-            daemon=True
-        )
-        threads.append(t)
-        t.start()
-
-    # Wait until task queue is empty and all in-flight tasks finish
-    while not task_queue.empty():
-        time.sleep(1)
-
-    for _ in range(30):
-        if progress_counter["done"] >= len(targets):
-            break
-        time.sleep(1)
-
-    for t in threads:
-        t.join(timeout=5)
-
-    total_duration = int(time.time() - start_time)
-
-    # 6. Generate Audit CSV File
     reports_dir = os.path.join(ROOT_DIR, "frontend", "public", "reports")
     os.makedirs(reports_dir, exist_ok=True)
-    report_filename = f"internal_form_dm_{args.campaign_id[:8]}_{int(time.time())}.csv"
-    report_filepath = os.path.join(reports_dir, report_filename)
-    report_public_url = f"/reports/{report_filename}"
 
-    with open(report_filepath, "w", newline="", encoding="utf-8-sig") as f:
-        fieldnames = ["corporate_number", "company_name", "form_url", "status", "message", "timestamp"]
-        writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(results)
+    is_continuous = args.continuous or args.limit == 0 or args.limit > 10000
+    target_remaining = args.limit if not (args.continuous or args.limit == 0) else None
 
-    # 7. Mark campaign completed in DB
-    complete_campaign_pg(args.campaign_id, total_duration, report_public_url)
+    batch_num = 1
+    total_processed_all = 0
+    total_success_all = 0
+    total_skipped_all = 0
+    total_failed_all = 0
+    start_time_all = time.time()
 
-    # 8. Print Executive Summary
-    success_count = sum(1 for r in results if r.get("status") in ("SUCCESS_SENT", "SUCCESS_DRY_RUN"))
-    skipped_count = sum(1 for r in results if "SKIPPED" in r.get("status", "") or "BLOCKED" in r.get("status", "") or r.get("status") in ("NO_FORM_ELEMENT", "ALREADY_CONTACTED", "DEAD_WEBSITE"))
-    failed_count = len(results) - success_count - skipped_count
+    while True:
+        if is_continuous:
+            fetch_size = args.batch_size
+            if target_remaining is not None:
+                fetch_size = min(fetch_size, target_remaining)
+                if fetch_size <= 0:
+                    break
+        else:
+            fetch_size = args.limit
 
+        print(f"\n[*] --- [BATCH #{batch_num}] Fetching up to {fetch_size} target companies from database ---")
+        targets = fetch_target_companies_pg(filters, limit=fetch_size, campaign_id=args.campaign_id, user_id="admin")
+        print(f"[*] [Batch #{batch_num}] Fetched {len(targets)} target companies matching audience criteria.")
+
+        if not targets:
+            print("[*] No more target companies matching audience criteria. All data exhausted!")
+            if batch_num == 1:
+                complete_campaign_pg(args.campaign_id, 0, "")
+            break
+
+        task_queue = queue.Queue()
+        for t in targets:
+            task_queue.put(t)
+
+        results: List[Dict[str, Any]] = []
+        lock = threading.Lock()
+        progress_counter = {"done": 0}
+        batch_start_time = time.time()
+
+        concurrency = min(args.concurrency, len(targets))
+        threads: List[threading.Thread] = []
+
+        print(f"[*] [Batch #{batch_num}] Launching {concurrency} concurrent browser workers with auto-rotation...\n")
+
+        for w_id in range(1, concurrency + 1):
+            t = threading.Thread(
+                target=worker_routine,
+                args=(
+                    w_id,
+                    concurrency,
+                    task_queue,
+                    len(targets),
+                    args.campaign_id,
+                    sender_profile,
+                    warp_ports,
+                    args.proxy,
+                    args.warp,
+                    args.rotate_every,
+                    is_dry_run,
+                    args.screenshot,
+                    results,
+                    lock,
+                    progress_counter,
+                    suppressed_map
+                ),
+                daemon=True
+            )
+            threads.append(t)
+            t.start()
+
+        while not task_queue.empty():
+            time.sleep(1)
+
+        for _ in range(30):
+            if progress_counter["done"] >= len(targets):
+                break
+            time.sleep(1)
+
+        for t in threads:
+            t.join(timeout=5)
+
+        batch_duration = int(time.time() - batch_start_time)
+        batch_success = sum(1 for r in results if r.get("status") in ("SUCCESS_SENT", "SUCCESS_DRY_RUN"))
+        batch_skipped = sum(1 for r in results if "SKIPPED" in r.get("status", "") or "BLOCKED" in r.get("status", "") or r.get("status") in ("NO_FORM_ELEMENT", "ALREADY_CONTACTED", "DEAD_WEBSITE"))
+        batch_failed = len(results) - batch_success - batch_skipped
+
+        total_processed_all += len(results)
+        total_success_all += batch_success
+        total_skipped_all += batch_skipped
+        total_failed_all += batch_failed
+
+        report_filename = f"internal_form_dm_{args.campaign_id[:8]}_{int(time.time())}.csv"
+        report_filepath = os.path.join(reports_dir, report_filename)
+        report_public_url = f"/reports/{report_filename}"
+
+        with open(report_filepath, "w", newline="", encoding="utf-8-sig") as f:
+            fieldnames = ["corporate_number", "company_name", "form_url", "status", "message", "timestamp"]
+            writer = csv.DictWriter(f, fieldnames=fieldnames, extrasaction="ignore")
+            writer.writeheader()
+            writer.writerows(results)
+
+        complete_campaign_pg(args.campaign_id, batch_duration, report_public_url)
+
+        print(f"[*] [Batch #{batch_num} Finished] {len(results)} processed ({batch_success} sent, {batch_skipped} skipped, {batch_failed} failed) in {batch_duration // 60}m {batch_duration % 60}s.")
+
+        if target_remaining is not None:
+            target_remaining -= len(targets)
+            if target_remaining <= 0:
+                print(f"[*] Reached total target limit ({args.limit}). Continuous run complete.")
+                break
+
+        if not is_continuous:
+            break
+
+        batch_num += 1
+
+    total_all_duration = int(time.time() - start_time_all)
     print("\n" + "=" * 78)
-    print("  CAMPAIGN EXECUTION FINISHED & AUDIT RECORDED")
+    print("  ALL BATCHES EXECUTION FINISHED & AUDIT RECORDED")
     print("=" * 78)
-    print(f"  Duration:         {total_duration // 60}m {total_duration % 60}s")
-    print(f"  Total Processed:  {len(results)}")
-    print(f"  Workers Used:     {concurrency} threads")
-    print(f"  Proxy Rotation:   Active (Rotated every {args.rotate_every} forms across {len(warp_ports)} proxies)")
-    print(f"  [+] SUCCESS SENT: {success_count} companies")
-    print(f"  [!] AUTO-SKIPPED: {skipped_count} companies (Anti-Spam / Captcha Protection)")
-    print(f"  [-] FAILED:       {failed_count} companies")
-    print(f"  Audit CSV Report: {report_filepath}")
-    print(f"  Public URL:       {report_public_url}")
+    print(f"  Total Duration:   {total_all_duration // 60}m {total_all_duration % 60}s")
+    print(f"  Total Processed:  {total_processed_all}")
+    print(f"  Workers Used:     {args.concurrency} threads")
+    print(f"  [+] SUCCESS SENT: {total_success_all} companies")
+    print(f"  [!] AUTO-SKIPPED: {total_skipped_all} companies")
+    print(f"  [-] FAILED:       {total_failed_all} companies")
     print("=" * 78)
 
 if __name__ == "__main__":
