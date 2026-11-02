@@ -41,3 +41,4 @@ export const CopyPromptButton: React.FC<CopyPromptButtonProps> = ({ text }) => {
     </button>
   );
 };
+
