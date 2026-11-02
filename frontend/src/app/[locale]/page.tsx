@@ -882,10 +882,15 @@ export default async function Home({ params }: PageParams) {
                       : "Deliver directly to inquiry forms. AI automatically skips disclaimer sites, delivering 50-90% read rates."}
                   </p>
                 </div>
-                <Link href={`/${locale}/form-marketing`} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1 hover:underline pt-3 border-t border-slate-100 dark:border-slate-800">
-                  <span>{isJa ? "詳細を見る" : isVi ? "Xem chi tiết" : "Learn More"}</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </Link>
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                  <Link href={`/${locale}/form-marketing`} className="text-xs font-bold text-indigo-600 dark:text-indigo-400 inline-flex items-center gap-1 hover:underline">
+                    <span>{isJa ? "詳細を見る" : isVi ? "Xem chi tiết" : "Learn More"}</span>
+                    <ChevronRight className="w-3.5 h-3.5" />
+                  </Link>
+                  <Link href={`/${locale}/guide/form-marketing-tips`} className="text-[11px] font-semibold text-slate-500 hover:text-[#1B4F8A] dark:hover:text-blue-400 inline-flex items-center gap-0.5">
+                    <span>{isJa ? "返信率UPガイド ➔" : isVi ? "Bí quyết tăng phản hồi ➔" : "Outreach Tips ➔"}</span>
+                  </Link>
+                </div>
               </div>
 
               {/* Pillar 3 */}

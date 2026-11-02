@@ -71,10 +71,10 @@ export const Footer: React.FC = () => {
   return (
     <footer data-nosnippet className="bg-slate-50 border-t border-slate-200 dark:bg-[#0D1117] dark:border-slate-800 transition-colors mt-auto pb-24 md:pb-12 pt-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-        
+
         {/* 1. Multi-Column Sitemap: 4 Perfectly Balanced Columns (6 Links Each) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10 text-xs">
-          
+
           {/* Column 1: Database & Directory */}
           <div className="space-y-3.5">
             <h3 className="font-extrabold text-slate-900 dark:text-white uppercase tracking-wider text-xs flex items-center gap-1.5 pb-1 border-b border-slate-200/60 dark:border-slate-800/60">
@@ -194,9 +194,14 @@ export const Footer: React.FC = () => {
             </h3>
             <ul className="space-y-2.5 text-slate-600 dark:text-slate-400 font-normal">
               <li>
-                <LocaleLink href="/tools/ai-sales-list" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors flex items-center gap-1">
-                  <span>{locale === "en" ? "AI & ChatGPT Sales Lists" : locale === "vi" ? "Tạo danh sách bằng AI & ChatGPT" : "AI・ChatGPT営業リスト作成"}</span>
+                <LocaleLink href="/guide" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors flex items-center gap-1 font-bold">
+                  <span>{locale === "en" ? "B2B Sales Guides Hub" : locale === "vi" ? "Cẩm nang B2B & Bí quyết bán hàng" : "営業ノウハウ・活用ガイド一覧"}</span>
                   <span className="text-[9px] bg-blue-100 dark:bg-blue-950/80 text-blue-700 dark:text-blue-300 font-bold px-1 rounded">HOT</span>
+                </LocaleLink>
+              </li>
+              <li>
+                <LocaleLink href="/guide/ai-sales-list" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "AI & ChatGPT Sales Lists" : locale === "vi" ? "Tạo danh sách bằng AI & ChatGPT" : "AI・ChatGPT営業リスト作成"}
                 </LocaleLink>
               </li>
               <li>
@@ -247,7 +252,7 @@ export const Footer: React.FC = () => {
                 </LocaleLink>
               </li>
               <li>
-                <LocaleLink href="/opt-out" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                <LocaleLink href="/opt-out" rel="nofollow" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
                   {locale === "en" ? "Company Info Opt-Out" : locale === "vi" ? "Yêu cầu ẩn thông tin" : "情報掲載停止 (オプトアウト)"}
                 </LocaleLink>
               </li>
@@ -267,7 +272,7 @@ export const Footer: React.FC = () => {
                 </LocaleLink>
               </li>
               <li>
-                <LocaleLink href="/unsubscribe" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                <LocaleLink href="/unsubscribe" rel="nofollow" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
                   {locale === "en" ? "Email Unsubscribe" : locale === "vi" ? "Hủy nhận email" : "メール配信解除"}
                 </LocaleLink>
               </li>
@@ -313,6 +318,15 @@ export const Footer: React.FC = () => {
           </div>
         </div>
 
+        {/* Compliance & Data Attribution Line (Government Standard Terms of Use 2.0 / CC BY 4.0) */}
+        <div className="mt-3 text-center sm:text-left text-[10px] text-slate-400 dark:text-slate-500 leading-relaxed">
+          {locale === "en"
+            ? "Data Sources: National Tax Agency (NTA Corporate Number / Qualified Invoice Systems), METI gBizINFO, Ministry of Health, Labour and Welfare, FSA EDINET and official disclosures."
+            : locale === "vi"
+            ? "Nguồn dữ liệu: Cơ quan Thuế Quốc gia Nhật Bản (NTA), METI gBizINFO, Bộ Y tế - Lao động & Phúc lợi, Cục Tài chính FSA EDINET và các cổng công bố công quyền."
+            : "【データ出典】国税庁 法人番号公表サイト・適格請求書発行事業者公表システム / 経済産業省 gBizINFO / 厚生労働省 / 金融庁 EDINET 等"}
+        </div>
+
         {/* 3. Bottom Bar: Brand Logo, Legal Operator & Copyright */}
         <div className="flex flex-col md:flex-row items-center justify-between gap-5 pt-4 border-t border-slate-200/60 dark:border-slate-800/60 text-xs">
           <div className="flex flex-col sm:flex-row items-center gap-3 text-center sm:text-left">
@@ -329,8 +343,8 @@ export const Footer: React.FC = () => {
               {locale === "en"
                 ? "Operated by TQC Inc. (Tokyo, Japan) · 5M+ Verified Corporate Intelligence"
                 : locale === "vi"
-                ? "Vận hành bởi TQC Inc. (Tokyo) · Dữ liệu 5M+ doanh nghiệp Nhật Bản"
-                : "運営会社: TQC株式会社 (東京都豊島区) · 国内最大級500万社法人データ基盤"}
+                  ? "Vận hành bởi TQC Inc. (Tokyo) · Dữ liệu 5M+ doanh nghiệp Nhật Bản"
+                  : "運営会社: TQC株式会社 (東京都豊島区) · 国内最大級500万社法人データ基盤"}
             </span>
           </div>
 

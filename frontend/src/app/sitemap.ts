@@ -58,10 +58,40 @@ export default async function sitemap({ id }: { id: any }): Promise<MetadataRout
         priority: 0.9,
       });
       corePages.push({
-        url: `${baseUrl}/${loc}/tools/ai-sales-list`,
+        url: `${baseUrl}/${loc}/guide`,
+        lastModified: new Date(),
+        changeFrequency: 'daily',
+        priority: 0.95,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/guide/ai-sales-list`,
         lastModified: new Date(),
         changeFrequency: 'weekly',
         priority: 0.95,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/guide/excel-sales-list-template`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.90,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/guide/form-marketing-tips`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.90,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/guide/bankruptcy-signs-check`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.90,
+      });
+      corePages.push({
+        url: `${baseUrl}/${loc}/guide/edinet-salary-ranking-utilization`,
+        lastModified: new Date(),
+        changeFrequency: 'weekly',
+        priority: 0.90,
       });
       corePages.push({
         url: `${baseUrl}/${loc}/form-marketing`,

@@ -26,7 +26,7 @@ export interface LegalHistoryEvent {
   detailsJa: string;
   detailsEn: string;
   detailsVi: string;
-  source: string;
+  source?: string;
   sourceUrl?: string;
   oldValue?: string | null;
   newValue?: string | null;

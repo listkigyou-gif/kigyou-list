@@ -5,13 +5,23 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       {
+        source: '/:locale(ja|en|vi)/tools/ai-sales-list',
+        destination: '/:locale/guide/ai-sales-list',
+        permanent: true,
+      },
+      {
+        source: '/tools/ai-sales-list',
+        destination: '/ja/guide/ai-sales-list',
+        permanent: true,
+      },
+      {
         source: '/:locale(ja|en|vi)/blog/:path*',
-        destination: '/:locale/form-marketing',
+        destination: '/:locale/guide',
         permanent: true,
       },
       {
         source: '/:locale(ja|en|vi)/blog',
-        destination: '/:locale/form-marketing',
+        destination: '/:locale/guide',
         permanent: true,
       },
     ];

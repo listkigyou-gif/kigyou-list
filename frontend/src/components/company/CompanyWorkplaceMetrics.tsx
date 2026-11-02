@@ -10,7 +10,9 @@ import {
   Building2, 
   TrendingUp,
   Info,
-  CheckCircle2
+  CheckCircle2,
+  Award,
+  Briefcase
 } from 'lucide-react';
 import Link from 'next/link';
 import { Company } from '@/lib/db';
@@ -18,17 +20,31 @@ import { Company } from '@/lib/db';
 interface Props {
   company: Company;
   locale: string;
+  hiringDetails?: Record<string, any> | null;
 }
 
-export function CompanyWorkplaceMetrics({ company, locale }: Props) {
+export function CompanyWorkplaceMetrics({ company, locale, hiringDetails }: Props) {
   const hasInsured = company.insured_employee_count !== null && company.insured_employee_count !== undefined && company.insured_employee_count > 0;
   const hasAge = company.avg_age !== null && company.avg_age !== undefined && Number(company.avg_age) > 0;
   const hasYears = company.avg_service_years !== null && company.avg_service_years !== undefined && Number(company.avg_service_years) > 0;
-  const hasSalary = company.avg_annual_salary !== null && company.avg_annual_salary !== undefined && Number(company.avg_annual_salary) > 0;
+  
+  const hasAuditedSalary = company.avg_annual_salary !== null && company.avg_annual_salary !== undefined && Number(company.avg_annual_salary) > 0;
+  const hiringSalaryText = hiringDetails?.hiring_salary_text;
+  const estAnnualSalary = hiringDetails?.estimated_annual_salary;
+  const hasHiringSalary = Boolean(hiringSalaryText || estAnnualSalary);
+  const hasSalary = hasAuditedSalary || hasHiringSalary;
+
   const hasBuilding = Boolean(company.building_name && company.building_slug);
+  const hasWelfare = Boolean(
+    hiringDetails?.annual_holidays || 
+    (hiringDetails?.monthly_overtime !== null && hiringDetails?.monthly_overtime !== undefined) || 
+    hiringDetails?.has_retirement_benefit || 
+    hiringDetails?.has_childcare_leave || 
+    hiringDetails?.has_labor_union
+  );
 
   // If none of these data points exist, don't render empty clutter
-  if (!hasInsured && !hasAge && !hasYears && !hasSalary && !hasBuilding) {
+  if (!hasInsured && !hasAge && !hasYears && !hasSalary && !hasBuilding && !hasWelfare) {
     return null;
   }
 
@@ -49,18 +65,6 @@ export function CompanyWorkplaceMetrics({ company, locale }: Props) {
     ? 'Chỉ số Vốn Con người & Môi trường Làm việc' 
     : '人的資本・就業環境指標';
 
-  const subtitle = locale === 'en'
-    ? 'Official workforce statistics synced from Japan National Pension Organization & Ministry of Health, Labour and Welfare (MHLW).'
-    : locale === 'vi'
-    ? 'Dữ liệu nhân sự chính thức từ Cơ quan Hưu trí Nhật Bản (Bảo hiểm Xã hội/Phúc lợi 厚生年金) và Bộ Y tế, Lao động & Phúc lợi (MHLW).'
-    : '日本年金機構（厚生年金保険適用事業所）および厚生労働省（職場情報総合サイト）の公表データに基づく正規就業指標です。';
-
-  const officialBadge = locale === 'en'
-    ? 'Government Disclosed'
-    : locale === 'vi'
-    ? 'Dữ liệu Quốc gia'
-    : '公的機関公表データ';
-
   return (
     <section 
       id="workforce" 
@@ -75,9 +79,7 @@ export function CompanyWorkplaceMetrics({ company, locale }: Props) {
           <div>
             <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <span>{title}</span>
-              <span className="text-[10px] font-semibold text-[#1B4F8A] dark:text-blue-300 bg-blue-50 dark:bg-blue-950/50 border border-blue-200/60 dark:border-blue-800/60 px-2 py-0.5 rounded">
-                {officialBadge}
-              </span>
+
             </h2>
           </div>
         </div>
@@ -94,10 +96,6 @@ export function CompanyWorkplaceMetrics({ company, locale }: Props) {
           </Link>
         )}
       </div>
-
-      <p className="text-xs text-slate-600 dark:text-slate-400 mb-5 leading-relaxed">
-        {subtitle}
-      </p>
 
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -119,36 +117,57 @@ export function CompanyWorkplaceMetrics({ company, locale }: Props) {
                   {locale === 'en' ? 'members' : locale === 'vi' ? 'người' : '名'}
                 </span>
               </div>
-            ) : (
-              <span className="text-sm font-semibold text-slate-400">-</span>
-            )}
-            <span className="block text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-              {locale === 'en' ? 'Japan Pension Service' : locale === 'vi' ? 'Cơ quan Hưu trí Nhật Bản' : '日本年金機構 公表'}
-            </span>
-          </div>
-        </div>
-
-        {/* 2. Average Salary (平均年間給与) */}
-        <div className="p-3.5 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex flex-col justify-between">
-          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
-            <span className="text-xs font-medium">
-              {locale === 'en' ? 'Avg Annual Salary' : locale === 'vi' ? 'Thu nhập bình quân' : '平均年間給与'}
-            </span>
-            <Coins className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-          </div>
-          <div className="mt-1">
-            {hasSalary ? (
+            ) : company.employee_count ? (
               <div className="flex items-baseline gap-1">
                 <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">
-                  {formatSalary(Number(company.avg_annual_salary))}
+                  {company.employee_count?.toLocaleString(locale === 'ja' ? 'ja-JP' : 'en-US')}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">
+                  {locale === 'en' ? 'employees' : locale === 'vi' ? 'nhân sự' : '名'}
                 </span>
               </div>
             ) : (
               <span className="text-sm font-semibold text-slate-400">-</span>
             )}
-            <span className="block text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-              {locale === 'en' ? 'Securities Report / Est.' : locale === 'vi' ? 'Báo cáo chứng khoán / Ước tính' : '有価証券報告書・推計'}
+          </div>
+        </div>
+
+        {/* 2. Average Salary (平均年間給与) / Two-Tier Fallback */}
+        <div className="p-3.5 rounded-lg border border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 flex flex-col justify-between">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 mb-1">
+            <span className="text-xs font-medium">
+              {hasAuditedSalary 
+                ? (locale === 'en' ? 'Avg Annual Salary' : locale === 'vi' ? 'Thu nhập bình quân' : '平均年間給与')
+                : (locale === 'en' ? 'Hiring Salary Level' : locale === 'vi' ? 'Khung lương tuyển dụng' : '採用給与水準')}
             </span>
+            <Coins className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+          </div>
+          <div className="mt-1">
+            {hasAuditedSalary ? (
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">
+                  {formatSalary(Number(company.avg_annual_salary))}
+                </span>
+              </div>
+            ) : estAnnualSalary ? (
+              <div className="flex items-baseline gap-1">
+                <span className="text-xl sm:text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white">
+                  {estAnnualSalary}
+                </span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">万円</span>
+              </div>
+            ) : hiringDetails?.wages ? (
+              <div className="text-sm font-bold text-slate-900 dark:text-white truncate" title={hiringDetails.wages}>
+                {hiringDetails.wages}
+              </div>
+            ) : (
+              <span className="text-sm font-semibold text-slate-400">-</span>
+            )}
+            {hiringSalaryText && !hasAuditedSalary && (
+              <span className="block text-[10px] text-slate-500 dark:text-slate-400 mt-1 truncate" title={hiringSalaryText}>
+                {hiringSalaryText}
+              </span>
+            )}
           </div>
         </div>
 
@@ -173,9 +192,6 @@ export function CompanyWorkplaceMetrics({ company, locale }: Props) {
             ) : (
               <span className="text-sm font-semibold text-slate-400">-</span>
             )}
-            <span className="block text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-              {locale === 'en' ? 'MHLW Workplace Portal' : locale === 'vi' ? 'Bộ Lao động (MHLW)' : '厚生労働省 職場情報'}
-            </span>
           </div>
         </div>
 
@@ -197,32 +213,77 @@ export function CompanyWorkplaceMetrics({ company, locale }: Props) {
                   {locale === 'en' ? 'years' : locale === 'vi' ? 'năm' : '年'}
                 </span>
               </div>
+            ) : hiringDetails?.has_retirement_benefit ? (
+              <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mt-1">
+                退職金制度あり
+              </div>
             ) : (
               <span className="text-sm font-semibold text-slate-400">-</span>
             )}
-            <span className="block text-[10px] text-slate-500 dark:text-slate-400 mt-1">
-              {locale === 'en' ? 'MHLW Workplace Portal' : locale === 'vi' ? 'Bộ Lao động (MHLW)' : '厚生労働省 職場情報'}
-            </span>
           </div>
         </div>
       </div>
 
-      {/* Official Data Provenance Footer */}
-      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-        <div className="flex items-center gap-1.5">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <span>
-            {locale === 'en'
-              ? 'Data verified against Japanese Government gBizINFO & MHLW open registries.'
-              : locale === 'vi'
-              ? 'Dữ liệu được đối soát trực tiếp từ Cổng dữ liệu quốc gia gBizINFO & Bộ Y tế, Lao động Nhật Bản.'
-              : '経済産業省gBizINFO・厚生労働省・日本年金機構の公表データを基に自動同期しています。'}
-          </span>
+      {/* White Company & Statutory Welfare Badges */}
+      {hasWelfare && (
+        <div className="mt-4 pt-3.5 border-t border-slate-150 dark:border-slate-800">
+          <div className="flex flex-wrap items-center justify-between gap-2 mb-2.5">
+            <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
+              <Award className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>{locale === 'en' ? 'Workplace Benefits & Environment' : locale === 'vi' ? 'Môi trường Làm việc & Chế độ Phúc lợi' : '就業環境・福利厚生制度'}</span>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            {hiringDetails?.annual_holidays && (
+              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200/80 dark:border-emerald-800/80">
+                <Calendar className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                <span>年間休日 {hiringDetails.annual_holidays}日</span>
+                {hiringDetails.weekly_holiday_type && (
+                  <span className="text-[10px] font-normal opacity-85">（{hiringDetails.weekly_holiday_type}）</span>
+                )}
+              </div>
+            )}
+
+            {hiringDetails?.monthly_overtime !== null && hiringDetails?.monthly_overtime !== undefined && (
+              <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200/80 dark:border-blue-800/80">
+                <Clock className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                <span>月平均残業 {hiringDetails.monthly_overtime}時間</span>
+                {Number(hiringDetails.monthly_overtime) <= 10 && (
+                  <span className="text-[10px] text-blue-700 dark:text-blue-300 font-normal">（残業極少）</span>
+                )}
+              </div>
+            )}
+
+            {hiringDetails?.has_retirement_benefit && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                <CheckCircle2 className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                退職金制度あり
+              </span>
+            )}
+
+            {hiringDetails?.has_childcare_leave && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                <CheckCircle2 className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                育児休業取得実績あり
+              </span>
+            )}
+
+            {hiringDetails?.has_labor_union && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                <CheckCircle2 className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                労働組合あり
+              </span>
+            )}
+
+            {hiringDetails?.teinen_system && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md text-xs font-medium bg-slate-50 dark:bg-slate-800/60 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                定年制: {hiringDetails.teinen_system}
+              </span>
+            )}
+          </div>
         </div>
-        <span className="hidden sm:inline font-mono tabular-nums text-[10px]">
-          法人番号: {company.corporate_number}
-        </span>
-      </div>
+      )}
     </section>
   );
 }

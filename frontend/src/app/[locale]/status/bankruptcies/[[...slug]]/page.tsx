@@ -46,10 +46,10 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     : `${currentYear}年最新 `;
 
   const title = isVi
-    ? `【${ymLabel}】Danh sách doanh nghiệp phá sản, giải thể tại ${prefLabel} 【Điều tra tín dụng・Báo cáo nợ xấu】 | Kigyou-list`
+    ? `【${ymLabel.trim()}】Doanh nghiệp phá sản, giải thể tại ${prefLabel} | Kigyou-list`
     : isEn
-    ? `[${ymLabel}] Corporate Bankruptcies & Dissolutions in ${prefLabel} | Credit Risk Intelligence | Kigyou-list`
-    : `【${ymLabel}】${prefLabel}の倒産・破産・解散企業一覧【信用調査・倒産速報】 | Kigyou-list`;
+    ? `[${ymLabel.trim()}] Corporate Bankruptcies in ${prefLabel} | Kigyou-list`
+    : `【${ymLabel.trim()}】${prefLabel}の倒産・破産・解散企業一覧 | Kigyou-list`;
 
   const description = isVi
     ? `【${currentYear} mới nhất】Cơ sở dữ liệu thông tin thay đổi doanh nghiệp: giải thể, phá sản, hoàn tất thanh lý tại ${prefLabel}. Tra cứu mã số pháp nhân, tên công ty, địa chỉ và ngày giải thể phục vụ quản trị rủi ro tín dụng và phòng ngừa nợ xấu.`

@@ -344,11 +344,44 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     kpiMetaPrefix = `【${currentYear}年最新】`;
   }
 
-  const pageTitle = locale === 'en'
-    ? `${companyName}${prefPart ? ` ${prefPart}` : ''} - Company Overview & Financials | Kigyou-list`
-    : locale === 'vi'
-    ? `【${currentYear}】${companyName}${prefPart ? ` ${prefPart}` : ''} - Hồ sơ & Doanh thu doanh nghiệp | Kigyou-list`
-    : `${kpiMetaPrefix}${companyName}${prefPart}の会社概要・売上高・評判・電話番号 | Kigyou-list`;
+  // SEO Title Optimization: Guarantee title is concise, punchy and strictly under 65 chars across all locales
+  let pageTitle = '';
+  if (locale === 'en') {
+    const prefNameEn = getPrefectureName(company.prefecture_name, 'en');
+    const prefStr = prefNameEn ? ` (${prefNameEn})` : '';
+    let base = `${companyName}${prefStr} - Corporate Profile | Kigyou-list`;
+    if (base.length > 65) {
+      base = `${companyName} - Profile | Kigyou-list`;
+    }
+    if (base.length > 65) {
+      base = `${companyName.slice(0, 42)}... - Profile | Kigyou-list`;
+    }
+    pageTitle = base;
+  } else if (locale === 'vi') {
+    const prefNameVi = getPrefectureName(company.prefecture_name, 'vi');
+    const prefStr = prefNameVi ? ` (${prefNameVi})` : '';
+    let base = `${companyName}${prefStr} - Hồ sơ doanh nghiệp | Kigyou-list`;
+    if (base.length > 65) {
+      base = `${companyName} - Hồ sơ công ty | Kigyou-list`;
+    }
+    if (base.length > 65) {
+      base = `${companyName.slice(0, 40)}... - Hồ sơ | Kigyou-list`;
+    }
+    pageTitle = base;
+  } else {
+    // Japanese locale (ja) - Max 60 chars for Google & Bing SERP snippet
+    let base = `${kpiMetaPrefix}${companyName}${prefPart}の会社概要・売上高・評判 | Kigyou-list`;
+    if (base.length > 60) {
+      base = `${companyName}${prefPart}の企業情報・売上・評判 | Kigyou-list`;
+    }
+    if (base.length > 60) {
+      base = `${companyName}の企業情報・会社概要 | Kigyou-list`;
+    }
+    if (base.length > 60) {
+      base = `${companyName.slice(0, 38)}... - 企業情報 | Kigyou-list`;
+    }
+    pageTitle = base;
+  }
 
 
   const ogLocale = locale === 'en' ? 'en_US' : locale === 'vi' ? 'vi_VN' : 'ja_JP';
@@ -454,6 +487,19 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
   // 1.1 Filter and Map Dynamic Hub Events (Representative change, Invoice change, Relocation, Merger, Bankruptcies, etc.) into Legal History
   const nonHiringHubEvents = (recentHubEvents || []).filter(e => e.event_category !== 'hiring');
+
+  // 1.2 Extract latest HelloWork hiring & welfare details (annual holidays, overtime, retirement benefit, childcare, labor union)
+  const latestHiringEvent = (recentHubEvents || []).find(e => e.event_category === 'hiring');
+  let hiringDetails: Record<string, any> | null = null;
+  if (latestHiringEvent && latestHiringEvent.description_ja) {
+    try {
+      if (latestHiringEvent.description_ja.startsWith('{')) {
+        hiringDetails = JSON.parse(latestHiringEvent.description_ja);
+      }
+    } catch {
+      hiringDetails = null;
+    }
+  }
   const hubHistoryEvents: LegalHistoryEvent[] = nonHiringHubEvents.map(e => {
     let eventType: LegalHistoryEvent['eventType'] = 'other';
     let eventBadgeJa = '登記・適時開示';
@@ -534,7 +580,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     }
   }
   mergedLegalHistory.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
-  const legalHistory = mergedLegalHistory;
+  const legalHistory = mergedLegalHistory.map(({ source, sourceUrl, ...rest }) => rest);
 
   // 1.2 Dedicated Hiring Signals: Merge and display up to 10 latest recruitment events
   const nonHiringSignals = (rawSignals || []).filter(s => s.signal_type !== '求人あり');
@@ -1754,11 +1800,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 locale={locale}
                 translations={{
                   title: t.company.legalHistoryTitle,
-                  desc: t.company.legalHistoryDesc,
-                  officialBadge: t.company.legalHistoryOfficialBadge,
                   emptyText: t.company.legalHistoryEmpty,
-                  viewNtaOfficial: t.company.viewNtaOfficialRegistry,
-                  viewNtaInvoice: t.company.viewNtaInvoiceRegistry,
                 }}
               />
             </div>
@@ -1776,7 +1818,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             )}
 
             {/* 3.5. Human Capital, Workforce & Salary Indicators (日本年金機構 厚生年金被保険者数・厚労省 職場情報) */}
-            <CompanyWorkplaceMetrics company={company} locale={locale} />
+            <CompanyWorkplaceMetrics company={company} locale={locale} hiringDetails={hiringDetails} />
 
             {/* 4. Financial Chart Section */}
             {financials && financials.length > 0 && (
@@ -2278,17 +2320,6 @@ export default async function CompanyDetailPage({ params }: PageProps) {
             </Link>
           </div>
         </section>
-
-        {/* Unified Official Data Source Attribution & Disclaimer (Enterprise B2B Standard) */}
-        <div className="pt-2 pb-2 text-center">
-          <p className="text-xs text-slate-400 dark:text-slate-500 leading-relaxed max-w-4xl mx-auto px-4">
-            {locale === 'en' 
-              ? '※ Corporate information on this profile is aggregated, verified, and structured based on official open data provided by the National Tax Agency (国税庁) and METI gBizINFO.'
-              : locale === 'vi' 
-              ? '※ Thông tin doanh nghiệp trên trang này được tổng hợp, đối soát và chuẩn hóa tự động từ các nguồn dữ liệu mở công khai của Tổng cục Thuế Quốc gia (国税庁) và METI gBizINFO.'
-              : '※ 本ページの掲載企業情報は、国税庁法人番号公表サイト、適格請求書発行事業者公表サイトおよび経済産業省gBizINFO等の公的オープンデータを基に自動収集・統合・構造化して提供しています。'}
-          </p>
-        </div>
       </main>
       <Footer />
     </div>

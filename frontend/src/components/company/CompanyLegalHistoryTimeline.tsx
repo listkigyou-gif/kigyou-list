@@ -18,11 +18,7 @@ interface Props {
   locale: string;
   translations: {
     title?: string;
-    desc?: string;
-    officialBadge?: string;
     emptyText?: string;
-    viewNtaOfficial?: string;
-    viewNtaInvoice?: string;
   };
 }
 
@@ -41,17 +37,7 @@ export function CompanyLegalHistoryTimeline({
     '主な変更履歴'
   );
 
-  const desc = translations.desc || (
-    locale === 'en' ? 'Official change history records regarding corporate name, registered address, and legal entity designations synced with Japan National Tax Agency.' :
-    locale === 'vi' ? 'Hồ sơ biến động tên doanh nghiệp, địa chỉ trụ sở và đăng ký pháp nhân được đồng bộ chính thức từ Web-API Tổng cục Thuế Quốc gia Nhật Bản (国税庁).' :
-    '国税庁の適格請求書発行事業者公表Web-APIおよび法人番号システムより、本企業の商号・所在地・登記区分の変更履歴を公式照会しています。'
-  );
 
-  const officialBadge = translations.officialBadge || (
-    locale === 'en' ? 'NTA Web-API Verified' :
-    locale === 'vi' ? 'Web-API Quốc thuế chính thức' :
-    '国税庁 Web-API公式連携'
-  );
 
   const emptyText = translations.emptyText || (
     locale === 'en' ? 'No past change records found. Current registration information has been maintained since incorporation.' :
@@ -119,10 +105,6 @@ export function CompanyLegalHistoryTimeline({
         </span>
       </div>
 
-      <p className="text-xs text-slate-600 dark:text-slate-400 mb-5 leading-relaxed">
-        {desc}
-      </p>
-
       {/* Timeline Stream */}
       {events.length === 0 ? (
         <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400">
@@ -178,7 +160,7 @@ export function CompanyLegalHistoryTimeline({
 
                 {/* Event Card Content */}
                 <div className="bg-slate-50/70 hover:bg-slate-50 dark:bg-slate-800/30 dark:hover:bg-slate-800/50 border border-slate-200/80 dark:border-slate-800 rounded-lg p-3 sm:p-3.5 transition-colors">
-                  <div className="flex flex-wrap items-center justify-between gap-2 mb-1.5">
+                  <div className="flex items-center gap-2 mb-1.5">
                     <div className="flex items-center gap-2">
                       <span className="inline-flex items-center gap-1 text-xs font-semibold font-mono text-slate-900 dark:text-slate-200 tabular-nums">
                         <Calendar className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
@@ -190,9 +172,7 @@ export function CompanyLegalHistoryTimeline({
                       </span>
                     </div>
 
-                    <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
-                      {event.source}
-                    </span>
+                    
                   </div>
 
                   <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1">
@@ -226,21 +206,6 @@ export function CompanyLegalHistoryTimeline({
                           </span>
                         </div>
                       )}
-                    </div>
-                  )}
-
-                  {/* External Source Link */}
-                  {event.sourceUrl && (
-                    <div className="mt-2 text-right">
-                      <a
-                        href={event.sourceUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-[11px] font-medium text-[#1B4F8A] dark:text-blue-400 hover:underline"
-                      >
-                        <span>{locale === 'en' ? 'Official Registry Source' : locale === 'vi' ? 'Xem nguồn công bố chính thức' : '公表ソースを確認'}</span>
-                        <span aria-hidden="true">→</span>
-                      </a>
                     </div>
                   )}
                 </div>

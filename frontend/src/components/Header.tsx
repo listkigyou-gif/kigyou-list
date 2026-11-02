@@ -223,6 +223,18 @@ export const Header: React.FC = () => {
             </LocaleLink>
 
             <LocaleLink
+              href="/guide"
+              prefetch={true}
+              className={`whitespace-nowrap transition-colors py-1 ${
+                isNavActive("/guide")
+                  ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
+                  : "text-slate-600 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400"
+              }`}
+            >
+              {locale === 'en' ? "Sales Guides" : locale === 'vi' ? "Cẩm nang B2B" : "営業ガイド"}
+            </LocaleLink>
+
+            <LocaleLink
               href="/pricing"
               prefetch={true}
               className={`whitespace-nowrap transition-colors py-1 ${
@@ -639,6 +651,15 @@ export const Header: React.FC = () => {
               className="text-sm font-bold text-slate-700 hover:text-[#1B4F8A] dark:text-slate-300 py-1"
             >
               {t.header.pricing}
+            </LocaleLink>
+
+            <LocaleLink 
+              href="/guide" 
+              prefetch={true}
+              onClick={() => setMobileMenuOpen(false)}
+              className="text-sm font-bold text-slate-700 hover:text-[#1B4F8A] dark:text-slate-300 py-1"
+            >
+              {locale === "en" ? "Sales Guides" : locale === "vi" ? "Cẩm nang B2B" : "営業ガイド"}
             </LocaleLink>
 
             <LocaleLink 
