@@ -118,7 +118,10 @@ export async function POST(request: Request) {
 
     // 2d. Cloudflare Turnstile Verification (Universal for all contact & inquiry submissions)
     const turnstileSecret = process.env.TURNSTILE_SECRET_KEY;
-    if (!isRequestAdmin && turnstileSecret) {
+    // Submissions containing email OTP (Company Correction & Management modals) already prove human ownership via email code
+    const isOtpSubmission = Boolean(otp_code && (type === "hide" || type === "update" || type === "removal" || type === "edit" || type === "ownership_claim" || type === "company_manage"));
+
+    if (!isRequestAdmin && turnstileSecret && !isOtpSubmission) {
       if (!turnstileToken) {
         return NextResponse.json({ 
           error: locale === "vi" 

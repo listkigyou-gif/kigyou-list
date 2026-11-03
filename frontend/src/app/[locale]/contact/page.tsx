@@ -959,7 +959,9 @@ export default function ContactPage() {
                     </div>
 
                     {/* Turnstile Container */}
-                    <div id={turnstileContainerId} className="my-2"></div>
+                    {activeCategory !== "general_partner" && (
+                      <div id={turnstileContainerId} className="my-2"></div>
+                    )}
 
                     <button
                       type="submit"
@@ -1447,7 +1449,9 @@ export default function ContactPage() {
 
                 {/* Cloudflare Turnstile CAPTCHA Widget */}
                 <div className="flex justify-center my-2 min-h-[65px]">
-                  <div id={turnstileContainerId}></div>
+                  {activeCategory === "general_partner" && (
+                    <div id={turnstileContainerId}></div>
+                  )}
                 </div>
 
                 {/* Japanese B2B Privacy Agreement Checkbox */}
