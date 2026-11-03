@@ -826,15 +826,30 @@ export const InquiriesTab: React.FC<InquiriesTabProps> = ({
             </div>
 
             <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <a
-                href={`/ja/company/${selectedInquiry.corporate_number}`}
-                target="_blank"
-                rel="noreferrer"
-                className="text-xs text-[#1B4F8A] dark:text-blue-400 font-semibold hover:underline flex items-center gap-1"
-              >
-                <span>企業ページを開く</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+              {/^\d{13}$/.test(selectedInquiry.corporate_number || '') ? (
+                <a
+                  href={`/ja/company/${selectedInquiry.corporate_number}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-[#1B4F8A] dark:text-blue-400 font-semibold hover:underline flex items-center gap-1"
+                >
+                  <span>企業ページを開く</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              ) : selectedInquiry.company_name && selectedInquiry.company_name !== 'N/A' ? (
+                <a
+                  href={`/ja/search?q=${encodeURIComponent(selectedInquiry.company_name)}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-xs text-slate-600 hover:text-[#1B4F8A] dark:text-slate-400 dark:hover:text-blue-400 font-medium hover:underline flex items-center gap-1"
+                  title="法人番号が未指定のため企業名で検索"
+                >
+                  <span>企業名で検索（{selectedInquiry.company_name}）</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              ) : (
+                <span className="text-xs text-slate-400 dark:text-slate-500 italic">企業情報未指定</span>
+              )}
 
               <div className="flex items-center gap-2">
                 <button
