@@ -171,7 +171,8 @@ export async function POST(request: Request) {
     }
 
     const stripeSecret = process.env.STRIPE_SECRET_KEY;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    const isDev = process.env.NODE_ENV === "development";
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || (isDev ? "http://localhost:3000" : "https://kigyoulist.com");
 
     // Helper to format coupon names in product descriptions
     function discountCodeInfo(code: string): string {

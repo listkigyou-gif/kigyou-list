@@ -55,11 +55,23 @@ export async function POST(request: Request) {
       if (filters.prefecture_code && /^\d{2}$/.test(filters.prefecture_code)) {
         sanitizedFilters.prefecture_code = filters.prefecture_code;
       }
+      if (Array.isArray(filters.prefecture_codes)) {
+        sanitizedFilters.prefecture_codes = filters.prefecture_codes
+          .map((s: any) => String(s).trim())
+          .filter((s: string) => /^\d{2}$/.test(s))
+          .slice(0, 3);
+      }
       if (filters.city_name && typeof filters.city_name === 'string') {
         sanitizedFilters.city_name = filters.city_name;
       }
       if (filters.industry_code && (/^[A-Z]$/.test(filters.industry_code) || /^\d{2}$/.test(filters.industry_code))) {
         sanitizedFilters.industry_code = filters.industry_code;
+      }
+      if (Array.isArray(filters.industry_codes)) {
+        sanitizedFilters.industry_codes = filters.industry_codes
+          .map((s: any) => String(s).trim())
+          .filter((s: string) => /^[A-Z]$/.test(s) || /^\d{2}$/.test(s))
+          .slice(0, 3);
       }
       if (filters.min_employees !== undefined) {
         const val = parseInt(filters.min_employees, 10);
@@ -190,8 +202,8 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "insufficient_quota" }, { status: 403 });
       }
 
-      // 2. Fetch all matching companies
-      const companies = await searchCompaniesAll(keyword, sanitizedFilters);
+      // 2. Fetch all matching companies strictly capped at requested totalCount
+      const companies = (await searchCompaniesAll(keyword, sanitizedFilters, totalCount)).slice(0, totalCount);
 
       // 3. Format CSV content
       const csvHeader = headers.map(escapeCSVField).join(",") + "\n";
@@ -255,7 +267,8 @@ export async function POST(request: Request) {
       try {
         await updateExportJobStatus(jobId, "processing", null, null);
 
-        const companies = await searchCompaniesAll(keyword, sanitizedFilters);
+        // Fetch all matching companies strictly capped at requested totalCount
+        const companies = (await searchCompaniesAll(keyword, sanitizedFilters, totalCount)).slice(0, totalCount);
 
         if (!companies || (companies.length === 0 && totalCount > 0)) {
           throw new Error("検索条件に合致する企業データが取得できませんでした。");

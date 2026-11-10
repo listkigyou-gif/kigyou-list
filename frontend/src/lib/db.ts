@@ -399,8 +399,10 @@ export interface CompanyLicense {
 
 export interface SearchFilters {
   prefecture_code?: string;
+  prefecture_codes?: string[];
   city_name?: string;
   industry_code?: string;
+  industry_codes?: string[];
   min_employees?: number;
   max_employees?: number;
   min_capital?: number;
@@ -1125,31 +1127,40 @@ function buildSearchQuery(
   const params: any[] = [];
   const whereClauses: string[] = [];
 
-  // Industry filter (Ultra-fast direct indexed column check)
-  if (filters.industry_code) {
-    const isMajor = /^[A-Z]$/.test(filters.industry_code);
-    if (isMajor) {
-      whereClauses.push(
-        isPG
-          ? "c.major_industry_code = ?"
-          : "c.corporate_number IN (SELECT ci.corporate_number FROM company_industries ci WHERE ci.industry_path LIKE ?)"
-      );
+  // Industry filter (Ultra-fast direct indexed column check with multi-target support)
+  const targetIndustryCodes = (filters.industry_codes && filters.industry_codes.length > 0)
+    ? filters.industry_codes.slice(0, 3)
+    : (filters.industry_code ? [filters.industry_code] : []);
+
+  if (targetIndustryCodes.length > 0) {
+    const majorCodes = targetIndustryCodes.filter(c => /^[A-Z]$/.test(c));
+    const minorCodes = targetIndustryCodes.filter(c => !/^[A-Z]$/.test(c));
+    const indConditions = [];
+
+    if (majorCodes.length > 0) {
       if (isPG) {
-        params.push(filters.industry_code);
+        indConditions.push(`c.major_industry_code IN (${majorCodes.map(() => '?').join(', ')})`);
+        params.push(...majorCodes);
       } else {
-        params.push(`${filters.industry_code}%`);
+        indConditions.push(`c.corporate_number IN (SELECT ci.corporate_number FROM company_industries ci WHERE ${majorCodes.map(() => 'ci.industry_path LIKE ?').join(' OR ')})`);
+        params.push(...majorCodes.map(c => `${c}%`));
       }
-    } else {
-      whereClauses.push(
-        isPG
-          ? "c.primary_industry_code = ?"
-          : "c.corporate_number IN (SELECT ci.corporate_number FROM company_industries ci WHERE ci.industry_code = ? UNION SELECT ci.corporate_number FROM company_industries ci WHERE ci.industry_code = (SELECT parent_code FROM m_industries WHERE industry_code = ? LIMIT 1) AND ci.is_detailed = false)"
-      );
+    }
+
+    if (minorCodes.length > 0) {
       if (isPG) {
-        params.push(filters.industry_code);
+        indConditions.push(`c.primary_industry_code IN (${minorCodes.map(() => '?').join(', ')})`);
+        params.push(...minorCodes);
       } else {
-        params.push(filters.industry_code, filters.industry_code);
+        for (const mCode of minorCodes) {
+          indConditions.push(`c.corporate_number IN (SELECT ci.corporate_number FROM company_industries ci WHERE ci.industry_code = ? UNION SELECT ci.corporate_number FROM company_industries ci WHERE ci.industry_code = (SELECT parent_code FROM m_industries WHERE industry_code = ? LIMIT 1) AND ci.is_detailed = false)`);
+          params.push(mCode, mCode);
+        }
       }
+    }
+
+    if (indConditions.length > 0) {
+      whereClauses.push(indConditions.length === 1 ? indConditions[0] : `(${indConditions.join(' OR ')})`);
     }
   }
 
@@ -1178,10 +1189,17 @@ function buildSearchQuery(
     }
   }
 
-  // Location filter
-  if (filters.prefecture_code) {
+  // Location filter (Ultra-fast indexed column check with multi-target support)
+  const targetPrefectureCodes = (filters.prefecture_codes && filters.prefecture_codes.length > 0)
+    ? filters.prefecture_codes.slice(0, 3)
+    : (filters.prefecture_code ? [filters.prefecture_code] : []);
+
+  if (targetPrefectureCodes.length === 1) {
     whereClauses.push('c.prefecture_code = ?');
-    params.push(filters.prefecture_code);
+    params.push(targetPrefectureCodes[0]);
+  } else if (targetPrefectureCodes.length > 1) {
+    whereClauses.push(`c.prefecture_code IN (${targetPrefectureCodes.map(() => '?').join(', ')})`);
+    params.push(...targetPrefectureCodes);
   }
   if (filters.city_name) {
     whereClauses.push('c.city_name = ?');
@@ -1465,9 +1483,9 @@ export async function searchCompanies(
     // Count how many search criteria / filters are active to determine if we can use cached counts.
     const activeFiltersList: string[] = [];
     if (keyword) activeFiltersList.push('keyword');
-    if (filters.prefecture_code) activeFiltersList.push('prefecture');
+    if (filters.prefecture_code || (filters.prefecture_codes && filters.prefecture_codes.length > 0)) activeFiltersList.push('prefecture');
     if (filters.city_name) activeFiltersList.push('city');
-    if (filters.industry_code) activeFiltersList.push('industry');
+    if (filters.industry_code || (filters.industry_codes && filters.industry_codes.length > 0)) activeFiltersList.push('industry');
     if (filters.min_employees !== undefined || filters.max_employees !== undefined) activeFiltersList.push('employees');
     if (filters.min_capital !== undefined || filters.max_capital !== undefined) activeFiltersList.push('capital');
     if (filters.has_hiring) activeFiltersList.push('hiring');
@@ -1524,15 +1542,27 @@ export async function searchCompanies(
         count = row ? Number(row.company_count) : 0;
       } else if (activeFiltersList.length === 1) {
         const singleFilter = activeFiltersList[0];
-        if (singleFilter === 'prefecture' && filters.prefecture_code) {
-          const row = await runGetQuery('SELECT company_count FROM prefecture_counts WHERE prefecture_code = ?', [filters.prefecture_code]);
-          count = row ? Number(row.company_count) : 0;
+        if (singleFilter === 'prefecture') {
+          if (filters.prefecture_codes && filters.prefecture_codes.length > 1) {
+            const placeholders = filters.prefecture_codes.map(() => '?').join(', ');
+            const row = await runGetQuery(`SELECT SUM(company_count) as count FROM prefecture_counts WHERE prefecture_code IN (${placeholders})`, filters.prefecture_codes);
+            count = row ? Number(row.count) : 0;
+          } else if (filters.prefecture_code) {
+            const row = await runGetQuery('SELECT company_count FROM prefecture_counts WHERE prefecture_code = ?', [filters.prefecture_code]);
+            count = row ? Number(row.company_count) : 0;
+          }
         } else if (singleFilter === 'city' && filters.prefecture_code && filters.city_name) {
           const row = await runGetQuery('SELECT company_count FROM city_counts WHERE prefecture_code = ? AND city_name = ?', [filters.prefecture_code, filters.city_name]);
           count = row ? Number(row.company_count) : 0;
-        } else if (singleFilter === 'industry' && filters.industry_code) {
-          const row = await runGetQuery('SELECT company_count FROM industry_counts WHERE industry_code = ?', [filters.industry_code]);
-          count = row ? Number(row.company_count) : 0;
+        } else if (singleFilter === 'industry') {
+          if (filters.industry_codes && filters.industry_codes.length > 1) {
+            const placeholders = filters.industry_codes.map(() => '?').join(', ');
+            const row = await runGetQuery(`SELECT SUM(company_count) as count FROM industry_counts WHERE industry_code IN (${placeholders})`, filters.industry_codes);
+            count = row ? Number(row.count) : 0;
+          } else if (filters.industry_code) {
+            const row = await runGetQuery('SELECT company_count FROM industry_counts WHERE industry_code = ?', [filters.industry_code]);
+            count = row ? Number(row.company_count) : 0;
+          }
         } else if (singleFilter === 'hiring') {
           const stats = await getDatabaseStats();
           count = stats.signalHiring;
@@ -3268,7 +3298,7 @@ export async function markPaymentRecordRefunded(
 /**
  * Executes search query returning all matching companies without pagination limits (for CSV exports).
  */
-export async function searchCompaniesAll(keyword: string, filters: SearchFilters): Promise<Company[]> {
+export async function searchCompaniesAll(keyword: string, filters: SearchFilters, limit?: number): Promise<Company[]> {
   try {
     // 0. Parse keyword intent to leverage database indexes
     const parsed = await parseKeywordIntent(keyword, filters);
@@ -3280,9 +3310,9 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
     // Count how many search criteria / filters are active to determine if we should force the index
     const activeFiltersList: string[] = [];
     if (keyword) activeFiltersList.push('keyword');
-    if (filtersCopy.prefecture_code) activeFiltersList.push('prefecture');
+    if (filtersCopy.prefecture_code || (filtersCopy.prefecture_codes && filtersCopy.prefecture_codes.length > 0)) activeFiltersList.push('prefecture');
     if (filtersCopy.city_name) activeFiltersList.push('city');
-    if (filtersCopy.industry_code) activeFiltersList.push('industry');
+    if (filtersCopy.industry_code || (filtersCopy.industry_codes && filtersCopy.industry_codes.length > 0)) activeFiltersList.push('industry');
     if (filtersCopy.min_employees !== undefined || filtersCopy.max_employees !== undefined) activeFiltersList.push('employees');
     if (filtersCopy.min_capital !== undefined || filtersCopy.max_capital !== undefined) activeFiltersList.push('capital');
     if (filtersCopy.has_hiring) activeFiltersList.push('hiring');
@@ -3310,6 +3340,11 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
       sql += ' ORDER BY c.has_financials DESC, c.capital_amount DESC NULLS LAST, c.corporate_number ASC';
     } else {
       sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
+    }
+    
+    // Enforce strict limit if requested (saves database memory and ensures exact count)
+    if (limit !== undefined && limit > 0) {
+      sql += ` LIMIT ${Math.floor(limit)}`;
     }
     
     const results = await runQueryLongRunning(sql, dataQuery.params);
