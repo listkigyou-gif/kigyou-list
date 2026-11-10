@@ -3481,18 +3481,24 @@ export async function updateUserSubscription(
     const currentJstDate = formatter.format(new Date()); // YYYY-MM-DD
 
     // Fetch existing quota to compute roll-over / carry-over of unused quota
-    const selectSql = 'SELECT monthly_base_allowance, monthly_base_used, purchased_add_on_balance FROM user_export_quotas WHERE user_email = ?';
+    const selectSql = 'SELECT plan, monthly_base_allowance, monthly_base_used, purchased_add_on_balance FROM user_export_quotas WHERE user_email = ?';
     const row = await runGetQuery(selectSql, [email]);
 
     let unusedQuota = 0;
     let currentAddOn = 0;
 
     if (row) {
+      const oldPlan = row.plan ? String(row.plan).toLowerCase() : 'free';
       const oldAllowance = Number(row.monthly_base_allowance || 0);
       const oldUsed = Number(row.monthly_base_used || 0);
       currentAddOn = Number(row.purchased_add_on_balance || 0);
-      // Only roll over positive remaining allowance
-      unusedQuota = Math.max(0, oldAllowance - oldUsed);
+
+      // CRITICAL BUSINESS RULE:
+      // The 20 free trial rows from the 'free' plan must NEVER roll over into purchased_add_on_balance!
+      // Only roll over positive remaining allowance if upgrading/renewing between paid plans.
+      if (oldPlan !== 'free') {
+        unusedQuota = Math.max(0, oldAllowance - oldUsed);
+      }
     }
 
     const newAddOn = currentAddOn + unusedQuota;
