@@ -80,7 +80,7 @@ export async function POST(request: Request) {
     }
 
     const token = crypto.randomBytes(32).toString("hex");
-    const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour validity
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days validity
 
     await saveMagicLinkToken(email, token, expiresAt);
 
@@ -108,7 +108,7 @@ export async function POST(request: Request) {
       <div style="font-family: sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px;">
         <h2 style="font-size: 20px; font-weight: bold; color: #0f172a; margin-bottom: 16px;">kigyou-list にログイン</h2>
         <p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 24px;">
-          以下のボタンをクリックして、kigyou-listにログインしてください。このリンクの有効期限は1時間です。
+          以下のボタンをクリックして、kigyou-listにログインしてください。このリンクの有効期限は7日間です。有効期限内であれば何度でもご利用いただけます。
         </p>
         <a href="${verifyUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 24px; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 8px; margin-bottom: 24px;">ログインする</a>
         <hr style="border: none; border-top: 1px solid #e2e8f0; margin-bottom: 24px;" />
@@ -124,7 +124,7 @@ export async function POST(request: Request) {
         <div style="font-family: sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px;">
           <h2 style="font-size: 20px; font-weight: bold; color: #0f172a; margin-bottom: 16px;">Đăng nhập vào kigyou-list</h2>
           <p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 24px;">
-            Vui lòng nhấn vào nút bên dưới để đăng nhập vào tài khoản kigyou-list của bạn. Đường dẫn này sẽ hết hạn sau 1 giờ.
+            Vui lòng nhấn vào nút bên dưới để đăng nhập vào tài khoản kigyou-list của bạn. Đường dẫn này có hiệu lực trong 7 ngày và có thể dùng lại nhiều lần.
           </p>
           <a href="${verifyUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 24px; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 8px; margin-bottom: 24px;">Đăng nhập ngay</a>
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin-bottom: 24px;" />
@@ -139,7 +139,7 @@ export async function POST(request: Request) {
         <div style="font-family: sans-serif; padding: 24px; max-width: 600px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px;">
           <h2 style="font-size: 20px; font-weight: bold; color: #0f172a; margin-bottom: 16px;">Sign in to kigyou-list</h2>
           <p style="font-size: 14px; color: #475569; line-height: 1.5; margin-bottom: 24px;">
-            Please click the button below to sign in to your kigyou-list account. This link will expire in 1 hour.
+            Please click the button below to sign in to your kigyou-list account. This link is valid for 7 days and can be used multiple times.
           </p>
           <a href="${verifyUrl}" style="display: inline-block; background-color: #2563eb; color: #ffffff; padding: 12px 24px; font-size: 14px; font-weight: bold; text-decoration: none; border-radius: 8px; margin-bottom: 24px;">Sign In</a>
           <hr style="border: none; border-top: 1px solid #e2e8f0; margin-bottom: 24px;" />

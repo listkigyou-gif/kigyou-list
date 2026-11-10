@@ -2531,7 +2531,8 @@ export async function checkMagicLinkRateLimit(email: string): Promise<{ allowed:
 export async function verifyAndConsumeMagicLinkToken(email: string, token: string): Promise<boolean> {
   await initQuotaTables();
   
-  const selectSql = 'SELECT * FROM magic_link_tokens WHERE email = ? AND token = ? AND (used = false OR used IS NULL) LIMIT 1';
+  // Reusable token during valid expiration window (supports email security bots, multiple devices/tabs)
+  const selectSql = 'SELECT * FROM magic_link_tokens WHERE email = ? AND token = ? LIMIT 1';
   const updateSql = 'UPDATE magic_link_tokens SET used = true WHERE token = ?';
   
   const row = await runGetQuery(selectSql, [email, token]);
@@ -2542,17 +2543,18 @@ export async function verifyAndConsumeMagicLinkToken(email: string, token: strin
   const expiresAt = new Date(row.expires_at);
   const now = new Date();
   
+  if (expiresAt < now) {
+    console.log(`Magic link token expired for ${email}. Expired at: ${expiresAt}, now: ${now}`);
+    return false;
+  }
+
+  // Update used = true for audit tracking, but keep token valid throughout its expiration period
   if (DATABASE_URL) {
     const pool = getPGPool();
     await pool.query(convertSqlForPG(updateSql), [token]);
   } else {
     const db = getSQLiteDB();
     db.prepare(updateSql).run(token);
-  }
-  
-  if (expiresAt < now) {
-    console.log(`Magic link token expired for ${email}. Expired at: ${expiresAt}, now: ${now}`);
-    return false;
   }
   
   return true;
