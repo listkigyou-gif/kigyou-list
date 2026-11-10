@@ -3356,6 +3356,37 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
 }
 
 /**
+ * Accurately counts matching companies for CSV export up to a safe cap (default 100,000).
+ * Used when the user opens the CSV Export modal to select export quantity.
+ */
+export async function countCompaniesForExport(
+  keyword: string, 
+  filters: SearchFilters, 
+  maxCap: number = 100000
+): Promise<{ total: number; isCapped: boolean }> {
+  try {
+    const parsed = await parseKeywordIntent(keyword, filters);
+    const parsedKeyword = parsed.parsedKeyword;
+    const parsedFilters = parsed.parsedFilters;
+
+    const countQuery = buildSearchQuery(parsedKeyword, parsedFilters, true);
+    const innerSql = countQuery.sql.replace('SELECT COUNT(*) as count', 'SELECT 1');
+    const boundedCountSql = `SELECT COUNT(*) as count FROM (${innerSql} LIMIT ${Math.floor(maxCap)}) as subquery`;
+    
+    const countResult = await runGetQuery(boundedCountSql, countQuery.params);
+    const count = countResult ? Number(countResult.count) : 0;
+    
+    return {
+      total: count,
+      isCapped: count >= maxCap
+    };
+  } catch (error) {
+    console.error('Error in countCompaniesForExport:', error);
+    return { total: 0, isCapped: false };
+  }
+}
+
+/**
  * Update the user's monthly quota and reset used balance when upgrading/downgrading plans.
  */
 export async function updateUserPlanQuota(

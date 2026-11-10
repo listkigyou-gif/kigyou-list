@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { 
-  getUserQuota, deductUserQuota, searchCompaniesAll, 
+  getUserQuota, deductUserQuota, addUserAddOnBalance, searchCompaniesAll, 
   createExportJob, updateExportJobStatus, SearchFilters,
   getRecentExportJobs
 } from "@/lib/db";
@@ -257,8 +257,14 @@ export async function POST(request: Request) {
     }
 
     // =============================================================
-    // MECHANISM B: Asynchronous Background Scheduler (>= 5,000 records)
+    // MECHANISM B: Asynchronous Background Scheduler (> 5,000 records)
     // =============================================================
+    // Deduct user quota upfront to prevent concurrent double-spending
+    const deductedAsync = await deductUserQuota(email, totalCount);
+    if (!deductedAsync) {
+      return NextResponse.json({ error: "insufficient_quota" }, { status: 403 });
+    }
+
     // Save job record to db as pending with IP/UA evidence
     await createExportJob(jobId, email, JSON.stringify({ ...sanitizedFilters, keyword }), totalCount, ipAddress, userAgent);
 
@@ -267,7 +273,7 @@ export async function POST(request: Request) {
       try {
         await updateExportJobStatus(jobId, "processing", null, null);
 
-        // Fetch all matching companies strictly capped at requested totalCount
+        // Fetch all matching companies strictly capped at requested totalCount (supports up to 100k)
         const companies = (await searchCompaniesAll(keyword, sanitizedFilters, totalCount)).slice(0, totalCount);
 
         if (!companies || (companies.length === 0 && totalCount > 0)) {
@@ -277,7 +283,8 @@ export async function POST(request: Request) {
         const csvHeader = headers.map(escapeCSVField).join(",") + "\n";
         let csvBody = "";
         
-        for (const c of companies) {
+        for (let i = 0; i < companies.length; i++) {
+          const c = companies[i];
           const row = [
             c.corporate_number,
             c.company_name,
@@ -301,22 +308,30 @@ export async function POST(request: Request) {
 
         const csvContent = "\uFEFF" + csvHeader + csvBody;
 
-        // Zip the CSV content
+        // Zip the CSV content with level 6 compression
         const zip = new JSZip();
         zip.file(`kigyou_list_${jobId}.csv`, csvContent);
-        const zipBuffer = await zip.generateAsync({ type: "nodebuffer" });
+        const zipBuffer = await zip.generateAsync({ 
+          type: "nodebuffer", 
+          compression: "DEFLATE",
+          compressionOptions: { level: 6 }
+        });
 
         // Upload ZIP to R2 (or local fallback)
         const zipKey = `exports/${jobId}.zip`;
         const filePath = await uploadFileToR2(zipKey, zipBuffer, "application/zip");
 
-        // Deduct from DB quota
-        await deductUserQuota(email, totalCount);
-
         await updateExportJobStatus(jobId, "completed", filePath, null);
-        console.log(`[Phase 5 Worker] Job ${jobId} completed successfully. Saved to ${filePath}`);
+        console.log(`[Phase 5 Worker] Job ${jobId} (${companies.length} rows) completed successfully. Saved to ${filePath}`);
       } catch (err: any) {
         console.error(`[Phase 5 Worker] Job ${jobId} failed:`, err);
+        // Refund quota to user upon unexpected background worker failure
+        try {
+          await addUserAddOnBalance(email, totalCount);
+          console.log(`[Phase 5 Worker] Refunded ${totalCount} quota to ${email} due to job failure`);
+        } catch (refundErr) {
+          console.error(`[Phase 5 Worker] Failed to refund quota to ${email}:`, refundErr);
+        }
         await updateExportJobStatus(jobId, "failed", null, err.message || String(err));
       }
     })();
