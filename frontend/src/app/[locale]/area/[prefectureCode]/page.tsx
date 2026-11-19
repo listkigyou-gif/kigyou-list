@@ -10,7 +10,8 @@ import {
 } from '@/lib/db';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
-import { getPrefectureName } from '@/lib/locale-mapping';
+import { getPrefectureName, getIndustryName } from '@/lib/locale-mapping';
+import { PREFECTURES } from '@/lib/hubUtils';
 
 export const revalidate = 3600; // Cache 1 hour with ISR
 
@@ -78,23 +79,30 @@ export default async function PrefectureAreaPage({ params }: PageProps) {
     return notFound();
   }
 
-  // Get top 50 active companies in this prefecture
-  const { companies, totalCount } = await searchCompanies('', { prefecture_code: prefectureCode }, 50, 0);
+  // Get top 100 active companies in this prefecture
+  const { companies, totalCount } = await searchCompanies('', { prefecture_code: prefectureCode }, 100, 0);
 
   const prefName = getPrefectureName(pref.name, locale);
   const isEn = locale === 'en';
   const isVi = locale === 'vi';
 
-  const otherPrefectures = [
-    { code: '13', name: '東京都' },
-    { code: '27', name: '大阪府' },
-    { code: '23', name: '愛知県' },
-    { code: '14', name: '神奈川県' },
-    { code: '40', name: '福岡県' },
-    { code: '01', name: '北海道' },
-    { code: '28', name: '兵庫県' },
-    { code: '11', name: '埼玉県' }
-  ].filter(p => p.code !== prefectureCode);
+  const currentPrefObj = PREFECTURES.find(p => p.code === prefectureCode);
+  const otherPrefectures = PREFECTURES.filter(p => p.code !== prefectureCode);
+
+  const keyIndustries = [
+    { code: '39', name: '情報サービス業' },
+    { code: '06', name: '総合工事業' },
+    { code: '07', name: '職別工事業' },
+    { code: '08', name: '設備工事業' },
+    { code: '68', name: '不動産取引業' },
+    { code: '69', name: '不動産賃貸業・管理業' },
+    { code: '72', name: '専門サービス業' },
+    { code: '91', name: '職業紹介・労働者派遣業' },
+    { code: '44', name: '道路貨物運送業' },
+    { code: '50', name: '各種商品卸売業' },
+    { code: '55', name: 'その他の卸売業' },
+    { code: '76', name: '飲食店' },
+  ];
 
   const d = isVi ? {
     home: "Trang chủ",
@@ -333,19 +341,110 @@ export default async function PrefectureAreaPage({ params }: PageProps) {
         </section>
 
         {/* Cross-linking Mesh Section */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-14">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-14 space-y-6">
+          {/* 1. 5 Signal & Corporate Change Hubs for this Prefecture */}
+          {currentPrefObj && (
+            <div className="bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 shadow-2xs">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+                {isVi
+                  ? `Biến động pháp nhân & Tín hiệu kinh doanh tại ${prefName}`
+                  : isEn
+                  ? `${prefName} Corporate Changes & Business Signals`
+                  : `${pref.name}の法人異動・営業シグナル一覧`}
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                {[
+                  {
+                    href: `/${locale}/new-companies/${currentPrefObj.slug}`,
+                    label: isVi ? 'Pháp nhân mới thành lập' : isEn ? 'Newly Registered Companies' : '新設法人一覧',
+                    sub: isVi ? `${prefName}` : isEn ? `in ${prefName}` : `${pref.name}の新設企業`,
+                  },
+                  {
+                    href: `/${locale}/jobs/latest/${currentPrefObj.slug}`,
+                    label: isVi ? 'Doanh nghiệp đang tuyển dụng' : isEn ? 'Actively Hiring Companies' : '求人・採用中企業',
+                    sub: isVi ? `${prefName}` : isEn ? `in ${prefName}` : `${pref.name}の採用動向`,
+                  },
+                  {
+                    href: `/${locale}/changes/relocation/${currentPrefObj.slug}`,
+                    label: isVi ? 'Chuyển trụ sở & Địa chỉ' : isEn ? 'Headquarters Relocations' : '本店移転・住所変更',
+                    sub: isVi ? `${prefName}` : isEn ? `in ${prefName}` : `${pref.name}の移転履歴`,
+                  },
+                  {
+                    href: `/${locale}/changes/merger/${currentPrefObj.slug}`,
+                    label: isVi ? 'Sáp nhập & Tái cấu trúc' : isEn ? 'Mergers & Reorganizations' : '合併・組織再編',
+                    sub: isVi ? `${prefName}` : isEn ? `in ${prefName}` : `${pref.name}の再編情報`,
+                  },
+                  {
+                    href: `/${locale}/status/bankruptcies/${currentPrefObj.slug}`,
+                    label: isVi ? 'Giải thể & Đóng cửa' : isEn ? 'Closures & Dissolutions' : '倒産・閉鎖・解散',
+                    sub: isVi ? `${prefName}` : isEn ? `in ${prefName}` : `${pref.name}の閉鎖情報`,
+                  },
+                ].map((hub) => (
+                  <Link
+                    key={hub.href}
+                    href={hub.href}
+                    className="p-3.5 rounded-xl bg-slate-50/80 hover:bg-blue-50/50 dark:bg-slate-800/40 dark:hover:bg-slate-800 border border-slate-200/80 hover:border-[#1B4F8A]/50 dark:border-slate-700/80 dark:hover:border-blue-500/50 transition-all flex items-center justify-between group"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 truncate">
+                        {hub.label}
+                      </div>
+                      <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                        {hub.sub}
+                      </div>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 shrink-0 transition-colors" />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 2. Key Industries in this Prefecture (主要業種×地域データベース) */}
           <div className="bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 shadow-2xs">
-            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+              {isVi
+                ? `Cơ sở dữ liệu Ngành nghề trọng điểm tại ${prefName}`
+                : isEn
+                ? `Major Industries in ${prefName} (JSIC Directory)`
+                : `${pref.name}の主要業種×地域データベース`}
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
+              {keyIndustries.map((ind) => {
+                const indLabel = getIndustryName(ind.name, locale);
+                return (
+                  <Link
+                    key={ind.code}
+                    href={`/${locale}/industry/${ind.code}/location/${prefectureCode}`}
+                    className="px-3.5 py-2.5 rounded-lg bg-slate-50 hover:bg-blue-50/60 dark:bg-slate-800/50 dark:hover:bg-slate-800 border border-slate-200/80 hover:border-[#1B4F8A]/50 dark:border-slate-700/80 text-xs font-medium text-slate-700 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400 flex items-center justify-between gap-2 transition-colors group"
+                  >
+                    <span className="truncate">
+                      {isEn ? `${indLabel} (${prefName})` : isVi ? `${indLabel} tại ${prefName}` : `${pref.name}の${ind.name}`}
+                    </span>
+                    <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 shrink-0" />
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 3. All 46 Other Prefectures Mesh */}
+          <div className="bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 shadow-2xs">
+            <h3 className="text-base font-bold text-slate-900 dark:text-white mb-4 pb-2.5 border-b border-slate-100 dark:border-slate-800">
               {d.otherAreas}
             </h3>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
               {otherPrefectures.map(op => (
                 <Link
                   key={op.code}
                   href={`/${locale}/area/${op.code}`}
-                  className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/80 dark:border-slate-700/80 text-xs font-medium text-slate-700 hover:text-slate-900 dark:text-slate-300 dark:hover:text-white transition-colors"
+                  className="px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700 border border-slate-200/80 hover:border-[#1B4F8A]/40 dark:border-slate-700/80 text-xs font-medium text-slate-700 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400 transition-colors truncate"
                 >
-                  {getPrefectureName(op.name, locale)}の企業一覧
+                  {isEn
+                    ? `${getPrefectureName(op.nameJa, locale)} Companies`
+                    : isVi
+                    ? `Công ty tại ${getPrefectureName(op.nameJa, locale)}`
+                    : `${getPrefectureName(op.nameJa, locale)}の企業一覧`}
                 </Link>
               ))}
             </div>

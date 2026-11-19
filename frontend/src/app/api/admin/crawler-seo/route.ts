@@ -147,7 +147,8 @@ export async function GET(request: Request) {
         SELECT
           COUNT(*) FILTER (WHERE signal_type = '求人あり') as recent_hiring_count,
           COUNT(*) FILTER (WHERE signal_type = '求人あり' AND details LIKE '%expiry_date%') as recent_with_expiry,
-          COUNT(*) FILTER (WHERE signal_type = '求人あり' AND created_at >= NOW() - INTERVAL '24 hours') as new_hiring_24h
+          COUNT(*) FILTER (WHERE signal_type = '求人あり' AND created_at >= NOW() - INTERVAL '24 hours') as new_hiring_24h,
+          COUNT(DISTINCT corporate_number) FILTER (WHERE created_at >= NOW() - INTERVAL '24 hours') as unique_companies_24h
         FROM business_signals
         WHERE id > (SELECT COALESCE(MAX(id), 0) - 50000 FROM business_signals);
       `),
@@ -177,7 +178,7 @@ export async function GET(request: Request) {
     const hiringWithExpiry = parseInt(hiringStats.recent_with_expiry || "0", 10);
     const totalHiringSignals = 595000 + newHiring24h;
     const companiesWithHiring = 139500 + Math.round(newHiring24h * 0.8);
-    const updatedLast24h = Math.max(newHiring24h + 300, 480);
+    const updatedLast24h = parseInt(hiringStats.unique_companies_24h || "0", 10);
 
     // 4. Read Live Logs
     const isWindows = process.platform === "win32";

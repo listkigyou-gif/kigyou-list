@@ -123,13 +123,13 @@ export default function WatchlistLandingPage() {
         ? "Tin tuyển dụng mới・Doanh nghiệp đang tuyển dụng tích cực"
         : "Active Hiring & New Job Opening Detected",
       description: isJa
-        ? "東京都千代田区の「株式会社共立メンテナンス」が公式採用ページまたはハローワークにて新規求人を公開中です。"
+        ? "東京都千代田区の「株式会社共立メンテナンス」が公式採用ページおよび公開求人にて新規求人を公開中です。"
         : isVi
-        ? "Doanh nghiệp tại Chiyoda, Tokyo vừa đăng thông báo tuyển dụng mới trên cổng chính thức hoặc HelloWork."
-        : "Kyoritsu Maintenance Co., Ltd. in Chiyoda, Tokyo has posted new open positions on official careers portal or HelloWork.",
+        ? "Doanh nghiệp tại Chiyoda, Tokyo vừa đăng thông báo tuyển dụng mới trên trang tuyển dụng chính thức hoặc cổng thông tin công khai."
+        : "Kyoritsu Maintenance Co., Ltd. in Chiyoda, Tokyo has posted new open positions on official careers portals.",
       oldVal: null,
       newVal: null,
-      source: isJa ? "ハローワーク / 公式採用ページ収集" : isVi ? "HelloWork / Trang tuyển dụng chính thức" : "HelloWork / Official Careers Portal"
+      source: isJa ? "公開求人 / 公式採用ページ収集" : isVi ? "Trang tuyển dụng chính thức & Tin công khai" : "Official Careers & Public Job Signals"
     },
     {
       id: 5,
@@ -170,15 +170,15 @@ export default function WatchlistLandingPage() {
   const faqs = [
     {
       q: isJa 
-        ? "本当に100社まで無料ですか？後から料金が発生しますか？" 
+        ? "本当に10社まで無料ですか？後から料金が発生しますか？" 
         : isVi 
-        ? "Có thực sự miễn phí 100 công ty không? Có phát sinh phí sau này không?" 
-        : "Is it really free for up to 100 companies? Will I be charged later?",
+        ? "Có thực sự miễn phí 10 công ty không? Có phát sinh phí sau này không?" 
+        : "Is it really free for up to 10 companies? Will I be charged later?",
       a: isJa
-        ? "はい、最大100社まで完全無料（無料枠）で常時監視いただけます。クレジットカード登録も一切不要です。監視対象が100社を超える大規模なエンタープライズ与信管理をご希望の場合のみ、有料プランへのアップグレードをご検討ください。"
+        ? "はい、最大10社まで完全無料（無料枠）で常時監視いただけます。クレジットカード登録も一切不要です。監視対象が10社を超える大規模な与信管理をご希望の場合のみ、有料プランへのアップグレードをご検討ください。"
         : isVi
-        ? "Hoàn toàn miễn phí theo dõi tối đa 100 công ty và không yêu cầu thẻ tín dụng. Chỉ khi bạn cần theo dõi danh mục trên 100 doanh nghiệp quy mô lớn mới cần nâng cấp gói trả phí."
-        : "Yes, monitoring up to 100 companies is 100% free with no credit card required. Paid plans are only needed if your watchlist exceeds 100 entities."
+        ? "Hoàn toàn miễn phí theo dõi tối đa 10 công ty và không yêu cầu thẻ tín dụng. Chỉ khi bạn cần theo dõi danh mục trên 10 doanh nghiệp mới cần nâng cấp gói trả phí."
+        : "Yes, monitoring up to 10 companies is 100% free with no credit card required. Paid plans are only needed if your watchlist exceeds 10 entities."
     },
     {
       q: isJa
@@ -249,7 +249,7 @@ export default function WatchlistLandingPage() {
               <Bell className="w-3.5 h-3.5 text-[#1B4F8A] dark:text-blue-400" />
               <span>{isJa ? "企業監視・重要変動検知エンジン" : isVi ? "Cỗ Máy Giám Sát & Cảnh Báo Doanh Nghiệp" : "Corporate Intelligence & Alert Engine"}</span>
               <span className="text-slate-300 dark:text-slate-700">|</span>
-              <span className="text-emerald-700 dark:text-emerald-400 font-bold">{isJa ? "無料枠: 最大100社" : isVi ? "Miễn phí: 100 Công ty" : "Free 100 Companies"}</span>
+              <span className="text-emerald-700 dark:text-emerald-400 font-bold">{isJa ? "無料枠: 最大10社" : isVi ? "Miễn phí: 10 Công ty" : "Free 10 Companies"}</span>
             </div>
 
             {/* Main Headline */}
@@ -297,7 +297,7 @@ export default function WatchlistLandingPage() {
               </span>
               <span className="inline-flex items-center gap-1.5 text-amber-700 dark:text-amber-400">
                 <CheckCircle2 className="w-4 h-4 text-amber-600" />
-                {isJa ? "100社まで完全無料（クレカ不要）" : isVi ? "Miễn phí 100 công ty" : "Free 100 Co. (No Credit Card)"}
+                {isJa ? "10社まで完全無料（クレカ不要）" : isVi ? "Miễn phí 10 công ty" : "Free 10 Co. (No Credit Card)"}
               </span>
             </div>
 
@@ -312,7 +312,7 @@ export default function WatchlistLandingPage() {
                 <span>
                   {isLoggedIn 
                     ? (isJa ? "見守り管理ダッシュボードを開く" : isVi ? "Mở Dashboard Giám Sát" : "Open Watchlist Dashboard")
-                    : (isJa ? "今すぐ無料で100社を見守り登録する" : isVi ? "Đăng ký theo dõi 100 công ty miễn phí" : "Start Watching 100 Companies Free")}
+                    : (isJa ? "今すぐ無料で10社を見守り登録する" : isVi ? "Đăng ký theo dõi 10 công ty miễn phí" : "Start Watching 10 Companies Free")}
                 </span>
               </button>
 
@@ -550,10 +550,10 @@ export default function WatchlistLandingPage() {
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
                   {isJa
-                    ? "ハローワークおよび公式採用ページから最新の採用募集を検知。人材採用に予算を投じている「成長中・資金力のある企業」を素早く特定し、人材紹介・SaaS・福利厚生サービスの高成約アプローチを実現します。"
+                    ? "公式採用ページや各種公開求人情報から最新の採用募集を検知。人材採用に予算を投じている「成長中・資金力のある企業」を素早く特定し、人材紹介・SaaS・福利厚生サービスの高成約アプローチを実現します。"
                     : isVi
-                    ? "Phát hiện tuyển dụng mới từ HelloWork và trang tuyển dụng chính thức. Định vị nhanh các doanh nghiệp đang tăng trưởng và có ngân sách để chào bán dịch vụ tuyển dụng, phần mềm SaaS."
-                    : "Detect fresh job openings across official portals and HelloWork. Identify cash-rich, expanding companies actively investing in hiring to pitch recruitment, SaaS, and employee benefit solutions."}
+                    ? "Phát hiện tuyển dụng mới từ trang tuyển dụng chính thức và nguồn dữ liệu công khai. Định vị nhanh các doanh nghiệp đang tăng trưởng và có ngân sách để chào bán dịch vụ tuyển dụng, phần mềm SaaS."
+                    : "Detect fresh job openings across official careers portals and public hiring feeds. Identify cash-rich, expanding companies actively investing in hiring to pitch recruitment, SaaS, and employee benefit solutions."}
                 </p>
               </div>
               <div className="pt-3 border-t border-slate-100 dark:border-slate-800 text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">
@@ -654,7 +654,7 @@ export default function WatchlistLandingPage() {
                       {isJa ? "大手帝国系データベースは年間数十万〜数百万円" : isVi ? "Các kho dữ liệu truyền thống thu hàng trăm nghìn đến hàng triệu Yên/năm" : "Legacy databases charge hundreds of thousands to millions of Yen annually"}
                     </td>
                     <td className="py-4 px-5 bg-blue-50/40 dark:bg-blue-950/20 font-bold text-emerald-600 dark:text-emerald-400">
-                      {isJa ? "100社まで初期費用0円・完全無料（クレカ登録不要）" : isVi ? "Hoàn toàn miễn phí 100 công ty, phí ban đầu 0đ, không cần thẻ tín dụng" : "100% Free up to 100 companies, ¥0 setup fee, no credit card required"}
+                      {isJa ? "10社まで初期費用0円・完全無料（クレカ登録不要）" : isVi ? "Hoàn toàn miễn phí 10 công ty, phí ban đầu 0đ, không cần thẻ tín dụng" : "100% Free up to 10 companies, ¥0 setup fee, no credit card required"}
                     </td>
                   </tr>
                 </tbody>
@@ -692,7 +692,7 @@ export default function WatchlistLandingPage() {
             <div className="p-6 rounded-2xl bg-white dark:bg-[#161B22] border border-slate-200 dark:border-slate-800 relative">
               <div className="text-3xl font-black text-slate-200 dark:text-slate-800 mb-2">02</div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-1.5">
-                {isJa ? "取引先企業を登録 (最大100社)" : isVi ? "Thêm công ty đối tác (Tối đa 100)" : "Register Companies (Up to 100)"}
+                {isJa ? "取引先企業を登録 (最大10社)" : isVi ? "Thêm công ty đối tác (Tối đa 10)" : "Register Companies (Up to 10)"}
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isJa
@@ -759,12 +759,16 @@ export default function WatchlistLandingPage() {
 
         {/* 7. Bottom CTA Banner */}
         <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 mt-20">
-          <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-[#1B4F8A] via-[#143D6C] to-[#0F2D52] text-white shadow-xl relative overflow-hidden text-center space-y-6">
+          <div className="p-8 sm:p-10 rounded-md bg-white dark:bg-[#151B22] border border-slate-200 dark:border-slate-800 text-center space-y-6">
             <div className="max-w-2xl mx-auto space-y-3">
-              <span className="inline-block px-3 py-1 rounded-full text-xs font-bold bg-white/10 border border-white/20 text-blue-200">
-                100% Free Tier • Max 100 Companies
+              <span className="inline-block px-3 py-1 rounded text-xs font-semibold bg-[#F0F4F9] dark:bg-[#1B4F8A]/20 border border-[#1B4F8A]/20 dark:border-[#60A5FA]/30 text-[#1B4F8A] dark:text-[#93C5FD]">
+                {isJa
+                  ? "無料枠 • 最大10社まで無料"
+                  : isVi
+                  ? "Gói miễn phí • Tối đa 10 công ty"
+                  : "Free Tier • Up to 10 Companies"}
               </span>
-              <h2 className="text-2xl sm:text-4xl font-black tracking-tight leading-snug">
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight leading-snug text-slate-900 dark:text-slate-100">
                 {isJa ? (
                   <>
                     取引先のインボイス失効・倒産・役員異動を、<br />
@@ -782,7 +786,7 @@ export default function WatchlistLandingPage() {
                   </>
                 )}
               </h2>
-              <p className="text-xs sm:text-sm text-blue-100 leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isJa
                   ? "毎月の手作業確認から解放され、重要な税務・与信リスクを見逃さない安心の管理体制を手に入れましょう。"
                   : isVi
@@ -795,26 +799,26 @@ export default function WatchlistLandingPage() {
               <button
                 type="button"
                 onClick={handleCtaClick}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-xl text-sm font-bold text-[#1B4F8A] bg-white hover:bg-slate-50 shadow-lg hover:shadow-xl transition-all cursor-pointer"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-md text-sm font-semibold text-white bg-[#1B4F8A] hover:bg-[#163F70] transition-colors cursor-pointer"
               >
-                <ShieldCheck className="w-5 h-5 text-[#1B4F8A]" />
+                <ShieldCheck className="w-4 h-4" />
                 <span>
                   {isLoggedIn 
                     ? (isJa ? "見守り管理ダッシュボードを開く" : isVi ? "Mở Dashboard Giám Sát" : "Open Watchlist Dashboard")
-                    : (isJa ? "今すぐ無料で100社を見守り登録する" : isVi ? "Đăng ký theo dõi 100 công ty miễn phí" : "Start Watching 100 Companies Free")}
+                    : (isJa ? "今すぐ無料で10社を見守り登録する" : isVi ? "Đăng ký theo dõi 10 công ty miễn phí" : "Start Watching 10 Companies Free")}
                 </span>
               </button>
 
               <Link
                 href={`/${locale}/invoice`}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl text-sm font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-colors"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-md text-sm font-semibold text-slate-700 dark:text-slate-200 bg-[#F8FAFC] dark:bg-[#161B22] hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-colors"
               >
-                <FileCheck2 className="w-4 h-4" />
+                <FileCheck2 className="w-4 h-4 text-[#1B4F8A] dark:text-[#60A5FA]" />
                 <span>{isJa ? "インボイス一括照会を試す" : isVi ? "Dùng thử tra cứu Invoice" : "Try Batch Invoice Tool"}</span>
               </Link>
             </div>
 
-            <div className="pt-2 text-[11px] text-blue-200/80">
+            <div className="pt-2 text-[11px] text-slate-500 dark:text-slate-400">
               {isJa 
                 ? "※ クレジットカード登録不要 • いつでも解除可能 • 国税庁Web-API公表データ直接連携" 
                 : isVi 

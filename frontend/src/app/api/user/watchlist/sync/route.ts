@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
-import { syncUserWatchlist, getUserWatchlist, removeUserWatchlistCompany } from "@/lib/db";
+import { syncUserWatchlist, getUserWatchlist, removeUserWatchlistCompany, getUserWatchlistLimit } from "@/lib/db";
 
 export async function POST(request: Request) {
   try {
@@ -32,13 +32,17 @@ export async function POST(request: Request) {
 
     const clientNumbers: string[] = Array.isArray(body.corporateNumbers) ? body.corporateNumbers : [];
 
-    const mergedList = await syncUserWatchlist(email, clientNumbers);
+    const [mergedList, limit] = await Promise.all([
+      syncUserWatchlist(email, clientNumbers),
+      getUserWatchlistLimit(email),
+    ]);
 
     return NextResponse.json({
       success: true,
       email,
       watchlist: mergedList,
       count: mergedList.length,
+      limit: Number.isFinite(limit) ? limit : null,
     });
   } catch (error: any) {
     console.error("Error in /api/user/watchlist/sync POST:", error);
@@ -90,13 +94,17 @@ export async function GET(request: Request) {
     }
 
     const email = session.user.email;
-    const watchlist = await getUserWatchlist(email);
+    const [watchlist, limit] = await Promise.all([
+      getUserWatchlist(email),
+      getUserWatchlistLimit(email),
+    ]);
 
     return NextResponse.json({
       success: true,
       email,
       watchlist,
       count: watchlist.length,
+      limit: Number.isFinite(limit) ? limit : null,
     });
   } catch (error: any) {
     console.error("Error in /api/user/watchlist/sync GET:", error);

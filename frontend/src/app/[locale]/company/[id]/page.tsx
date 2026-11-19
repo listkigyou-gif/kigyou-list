@@ -5,7 +5,7 @@ import {
   Building2, MapPin, Phone, Globe, Mail, Printer, Calendar, 
   Briefcase, FileText, ChevronRight, BarChart3, Clock, Share2, ShieldCheck, MessageSquare, ArrowRight, HelpCircle, Search, Newspaper, History, Award, ExternalLink, CheckCircle2, Users
 } from 'lucide-react';
-import { formatShortDate, toISOStringLocal } from '@/lib/dateUtils';
+import { formatShortDate, toISOStringLocal, getTodayJstIsoDate, resolveActiveJobPostingValidThrough } from '@/lib/dateUtils';
 import { 
   getCompanyByNumber, getCompanyFinancials, 
   getCompanySignals, getRelatedCompanies, getCompanyIndustries,
@@ -30,9 +30,11 @@ import { CopyTextButton } from '@/components/CopyTextButton';
 import { getTranslations } from '@/lib/i18n';
 import { CompanyLogo } from '@/components/CompanyLogo';
 import { translatePosition, formatEnglishDate, getPrefectureName, getIndustryName } from '@/lib/locale-mapping';
+import { sanitizePublicHiringText } from '@/lib/hubUtils';
 import { CompanyConversionBar } from '@/components/CompanyConversionBar';
 
-export const revalidate = 600; // Cache profiles for 10 minutes, ISR enabled
+// Dynamic rendering backed by Nginx Micro-Cache (10m) & bounded LRU DB cache; ensures real HTTP 404 on missing corporate numbers
+export const dynamic = 'force-dynamic';
 
 function formatJapaneseDate(dateStr: string | null): string {
   if (!dateStr) return "";
@@ -123,6 +125,17 @@ function cleanDisplayUrl(url: string): string {
   } catch {
     return url.replace(/^https?:\/\//i, '').replace(/\/$/, '');
   }
+}
+
+function normalizeExternalUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const trimmed = url.trim();
+  if (!trimmed || trimmed === '-' || /^index\.(html?|php)$/i.test(trimmed)) return null;
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (trimmed.includes('.') && !trimmed.startsWith('/')) {
+    return `https://${trimmed}`;
+  }
+  return null;
 }
 
 function cleanRepresentativeName(rawName: string | null): string {
@@ -289,7 +302,7 @@ function generateDynamicSummary(
       }
       const sent3 = kpis.length > 0 ? `最新の公開データとして、${kpis.join('、')}を計上しています。` : '';
 
-      const sent4 = `国税庁公表の適格請求書発行事業者（インボイス制度登録番号: ${invoiceNumber}）として登録済み。${company.phone_number ? `代表電話番号（${company.phone_number}）` : '公式連絡窓口'}${company.fax_number ? `やFAX（${company.fax_number}）` : ''}、決算推移、営業シグナルデータをKigyou-listにて無料公開中。`;
+      const sent4 = `国税庁公表の適格請求書発行事業者（インボイス制度登録番号: ${invoiceNumber}）として登録済み。${company.phone_number ? `代表電話番号（${company.phone_number}）` : '公式連絡窓口'}${company.fax_number ? `やFAX（${company.fax_number}）` : ''}、決算推移、営業シグナルデータをB2B企業データベース「Kigyou-list（企業リスト）」にて無料公開中（出典URL: https://kigyoulist.com/ja/company/${company.corporate_number}）。`;
 
       return `${sent1} ${sent2} ${sent3} ${sent4}`.replace(/[\s\u3000]+/g, ' ').trim();
     }
@@ -316,7 +329,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const locale = resolvedParams.locale || 'ja';
 
   if (!/^\d{13}$/.test(companyId)) {
-    return notFound();
+    return {
+      title: 'Not Found | Kigyou-list',
+      robots: {
+        index: false,
+        follow: false,
+        googleBot: { index: false, follow: false },
+      },
+    };
   }
 
   const [company, industryDetailsList] = await Promise.all([
@@ -325,7 +345,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   ]);
 
   if (!company) {
-    return notFound();
+    return {
+      title: 'Not Found | Kigyou-list',
+      robots: {
+        index: false,
+        follow: false,
+        googleBot: { index: false, follow: false },
+      },
+    };
   }
 
   const primaryIndustry = industryDetailsList[0] || null;
@@ -335,14 +362,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const prefPart = company.prefecture_name ? `（${company.prefecture_name}）` : '';
   const currentYear = new Date().getFullYear();
-  let kpiMetaPrefix = '';
-  if (company.avg_annual_salary) {
-    kpiMetaPrefix = `【平均年収${company.avg_annual_salary}万円】`;
-  } else if (company.insured_employee_count) {
-    kpiMetaPrefix = `【被保険者${company.insured_employee_count.toLocaleString('ja-JP')}名】`;
-  } else {
-    kpiMetaPrefix = `【${currentYear}年最新】`;
-  }
 
   // SEO Title Optimization: Guarantee title is concise, punchy and strictly under 65 chars across all locales
   let pageTitle = '';
@@ -369,15 +388,24 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     }
     pageTitle = base;
   } else {
-    // Japanese locale (ja) - Max 60 chars for Google & Bing SERP snippet
-    let base = `${kpiMetaPrefix}${companyName}${prefPart}の会社概要・売上高・評判 | Kigyou-list`;
-    if (base.length > 60) {
-      base = `${companyName}${prefPart}の企業情報・売上・評判 | Kigyou-list`;
+    // Japanese locale (ja) - Max 62 chars for high-CTR long-tail SERP snippet
+    let base = '';
+    if (company.avg_annual_salary) {
+      base = `【平均年収${company.avg_annual_salary}万円】${companyName}${prefPart}の業績・評判・企業情報 | Kigyou-list`;
+    } else if (company.has_hiring) {
+      base = `【求人・採用中】${companyName}${prefPart}の年収・評判・会社概要 | Kigyou-list`;
+    } else if (company.sales_amount || company.has_financials) {
+      base = `【${currentYear}最新】${companyName}${prefPart}の売上高・業績・評判・電話番号 | Kigyou-list`;
+    } else {
+      base = `【${currentYear}最新】${companyName}${prefPart}の会社概要・電話番号・インボイス番号 | Kigyou-list`;
     }
-    if (base.length > 60) {
-      base = `${companyName}の企業情報・会社概要 | Kigyou-list`;
+    if (base.length > 62) {
+      base = `${companyName}${prefPart}の企業情報・年収・評判・電話番号 | Kigyou-list`;
     }
-    if (base.length > 60) {
+    if (base.length > 62) {
+      base = `${companyName}の企業情報・会社概要・評判 | Kigyou-list`;
+    }
+    if (base.length > 62) {
       base = `${companyName.slice(0, 38)}... - 企業情報 | Kigyou-list`;
     }
     pageTitle = base;
@@ -391,7 +419,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   let richnessScore = 0;
   if (company.phone_number && company.phone_number.trim()) richnessScore += 2;
   if (company.website_url && company.website_url.trim() && !company.website_url.includes('なし')) richnessScore += 2;
-  if (company.has_license || company.has_financials || company.has_financial_report || company.has_public_tender || company.has_bidding) richnessScore += 3;
+  if (company.has_license || company.has_financials || company.has_financial_report || company.has_public_tender || company.has_bidding || company.has_hiring) richnessScore += 3;
   if (company.capital_amount) richnessScore += 1;
   if (company.employee_count) richnessScore += 1;
   if (company.insured_employee_count || company.has_insured_count) richnessScore += 2;
@@ -616,6 +644,8 @@ export default async function CompanyDetailPage({ params }: PageProps) {
   const signals = [...nonHiringSignals, ...finalHiringSignals];
 
   const t = getTranslations(locale);
+  const isVerifiedBusiness = Boolean(company.is_claimed && company.claimed_by_email);
+  const companyExternalRel = isVerifiedBusiness ? "noopener noreferrer" : "noopener noreferrer nofollow";
 
   // 2. Resolve primary industry details
   const primaryIndustry = companyIndustries[0] || null;
@@ -689,6 +719,10 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     ],
     "description": summary,
     "mainEntityOfPage": `https://kigyoulist.com/${locale}/company/${company.corporate_number}`,
+    "isBasedOn": "https://www.houjin-bangou.nta.go.jp/",
+    "creditText": `Kigyou-list（企業リスト） - ${companyName}（法人番号: ${company.corporate_number}） https://kigyoulist.com/ja/company/${company.corporate_number}`,
+    "copyrightNotice": `© Kigyou-list (TQC株式会社) - 引用・参照時は出典URL（https://kigyoulist.com/ja/company/${company.corporate_number}）を明記してください。`,
+    "acquireLicensePage": "https://kigyoulist.com/ja/terms",
     "dateModified": toISOStringLocal(company.updated_at),
     "address": {
       "@type": "PostalAddress",
@@ -700,7 +734,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     },
     "telephone": company.phone_number || undefined,
     "faxNumber": company.fax_number || undefined,
-    "url": company.website_url || undefined,
+    "url": normalizeExternalUrl(company.website_url) || undefined,
     "foundingDate": company.establishment_date || undefined,
     ...(company.representative_name ? {
       "founder": {
@@ -931,22 +965,12 @@ export default async function CompanyDetailPage({ params }: PageProps) {
     }))
   };
 
-  // 7. Generate JobPosting JSON-LD Schema for Google for Jobs (Up to 5 latest hiring signals)
-  const calculateStatutoryExpiry = (signalDate?: string | null): string | null => {
-    if (!signalDate) return null;
-    const match = signalDate.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-    if (!match) return null;
-    const year = parseInt(match[1], 10);
-    const monthIndex = parseInt(match[2], 10) - 1;
-    if (isNaN(year) || isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) return null;
-    const lastDayDate = new Date(Date.UTC(year, monthIndex + 3, 0));
-    return lastDayDate.toISOString().split('T')[0];
-  };
+  // 7. Generate JobPosting JSON-LD Schema for Google for Jobs (Up to 5 active, non-expired hiring signals)
+  const todayIsoJst = getTodayJstIsoDate();
 
-  const jobPostingSchemas = finalHiringSignals
+  const jobPostingSchemas: Record<string, any>[] = finalHiringSignals
     .filter(sig => Boolean(sig.signal_title && sig.signal_title.trim()))
-    .slice(0, 5)
-    .map(sig => {
+    .map((sig): Record<string, any> | null => {
       let parsed: Record<string, any> = {};
       if (sig.details) {
         try {
@@ -961,14 +985,12 @@ export default async function CompanyDetailPage({ params }: PageProps) {
 
       const datePosted = sig.signal_date && /^\d{4}-\d{2}-\d{2}/.test(sig.signal_date)
         ? sig.signal_date.slice(0, 10)
-        : new Date().toISOString().split('T')[0];
+        : todayIsoJst;
 
-      const explicitExpiry = parsed.expiry_date && /^\d{4}-\d{2}-\d{2}/.test(String(parsed.expiry_date).trim())
-        ? String(parsed.expiry_date).trim().slice(0, 10)
-        : null;
-      const fallbackExpiry = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-      const expiryDate = explicitExpiry || calculateStatutoryExpiry(datePosted) || fallbackExpiry;
-      const validThrough = `${expiryDate}T23:59:59+09:00`;
+      const validThrough = resolveActiveJobPostingValidThrough(parsed.expiry_date, datePosted, 60);
+      if (!validThrough) {
+        return null;
+      }
 
       // Parse salary from parsed.wages
       let baseSalary: Record<string, any> | undefined = undefined;
@@ -1024,7 +1046,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         descParts.push(`【求人詳細】${sig.details}`);
       }
       descParts.push(`${company.company_name}の最新求人情報・募集要項です。所在地：${company.full_address || company.prefecture_name || "日本国内"}。`);
-      const description = descParts.join(" / ");
+      const description = sanitizePublicHiringText(descParts.join(" / "));
 
       return {
         "@context": "https://schema.org",
@@ -1057,7 +1079,62 @@ export default async function CompanyDetailPage({ params }: PageProps) {
         },
         ...(baseSalary ? { "baseSalary": baseSalary } : {})
       };
+    })
+    .filter((schema): schema is Record<string, any> => schema !== null)
+    .slice(0, 5);
+
+  // Only emit synthetic fallback JobPosting when there are zero dated signals AND an official career URL is present
+  if (jobPostingSchemas.length === 0 && finalHiringSignals.length === 0 && Boolean(company.recruit_url && company.recruit_url.trim())) {
+    const rawUpdated = toISOStringLocal(company.updated_at);
+    const fallbackDatePosted = rawUpdated && /^\d{4}-\d{2}-\d{2}/.test(rawUpdated)
+      ? rawUpdated.slice(0, 10)
+      : todayIsoJst;
+    const fallbackValidThrough = `${getTodayJstIsoDate(Date.now() + 60 * 24 * 60 * 60 * 1000)}T23:59:59+09:00`;
+    const industryLabel = industryName || company.jigyo_shumoku || '総合職・専門職';
+    const fallbackDesc = `【企業名】${company.company_name}（国税庁法人番号：${company.corporate_number}） / 【本社所在地】${company.full_address || company.prefecture_name || '日本国内'} / 【事業内容・業種】${industryLabel} / ${company.company_name}では現在、事業拡大に伴い正社員・中途採用の募集を行っております。最新の求人募集要項、平均年収、企業業績、会社概要および公式採用ページの詳細はB2B企業データベース「Kigyou-list（企業リスト）」にてご確認いただけます。`;
+
+    jobPostingSchemas.push({
+      "@context": "https://schema.org",
+      "@type": "JobPosting",
+      "title": `${company.company_name}の正社員・中途採用募集（${industryLabel}）`,
+      "description": fallbackDesc,
+      "datePosted": fallbackDatePosted,
+      "validThrough": fallbackValidThrough,
+      "employmentType": "FULL_TIME",
+      "hiringOrganization": {
+        "@type": "Organization",
+        "name": company.company_name,
+        "sameAs": company.recruit_url || company.website_url || `https://kigyoulist.com/${locale}/company/${company.corporate_number}`
+      },
+      "identifier": {
+        "@type": "PropertyValue",
+        "name": company.company_name,
+        "value": `${company.corporate_number}-career`
+      },
+      "jobLocation": {
+        "@type": "Place",
+        "address": {
+          "@type": "PostalAddress",
+          "addressCountry": "JP",
+          "addressRegion": company.prefecture_name || "東京都",
+          "addressLocality": company.city_name || "",
+          "streetAddress": company.street_address || company.full_address || "",
+          "postalCode": company.postal_code || ""
+        }
+      },
+      ...(company.avg_annual_salary && company.avg_annual_salary > 0 ? {
+        "baseSalary": {
+          "@type": "MonetaryAmount",
+          "currency": "JPY",
+          "value": {
+            "@type": "QuantitativeValue",
+            "value": company.avg_annual_salary * 10000,
+            "unitText": "YEAR"
+          }
+        }
+      } : {})
     });
+  }
 
 
   const localizedStatus = locale === 'en' 
@@ -1525,15 +1602,15 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   <span className="text-slate-500 dark:text-slate-400 text-xs font-medium block mb-1">
                     {t.company.websitePublic || "公式ウェブサイト"}
                   </span>
-                  {company.website_url ? (
+                  {normalizeExternalUrl(company.website_url) ? (
                     <a 
-                      href={company.website_url}
+                      href={normalizeExternalUrl(company.website_url)!}
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel={companyExternalRel}
                       className="text-sm font-medium text-[#1B4F8A] hover:underline dark:text-blue-400 truncate max-w-full block"
-                      title={company.website_url}
+                      title={normalizeExternalUrl(company.website_url)!}
                     >
-                      {cleanDisplayUrl(company.website_url)}
+                      {cleanDisplayUrl(normalizeExternalUrl(company.website_url)!)}
                     </a>
                   ) : (
                     <span className="text-sm font-medium text-slate-400 dark:text-slate-500">-</span>
@@ -1577,15 +1654,15 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 )}
 
                 {/* 6. Recruitment Page */}
-                {company.recruit_url && (
+                {normalizeExternalUrl(company.recruit_url) && (
                   <div className="pb-3 border-b border-slate-100 dark:border-slate-800/80 col-span-1">
                     <span className="text-slate-500 dark:text-slate-400 text-xs font-medium block mb-1">
                       {locale === 'en' ? 'Recruitment' : locale === 'vi' ? 'Trang tuyển dụng' : '採用情報'}
                     </span>
                     <a 
-                      href={company.recruit_url}
+                      href={normalizeExternalUrl(company.recruit_url)!}
                       target="_blank"
-                      rel="noopener noreferrer"
+                      rel={companyExternalRel}
                       className="text-sm font-medium text-[#1B4F8A] hover:underline dark:text-blue-400 truncate max-w-full block"
                     >
                       {locale === 'en' ? 'Career Page' : locale === 'vi' ? 'Xem trang tuyển dụng' : '公式採用ページを見る'}
@@ -1637,7 +1714,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                         <a 
                           href={snsMap.twitter} 
                           target="_blank" 
-                          rel="noopener noreferrer"
+                          rel={companyExternalRel}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                           title="X (Twitter)"
                         >
@@ -1649,7 +1726,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                         <a 
                           href={snsMap.facebook} 
                           target="_blank" 
-                          rel="noopener noreferrer"
+                          rel={companyExternalRel}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                           title="Facebook"
                         >
@@ -1661,7 +1738,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                         <a 
                           href={snsMap.wantedly} 
                           target="_blank" 
-                          rel="noopener noreferrer"
+                          rel={companyExternalRel}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                           title="Wantedly"
                         >
@@ -1673,7 +1750,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                         <a 
                           href={snsMap.note} 
                           target="_blank" 
-                          rel="noopener noreferrer"
+                          rel={companyExternalRel}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                           title="note"
                         >
@@ -1685,7 +1762,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                         <a 
                           href={snsMap.linkedin} 
                           target="_blank" 
-                          rel="noopener noreferrer"
+                          rel={companyExternalRel}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                           title="LinkedIn"
                         >
@@ -1697,7 +1774,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                         <a 
                           href={snsMap.line} 
                           target="_blank" 
-                          rel="noopener noreferrer"
+                          rel={companyExternalRel}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                           title="LINE"
                         >
@@ -1709,7 +1786,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                         <a 
                           href={snsMap.youtube} 
                           target="_blank" 
-                          rel="noopener noreferrer"
+                          rel={companyExternalRel}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                           title="YouTube"
                         >
@@ -1721,7 +1798,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                         <a 
                           href={snsMap.instagram} 
                           target="_blank" 
-                          rel="noopener noreferrer"
+                          rel={companyExternalRel}
                           className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded-md bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition-colors shadow-2xs"
                           title="Instagram"
                         >
@@ -1890,7 +1967,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 <a
                   href={`https://prtimes.jp/main/html/searchrlp/company_id/keywords/${encodeURIComponent(companyName)}`}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="noopener noreferrer nofollow"
                   className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -1911,7 +1988,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 <a
                   href={`https://www.openwork.jp/company_list?field=&pref=&src_str=${encodeURIComponent(companyName)}`}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="noopener noreferrer nofollow"
                   className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -1932,7 +2009,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 <a
                   href={`https://jobtalk.jp/companies?keyword=${encodeURIComponent(companyName)}`}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="noopener noreferrer nofollow"
                   className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -1954,7 +2031,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   <a
                     href={`https://www.jpnumber.com/numbersearch.do?number=${encodeURIComponent(company.phone_number.replace(/\D/g, ''))}`}
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel="noopener noreferrer nofollow"
                     className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1974,7 +2051,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                   <a
                     href={`https://www.google.co.jp/search?q=${encodeURIComponent(`${companyName} 評判 口コミ`)}`}
                     target="_blank"
-                    rel="noopener noreferrer"
+                    rel="noopener noreferrer nofollow"
                     className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
@@ -1996,7 +2073,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 <a
                   href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${companyName} ${company.full_address || company.prefecture_name || ''}`)}`}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="noopener noreferrer nofollow"
                   className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
@@ -2017,7 +2094,7 @@ export default async function CompanyDetailPage({ params }: PageProps) {
                 <a
                   href={`https://news.google.com/search?q=${encodeURIComponent(companyName)}&hl=ja&gl=JP&ceid=JP:ja`}
                   target="_blank"
-                  rel="noopener noreferrer"
+                  rel="noopener noreferrer nofollow"
                   className="flex items-center justify-between p-3 rounded-lg border border-slate-200 hover:border-[#1B4F8A] dark:border-slate-700/80 dark:hover:border-blue-500/60 bg-slate-50/60 hover:bg-white dark:bg-slate-800/30 dark:hover:bg-slate-800/80 transition-all group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0">

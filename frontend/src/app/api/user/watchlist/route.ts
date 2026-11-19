@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
         description_ja: desc,
         old_value: null,
         new_value: null,
-        source: "ハローワーク"
+        source: "公開求人・採用シグナル"
       };
     });
 

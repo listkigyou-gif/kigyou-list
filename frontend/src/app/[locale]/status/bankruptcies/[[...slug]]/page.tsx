@@ -7,7 +7,8 @@ import {
 import { 
   getHubDynamicEvents, 
   getHubDynamicEventsCount, 
-  getHubPrefectureCounts 
+  getHubPrefectureCounts,
+  getHubAvailableMonths 
 } from '@/lib/db';
 import { 
   PREFECTURES, 
@@ -16,6 +17,9 @@ import {
 } from '@/lib/hubUtils';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import HubQuickToolbar from '@/components/hubs/HubQuickToolbar';
+import HubWatchButton from '@/components/hubs/HubWatchButton';
+import HubWatchlistGuideSection from '@/components/hubs/HubWatchlistGuideSection';
 
 export const revalidate = 3600; // Cache for 1 hour with ISR
 
@@ -94,7 +98,7 @@ export default async function BankruptciesHubPage({ params, searchParams }: Page
   const offset = (currentPage - 1) * limit;
 
   // Query events from hub_dynamic_events for 'bankruptcies'
-  const [events, totalCount, prefCounts] = await Promise.all([
+  const [events, totalCount, prefCounts, availableMonths] = await Promise.all([
     getHubDynamicEvents({
       category: 'bankruptcies',
       prefectureCode: prefecture?.code,
@@ -107,7 +111,8 @@ export default async function BankruptciesHubPage({ params, searchParams }: Page
       prefectureCode: prefecture?.code,
       yearMonth: yearMonth || undefined,
     }),
-    getHubPrefectureCounts('bankruptcies', yearMonth || undefined)
+    getHubPrefectureCounts('bankruptcies', yearMonth || undefined),
+    getHubAvailableMonths('bankruptcies', prefecture?.code, 8)
   ]);
 
   const totalPages = Math.ceil(totalCount / limit);
@@ -163,6 +168,9 @@ export default async function BankruptciesHubPage({ params, searchParams }: Page
           : isEn
           ? `Public registry records of corporate dissolutions and liquidations in ${prefLabel}.`
           : `${prefLabel}における企業の解散・清算登記データ一覧です。`,
+        'isBasedOn': 'https://www.houjin-bangou.nta.go.jp/',
+        'creditText': `出典: Kigyou-list（企業リスト） - ${prefLabel}の倒産・解散・清算企業一覧 (${pageUrl})`,
+        'copyrightNotice': `© Kigyou-list (TQC株式会社) - 引用時は出典URL（${pageUrl}）を明記してください。`,
         'mainEntity': {
           '@type': 'ItemList',
           'numberOfItems': events.length,
@@ -361,6 +369,14 @@ export default async function BankruptciesHubPage({ params, searchParams }: Page
           </div>
         </section>
 
+        <HubQuickToolbar
+          locale={locale}
+          basePath={`/${locale}/status/bankruptcies${prefecture ? '/' + prefecture.slug : ''}`}
+          currentYearMonth={yearMonth || undefined}
+          availableMonths={availableMonths}
+          totalCount={totalCount}
+        />
+
         {/* Bankruptcies Events List */}
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -387,20 +403,21 @@ export default async function BankruptciesHubPage({ params, searchParams }: Page
               {isVi ? 'Hiện chưa có dữ liệu giải thể hoặc thanh lý theo điều kiện đã chọn.' : isEn ? 'No bankruptcy or dissolution records found for the selected criteria.' : '現在、指定された条件の解散・清算データはありません。'}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div id="hub-events-list" className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {events.map((ev) => (
                 <article
                   key={ev.id}
+                  data-hub-item={`${ev.company_name} ${ev.corporate_number} ${ev.city_name || ''} ${ev.representative_name || ''}`.toLowerCase()}
                   className="bg-white dark:bg-[#151B22] rounded-xl border border-slate-200/90 dark:border-slate-800 p-5 hover:border-rose-300 dark:hover:border-rose-900/60 transition-all hover:shadow-sm flex flex-col justify-between"
                 >
                   <div>
                     {/* Top Badges */}
                     <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200/60">
+                      <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-0.5 rounded border border-rose-200/60 tabular-nums">
                         <Calendar className="w-3.5 h-3.5" />
                         <span>{isVi ? 'Ngày đăng ký: ' : isEn ? 'Registry Date: ' : '登記年月日：'}{ev.event_date}</span>
                       </div>
-                      <span className="font-mono text-[11px] text-slate-400">
+                      <span className="font-mono text-[11px] text-slate-400 tabular-nums">
                         {isVi ? 'Mã số pháp nhân: ' : isEn ? 'Corp No: ' : '法人番号: '}{ev.corporate_number}
                       </span>
                     </div>
@@ -413,12 +430,41 @@ export default async function BankruptciesHubPage({ params, searchParams }: Page
                     </h3>
 
                     {/* Location */}
-                    <div className="flex items-start gap-1.5 text-xs text-slate-600 dark:text-slate-300 mb-3">
+                    <div className="flex items-start gap-1.5 text-xs text-slate-600 dark:text-slate-300 mb-2">
                       <MapPin className="w-3.5 h-3.5 text-slate-400 flex-shrink-0 mt-0.5" />
                       <span className="line-clamp-1">
                         {ev.prefecture_name}{ev.city_name || ''}
                       </span>
                     </div>
+
+                    {/* Company Scale Metadata */}
+                    {(ev.representative_name || ev.capital_amount || ev.employee_count) && (
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-500 dark:text-slate-400 mb-3 tabular-nums">
+                        {ev.representative_name && (
+                          <span>
+                            {isVi ? `Đại diện: ${ev.representative_name}` : isEn ? `Rep: ${ev.representative_name}` : `代表：${ev.representative_name}`}
+                          </span>
+                        )}
+                        {ev.capital_amount && (
+                          <span>
+                            {isVi
+                              ? `Vốn: ¥${(ev.capital_amount / 10000).toLocaleString()} vạn`
+                              : isEn
+                              ? `Capital: ¥${(ev.capital_amount / 10000).toLocaleString()}0k`
+                              : `資本金：${(ev.capital_amount / 10000).toLocaleString()}万円`}
+                          </span>
+                        )}
+                        {ev.employee_count && (
+                          <span>
+                            {isVi
+                              ? `Nhân sự: ${ev.employee_count.toLocaleString()}`
+                              : isEn
+                              ? `Employees: ${ev.employee_count.toLocaleString()}`
+                              : `従業員：${ev.employee_count.toLocaleString()}名`}
+                          </span>
+                        )}
+                      </div>
+                    )}
 
                     {/* Status Note */}
                     <div className="p-2.5 rounded-lg bg-rose-50/60 dark:bg-rose-950/20 border border-rose-100 dark:border-rose-900/40 text-xs text-rose-800 dark:text-rose-300 mb-3">
@@ -430,10 +476,12 @@ export default async function BankruptciesHubPage({ params, searchParams }: Page
                   </div>
 
                   {/* Bottom Action Footer */}
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                    <span className="text-slate-400 text-[11px]">
-                      {isVi ? 'Trạng thái: Đã giải thể / Tất toán' : isEn ? 'Status: Dissolved / Liquidated' : 'ステータス：解散・清算結了'}
-                    </span>
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <HubWatchButton
+                      corporateNumber={ev.corporate_number}
+                      companyName={ev.company_name}
+                      locale={locale}
+                    />
                     <Link
                       href={`/${locale}/company/${ev.corporate_number}`}
                       className="inline-flex items-center gap-1 font-semibold text-[#1B4F8A] dark:text-blue-400 hover:underline"
@@ -475,36 +523,12 @@ export default async function BankruptciesHubPage({ params, searchParams }: Page
           )}
         </section>
 
-        {/* Credit Risk Management Banner */}
-        <section className="bg-gradient-to-r from-slate-900 to-rose-950 text-white rounded-xl p-8 mb-8 shadow-sm border border-rose-900/40">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 text-xs font-medium text-rose-200 mb-3">
-              <ShieldAlert className="w-3.5 h-3.5" />
-              <span>Credit Risk Management</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold mb-3">
-              {isVi ? 'Giám sát & cảnh báo rủi ro phá sản, vỡ nợ của đối tác' : isEn ? 'Credit Risk Screening & Bankruptcy Monitoring Alerts' : '取引先の倒産・与信リスク審査とアラート監視'}
-            </h2>
-            <p className="text-sm text-slate-200 leading-relaxed mb-6">
-              {isVi ? 'Để phòng ngừa rủi ro nợ khó đòi và phá sản dây chuyền khi đối tác dừng hoạt động đột ngột, hệ thống tự động giám sát thông tin đăng ký kinh doanh hàng ngày. Tra cứu tức thì dữ liệu giải thể, phá sản, thanh lý với Kigyou-list.' : isEn ? 'Prevent bad debt and chain bankruptcies by automatically monitoring commercial registry changes daily. Access real-time dissolution and liquidation data with Kigyou-list.' : '取引先の突然の倒産や解散による連鎖倒産・貸倒れを防止するために、法務局の商業登記情報を毎日自動監視。Kigyou-listでは最新の解散・破産・清算結了情報を瞬時に照会可能です。'}
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href={`/${locale}/pricing`}
-                className="px-5 py-2.5 rounded-lg bg-white text-rose-900 hover:bg-slate-100 font-bold text-xs sm:text-sm transition-colors shadow-sm inline-flex items-center gap-2"
-              >
-                <span>{isVi ? 'Dùng thử gói Miễn phí' : isEn ? 'Try Free Plan' : '無料プランで試す'}</span>
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href={`/${locale}/search`}
-                className="px-5 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium text-xs sm:text-sm transition-colors"
-              >
-                {isVi ? 'Tra cứu cơ sở dữ liệu toàn quốc' : isEn ? 'Search All Japanese Companies' : '全国企業データベースを検索'}
-              </Link>
-            </div>
-          </div>
-        </section>
+        <HubWatchlistGuideSection
+          locale={locale}
+          category="bankruptcy"
+          prefectureCode={prefecture?.code}
+          prefectureName={prefecture ? (isJa ? prefecture.nameJa : prefLabel) : undefined}
+        />
       </main>
 
       <Footer />

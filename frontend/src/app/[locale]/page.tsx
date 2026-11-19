@@ -30,9 +30,10 @@ import {
   Bell,
   Coins
 } from "lucide-react";
-import { getDatabaseStats } from "@/lib/db";
+import { getDatabaseStats, getLiveSyncFeed } from "@/lib/db";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { LiveSyncTicker } from "@/components/LiveSyncTicker";
 import { getTranslations } from "@/lib/i18n";
 
 export const revalidate = 3600; // 1-hour ISR cache for fast sub-50ms TTFB
@@ -46,6 +47,19 @@ export async function generateMetadata({ params }: PageParams): Promise<Metadata
   return {
     alternates: {
       canonical: `/${locale}`,
+      languages: {
+        ja: "/ja",
+        "x-default": "/ja",
+      },
+      types: {
+        "text/plain": [
+          { url: "/llms.txt", title: "LLMs Context" },
+          { url: "/llms-full.txt", title: "Full LLMs Context" },
+        ],
+      },
+    },
+    openGraph: {
+      url: `https://kigyoulist.com/${locale}`,
     },
   };
 }
@@ -56,8 +70,11 @@ export default async function Home({ params }: PageParams) {
   const isJa = locale === "ja";
   const isVi = locale === "vi";
 
-  // Dynamic database statistics
-  const stats = await getDatabaseStats();
+  // Dynamic database statistics & real-time live sync feed
+  const [stats, liveFeed] = await Promise.all([
+    getDatabaseStats(),
+    getLiveSyncFeed(8).catch(() => ({ today_count: 0, last_sync_at: "", items: [] })),
+  ]);
 
   // Tier 1 Schema: WebSite with Google Sitelinks SearchBox Action
   const websiteSchema = {
@@ -299,6 +316,13 @@ export default async function Home({ params }: PageParams) {
                 </button>
               </form>
             </div>
+
+            {/* Real-Time Live Sync Ticker & SEO Hub Link */}
+            <LiveSyncTicker
+              initialFeed={liveFeed}
+              locale={locale}
+              className="max-w-2xl mx-auto mb-5 text-left"
+            />
 
             {/* Quick Intent Filter Chips (Tối giản thanh lịch chuẩn B2B) */}
             <div className="flex flex-wrap items-center justify-center gap-2 max-w-3xl mx-auto text-xs text-slate-500 dark:text-slate-400 mb-8">
@@ -927,10 +951,10 @@ export default async function Home({ params }: PageParams) {
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed mb-4">
                     {isJa
-                      ? "取引先や営業先を最大100社まで無料見守り。代表者交代、本社移転、インボイス登録取消、法人閉鎖を毎日自動検知してアラート。"
+                      ? "取引先や営業先を最大10社まで無料見守り。代表者交代、本社移転、インボイス登録取消、法人閉鎖を毎日自動検知してアラート。"
                       : isVi
-                      ? "Theo dõi miễn phí tối đa 100 đối tác. Tự động phát hiện thay đổi đại diện, dời trụ sở, hủy mã số Invoice hoặc giải thể."
-                      : "Monitor up to 100 partner companies. Automatically detect CEO changes, relocations, invoice revocations, and closures."}
+                      ? "Theo dõi miễn phí tối đa 10 đối tác. Tự động phát hiện thay đổi đại diện, dời trụ sở, hủy mã số Invoice hoặc giải thể."
+                      : "Monitor up to 10 partner companies. Automatically detect CEO changes, relocations, invoice revocations, and closures."}
                   </p>
                 </div>
                 <Link href={`/${locale}/watchlist`} className="text-xs font-bold text-purple-600 dark:text-purple-400 inline-flex items-center gap-1 hover:underline pt-3 border-t border-slate-100 dark:border-slate-800">

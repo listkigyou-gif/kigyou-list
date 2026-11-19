@@ -7,7 +7,8 @@ import {
 import { 
   getHubDynamicEvents, 
   getHubDynamicEventsCount, 
-  getHubPrefectureCounts 
+  getHubPrefectureCounts,
+  getHubAvailableMonths 
 } from '@/lib/db';
 import { 
   PREFECTURES, 
@@ -16,6 +17,9 @@ import {
 } from '@/lib/hubUtils';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import HubQuickToolbar from '@/components/hubs/HubQuickToolbar';
+import HubWatchButton from '@/components/hubs/HubWatchButton';
+import HubWatchlistGuideSection from '@/components/hubs/HubWatchlistGuideSection';
 
 export const revalidate = 3600; // Cache for 1 hour with ISR
 
@@ -85,7 +89,7 @@ export default async function RelocationHubPage({ params, searchParams }: PagePr
   const offset = (currentPage - 1) * limit;
 
   // Query events from hub_dynamic_events for 'relocation'
-  const [events, totalCount, prefCounts] = await Promise.all([
+  const [events, totalCount, prefCounts, availableMonths] = await Promise.all([
     getHubDynamicEvents({
       category: 'relocation',
       prefectureCode: prefecture?.code,
@@ -98,7 +102,8 @@ export default async function RelocationHubPage({ params, searchParams }: PagePr
       prefectureCode: prefecture?.code,
       yearMonth: yearMonth || undefined,
     }),
-    getHubPrefectureCounts('relocation', yearMonth || undefined)
+    getHubPrefectureCounts('relocation', yearMonth || undefined),
+    getHubAvailableMonths('relocation', prefecture?.code, 8)
   ]);
 
   const totalPages = Math.ceil(totalCount / limit);
@@ -156,6 +161,9 @@ export default async function RelocationHubPage({ params, searchParams }: PagePr
           : isEn
           ? `Official corporate relocation registry in ${prefLabel}.`
           : `${prefLabel}における本店所在地の変更登記データ一覧です。`,
+        'isBasedOn': 'https://www.houjin-bangou.nta.go.jp/',
+        'creditText': `出典: Kigyou-list（企業リスト） - ${prefLabel}の本社移転企業一覧 (${pageUrl})`,
+        'copyrightNotice': `© Kigyou-list (TQC株式会社) - 引用時は出典URL（${pageUrl}）を明記してください。`,
         'mainEntity': {
           '@type': 'ItemList',
           'numberOfItems': events.length,
@@ -348,6 +356,14 @@ export default async function RelocationHubPage({ params, searchParams }: PagePr
           </div>
         </section>
 
+        <HubQuickToolbar
+          locale={locale}
+          basePath={`/${locale}/changes/relocation${prefecture ? '/' + prefecture.slug : ''}`}
+          currentYearMonth={yearMonth || undefined}
+          availableMonths={availableMonths}
+          totalCount={totalCount}
+        />
+
         {/* Relocation Events List */}
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -378,10 +394,11 @@ export default async function RelocationHubPage({ params, searchParams }: PagePr
                 : '現在、指定された条件の本社移転データはありません。'}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div id="hub-events-list" className="space-y-4">
               {events.map((ev) => (
                 <article
                   key={ev.id}
+                  data-hub-item={`${ev.company_name} ${ev.corporate_number} ${ev.city_name || ''} ${ev.representative_name || ''}`.toLowerCase()}
                   className="bg-white dark:bg-[#151B22] rounded-xl border border-slate-200/90 dark:border-slate-800 p-5 hover:border-[#1B4F8A]/60 dark:hover:border-blue-500/60 transition-all hover:shadow-sm"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -444,13 +461,20 @@ export default async function RelocationHubPage({ params, searchParams }: PagePr
                       )}
                     </div>
 
-                    <Link
-                      href={`/${locale}/company/${ev.corporate_number}`}
-                      className="inline-flex items-center gap-1 font-semibold text-[#1B4F8A] dark:text-blue-400 hover:underline"
-                    >
-                      {isVi ? 'Xem chi tiết & Dòng thời gian biến động' : isEn ? 'View Company Profile & Timeline' : '企業詳細・移転履歴タイムラインを見る'}
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <HubWatchButton
+                        corporateNumber={ev.corporate_number}
+                        companyName={ev.company_name}
+                        locale={locale}
+                      />
+                      <Link
+                        href={`/${locale}/company/${ev.corporate_number}`}
+                        className="inline-flex items-center gap-1 font-semibold text-[#1B4F8A] dark:text-blue-400 hover:underline"
+                      >
+                        {isVi ? 'Xem chi tiết & Dòng thời gian biến động' : isEn ? 'View Company Profile & Timeline' : '企業詳細・移転履歴タイムラインを見る'}
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
                 </article>
               ))}
@@ -485,44 +509,12 @@ export default async function RelocationHubPage({ params, searchParams }: PagePr
           )}
         </section>
 
-        {/* B2B Relocation Sales Value Banner */}
-        <section className="bg-gradient-to-r from-slate-900 to-[#1B4F8A] text-white rounded-xl p-8 mb-8 shadow-sm">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 text-xs font-medium text-blue-200 mb-3">
-              <Download className="w-3.5 h-3.5" />
-              <span>Office Relocation Sales Signals</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold mb-3">
-              {isVi
-                ? 'Tiếp cận khách hàng B2B qua danh sách công ty vừa chuyển văn phòng'
-                : isEn
-                ? 'B2B Sales Outreach via Fresh Office Relocation Signals'
-                : 'オフィス移転・拡張移転企業のリストを活用したB2Bアプローチ'}
-            </h2>
-            <p className="text-sm text-slate-200 leading-relaxed mb-6">
-              {isVi
-                ? 'Các doanh nghiệp vừa chuyển hoặc mở rộng văn phòng có nhu cầu mua sắm thiết bị, viễn thông, thi công nội thất và dịch vụ giải pháp văn phòng rất lớn. Kigyou-list cung cấp dữ liệu tức thì giúp bạn đi trước đối thủ một bước.'
-                : isEn
-                ? 'Companies relocating their headquarters have urgent procurement needs for office furniture, telecommunications, IT infrastructure, and facilities. Kigyou-list delivers fresh leads in real time.'
-                : '本店を移転した企業は、事業拡大や新拠点開設に伴いオフィス什器、通信回線、内装デザイン、セキュリティ機器、福利厚生などの購買意欲が顕著に高まります。Kigyou-listなら最新の移転企業リストをリアルタイムに絞り込み可能です。'}
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href={`/${locale}/pricing`}
-                className="px-5 py-2.5 rounded-lg bg-white text-[#1B4F8A] hover:bg-slate-100 font-bold text-xs sm:text-sm transition-colors shadow-sm inline-flex items-center gap-2"
-              >
-                <span>{isVi ? 'Trải nghiệm gói miễn phí' : isEn ? 'Try Free Tier' : '無料プランで試す'}</span>
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href={`/${locale}/directory`}
-                className="px-5 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium text-xs sm:text-sm transition-colors"
-              >
-                {isVi ? 'Xem danh bạ ngành nghề' : isEn ? 'Explore Industry Directory' : '企業名鑑・業界別一覧を見る'}
-              </Link>
-            </div>
-          </div>
-        </section>
+        <HubWatchlistGuideSection
+          locale={locale}
+          category="relocation"
+          prefectureCode={prefecture?.code}
+          prefectureName={prefecture ? (locale === 'ja' ? prefecture.nameJa : prefLabel) : undefined}
+        />
       </main>
 
       <Footer />

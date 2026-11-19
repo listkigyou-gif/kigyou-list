@@ -46,8 +46,6 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       canonical: canonicalUrl,
       languages: {
         ja: `/ja/ranking/tenure`,
-        en: `/en/ranking/tenure`,
-        vi: `/vi/ranking/tenure`,
         "x-default": `/ja/ranking/tenure`,
       },
     },

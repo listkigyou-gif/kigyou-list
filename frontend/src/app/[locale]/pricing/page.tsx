@@ -378,20 +378,23 @@ https://kigyoulist.com/contact
       description: isEn ? "Perfect for testing usability" : isVi ? "Lý tưởng để kiểm tra thử tính năng của hệ thống" : "まずは使い勝手を試してみたい方に最適",
       features: isEn ? [
         "20 CSV exports per day (50 for verified business)",
+        "20 free Contact Form outreach credits per day",
         "Bulk Invoice verification (Up to 100 T-numbers per run)",
-        "Corporate Watchlist & Risk Alerts (Up to 100 companies free)",
+        "Corporate Watchlist & Risk Alerts (Up to 10 companies free)",
         "Full access to contact & sales intent filters",
         "View company profiles, FAX, shareholders & signals"
       ] : isVi ? [
         "Tải xuống 20 dòng CSV mỗi ngày (50 dòng nếu định danh doanh nghiệp)",
+        "Tặng 20 credit gửi Form tiếp cận miễn phí mỗi ngày",
         "Đối soát Hóa đơn Invoice hàng loạt (Tối đa 100 mã/lần)",
-        "Giám sát Doanh nghiệp & Cảnh báo biến động (Miễn phí 100 công ty)",
+        "Giám sát Doanh nghiệp & Cảnh báo biến động (Miễn phí 10 công ty)",
         "Mở toàn bộ bộ lọc kênh liên hệ & tín hiệu kinh doanh",
         "Xem toàn bộ chi tiết doanh nghiệp, số FAX & cổ đông"
       ] : [
         "毎日 20 件の CSV ダウンロード枠 (企業認証で50件/日)",
+        "毎日 20 件の問い合わせフォーム送信無料枠",
         "インボイス一括照会ツール（1回最大100件まで無料）",
-        "企業監視・重要変動検知アラート（最大100社まで無料見守り）",
+        "企業監視・重要変動検知アラート（最大10社まで無料見守り）",
         "全検索条件・営業シグナル・連絡先絞り込みの利用",
         "企業詳細プロフィール・FAX・主要株主の閲覧"
       ]
@@ -407,26 +410,26 @@ https://kigyoulist.com/contact
       description: isEn ? "Ideal for sole proprietors & salespeople running outreach" : isVi ? "Lý tưởng cho cá nhân kinh doanh & nhân viên bán hàng tiếp cận khách hàng" : "テレアポ・DM営業を始めたい個人事業主や営業マンに最適",
       features: isEn ? [
         "2,000 CSV downloads per month",
-        "Corporate Watchlist priority real-time alerts",
+        "Corporate Watchlist & priority real-time alerts (Up to 100 companies)",
         "Bulk Invoice verification report CSV download",
         "Corporate email export via CSV download",
-        "Unlimited MyList bookmarking & lead storage",
+        "MyList bookmarking & lead storage (Up to 100 companies)",
         "Right to purchase non-expiring rollover quota packs",
         "API integration (Key issuance & CRM/ERP syncing)"
       ] : isVi ? [
         "Tải xuống 2.000 dòng CSV mỗi tháng",
-        "Cảnh báo biến động đối tác ưu tiên thời gian thực",
+        "Giám sát doanh nghiệp & cảnh báo ưu tiên thời gian thực (Tối đa 100 công ty)",
         "Xuất báo cáo đối soát hóa đơn Invoice ra CSV",
         "Xuất địa chỉ email doanh nghiệp khi tải file CSV",
-        "Lưu trữ không giới hạn danh sách MyList",
+        "Lưu trữ danh sách MyList (Tối đa 100 công ty)",
         "Quyền mua các gói bổ sung không hết hạn (Add-on)",
         "Tích hợp API (Cấp khóa API & đồng bộ CRM/ERP)"
       ] : [
         "毎月 2,000 件の CSV ダウンロード枠",
-        "企業監視リスト 優先リアルタイム通知・アラート",
+        "企業監視リスト（最大100社・優先リアルタイム通知）",
         "インボイス一括照会 結果CSVレポート出力",
         "CSVダウンロード時の企業メールアドレス出力",
-        "マイリスト無制限保存（お気に入り・商談対象管理）",
+        "マイリスト保存枠（最大100社・お気に入り・商談対象管理）",
         "無期限引き継ぎ追加容量パックの購入権",
         "API連携 (API Key 発行・外部CRM/ERP連携)"
       ]
@@ -442,18 +445,21 @@ https://kigyoulist.com/contact
       description: isEn ? "Standard team plan with background exports via Mechanism B" : isVi ? "Gói chuẩn cho nhóm, hỗ trợ xuất hàng loạt chạy ngầm qua Mechanism B" : "Mechanism B による大量エクスポートを可能にする標準チーム枠",
       features: isEn ? [
         "10,000 CSV downloads per month",
+        "Corporate Watchlist & instant alerts (Up to 500 companies)",
         "Mechanism B background bulk downloads",
         "Supports bulk downloads over 10,000 items",
         "API integration (Key issuance & syncing)",
         "Priority customer support"
       ] : isVi ? [
         "Tải xuống 10.000 dòng CSV mỗi tháng",
+        "Giám sát doanh nghiệp & cảnh báo tức thì (Tối đa 500 công ty)",
         "Tải xuống hàng loạt chạy ngầm qua Mechanism B",
         "Hỗ trợ tải xuống số lượng lớn hơn 10.000 dòng",
         "Tích hợp API (Cấp khóa API & đồng bộ hóa)",
         "Ưu tiên hỗ trợ khách hàng"
       ] : [
         "毎月 10,000 件の CSV ダウンロード枠",
+        "企業監視リスト（最大500社・即時通知アラート）",
         "Mechanism B バックグラウンド一括ダウンロード",
         "10,000件超の大量データダウンロード対応",
         "API連携 (API Key 発行・外部データ連携)",
@@ -473,16 +479,19 @@ https://kigyoulist.com/contact
       recommended: false,
       features: isEn ? [
         "40,000 CSV downloads per month",
+        "Corporate Watchlist & dedicated monitoring (Up to 1,000 companies)",
         "API integration (Key issuance & syncing)",
         "Dedicated integration & engineer support",
         "Dedicated account manager"
       ] : isVi ? [
         "Tải xuống 40.000 dòng CSV mỗi tháng",
+        "Giám sát doanh nghiệp chuyên trách (Tối đa 1.000 công ty)",
         "Tích hợp API (Cấp khóa API & đồng bộ hóa)",
         "Hỗ trợ tích hợp & Kỹ sư kỹ thuật chuyên trách",
         "Quản lý tài khoản chuyên trách"
       ] : [
         "毎月 40,000 件の CSV ダウンロード枠",
+        "企業監視リスト（最大1,000社・専任監視）",
         "API連携 (API Key 発行・外部データ連携)",
         "専用インテグレーション・エンジニアサポート",
         "専任アカウントマネージャー配属"
@@ -1127,6 +1136,13 @@ https://kigyoulist.com/contact
                   <td className="py-3 px-3 text-center font-bold text-slate-800 dark:text-slate-200 tabular-nums">40,000 件 / 月</td>
                 </tr>
                 <tr className="hover:bg-slate-50/40 dark:hover:bg-[#12161E]">
+                  <td className="py-3 px-4 font-medium">{isEn ? "Daily Free Form Outreach Credits" : isVi ? "Credit gửi Form miễn phí mỗi ngày" : "フォーム送信 無料クレジット枠"}</td>
+                  <td className="py-3 px-3 text-center font-bold text-slate-800 dark:text-slate-200 tabular-nums">20件 / 日</td>
+                  <td className="py-3 px-3 text-center text-slate-400 text-[11px]">{isEn ? "Add-on Pack" : isVi ? "Mua thêm gói" : "配信枠別売"}</td>
+                  <td className="py-3 px-3 text-center text-slate-400 text-[11px] bg-blue-50/30 dark:bg-blue-950/10 border-x border-blue-200/60 dark:border-blue-900/40">{isEn ? "Add-on Pack" : isVi ? "Mua thêm gói" : "配信枠別売"}</td>
+                  <td className="py-3 px-3 text-center text-slate-400 text-[11px]">{isEn ? "Add-on Pack" : isVi ? "Mua thêm gói" : "配信枠別売"}</td>
+                </tr>
+                <tr className="hover:bg-slate-50/40 dark:hover:bg-[#12161E]">
                   <td className="py-3 px-4 font-medium">{isEn ? "Mechanism B Background Bulk Export (>10,000 items)" : isVi ? "Mechanism B tải ngầm dữ liệu lớn (>10.000 dòng)" : "Mechanism B バックグラウンド一括ダウンロード（1万件超の大量抽出）"}</td>
                   <td className="py-3 px-3 text-center text-slate-300 dark:text-slate-600"><Minus className="w-3.5 h-3.5 mx-auto" /></td>
                   <td className="py-3 px-3 text-center text-slate-300 dark:text-slate-600"><Minus className="w-3.5 h-3.5 mx-auto" /></td>
@@ -1150,17 +1166,17 @@ https://kigyoulist.com/contact
                 </tr>
                 <tr className="hover:bg-slate-50/40 dark:hover:bg-[#12161E]">
                   <td className="py-3 px-4 font-medium">{isEn ? "Corporate Watchlist & Real-time Alerts" : isVi ? "Giám sát doanh nghiệp & Cảnh báo biến động thời gian thực" : "企業監視リスト・重要変動検知アラート"}</td>
-                  <td className="py-3 px-3 text-center font-bold text-slate-700 dark:text-slate-300 tabular-nums">100社 (無料見守り)</td>
-                  <td className="py-3 px-3 text-center text-emerald-600 font-bold">1,000社 (優先通知)</td>
-                  <td className="py-3 px-3 text-center text-emerald-600 font-bold bg-blue-50/30 dark:bg-blue-950/10 border-x border-blue-200/60 dark:border-blue-900/40">5,000社 (即時通知)</td>
-                  <td className="py-3 px-3 text-center text-emerald-600 font-bold">無制限 (専任監視)</td>
+                  <td className="py-3 px-3 text-center font-bold text-slate-700 dark:text-slate-300 tabular-nums">10社 (無料見守り)</td>
+                  <td className="py-3 px-3 text-center text-emerald-600 font-bold">100社 (優先通知)</td>
+                  <td className="py-3 px-3 text-center text-emerald-600 font-bold bg-blue-50/30 dark:bg-blue-950/10 border-x border-blue-200/60 dark:border-blue-900/40">500社 (即時通知)</td>
+                  <td className="py-3 px-3 text-center text-emerald-600 font-bold">1,000社 (専任監視)</td>
                 </tr>
                 <tr className="hover:bg-slate-50/40 dark:hover:bg-[#12161E]">
                   <td className="py-3 px-4 font-medium">{isEn ? "MyList Bookmark Storage Capacity" : isVi ? "Dung lượng lưu trữ MyList" : "マイリスト保存企業枠"}</td>
-                  <td className="py-3 px-3 text-center text-slate-600 font-mono tabular-nums">100社</td>
-                  <td className="py-3 px-3 text-center text-emerald-600 font-bold">無制限</td>
-                  <td className="py-3 px-3 text-center text-emerald-600 font-bold bg-blue-50/30 dark:bg-blue-950/10 border-x border-blue-200/60 dark:border-blue-900/40">無制限</td>
-                  <td className="py-3 px-3 text-center text-emerald-600 font-bold">無制限</td>
+                  <td className="py-3 px-3 text-center text-slate-600 font-mono tabular-nums">10社</td>
+                  <td className="py-3 px-3 text-center text-emerald-600 font-bold tabular-nums">100社</td>
+                  <td className="py-3 px-3 text-center text-emerald-600 font-bold bg-blue-50/30 dark:bg-blue-950/10 border-x border-blue-200/60 dark:border-blue-900/40 tabular-nums">500社</td>
+                  <td className="py-3 px-3 text-center text-emerald-600 font-bold tabular-nums">1,000社</td>
                 </tr>
                 <tr className="hover:bg-slate-50/40 dark:hover:bg-[#12161E]">
                   <td className="py-3 px-4 font-medium">{isEn ? "REST API Access (API Key, CRM/ERP Integration)" : isVi ? "Tích hợp REST API (Cấp API Key, kết nối CRM/ERP)" : "REST API連携（API Key 発行・外部CRM/ERP自動同期）"}</td>
@@ -1589,6 +1605,10 @@ https://kigyoulist.com/contact
 
               {/* 3 Quick Value Badges */}
               <div className="flex flex-wrap items-center gap-2 mt-4 pt-3.5 border-t border-slate-100 dark:border-slate-800">
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 px-2.5 py-1 rounded-md border border-emerald-200/80 dark:border-emerald-800">
+                  <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>{isEn ? "20 Free Forms / Day (FREE Plan)" : isVi ? "Miễn phí 20 Form/ngày (Gói FREE)" : "毎日20件まで無料送信 (FREE枠)"}</span>
+                </span>
                 <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-[#0D1117] px-2.5 py-1 rounded-md border border-slate-200/70 dark:border-slate-800">
                   <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                   <span>{isEn ? "Zero Setup & Monthly Fee" : isVi ? "Không phí ban đầu / duy trì" : "初期費用・月額固定費 0円"}</span>

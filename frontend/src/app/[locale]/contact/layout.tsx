@@ -1,27 +1,25 @@
 import type { Metadata } from "next";
 
-interface LayoutProps {
-  children: React.ReactNode;
+export async function generateMetadata({
+  params,
+}: {
   params: Promise<{ locale: string }>;
-}
+}): Promise<Metadata> {
+  const { locale } = await params;
 
-export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
-  const resolvedParams = await params;
-  const locale = resolvedParams.locale || 'ja';
+  const title =
+    locale === "en"
+      ? "Contact Us & Corporate Data Correction Request | Kigyou-list"
+      : locale === "vi"
+      ? "Liên hệ & Yêu cầu cập nhật thông tin doanh nghiệp | Kigyou-list"
+      : "お問い合わせ・掲載企業情報の修正・削除申請窓口 | Kigyou-list";
 
-  let title = "お問い合わせ・各種法人ご相談 | Kigyou-list (企業リスト)";
-  let description = "日本全国500万社データベース「Kigyou-list」の公式お問い合わせ窓口。完全自動フォーム営業のご相談・文面添削、法人API連携・データ一括購入、自社情報の公式オーナー認証・非公開申請、請求書払いなどお気軽にご相談ください。";
-  let ogLocale = "ja_JP";
-
-  if (locale === 'en') {
-    title = "Contact & B2B Inquiry | Kigyou-list";
-    description = "Official contact desk for Kigyou-list. Consult about automated form marketing outreach, 5M+ company database API feeds, corporate ownership claims, custom CSV exports, and enterprise billing.";
-    ogLocale = "en_US";
-  } else if (locale === 'vi') {
-    title = "Liên hệ & Hỗ trợ Doanh nghiệp | Kigyou-list";
-    description = "Trung tâm liên hệ chính thức của Kigyou-list. Tư vấn chiến dịch gửi form tự động B2B, tích hợp API cơ sở dữ liệu 5 triệu doanh nghiệp, xác thực quyền sở hữu công ty và xuất dữ liệu doanh nghiệp theo yêu cầu.";
-    ogLocale = "vi_VN";
-  }
+  const description =
+    locale === "en"
+      ? "Contact TQC Corporation regarding Kigyou-list enterprise plans, API partnerships, or official corporate profile updates and opt-out requests."
+      : locale === "vi"
+      ? "Liên hệ với đội ngũ vận hành Kigyou-list (TQC株式会社) về gói dữ liệu B2B, tích hợp API hoặc yêu cầu chỉnh sửa thông tin hồ sơ doanh nghiệp."
+      : "Kigyou-list（運営：TQC株式会社）へのお問い合わせ、法人プラン・API連携のご相談、および掲載されている企業情報の修正・更新・非表示申請はこちらから承ります。";
 
   return {
     title,
@@ -30,40 +28,17 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       canonical: `/${locale}/contact`,
       languages: {
         ja: "/ja/contact",
-        en: "/en/contact",
-        vi: "/vi/contact",
         "x-default": "/ja/contact",
-      }
+      },
     },
     openGraph: {
       title,
       description,
       url: `https://kigyoulist.com/${locale}/contact`,
-      siteName: "Kigyou-list",
-      locale: ogLocale,
-      type: "website",
-      images: [
-        {
-          url: "/og-image.png",
-          width: 1200,
-          height: 630,
-          alt: title,
-        },
-      ],
-    },
-    twitter: {
-      card: "summary_large_image",
-      title,
-      description,
-      images: ["/og-image.png"],
     },
   };
 }
 
-export default function ContactLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function ContactLayout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }

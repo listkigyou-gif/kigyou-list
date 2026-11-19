@@ -69,7 +69,8 @@ export default function InvoiceBatchPage({ params }: { params: Promise<{ locale:
   const [tableSearch, setTableSearch] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [watchNotice, setWatchNotice] = useState<string | null>(null);
-  const { isLoggedIn, setAuthModalOpen, saveCompaniesBatch, savedCompanies } = useAuth();
+  const { isLoggedIn, setAuthModalOpen, saveCompaniesBatch, savedCompanies, watchlistLimit } = useAuth();
+  const maxQuotaLabel = Number.isFinite(watchlistLimit) ? watchlistLimit.toLocaleString() : (locale === "ja" ? "無制限" : locale === "vi" ? "Không giới hạn" : "Unlimited");
 
   // Count lines in input
   const inputCount = inputVal
@@ -105,18 +106,18 @@ export default function InvoiceBatchPage({ params }: { params: Promise<{ locale:
     if (addedCount > 0) {
       setWatchNotice(
         locale === "en"
-          ? `Added ${addedCount} companies to your Watchlist (Total: ${savedCompanies.length + addedCount}/100 companies).`
+          ? `Added ${addedCount} companies to your Watchlist (Total: ${savedCompanies.length + addedCount}/${maxQuotaLabel} companies).`
           : locale === "vi"
-          ? `Đã thêm ${addedCount} doanh nghiệp vào Danh sách theo dõi (Tổng: ${savedCompanies.length + addedCount}/100 công ty).`
-          : `${addedCount} 社を監視リスト（ウォッチ）に追加しました！（現在登録数: ${savedCompanies.length + addedCount} / 100社）`
+          ? `Đã thêm ${addedCount} doanh nghiệp vào Danh sách theo dõi (Tổng: ${savedCompanies.length + addedCount}/${maxQuotaLabel} công ty).`
+          : `${addedCount} 社を監視リスト（ウォッチ）に追加しました！（現在登録数: ${savedCompanies.length + addedCount} / ${maxQuotaLabel}社）`
       );
     } else if (maxReached) {
       setWatchNotice(
         locale === "en"
-          ? "Watchlist capacity reached (Max 100 companies)."
+          ? `Watchlist capacity reached (Max ${maxQuotaLabel} companies).`
           : locale === "vi"
-          ? "Đã đạt giới hạn danh sách theo dõi (Tối đa 100 công ty)."
-          : "監視リストの上限（最大100社）に達しています。"
+          ? `Đã đạt giới hạn danh sách theo dõi (Tối đa ${maxQuotaLabel} công ty).`
+          : `監視リストの上限（最大${maxQuotaLabel}社）に達しています。`
       );
     } else {
       setWatchNotice(

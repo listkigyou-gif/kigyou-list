@@ -2,12 +2,13 @@ import Link from 'next/link';
 import type { Metadata } from 'next';
 import { 
   Building2, MapPin, Calendar, ExternalLink, ChevronRight,
-  TrendingUp, ShieldCheck, Users, Coins, Download, Filter, Sparkles
+  TrendingUp, ShieldCheck, Users, Coins, Download, Filter
 } from 'lucide-react';
 import { 
   getHubDynamicEvents, 
   getHubDynamicEventsCount, 
-  getHubPrefectureCounts 
+  getHubPrefectureCounts,
+  getHubAvailableMonths 
 } from '@/lib/db';
 import { 
   PREFECTURES, 
@@ -17,6 +18,9 @@ import {
 } from '@/lib/hubUtils';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import HubQuickToolbar from '@/components/hubs/HubQuickToolbar';
+import HubWatchButton from '@/components/hubs/HubWatchButton';
+import HubWatchlistGuideSection from '@/components/hubs/HubWatchlistGuideSection';
 
 export const revalidate = 3600; // Cache for 1 hour with ISR
 
@@ -86,7 +90,7 @@ export default async function NewCompaniesHubPage({ params, searchParams }: Page
   const offset = (currentPage - 1) * limit;
 
   // Query events from hub_dynamic_events
-  const [events, totalCount, prefCounts] = await Promise.all([
+  const [events, totalCount, prefCounts, availableMonths] = await Promise.all([
     getHubDynamicEvents({
       category: 'new_establishment',
       prefectureCode: prefecture?.code,
@@ -99,7 +103,8 @@ export default async function NewCompaniesHubPage({ params, searchParams }: Page
       prefectureCode: prefecture?.code,
       yearMonth: yearMonth || undefined,
     }),
-    getHubPrefectureCounts('new_establishment', yearMonth || undefined)
+    getHubPrefectureCounts('new_establishment', yearMonth || undefined),
+    getHubAvailableMonths('new_establishment', prefecture?.code, 8)
   ]);
 
   const totalPages = Math.ceil(totalCount / limit);
@@ -157,6 +162,9 @@ export default async function NewCompaniesHubPage({ params, searchParams }: Page
           : isEn
           ? `Official corporate directory of newly incorporated businesses in ${prefLabel}.`
           : `${prefLabel}における新設法人の登記公表データ一覧です。`,
+        'isBasedOn': 'https://www.houjin-bangou.nta.go.jp/',
+        'creditText': `出典: Kigyou-list（企業リスト） - ${prefLabel}の新設法人・新規設立企業一覧 (${pageUrl})`,
+        'copyrightNotice': `© Kigyou-list (TQC株式会社) - 引用時は出典URL（${pageUrl}）を明記してください。`,
         'mainEntity': {
           '@type': 'ItemList',
           'numberOfItems': events.length,
@@ -348,6 +356,14 @@ export default async function NewCompaniesHubPage({ params, searchParams }: Page
           </div>
         </section>
 
+        <HubQuickToolbar
+          locale={locale}
+          basePath={`/${locale}/new-companies${prefecture ? '/' + prefecture.slug : ''}`}
+          currentYearMonth={yearMonth || undefined}
+          availableMonths={availableMonths}
+          totalCount={totalCount}
+        />
+
         {/* Company List View */}
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -374,10 +390,11 @@ export default async function NewCompaniesHubPage({ params, searchParams }: Page
               {isVi ? 'Hiện chưa có dữ liệu doanh nghiệp mới thành lập theo điều kiện đã chọn.' : isEn ? 'No newly established companies found for the selected criteria.' : '現在、指定された条件の新設法人データはありません。'}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div id="hub-events-list" className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {events.map((ev) => (
                 <article
                   key={ev.id}
+                  data-hub-item={`${ev.company_name} ${ev.corporate_number} ${ev.city_name || ''} ${ev.representative_name || ''}`.toLowerCase()}
                   className="bg-white dark:bg-[#151B22] rounded-xl border border-slate-200/90 dark:border-slate-800 p-5 hover:border-[#1B4F8A]/60 dark:hover:border-blue-500/60 transition-all hover:shadow-sm flex flex-col justify-between"
                 >
                   <div>
@@ -425,10 +442,12 @@ export default async function NewCompaniesHubPage({ params, searchParams }: Page
                   </div>
 
                   {/* Bottom Action Footer */}
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-                    <span className="text-slate-400 text-[11px]">
-                      {isVi ? 'Nguồn: Cơ quan Thuế Quốc gia Nhật Bản (NTA)' : isEn ? 'Source: National Tax Agency Japan (NTA)' : '出典：国税庁 法人番号公表サイト'}
-                    </span>
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <HubWatchButton
+                      corporateNumber={ev.corporate_number}
+                      companyName={ev.company_name}
+                      locale={locale}
+                    />
                     <Link
                       href={`/${locale}/company/${ev.corporate_number}`}
                       className="inline-flex items-center gap-1 font-semibold text-[#1B4F8A] dark:text-blue-400 hover:underline"
@@ -470,36 +489,12 @@ export default async function NewCompaniesHubPage({ params, searchParams }: Page
           )}
         </section>
 
-        {/* B2B Export / Lead Generation Call to Action Banner */}
-        <section className="bg-gradient-to-r from-slate-900 to-[#1B4F8A] text-white rounded-xl p-8 mb-8 shadow-sm">
-          <div className="max-w-3xl">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-white/10 text-xs font-medium text-blue-200 mb-3">
-              <Download className="w-3.5 h-3.5" />
-              <span>B2B Sales List Download</span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-bold mb-3">
-              {isVi ? 'Tải trọn bộ danh sách doanh nghiệp mới thành lập (CSV / Excel)' : isEn ? 'Download New Companies B2B Lead List in CSV / Excel' : '新設法人の営業リストをCSV / Excel形式で一括ダウンロード'}
-            </h2>
-            <p className="text-sm text-slate-200 leading-relaxed mb-6">
-              {isVi ? 'Doanh nghiệp mới thành lập là đối tượng có nhu cầu mua sắm và trang bị cao nhất: thuê văn phòng, đăng ký mạng, phần mềm kế toán, thiết kế website, tuyển dụng nhân sự... Kigyou-list cho phép bạn trích xuất danh sách mới mỗi ngày.' : isEn ? 'Newly established companies have immediate purchasing needs: office leasing, telecom, accounting SaaS, web design, and hiring. Export fresh daily incorporation lists with Kigyou-list.' : '設立直後の企業は、オフィス賃貸、回線開通、会計ソフト、Webサイト制作、人材採用などあらゆる購買意欲が最も高いゴールデンタイムです。Kigyou-listでは最新の新設法人リストを毎日CSVで出力可能です。'}
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href={`/${locale}/pricing`}
-                className="px-5 py-2.5 rounded-lg bg-white text-[#1B4F8A] hover:bg-slate-100 font-bold text-xs sm:text-sm transition-colors shadow-sm inline-flex items-center gap-2"
-              >
-                <span>{isVi ? 'Dùng thử gói Miễn phí' : isEn ? 'Try Free Plan' : '無料プランで試す'}</span>
-                <ChevronRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href={`/${locale}/search?establishment_from=2024`}
-                className="px-5 py-2.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-medium text-xs sm:text-sm transition-colors"
-              >
-                {isVi ? 'Tìm kiếm với bộ lọc chi tiết' : isEn ? 'Custom Advanced Search' : '条件を指定して詳細検索'}
-              </Link>
-            </div>
-          </div>
-        </section>
+        <HubWatchlistGuideSection
+          locale={locale}
+          category="establishment"
+          prefectureCode={prefecture?.code}
+          prefectureName={prefecture ? (locale === 'ja' ? prefecture.nameJa : prefLabel) : undefined}
+        />
       </main>
 
       <Footer />

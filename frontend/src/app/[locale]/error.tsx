@@ -60,3 +60,4 @@ export default function LocaleError({ error, reset }: ErrorProps) {
     </div>
   );
 }
+

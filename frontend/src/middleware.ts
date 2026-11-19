@@ -4,7 +4,15 @@ import type { NextRequest } from "next/server";
 const locales = ["ja", "en", "vi"];
 const defaultLocale = "ja";
 
+const BOT_UA_RE = /(googlebot|googleother|google-inspectiontool|bingbot|msnbot|yandexbot|applebot|duckduckbot|baiduspider|oai-searchbot|chatgpt-user|gptbot|claude-searchbot|claude-user|claudebot|perplexitybot|perplexity-user)/i;
+
 function getLocale(request: NextRequest): string {
+  // Always serve Japanese canonical locale to search & AI bots on non-localized paths
+  const ua = request.headers.get("user-agent") || "";
+  if (BOT_UA_RE.test(ua)) {
+    return defaultLocale;
+  }
+
   // 1. Check NEXT_LOCALE cookie
   const cookieLocale = request.cookies.get("NEXT_LOCALE")?.value;
   if (cookieLocale && locales.includes(cookieLocale)) {
@@ -42,16 +50,48 @@ export function middleware(request: NextRequest) {
     return NextResponse.redirect(nonWwwUrl, 308);
   }
 
-  // Bypass API routes, static assets, sitemaps, and Next.js internal folders
+  // Use public origin instead of internal proxy request.url (http://localhost:3000)
+  const publicBase = host && !host.includes("localhost") && !host.includes("127.0.0.1")
+    ? `https://${host}`
+    : (process.env.NEXTAUTH_URL || request.url);
+
+  // Block security scanner probe files immediately with 404 (prevents matching [locale] and returning 200)
+  if (
+    pathname.startsWith("/.") ||
+    /^\/(?:config\.env|gc-service\.json|wrangler\.toml|docker-compose\.yml|package\.json|tsconfig\.json|\.env.*)$/i.test(pathname)
+  ) {
+    return new NextResponse("Not Found", { status: 404 });
+  }
+
+  // Redirect legacy / hallucinated /index.html or broken relative domain prefixes to /ja
+  if (pathname === "/index.html" || pathname === "/index.htm" || pathname === "/index.php") {
+    return NextResponse.redirect(new URL(`/ja${search}`, publicBase), 308);
+  }
+  if (pathname.startsWith("/index.html/")) {
+    const cleanSub = pathname.slice("/index.html".length);
+    return NextResponse.redirect(new URL(`/ja${cleanSub}${search}`, publicBase), 308);
+  }
+  const firstSegment = pathname.split("/")[1] || "";
+  if (firstSegment.includes(":") || firstSegment.includes("%3A") || firstSegment.includes("%3a") || (firstSegment.includes(".") && pathname.split("/").length > 2)) {
+    const restPath = "/" + pathname.split("/").slice(2).join("/");
+    if (restPath.startsWith("/company/") || restPath.startsWith("/industry/") || restPath.startsWith("/area/")) {
+      return NextResponse.redirect(new URL(`/ja${restPath}${search}`, publicBase), 308);
+    }
+    return new NextResponse("Not Found", { status: 404 });
+  }
+
+  // Bypass API routes, static assets, sitemaps, llms.txt, and Next.js internal folders
   const isBypass = 
     pathname.startsWith("/api") || 
     pathname.startsWith("/_next") || 
     pathname.startsWith("/static") ||
     pathname.startsWith("/sitemap") ||
-    pathname.includes(".") || // e.g. favicon.ico, icon.svg, robots.txt, sitemap.xml
     pathname === "/favicon.ico" ||
     pathname === "/robots.txt" ||
-    pathname === "/sitemap.xml";
+    pathname === "/sitemap.xml" ||
+    pathname === "/llms.txt" ||
+    pathname === "/llms-full.txt" ||
+    /^\/[^/]+\.(?:png|jpg|jpeg|gif|svg|ico|webp|woff2?|ttf|css|js|xml|txt|webmanifest)$/i.test(pathname);
 
   if (isBypass) {
     return NextResponse.next();
@@ -68,11 +108,6 @@ export function middleware(request: NextRequest) {
 
   // Redirect if no locale prefix is present
   const detectedLocale = getLocale(request);
-  
-  // Use public origin instead of internal proxy request.url (http://localhost:3000)
-  const publicBase = host && !host.includes("localhost") && !host.includes("127.0.0.1")
-    ? `https://${host}`
-    : (process.env.NEXTAUTH_URL || request.url);
 
   // Construct the new URL with the locale prefix
   const redirectUrl = new URL(

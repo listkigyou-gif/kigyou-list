@@ -56,8 +56,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `/${locale}/privacy`,
       languages: {
         ja: "/ja/privacy",
-        en: "/en/privacy",
-        vi: "/vi/privacy",
         "x-default": "/ja/privacy",
       }
     },
@@ -692,7 +690,7 @@ export default async function PrivacyPage({ params }: PageProps) {
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-3 border-b border-slate-200 dark:border-slate-700">
                     <div>
                       <span className="text-[11px] font-bold text-slate-400 uppercase block">代表者 / 運営統括責任者</span>
-                      <span className="font-semibold text-slate-800 dark:text-slate-200">キム　バン　チュン (Van Trung Kim)</span>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">栗本 賢之 (Masayuki Kurimoto)</span>
                     </div>
                     <div>
                       <span className="text-[11px] font-bold text-slate-400 uppercase block">個人情報保護管理責任者</span>

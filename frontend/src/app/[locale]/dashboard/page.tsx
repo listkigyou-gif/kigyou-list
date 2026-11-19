@@ -290,7 +290,7 @@ export default function DashboardPage() {
   const [loadingPayments, setLoadingPayments] = useState(false);
   const [formCampaignsList, setFormCampaignsList] = useState<any[]>([]);
   const [loadingFormCampaigns, setLoadingFormCampaigns] = useState(false);
-  const [formCredits, setFormCredits] = useState<{ balance: number; total_purchased: number; total_used: number }>({
+  const [formCredits, setFormCredits] = useState<{ balance: number; total_purchased: number; total_used: number; daily_free_remaining?: number; daily_free_allowance?: number }>({
     balance: 0,
     total_purchased: 0,
     total_used: 0
@@ -1243,7 +1243,8 @@ export default function DashboardPage() {
       .filter((c) => selectedCompanyIds.includes(c.corporate_number))
       .map((c) => ({ id: c.corporate_number, name: c.company_name }));
     if (selectedList.length === 0) return;
-    if (selectedList.length < 100) {
+    const canUseDailyFree = (formCredits.daily_free_remaining ?? 0) > 0 && selectedList.length <= (formCredits.daily_free_remaining ?? 0);
+    if (selectedList.length < 100 && !canUseDailyFree) {
       alert(
         locale === 'ja'
           ? `フォーム営業キャンペーンの作成は【最低100社以上】の選定が必要です。\n（現在選択中: ${selectedList.length}社）\n\n少数の過剰申請を防ぎ、アプローチ成約率を担保するため、100社以上を選択して作成してください。`

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_JP } from "next/font/google";
+import { notFound } from "next/navigation";
 import "../globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import { AuthModal } from "@/components/AuthModal";
@@ -9,6 +10,8 @@ import { LanguageProvider } from "@/context/LanguageContext";
 import { Suspense } from "react";
 import { TopProgressBar } from "@/components/TopProgressBar";
 import Script from "next/script";
+
+const VALID_LOCALES = ["ja", "en", "vi"];
 
 const notoSansJP = Noto_Sans_JP({
   subsets: ["latin"],
@@ -28,6 +31,16 @@ export async function generateMetadata({
   params: Promise<{ locale: string }>;
 }): Promise<Metadata> {
   const { locale } = await params;
+  if (!VALID_LOCALES.includes(locale)) {
+    return {
+      title: "Not Found | Kigyou-list",
+      robots: {
+        index: false,
+        follow: false,
+        googleBot: { index: false, follow: false },
+      },
+    };
+  }
   
   let title = "企業リスト・企業データ検索ならKigyou-list | 全国500万社の営業リスト作成・無料ダウンロード";
   let description = "【無料DLあり】日本全国500万社以上の企業リスト・企業データを網羅した国内最大級のB2Bデータベース。業界・地域・資本金や求人・補助金・入札シグナルで高確度ターゲティング。電話番号・HP・お問い合わせフォームURL付きの最新営業リストを即時作成＆CSV一括出力可能です。";
@@ -57,18 +70,14 @@ export async function generateMetadata({
     ogLocale = "vi_VN";
   }
 
+  const isIndexableLocale = locale === "ja";
+
   return {
     metadataBase: new URL("https://kigyoulist.com"),
     title,
     description,
     keywords,
     alternates: {
-      languages: {
-        ja: "/ja",
-        en: "/en",
-        vi: "/vi",
-        "x-default": "/ja",
-      },
       types: {
         "text/plain": [
           { url: "/llms.txt", title: "LLMs Context" },
@@ -79,7 +88,6 @@ export async function generateMetadata({
     openGraph: {
       title,
       description,
-      url: `https://kigyoulist.com/${locale}`,
       siteName: "Kigyou-list",
       locale: ogLocale,
       type: "website",
@@ -93,11 +101,11 @@ export async function generateMetadata({
       ],
     },
     robots: {
-      index: true,
-      follow: true,
+      index: isIndexableLocale,
+      follow: isIndexableLocale,
       googleBot: {
-        index: true,
-        follow: true,
+        index: isIndexableLocale,
+        follow: isIndexableLocale,
         'max-video-preview': -1,
         'max-image-preview': 'large',
         'max-snippet': -1,
@@ -126,6 +134,9 @@ export default async function LocalizedLayout({
   params,
 }: Readonly<LayoutParams>) {
   const { locale } = await params;
+  if (!VALID_LOCALES.includes(locale)) {
+    notFound();
+  }
   const translations = getTranslations(locale);
   const gaId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
@@ -133,15 +144,20 @@ export default async function LocalizedLayout({
     "@context": "https://schema.org",
     "@type": "Organization",
     name: "Kigyou-list",
-    alternateName: ["Kigyou List", "kigyoulist.com", "株式会社Kigyou-list"],
-    url: "https://kigyoulist.com",
+    legalName: "TQC株式会社",
+    taxID: "4013301048678",
+    alternateName: ["Kigyou List", "kigyoulist.com", "企業リスト", "Kigyou-list（企業リスト）"],
+    url: "https://kigyoulist.com/ja",
     logo: "https://kigyoulist.com/og-image.png",
+    publishingPrinciples: "https://kigyoulist.com/llms.txt",
+    creditText: "出典: Kigyou-list（企業リスト） https://kigyoulist.com/ja",
+    copyrightNotice: "© Kigyou-list (TQC株式会社) - AI検索・記事での引用時は出典「Kigyou-list（https://kigyoulist.com/ja）」を明記してください。",
     description:
       locale === "en"
-        ? "Japan's largest B2B database covering over 5 million company profiles."
+        ? "Japan's largest B2B database covering over 5.6 million company profiles."
         : locale === "vi"
-        ? "Cơ sở dữ liệu B2B lớn nhất Nhật Bản với hơn 5 triệu hồ sơ doanh nghiệp."
-        : "日本全国500万社以上の企業情報を網羅した国内最大級のB2Bデータベース・営業リスト。",
+        ? "Cơ sở dữ liệu B2B lớn nhất Nhật Bản với hơn 5,6 triệu hồ sơ doanh nghiệp."
+        : "日本全国560万社以上の企業情報を網羅した国内最大級のB2Bデータベース・営業リスト。",
     sameAs: [
       "https://x.com/kigyoulist",
       "https://note.com/kigyoulist",

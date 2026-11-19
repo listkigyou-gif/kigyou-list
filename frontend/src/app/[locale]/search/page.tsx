@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { 
   searchCompanies, getPrefecturesWithCounts, 
-  getCitiesWithCounts, getIndustriesHierarchy, SearchFilters, getIndustryMap 
+  getCitiesWithCounts, getIndustriesHierarchy, SearchFilters, getIndustryMap,
+  getLiveSyncFeed, LiveSyncFeed
 } from '@/lib/db';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
@@ -30,8 +31,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `/${locale}/search`,
       languages: {
         ja: "/ja/search",
-        en: "/en/search",
-        vi: "/vi/search",
       }
     }
   };
@@ -48,9 +47,31 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
 
   // 1. Extract query params safely
   const keyword = typeof searchParamsVal.q === 'string' ? searchParamsVal.q : '';
-  const prefCode = typeof searchParamsVal.prefecture === 'string' && /^\d{2}$/.test(searchParamsVal.prefecture) ? searchParamsVal.prefecture : undefined;
+  // Multi-target Prefectures (Max 3) & fallback
+  let prefCodes: string[] | undefined;
+  const rawPrefs = searchParamsVal.prefectures || searchParamsVal.prefecture;
+  if (typeof rawPrefs === 'string') {
+    const list = rawPrefs.split(',').map(s => s.trim()).filter(s => /^\d{2}$/.test(s));
+    if (list.length > 0) prefCodes = list.slice(0, 3);
+  } else if (Array.isArray(rawPrefs)) {
+    const list = rawPrefs.map(s => String(s).trim()).filter(s => /^\d{2}$/.test(s));
+    if (list.length > 0) prefCodes = list.slice(0, 3);
+  }
+  const prefCode = (prefCodes && prefCodes.length === 1) ? prefCodes[0] : (typeof searchParamsVal.prefecture === 'string' && /^\d{2}$/.test(searchParamsVal.prefecture) ? searchParamsVal.prefecture : undefined);
+  
   const city = typeof searchParamsVal.city === 'string' ? searchParamsVal.city : undefined;
-  const indCode = typeof searchParamsVal.industry === 'string' && (/^[A-Z]$/.test(searchParamsVal.industry) || /^\d{2}$/.test(searchParamsVal.industry)) ? searchParamsVal.industry : undefined;
+
+  // Multi-target Industries (Max 3) & fallback
+  let indCodes: string[] | undefined;
+  const rawInds = searchParamsVal.industries || searchParamsVal.industry;
+  if (typeof rawInds === 'string') {
+    const list = rawInds.split(',').map(s => s.trim()).filter(s => /^[A-Z]$/.test(s) || /^\d{2}$/.test(s));
+    if (list.length > 0) indCodes = list.slice(0, 3);
+  } else if (Array.isArray(rawInds)) {
+    const list = rawInds.map(s => String(s).trim()).filter(s => /^[A-Z]$/.test(s) || /^\d{2}$/.test(s));
+    if (list.length > 0) indCodes = list.slice(0, 3);
+  }
+  const indCode = (indCodes && indCodes.length === 1) ? indCodes[0] : (typeof searchParamsVal.industry === 'string' && (/^[A-Z]$/.test(searchParamsVal.industry) || /^\d{2}$/.test(searchParamsVal.industry)) ? searchParamsVal.industry : undefined);
   
   let minEmp: number | undefined;
   if (searchParamsVal.min_employees) {
@@ -169,8 +190,10 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
   // Assemble filter object
   const filters: SearchFilters = {
     prefecture_code: prefCode,
+    prefecture_codes: prefCodes,
     city_name: city,
     industry_code: indCode,
+    industry_codes: indCodes,
     min_employees: minEmp,
     max_employees: maxEmp,
     min_capital: minCap,
@@ -216,6 +239,7 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
   let citiesResult: any[] = [];
   let searchResult: { companies: any[]; totalCount: number } = { companies: [], totalCount: 0 };
   let industryMapResult: Record<string, string> = {};
+  let liveFeedResult: LiveSyncFeed = { today_count: 0, last_sync_at: '', items: [] };
 
   try {
     const results = await Promise.all([
@@ -241,6 +265,10 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
         console.error('[SearchPage] getIndustryMap failed:', err);
         return {};
       }),
+      getLiveSyncFeed(8).catch(err => {
+        console.error('[SearchPage] getLiveSyncFeed failed:', err);
+        return { today_count: 0, last_sync_at: '', items: [] };
+      }),
     ]);
 
     prefecturesResult = results[0] || [];
@@ -248,6 +276,7 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
     citiesResult = results[2] || [];
     searchResult = results[3] || { companies: [], totalCount: 0 };
     industryMapResult = results[4] || {};
+    liveFeedResult = results[5] || { today_count: 0, last_sync_at: '', items: [] };
   } catch (err) {
     console.error('[SearchPage] Parallel fetch unexpected rejection:', err);
   }
@@ -290,8 +319,10 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
   const initialFilters = {
     keyword,
     prefCode,
+    prefCodes,
     city,
     indCode,
+    indCodes,
     minEmp,
     maxEmp,
     minCap,
@@ -385,6 +416,7 @@ export default async function SearchPage({ params, searchParams }: PageProps) {
         industries={industries}
         industryMap={industryMap}
         initialFilters={initialFilters}
+        initialLiveFeed={liveFeedResult}
       />
       <Footer />
     </div>

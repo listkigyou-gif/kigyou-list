@@ -31,6 +31,15 @@ const CODE_TO_PREF = Object.fromEntries(
   Object.entries(PREF_MAP).map(([k, v]) => [v, k])
 );
 
+const REGION_TO_CODES: Record<string, string[]> = {
+  '関東': ['13', '14', '11', '12', '08', '09', '10'],
+  '関西': ['27', '28', '26', '25', '29', '30'],
+  '東海・中部': ['23', '22', '21', '24', '15', '20', '19', '16', '17', '18'],
+  '九州・沖縄': ['40', '41', '42', '43', '44', '45', '46', '47'],
+  '北海道・東北': ['01', '02', '03', '04', '05', '06', '07'],
+  '中国・四国': ['34', '33', '35', '31', '32', '37', '38', '36', '39'],
+};
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -62,32 +71,46 @@ export async function GET(request: Request) {
     }
 
     const rawPref = searchParams.get('prefecture')?.trim() || '';
+    const regionParam = searchParams.get('region')?.trim() || '';
     const city = searchParams.get('city')?.trim() || '';
     const keyword = searchParams.get('keyword')?.trim() || searchParams.get('query')?.trim() || '';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '24', 10)));
     const offset = (page - 1) * limit;
 
-    // Resolve prefecture code if specified
-    let prefCode = '';
-    if (rawPref && rawPref !== '全国' && rawPref !== 'ALL') {
-      if (/^\d{1,2}$/.test(rawPref)) {
-        prefCode = rawPref.padStart(2, '0');
+    // Resolve prefecture codes
+    let prefCodes: string[] = [];
+    if (regionParam && REGION_TO_CODES[regionParam]) {
+      prefCodes = REGION_TO_CODES[regionParam];
+    } else if (rawPref && rawPref !== '全国' && rawPref !== 'ALL') {
+      if (REGION_TO_CODES[rawPref]) {
+        prefCodes = REGION_TO_CODES[rawPref];
       } else {
-        const normalized = rawPref.endsWith('都') || rawPref.endsWith('府') || rawPref.endsWith('県')
-          ? rawPref
-          : rawPref + (rawPref === '東京' ? '都' : (rawPref === '大阪' || rawPref === '京都' ? '府' : '県'));
-        prefCode = PREF_MAP[normalized] || PREF_MAP[rawPref] || '';
+        const parts = rawPref.split(',').map(p => p.trim()).filter(Boolean);
+        parts.forEach(part => {
+          if (/^\d{1,2}$/.test(part)) {
+            prefCodes.push(part.padStart(2, '0'));
+          } else {
+            const normalized = part.endsWith('都') || part.endsWith('府') || part.endsWith('県')
+              ? part
+              : part + (part === '東京' ? '都' : (part === '大阪' || part === '京都' ? '府' : '県'));
+            const c = PREF_MAP[normalized] || PREF_MAP[part];
+            if (c) prefCodes.push(c);
+          }
+        });
       }
     }
 
-    // Build conditions for company_licenses (table size is only ~26,000 rows for takken)
+    // Build conditions for company_licenses (table size is ~26,000 rows for takken)
     const conditions: string[] = ["license_type = '宅地建物取引業'"];
     const params: any[] = [];
 
-    if (prefCode) {
-      params.push(prefCode);
+    if (prefCodes.length === 1) {
+      params.push(prefCodes[0]);
       conditions.push(`prefecture_code = $${params.length}`);
+    } else if (prefCodes.length > 1) {
+      params.push(prefCodes);
+      conditions.push(`prefecture_code = ANY($${params.length})`);
     }
 
     if (city) {
@@ -154,12 +177,12 @@ export async function GET(request: Request) {
       const address = lic.registered_address || comp.full_address || '';
       const phone = lic.office_phone || comp.phone_number || null;
       
-      let parsedSpecialties: string[] = ['宅建免許保有', '競売入札代行', '物件調査'];
-      if (lic.specialties_json) {
+      let parsedSpecialties: string[] = ['宅建免許保有'];
+      if (lic.is_claimed && lic.specialties_json) {
         try {
           const specObj = JSON.parse(lic.specialties_json);
-          if (Array.isArray(specObj)) {
-            parsedSpecialties = Array.from(new Set([...parsedSpecialties, ...specObj]));
+          if (Array.isArray(specObj) && specObj.length > 0) {
+            parsedSpecialties = Array.from(new Set(['宅建免許保有', ...specObj]));
           }
         } catch {}
       }

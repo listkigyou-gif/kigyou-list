@@ -56,8 +56,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `/${locale}/tools/ai-sales-list`,
       languages: {
         ja: "/ja/tools/ai-sales-list",
-        en: "/en/tools/ai-sales-list",
-        vi: "/vi/tools/ai-sales-list",
         "x-default": "/ja/tools/ai-sales-list",
       },
     },

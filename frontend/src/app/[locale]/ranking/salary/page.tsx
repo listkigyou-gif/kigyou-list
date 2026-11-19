@@ -46,8 +46,6 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
       canonical: canonicalUrl,
       languages: {
         ja: `/ja/ranking/salary`,
-        en: `/en/ranking/salary`,
-        vi: `/vi/ranking/salary`,
         "x-default": `/ja/ranking/salary`,
       },
     },

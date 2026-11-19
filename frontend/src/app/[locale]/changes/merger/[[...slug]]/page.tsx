@@ -7,7 +7,8 @@ import {
 import { 
   getHubDynamicEvents, 
   getHubDynamicEventsCount, 
-  getHubPrefectureCounts 
+  getHubPrefectureCounts,
+  getHubAvailableMonths 
 } from '@/lib/db';
 import { 
   PREFECTURES, 
@@ -16,6 +17,9 @@ import {
 } from '@/lib/hubUtils';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import HubQuickToolbar from '@/components/hubs/HubQuickToolbar';
+import HubWatchButton from '@/components/hubs/HubWatchButton';
+import HubWatchlistGuideSection from '@/components/hubs/HubWatchlistGuideSection';
 
 export const revalidate = 3600; // Cache for 1 hour with ISR
 
@@ -85,7 +89,7 @@ export default async function MergerHubPage({ params, searchParams }: PageProps)
   const offset = (currentPage - 1) * limit;
 
   // Query events from hub_dynamic_events for 'merger'
-  const [events, totalCount, prefCounts] = await Promise.all([
+  const [events, totalCount, prefCounts, availableMonths] = await Promise.all([
     getHubDynamicEvents({
       category: 'merger',
       prefectureCode: prefecture?.code,
@@ -98,7 +102,8 @@ export default async function MergerHubPage({ params, searchParams }: PageProps)
       prefectureCode: prefecture?.code,
       yearMonth: yearMonth || undefined,
     }),
-    getHubPrefectureCounts('merger', yearMonth || undefined)
+    getHubPrefectureCounts('merger', yearMonth || undefined),
+    getHubAvailableMonths('merger', prefecture?.code, 8)
   ]);
 
   const totalPages = Math.ceil(totalCount / limit);
@@ -156,6 +161,9 @@ export default async function MergerHubPage({ params, searchParams }: PageProps)
           : isEn
           ? `Corporate registry of trade name alterations, mergers and reorganizations in ${prefLabel}.`
           : `${prefLabel}において商号変更や組織再編を実施した企業のデータベース一覧です。`,
+        'isBasedOn': 'https://www.houjin-bangou.nta.go.jp/',
+        'creditText': `出典: Kigyou-list（企業リスト） - ${prefLabel}の商号変更・企業合併一覧 (${pageUrl})`,
+        'copyrightNotice': `© Kigyou-list (TQC株式会社) - 引用時は出典URL（${pageUrl}）を明記してください。`,
         'mainEntity': {
           '@type': 'ItemList',
           'numberOfItems': events.length,
@@ -348,6 +356,14 @@ export default async function MergerHubPage({ params, searchParams }: PageProps)
           </div>
         </section>
 
+        <HubQuickToolbar
+          locale={locale}
+          basePath={`/${locale}/changes/merger${prefecture ? '/' + prefecture.slug : ''}`}
+          currentYearMonth={yearMonth || undefined}
+          availableMonths={availableMonths}
+          totalCount={totalCount}
+        />
+
         {/* Merger Events List */}
         <section className="mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -358,7 +374,7 @@ export default async function MergerHubPage({ params, searchParams }: PageProps)
                   ? `Doanh nghiệp vừa đổi tên & sáp nhập (Hiển thị ${events.length} trên tổng ${totalCount.toLocaleString()})`
                   : isEn
                   ? `Recent Name Changes & Mergers (Showing ${events.length} of ${totalCount.toLocaleString()})`
-                  : `商号変更・合併登記一覧（${totalCount.toLocaleString()} 件中 {events.length} 件表示）`}
+                  : `商号変更・合併登記一覧（${totalCount.toLocaleString()} 件中 ${events.length} 件表示）`}
               </span>
             </h2>
           </div>
@@ -372,10 +388,11 @@ export default async function MergerHubPage({ params, searchParams }: PageProps)
                 : '現在、指定された条件の商号変更データはありません。'}
             </div>
           ) : (
-            <div className="space-y-4">
+            <div id="hub-events-list" className="space-y-4">
               {events.map((ev) => (
                 <article
                   key={ev.id}
+                  data-hub-item={`${ev.company_name} ${ev.corporate_number} ${ev.city_name || ''} ${ev.old_value || ''}`.toLowerCase()}
                   className="bg-white dark:bg-[#151B22] rounded-xl border border-slate-200/90 dark:border-slate-800 p-5 hover:border-[#1B4F8A]/60 dark:hover:border-blue-500/60 transition-all hover:shadow-sm"
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
@@ -425,13 +442,20 @@ export default async function MergerHubPage({ params, searchParams }: PageProps)
                       <span>{ev.prefecture_name}{ev.city_name || ''}</span>
                     </div>
 
-                    <Link
-                      href={`/${locale}/company/${ev.corporate_number}`}
-                      className="inline-flex items-center gap-1 font-semibold text-[#1B4F8A] dark:text-blue-400 hover:underline"
-                    >
-                      {isVi ? 'Xem chi tiết & Lịch sử đổi tên' : isEn ? 'View Profile & Reorganization History' : '企業詳細・商号変更履歴を見る'}
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
+                    <div className="flex items-center gap-3">
+                      <HubWatchButton
+                        corporateNumber={ev.corporate_number}
+                        companyName={ev.company_name}
+                        locale={locale}
+                      />
+                      <Link
+                        href={`/${locale}/company/${ev.corporate_number}`}
+                        className="inline-flex items-center gap-1 font-semibold text-[#1B4F8A] dark:text-blue-400 hover:underline"
+                      >
+                        {isVi ? 'Xem chi tiết & Lịch sử đổi tên' : isEn ? 'View Profile & Reorganization History' : '企業詳細・商号変更履歴を見る'}
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </Link>
+                    </div>
                   </div>
                 </article>
               ))}
@@ -465,6 +489,13 @@ export default async function MergerHubPage({ params, searchParams }: PageProps)
             </div>
           )}
         </section>
+
+        <HubWatchlistGuideSection
+          locale={locale}
+          category="merger"
+          prefectureCode={prefecture?.code}
+          prefectureName={prefecture ? (locale === 'ja' ? prefecture.nameJa : prefLabel) : undefined}
+        />
       </main>
 
       <Footer />

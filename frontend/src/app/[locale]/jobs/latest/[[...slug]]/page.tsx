@@ -12,8 +12,10 @@ import {
 import { 
   PREFECTURES, 
   parseHubSlug,
-  getPrefectureLabel 
+  getPrefectureLabel,
+  sanitizePublicHiringText
 } from '@/lib/hubUtils';
+import { getTodayJstIsoDate, resolveActiveJobPostingValidThrough } from '@/lib/dateUtils';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 
@@ -48,13 +50,17 @@ function parseHiringDetails(raw: string | null): {
     try {
       const obj = JSON.parse(trimmed);
       if (typeof obj === 'object' && obj !== null) {
-        return { isJson: true, data: obj };
+        const sanitized: Record<string, any> = {};
+        for (const [k, v] of Object.entries(obj)) {
+          sanitized[k] = typeof v === 'string' ? sanitizePublicHiringText(v) : v;
+        }
+        return { isJson: true, data: sanitized as HiringDetails };
       }
     } catch {
       // fallback to plain text
     }
   }
-  return { isJson: false, text: raw };
+  return { isJson: false, text: sanitizePublicHiringText(raw) };
 }
 
 interface PageProps {
@@ -87,7 +93,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     ? `Cơ sở dữ liệu các công ty đang tích cực tuyển dụng nhân sự tại ${prefLabel}. Liên kết trang tuyển dụng chính thức, mã số thuế NTA, địa chỉ, người đại diện và quy mô vốn.`
     : isEn
     ? `Real-time database of companies actively hiring in ${prefLabel}. Official career site links, corporate numbers, capital scale, and verified business contacts.`
-    : `${prefLabel}で現在、積極採用・求人募集を行っている企業のデータベース一覧です。公式採用ページURL、ハローワーク求人、法人番号、所在地、資本金、従業員規模を網羅。人材紹介、人材派遣、中途採用リサーチに。`;
+    : `${prefLabel}で現在、積極採用・求人募集を行っている企業のデータベース一覧です。公式採用ページURL、公開求人情報、法人番号、所在地、資本金、従業員規模を網羅。人材紹介、人材派遣、中途採用リサーチに。`;
 
   const canonicalPath = slug && slug.length > 0 ? `/jobs/latest/${slug.join('/')}` : '/jobs/latest';
 
@@ -154,9 +160,77 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
   const baseUrl = 'https://kigyoulist.com';
   const pageUrl = `${baseUrl}/${locale}/jobs/latest${slug && slug.length > 0 ? '/' + slug.join('/') : ''}`;
 
+  const todayIsoJst = getTodayJstIsoDate();
+  const hubJobPostings = events
+    .map((ev) => {
+      const parsed = parseHiringDetails(ev.description_ja);
+      const d = parsed.isJson && parsed.data ? parsed.data : undefined;
+      const datePosted = ev.event_date && /^\d{4}-\d{2}-\d{2}/.test(String(ev.event_date))
+        ? String(ev.event_date).slice(0, 10)
+        : todayIsoJst;
+      const validThrough = resolveActiveJobPostingValidThrough(d?.expiry_date, datePosted, 60);
+      if (!validThrough) {
+        return null;
+      }
+
+      const jobTitle = ev.title_ja && ev.title_ja !== '求人募集中' && !ev.title_ja.includes('積極採用企業')
+        ? ev.title_ja
+        : `${ev.company_name}の正社員・中途採用募集（${d?.employment_type || '総合職・専門職'}）`;
+      const rawWorkLoc = d?.work_location ? String(d.work_location) : '';
+      const postalMatch = rawWorkLoc.match(/〒?\s*(\d{3}-\d{4}|\d{7})/);
+      const postalCode = postalMatch ? postalMatch[1] : '';
+      const cleanWorkLoc = rawWorkLoc.replace(/〒?\s*(\d{3}-\d{4}|\d{7})\s*/, '').trim();
+      const descParts = [
+        `【募集職種】${jobTitle}`,
+        `【企業名】${ev.company_name}（国税庁法人番号：${ev.corporate_number}）`,
+        `【勤務地・所在地】${cleanWorkLoc || `${ev.prefecture_name || '東京都'}${ev.city_name || ''}`}`
+      ];
+      if (d?.job_description) descParts.push(`【仕事内容】${d.job_description}`);
+      if (d?.wages) descParts.push(`【給与・賃金】${d.wages}`);
+      if (d?.working_hours) descParts.push(`【就業時間】${d.working_hours}`);
+      if (d?.holidays) descParts.push(`【休日・休暇】${d.holidays}`);
+      if (!d && parsed.text) descParts.push(`【求人詳細】${parsed.text}`);
+      descParts.push(`${ev.company_name}の最新採用・求人募集要項および企業概要・業績データはKigyou-list（企業リスト）にて公開中です。`);
+
+      return {
+        '@type': 'JobPosting',
+        'title': jobTitle,
+        'description': descParts.join(' / '),
+        'datePosted': datePosted,
+        'validThrough': validThrough,
+        'employmentType': 'FULL_TIME',
+        'hiringOrganization': {
+          '@type': 'Organization',
+          'name': ev.company_name,
+          'sameAs': (ev.new_value && ev.new_value.startsWith('http'))
+            ? ev.new_value
+            : `${baseUrl}/${locale}/company/${ev.corporate_number}`
+        },
+        'identifier': {
+          '@type': 'PropertyValue',
+          'name': ev.company_name,
+          'value': d?.job_number ? String(d.job_number) : `${ev.corporate_number}-${ev.id}`
+        },
+        'jobLocation': {
+          '@type': 'Place',
+          'address': {
+            '@type': 'PostalAddress',
+            'addressCountry': 'JP',
+            'addressRegion': ev.prefecture_name || '東京都',
+            'addressLocality': ev.city_name || '',
+            'streetAddress': cleanWorkLoc || `${ev.prefecture_name || ''}${ev.city_name || ''}`,
+            ...(postalCode ? { 'postalCode': postalCode } : {})
+          }
+        }
+      };
+    })
+    .filter((item): item is NonNullable<typeof item> => item !== null)
+    .slice(0, 10);
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@graph': [
+      ...hubJobPostings,
       {
         '@type': 'BreadcrumbList',
         'itemListElement': [
@@ -267,10 +341,10 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
               <Briefcase className="w-4 h-4" />
               <span>
                 {isVi
-                  ? 'Phát hiện tín hiệu tuyển dụng từ Trang tuyển dụng chính thức & HelloWork'
+                  ? 'Phát hiện tín hiệu tuyển dụng từ Trang tuyển dụng chính thức & Nguồn tuyển dụng công khai'
                   : isEn
-                  ? 'Official Careers Pages & HelloWork Hiring Signals'
-                  : '公式採用ページ & ハローワーク求人シグナル検知'}
+                  ? 'Official Careers Pages & Public Hiring Signals'
+                  : '公式採用ページ & 公開求人シグナル検知'}
               </span>
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400">
@@ -294,7 +368,7 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
               ? `Cơ sở dữ liệu các công ty đang tích cực tuyển dụng nhân sự chính thức, tuyển dụng trung cấp và sinh viên mới tốt nghiệp tại ${prefLabel}. Doanh nghiệp đang mở rộng quy mô là khách hàng tiềm năng cao cho các giải pháp nhân sự, SaaS, đào tạo và mở rộng văn phòng.`
               : isEn
               ? `Verified database of companies actively hiring full-time staff, mid-career professionals, and graduates in ${prefLabel}. Expanding companies present prime B2B opportunities for HR tech, recruitment, and corporate services.`
-              : `${prefLabel}にて現在、中途採用・正社員募集・新卒採用を積極的に行っている企業のデータベースです。採用活動中の企業は事業拡大期にあり、人材紹介、人事SaaS、研修サービス、オフィス拡大など様々なB2B商材の導入意欲が旺盛です。公式リクルートページやハローワーク求人を検知した企業を毎日更新。`}
+              : `${prefLabel}にて現在、中途採用・正社員募集・新卒採用を積極的に行っている企業のデータベースです。採用活動中の企業は事業拡大期にあり、人材紹介、人事SaaS、研修サービス、オフィス拡大など様々なB2B商材の導入意欲が旺盛です。公式リクルートページや公開求人情報を検知した企業を毎日更新。`}
           </p>
 
           {/* Quick Metrics Bar */}
@@ -517,7 +591,7 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                             {d.job_number && (
                               <div className="flex items-center justify-between text-[10px] text-slate-400 pt-0.5">
                                 <span className="font-mono">
-                                  {isVi ? 'Mã HelloWork: ' : isEn ? 'HelloWork ID: ' : '求人番号: '}
+                                  {isVi ? 'Mã tin: ' : isEn ? 'Job ID: ' : '求人番号: '}
                                   {d.job_number}
                                 </span>
                                 {d.expiry_date && (
@@ -535,7 +609,7 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                                 <a
                                   href={ev.new_value}
                                   target="_blank"
-                                  rel="noopener noreferrer"
+                                  rel="noopener noreferrer nofollow"
                                   className="inline-flex items-center gap-1 text-[11px] text-[#1B4F8A] dark:text-blue-400 font-semibold hover:underline"
                                 >
                                   <span>{isVi ? 'Mở trang tuyển dụng chính thức' : isEn ? 'Open Careers Page' : '公式採用ページを開く'}</span>
@@ -558,7 +632,7 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                               <a
                                 href={ev.new_value}
                                 target="_blank"
-                                rel="noopener noreferrer"
+                                rel="noopener noreferrer nofollow"
                                 className="inline-flex items-center gap-1 text-[11px] text-[#1B4F8A] dark:text-blue-400 font-semibold hover:underline"
                               >
                                 <span>{isVi ? 'Mở trang tuyển dụng chính thức' : isEn ? 'Open Careers Page' : '公式採用ページを開く'}</span>

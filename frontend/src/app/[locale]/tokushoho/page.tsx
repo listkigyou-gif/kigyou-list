@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
+import { PressMediaSection } from "@/components/PressMediaSection";
 import { 
   Scale, 
   Building2, 
@@ -60,8 +61,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `/${locale}/tokushoho`,
       languages: {
         ja: "/ja/tokushoho",
-        en: "/en/tokushoho",
-        vi: "/vi/tokushoho",
         "x-default": "/ja/tokushoho",
       }
     },
@@ -119,7 +118,7 @@ export default async function TokushohoPage({ params }: PageProps) {
         icon: <Building2 className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />,
         label: "運営統括責任者",
         badge: "代表者",
-        value: "キム　バン　チュン (Van Trung Kim)"
+        value: "栗本 賢之 (Masayuki Kurimoto)"
       },
       {
         icon: <Scale className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />,
@@ -264,7 +263,7 @@ export default async function TokushohoPage({ params }: PageProps) {
         icon: <Building2 className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />,
         label: "Người đại diện điều hành (運営統括責任者)",
         badge: "Đại diện",
-        value: "KIM VAN TRUNG (キム バン チュン)"
+        value: "Masayuki Kurimoto (栗本 賢之)"
       },
       {
         icon: <Scale className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />,
@@ -409,7 +408,7 @@ export default async function TokushohoPage({ params }: PageProps) {
         icon: <Building2 className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />,
         label: "Representative / Managing Director",
         badge: "Representative",
-        value: "Van Trung Kim (キム バン チュン)"
+        value: "Masayuki Kurimoto (栗本 賢之)"
       },
       {
         icon: <Scale className="w-5 h-5 text-[#1B4F8A] dark:text-blue-400" />,
@@ -957,6 +956,11 @@ export default async function TokushohoPage({ params }: PageProps) {
             </Link>
           </div>
         </section>
+
+        {/* ========================================================
+            PRESS RELEASES & MEDIA COVERAGE (Auto-synced Entity Links)
+            ======================================================== */}
+        <PressMediaSection locale={locale} limit={6} showViewAll />
       </main>
 
       <Footer />

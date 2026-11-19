@@ -68,9 +68,15 @@ export async function GET(request: NextRequest) {
     // Parse filters
     const filters: SearchFilters = {};
     
-    const prefecture = searchParams.get("prefecture");
-    if (prefecture && /^\d{2}$/.test(prefecture)) {
-      filters.prefecture_code = prefecture;
+    const rawPrefs = searchParams.get("prefectures") || searchParams.get("prefecture");
+    if (rawPrefs) {
+      const prefList = rawPrefs.split(",").map(s => s.trim()).filter(s => /^\d{2}$/.test(s));
+      if (prefList.length > 0) {
+        filters.prefecture_codes = prefList.slice(0, 3);
+        if (prefList.length === 1) {
+          filters.prefecture_code = prefList[0];
+        }
+      }
     }
     
     const city = searchParams.get("city");
@@ -78,9 +84,15 @@ export async function GET(request: NextRequest) {
       filters.city_name = city;
     }
     
-    const industry = searchParams.get("industry");
-    if (industry && (/^[A-Z]$/.test(industry) || /^\d{2}$/.test(industry))) {
-      filters.industry_code = industry;
+    const rawInds = searchParams.get("industries") || searchParams.get("industry");
+    if (rawInds) {
+      const indList = rawInds.split(",").map(s => s.trim()).filter(s => /^[A-Z]$/.test(s) || /^\d{2}$/.test(s));
+      if (indList.length > 0) {
+        filters.industry_codes = indList.slice(0, 3);
+        if (indList.length === 1) {
+          filters.industry_code = indList[0];
+        }
+      }
     }
     
     const min_employees = searchParams.get("min_employees");

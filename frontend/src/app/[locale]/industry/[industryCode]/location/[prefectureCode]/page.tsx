@@ -13,6 +13,7 @@ import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { getTranslations } from '@/lib/i18n';
 import { prefectureJaToEn, industryJaToEn, getPrefectureName, getIndustryName } from '@/lib/locale-mapping';
+import { PREFECTURES } from '@/lib/hubUtils';
 
 export const revalidate = 3600; // Cache categories for 1 hour, ISR enabled
 
@@ -112,18 +113,12 @@ export default async function CategoryPage({ params }: PageProps) {
     return notFound();
   }
 
-  const stats = await getCategoryStats(industryCode, prefectureCode);
-  const { companies } = await searchCompanies('', { industry_code: industryCode, prefecture_code: prefectureCode }, 50, 0);
-
-  // 3. Generate Cross-linking data for SEO Matrix
-  const siblingIndustries = await getSiblingIndustries(prefectureCode, industryCode, 5);
-  const popularPrefectures = [
-    { code: '13', name: '東京都' },
-    { code: '27', name: '大阪府' },
-    { code: '23', name: '愛知県' },
-    { code: '14', name: '神奈川県' },
-    { code: '40', name: '福岡県' }
-  ];
+  const [stats, { companies }, siblingIndustries] = await Promise.all([
+    getCategoryStats(industryCode, prefectureCode),
+    searchCompanies('', { industry_code: industryCode, prefecture_code: prefectureCode }, 100, 0),
+    getSiblingIndustries(prefectureCode, industryCode, 12),
+  ]);
+  const otherPrefectures = PREFECTURES.filter(p => p.code !== prefectureCode);
 
   const prefName = getPrefectureName(pref.name, locale);
   const industryMappedName = getIndustryName(ind.industry_name, locale);
@@ -483,23 +478,24 @@ export default async function CategoryPage({ params }: PageProps) {
             )}
           </div>
 
-          {/* 同業界・他地域 (Same industry in popular prefectures) */}
-          <div className="bg-white border border-slate-200 dark:bg-[#1C2128] dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+          {/* 同業界・他地域 (Same industry in all other prefectures) */}
+          <div className="bg-white border border-slate-200 dark:bg-[#161B22] dark:border-slate-800 rounded-2xl p-6 shadow-sm">
             <h3 className="font-black text-sm text-slate-900 dark:text-white mb-4 pb-2 border-b border-slate-100 dark:border-slate-800 flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-primary" />
+              <MapPin className="w-4 h-4 text-[#1B4F8A] dark:text-blue-400" />
               {d.otherPrefecturesTitle}
             </h3>
-            <div className="grid grid-cols-2 gap-3">
-              {popularPrefectures.filter(p => p.code !== prefectureCode).map(p => {
-                const pPrefName = getPrefectureName(p.name, locale);
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+              {otherPrefectures.map(p => {
+                const pPrefName = getPrefectureName(p.nameJa, locale);
                 return (
                   <Link 
                     key={p.code} 
                     href={`/${locale}/industry/${industryCode}/location/${p.code}`}
-                    className="text-xs font-semibold text-slate-600 hover:text-primary dark:text-slate-350 dark:hover:text-secondary flex items-center gap-1 transition-colors"
+                    className="px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-blue-50/60 dark:bg-slate-800/60 dark:hover:bg-slate-800 border border-slate-200/80 hover:border-[#1B4F8A]/40 dark:border-slate-700/80 text-xs font-medium text-slate-700 hover:text-[#1B4F8A] dark:text-slate-300 dark:hover:text-blue-400 flex items-center justify-between gap-1 transition-colors truncate"
+                    title={locale === 'en' ? `${industryMappedName} in ${pPrefName}` : locale === 'vi' ? `${industryMappedName} tại ${pPrefName}` : `${pPrefName}の${industryMappedName}`}
                   >
-                    <ArrowRight className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span>{locale === 'en' ? `${industryMappedName} in ${pPrefName}` : locale === 'vi' ? `${industryMappedName} tại ${pPrefName}` : `${pPrefName}の${industryMappedName}`}</span>
+                    <span className="truncate">{pPrefName}</span>
+                    <ChevronRight className="w-3 h-3 text-slate-400 shrink-0" />
                   </Link>
                 );
               })}

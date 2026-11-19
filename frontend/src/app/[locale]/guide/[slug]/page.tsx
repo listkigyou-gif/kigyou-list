@@ -16,6 +16,7 @@ import {
   Send, ShieldCheck, HelpCircle, FileSpreadsheet, Building2, Coins, ChevronDown
 } from "lucide-react";
 import { CopyPromptButton } from "./CopyPromptButton";
+import { GuideSectionsRenderer } from "@/components/guide/GuideSectionsRenderer";
 
 export const revalidate = 86400; // Static ISR caching 24h
 
@@ -100,8 +101,14 @@ export default async function GuideDetailPage({ params }: PageProps) {
   const highlights = article.highlights[locale as 'ja'|'en'|'vi'] || article.highlights.ja;
   const cta = article.cta;
 
-  // Other related articles
-  const relatedArticles = GUIDE_ARTICLES.filter(a => a.slug !== article.slug).slice(0, 3);
+  // Other related articles (prioritize same category + deterministic rotation across full cluster)
+  const currentIdx = GUIDE_ARTICLES.findIndex(a => a.slug === article.slug);
+  const rotatedPool = currentIdx >= 0
+    ? [...GUIDE_ARTICLES.slice(currentIdx + 1), ...GUIDE_ARTICLES.slice(0, currentIdx)]
+    : GUIDE_ARTICLES.filter(a => a.slug !== article.slug);
+  const sameCategory = rotatedPool.filter(a => a.category === article.category);
+  const crossCategory = rotatedPool.filter(a => a.category !== article.category);
+  const relatedArticles = [...sameCategory, ...crossCategory].slice(0, 3);
 
   // Schema: BreadcrumbList
   const breadcrumbSchema = {
@@ -263,7 +270,7 @@ export default async function GuideDetailPage({ params }: PageProps) {
 
               {/* Dynamic Body Content according to Article Slug */}
               <div className="bg-white dark:bg-[#161B22] rounded-2xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 shadow-2xs prose prose-slate dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 leading-relaxed text-sm sm:text-base">
-                {renderArticleBody(article.slug, locale)}
+                {renderArticleBody(article, locale)}
               </div>
 
               {/* FAQs Accordion Section */}
@@ -417,8 +424,8 @@ export default async function GuideDetailPage({ params }: PageProps) {
 /**
  * Renders the rich, authoritative Japanese B2B content for each article.
  */
-function renderArticleBody(slug: string, locale: string) {
-  switch (slug) {
+function renderArticleBody(article: GuideArticle, locale: string) {
+  switch (article.slug) {
     case 'ai-sales-list':
       return renderAiSalesListContent(locale);
     case 'excel-sales-list-template':
@@ -430,6 +437,9 @@ function renderArticleBody(slug: string, locale: string) {
     case 'edinet-salary-ranking-utilization':
       return renderEdinetSalaryContent(locale);
     default:
+      if (article.sections && article.sections.length > 0) {
+        return <GuideSectionsRenderer article={article} locale={locale} />;
+      }
       return <p>コンテンツを準備中です。</p>;
   }
 }
@@ -498,7 +508,7 @@ function renderAiSalesListContent(locale: string) {
               <tr>
                 <td className="p-3 border border-slate-200 dark:border-slate-700 font-bold">求人・補助金等のシグナル</td>
                 <td className="p-3 border border-slate-200 dark:border-slate-700">判別不能</td>
-                <td className="p-3 border border-slate-200 dark:border-slate-700 text-emerald-600 font-bold">ハローワーク・省庁入札データ連携</td>
+                <td className="p-3 border border-slate-200 dark:border-slate-700 text-emerald-600 font-bold">求人動向・省庁入札データ連携</td>
               </tr>
               <tr>
                 <td className="p-3 border border-slate-200 dark:border-slate-700 font-bold">作成スピード</td>
@@ -1160,7 +1170,7 @@ function renderBankruptcyCheckContent(locale: string) {
           <li><strong>役員の継続性:</strong> 直近で監査役や取締役が全員辞任していないか。</li>
           <li>
             <strong>求人活動の実態:</strong> 
-            ハローワーク等で求人を出しているか（採用意欲がある企業は事業拡大中の証拠）。
+            公式採用ページ等で求人を出しているか（採用意欲がある企業は事業拡大中の証拠）。
             <Link href={`/${locale}/search?hiring=true`} className="text-[#1B4F8A] dark:text-blue-400 font-bold hover:underline ml-1">
               [求人募集中企業を検索]
             </Link>

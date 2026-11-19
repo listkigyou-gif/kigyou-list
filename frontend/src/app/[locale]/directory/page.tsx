@@ -41,8 +41,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `/${locale}/directory`,
       languages: {
         ja: "/ja/directory",
-        en: "/en/directory",
-        vi: "/vi/directory",
         "x-default": "/ja/directory",
       }
     },
@@ -390,7 +388,7 @@ export default async function DirectoryPage({ params }: PageProps) {
                       return (
                         <Link
                           key={pref.code}
-                          href={`/${locale}/search?prefecture=${pref.code}`}
+                          href={`/${locale}/area/${pref.code}`}
                           className="p-2.5 sm:p-3 bg-white dark:bg-[#161B22] border border-slate-200/80 dark:border-slate-700 hover:border-[#1B4F8A] dark:hover:border-blue-500 rounded-lg text-left transition-all flex items-center justify-between group shadow-2xs hover:shadow-xs"
                         >
                           <div className="flex flex-col min-w-0 pr-1">
@@ -480,25 +478,53 @@ export default async function DirectoryPage({ params }: PageProps) {
                         .filter((child) => child.count > 0)
                         .map((child) => {
                           const localizedChildName = getIndustryName(child.name, locale);
+                          const hubLocations = [
+                            { code: "13", label: locale === "ja" ? "東京" : "Tokyo" },
+                            { code: "27", label: locale === "ja" ? "大阪" : "Osaka" },
+                            { code: "23", label: locale === "ja" ? "愛知" : "Aichi" },
+                            { code: "14", label: locale === "ja" ? "神奈川" : "Kanagawa" },
+                            { code: "40", label: locale === "ja" ? "福岡" : "Fukuoka" },
+                          ];
 
                           return (
-                            <Link
+                            <div
                               key={child.code}
-                              href={`/${locale}/search?industry=${child.code}`}
-                              className="flex items-center justify-between gap-2 px-4 py-2 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors group"
+                              className="flex flex-col gap-1.5 px-4 py-2.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
                             >
-                              <div className="flex items-center gap-2 min-w-0 pr-2">
-                                <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-sm shrink-0 font-mono">
-                                  {child.code}
-                                </span>
-                                <span className="text-xs font-normal text-slate-700 dark:text-slate-300 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 truncate">
-                                  {localizedChildName}
+                              <div className="flex items-center justify-between gap-2">
+                                <Link
+                                  href={`/${locale}/industry/${child.code}/location/13`}
+                                  className="flex items-center gap-2 min-w-0 pr-2 group/child"
+                                >
+                                  <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-sm shrink-0 font-mono">
+                                    {child.code}
+                                  </span>
+                                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 group-hover/child:text-[#1B4F8A] dark:group-hover/child:text-blue-400 truncate transition-colors">
+                                    {localizedChildName}
+                                  </span>
+                                </Link>
+                                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap shrink-0">
+                                  {d.childIndexLabel.replace("{count}", formatCount(child.count))}
                                 </span>
                               </div>
-                              <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap shrink-0">
-                                {d.childIndexLabel.replace("{count}", formatCount(child.count))}
-                              </span>
-                            </Link>
+                              <div className="flex items-center flex-wrap gap-1.5 pl-7">
+                                {hubLocations.map((loc) => (
+                                  <Link
+                                    key={loc.code}
+                                    href={`/${locale}/industry/${child.code}/location/${loc.code}`}
+                                    className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-50 hover:bg-blue-50/80 text-slate-600 hover:text-[#1B4F8A] border border-slate-200/80 hover:border-[#1B4F8A]/40 dark:bg-slate-800/60 dark:hover:bg-blue-950/40 dark:text-slate-400 dark:hover:text-blue-400 dark:border-slate-700/80 transition-colors"
+                                  >
+                                    {loc.label}
+                                  </Link>
+                                ))}
+                                <Link
+                                  href={`/${locale}/search?industry=${child.code}`}
+                                  className="px-2 py-0.5 rounded text-[10px] font-medium bg-white hover:bg-slate-100 text-[#1B4F8A] border border-slate-200/80 dark:bg-[#161B22] dark:hover:bg-slate-800 dark:text-blue-400 dark:border-slate-700/80 transition-colors"
+                                >
+                                  {locale === "vi" ? "Toàn quốc" : locale === "en" ? "All Japan" : "全国検索"}
+                                </Link>
+                              </div>
+                            </div>
                           );
                         })}
                     </div>

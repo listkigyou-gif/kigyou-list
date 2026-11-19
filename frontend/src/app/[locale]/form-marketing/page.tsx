@@ -615,7 +615,7 @@ ${message || "未入力"}`
                     {isJa
                       ? "JSIC中分類業界コード、資本金、従業員規模、都道府県、求人・助成金シグナルを組み合わせ、本当に貴社の商品を必要としている企業だけを狙い撃ちできます。"
                       : isVi
-                      ? "Kết hợp ngành nghề JSIC, số vốn, số nhân viên, tỉnh thành, tín hiệu tuyển dụng (HelloWork) hoặc nhận trợ cấp nhà nước để nhắm đúng các công ty có ngân sách và nhu cầu thực tế."
+                      ? "Kết hợp ngành nghề JSIC, số vốn, số nhân viên, tỉnh thành, tín hiệu tuyển dụng hoặc nhận trợ cấp nhà nước để nhắm đúng các công ty có ngân sách và nhu cầu thực tế."
                       : "Filter by JSIC industry codes, capital amount, employee headcounts, prefecture, and hiring signals to target high-budget buyers."}
                   </p>
                 </div>

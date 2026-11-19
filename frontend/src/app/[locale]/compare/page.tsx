@@ -47,8 +47,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `/${locale}/compare`,
       languages: {
         ja: "/ja/compare",
-        en: "/en/compare",
-        vi: "/vi/compare",
         "x-default": "/ja/compare",
       },
     },
@@ -446,10 +444,10 @@ export default async function ComparePage({ params }: PageProps) {
               </h3>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
                 {isJa
-                  ? "国税庁の法人番号公表サイト、経済産業省gBizINFO、ハローワーク等の公的情報をリアルタイムで集約。Webサイトを持たない地域密着企業や中小企業まで500万社を逃さず網羅します。"
+                  ? "国税庁の法人番号公表サイト、経済産業省gBizINFO、公開採用データ等の公的・オープン情報をリアルタイムで集約。Webサイトを持たない地域密着企業や中小企業まで500万社を逃さず網羅します。"
                   : isEn
-                  ? "Direct synchronization with the National Tax Agency, METI gBizINFO, and Hello Work guarantees access to 5M active companies, including local SMEs."
-                  : "Đồng bộ trực tiếp từ Cục Thuế Quốc Gia, METI gBizINFO và Hello Work, giúp tiếp cận toàn bộ 5 triệu doanh nghiệp vừa và nhỏ khắp 47 tỉnh thành."}
+                  ? "Direct synchronization with the National Tax Agency, METI gBizINFO, and public corporate datasets guarantees access to 5M active companies, including local SMEs."
+                  : "Đồng bộ trực tiếp từ Cục Thuế Quốc Gia, METI gBizINFO và dữ liệu mở doanh nghiệp, giúp tiếp cận toàn bộ 5 triệu doanh nghiệp vừa và nhỏ khắp 47 tỉnh thành."}
               </p>
             </div>
 

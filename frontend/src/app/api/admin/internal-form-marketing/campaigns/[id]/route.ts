@@ -75,6 +75,21 @@ export async function PATCH(
       return NextResponse.json({ success: true, campaign });
     }
 
+    if (action === 'stop' || action === 'cancel') {
+      const client = await pool.connect();
+      try {
+        const res = await client.query(
+          `UPDATE internal_form_campaigns 
+           SET status = 'stopped', updated_at = CURRENT_TIMESTAMP 
+           WHERE id = $1 RETURNING *`,
+          [id]
+        );
+        return NextResponse.json({ success: true, campaign: res.rows[0] });
+      } finally {
+        client.release();
+      }
+    }
+
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 });
   } catch (error: any) {
     console.error('Error in /api/admin/internal-form-marketing/campaigns/[id] PATCH:', error);

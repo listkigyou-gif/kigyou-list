@@ -2,59 +2,63 @@ import { MetadataRoute } from 'next';
 
 export default function robots(): MetadataRoute.Robots {
   const baseUrl = 'https://kigyoulist.com';
+  const commonDisallow = [
+    '/_next/',
+    '/static/',
+    '/api/',
+    '/en/',
+    '/vi/',
+    '/index.html/',
+    '/*/form-marketing?*',
+    '/*/dashboard',
+    '/*/dashboard/',
+    '/*/admin',
+    '/*/admin/',
+    '/*/login',
+    '/*/login/',
+    '/*/unsubscribe',
+    '/*/unsubscribe/',
+  ];
+
   return {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
-        disallow: [
-          '/_next/',
-          '/static/',
-          '/api/',
-          '/*/dashboard',
-          '/*/dashboard/',
-          '/*/admin',
-          '/*/admin/',
-          '/*/login',
-          '/*/login/',
-          '/*/unsubscribe',
-          '/*/unsubscribe/',
-        ],
+        allow: ['/', '/llms.txt', '/llms-full.txt'],
+        disallow: commonDisallow,
       },
       // AI Search & Knowledge Grounding Bots (Allow to cite and index public directory/profiles)
       {
         userAgent: [
+          'Googlebot',
+          'GoogleOther',
+          'Google-Extended',
+          'GoogleAgent-URLContext',
           'Bingbot',
           'msnbot',
           'OAI-SearchBot',
+          'ChatGPT-User',
           'GPTBot',
           'Claude-SearchBot',
+          'Claude-User',
           'ClaudeBot',
           'PerplexityBot',
-          'Google-Extended',
+          'Perplexity-User',
           'Applebot',
           'Applebot-Extended',
           'cohere-ai',
           'meta-externalagent',
         ],
-        allow: '/',
-        disallow: [
-          '/_next/',
-          '/static/',
-          '/api/',
-          '/*/dashboard',
-          '/*/dashboard/',
-          '/*/admin',
-          '/*/admin/',
-          '/*/login',
-          '/*/login/',
-          '/*/unsubscribe',
-          '/*/unsubscribe/',
-        ],
+        allow: ['/', '/ja/', '/llms.txt', '/llms-full.txt'],
+        disallow: commonDisallow,
       },
-      // Block abusive scrapers that do not provide traffic attribution or search citations
+      // Block non-search / abusive scrapers that do not provide traffic attribution or search citations
       {
         userAgent: [
+          'ElevenlabsCrawler',
+          'KeenableBot',
+          'Reflectionbot',
+          'RiverBot',
           'Bytespider',
           'Diffbot',
           'OMgili',
@@ -72,6 +76,11 @@ export default function robots(): MetadataRoute.Robots {
           'ImagesiftBot',
           'BLEXBot',
           'SeekportBot',
+          // 2026-11-19: Non-Japanese search engines & anonymous cloud scrapers (0 JP B2B traffic, verified in Nginx logs)
+          'ShapBot',
+          'Yandex',
+          'YandexBot',
+          'Baiduspider',
         ],
         disallow: '/',
       },
@@ -79,8 +88,6 @@ export default function robots(): MetadataRoute.Robots {
     sitemap: [
       `${baseUrl}/sitemap.xml`,
       `${baseUrl}/sitemap/core.xml`,
-      `${baseUrl}/sitemap-index.xml`,
     ],
   };
 }
-

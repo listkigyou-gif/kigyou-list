@@ -959,9 +959,7 @@ export default function ContactPage() {
                     </div>
 
                     {/* Turnstile Container */}
-                    {activeCategory !== "general_partner" && (
-                      <div id={turnstileContainerId} className="my-2"></div>
-                    )}
+                    <div id={turnstileContainerId} className="my-2"></div>
 
                     <button
                       type="submit"
