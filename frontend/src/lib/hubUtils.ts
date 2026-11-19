@@ -163,3 +163,21 @@ export function getPrefectureLabel(p: PrefectureMeta | null, locale: string): st
   if (locale === 'vi') return p.nameEn;
   return p.nameEn;
 }
+
+/**
+ * Strips any explicit references to HelloWork from public job posting text/metadata.
+ */
+export function sanitizePublicHiringText(text: string): string {
+  return text
+    .replace(/[（(][^）)]*ハローワーク[^）)]*[）)]/g, '')
+    .replace(/[【\[][^】\]]*ハローワーク[^】\]]*[】\]]/g, '')
+    .replace(/[≪《][^≫》]*ハローワーク[^≫》]*[≫》]/g, '')
+    .replace(/[※＊*]?\s*[^\n。]*ハローワーク[^\n。]*[。]?/g, (m) =>
+      m.includes('詳細') || m.includes('窓口') || m.includes('お問い合わせ') || m.includes('紹介状')
+        ? ''
+        : m.replace(/ハローワーク/g, '採用窓口')
+    )
+    .replace(/ハローワーク/g, '採用窓口')
+    .replace(/Hello\s*Work/gi, 'Public Recruitment')
+    .trim();
+}

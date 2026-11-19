@@ -32,9 +32,39 @@ export interface LegalHistoryEvent {
   newValue?: string | null;
 }
 
-// In-memory cache for live NTA history (24 hour TTL)
+// Bounded LRU in-memory cache for live NTA history (24 hour TTL, max 1000 entries)
 const ntaHistoryCache = new Map<string, { data: LegalHistoryEvent[]; expiry: number }>();
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const MAX_NTA_CACHE_ENTRIES = 1000;
+
+function getNtaHistoryCached(corpNum: string): LegalHistoryEvent[] | null {
+  const entry = ntaHistoryCache.get(corpNum);
+  if (!entry) return null;
+  if (entry.expiry > Date.now()) {
+    ntaHistoryCache.delete(corpNum);
+    ntaHistoryCache.set(corpNum, entry);
+    return entry.data;
+  }
+  ntaHistoryCache.delete(corpNum);
+  return null;
+}
+
+function setNtaHistoryCached(corpNum: string, data: LegalHistoryEvent[]): void {
+  if (ntaHistoryCache.has(corpNum)) {
+    ntaHistoryCache.delete(corpNum);
+  } else if (ntaHistoryCache.size >= MAX_NTA_CACHE_ENTRIES) {
+    const now = Date.now();
+    for (const [k, v] of ntaHistoryCache.entries()) {
+      if (v.expiry <= now) ntaHistoryCache.delete(k);
+    }
+    while (ntaHistoryCache.size >= MAX_NTA_CACHE_ENTRIES) {
+      const oldestKey = ntaHistoryCache.keys().next().value;
+      if (oldestKey === undefined) break;
+      ntaHistoryCache.delete(oldestKey);
+    }
+  }
+  ntaHistoryCache.set(corpNum, { data, expiry: Date.now() + CACHE_TTL_MS });
+}
 
 export function clearNtaHistoryCache(corpNum?: string): void {
   if (corpNum) {
@@ -394,16 +424,16 @@ export async function getCompanyLegalHistory(company: Company): Promise<LegalHis
   const address = company.full_address || company.street_address || company.prefecture_name || '日本国内';
 
   // 1. Check in-memory cache
-  const cached = ntaHistoryCache.get(corpNum);
-  if (cached && cached.expiry > Date.now()) {
-    return cached.data;
+  const cached = getNtaHistoryCached(corpNum);
+  if (cached) {
+    return cached;
   }
 
   // 2. Database-First: Read from company_legal_histories table (Ultra-fast 1-2ms)
   const dbEvents = await fetchLegalHistoryFromDB(corpNum);
   if (dbEvents && dbEvents.length > 0) {
     dbEvents.sort((a, b) => b.rawDate.localeCompare(a.rawDate));
-    ntaHistoryCache.set(corpNum, { data: dbEvents, expiry: Date.now() + CACHE_TTL_MS });
+    setNtaHistoryCached(corpNum, dbEvents);
     return dbEvents;
   }
 
@@ -417,7 +447,7 @@ export async function getCompanyLegalHistory(company: Company): Promise<LegalHis
     autoPersistLegalHistoryToDB(corpNum, events).catch(err => {
       console.warn(`[ntaHistory] Background autoPersist failed for ${corpNum}:`, err);
     });
-    ntaHistoryCache.set(corpNum, { data: events, expiry: Date.now() + CACHE_TTL_MS });
+    setNtaHistoryCached(corpNum, events);
     return events;
   }
 
@@ -448,6 +478,6 @@ export async function getCompanyLegalHistory(company: Company): Promise<LegalHis
   });
 
   events.sort((a, b) => b.rawDate.localeCompare(a.rawDate));
-  ntaHistoryCache.set(corpNum, { data: events, expiry: Date.now() + CACHE_TTL_MS });
+  setNtaHistoryCached(corpNum, events);
   return events;
 }

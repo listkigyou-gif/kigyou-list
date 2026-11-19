@@ -1,5 +1,6 @@
 // frontend/src/lib/guides.ts
 // B2B Knowledge & Sales Guide Registry for Kigyou-list (kigyoulist.com)
+import { EXTRA_GUIDE_ARTICLES } from './guideExtraArticles';
 
 export interface GuideTOCItem {
   id: string;
@@ -12,9 +13,42 @@ export interface GuideFAQ {
   answer: string;
 }
 
+export interface GuideSectionHubLink {
+  label: string;
+  href: string;
+  badge?: string;
+  description?: string;
+}
+
+export interface GuideBodySection {
+  id: string;
+  title: string;
+  paragraphs: string[];
+  bullets?: { label: string; text: string }[];
+  table?: {
+    headers: string[];
+    rows: string[][];
+  };
+  callout?: {
+    title: string;
+    body: string;
+    buttonText: string;
+    href: string;
+  };
+  hubLinks?: GuideSectionHubLink[];
+}
+
+export type GuideCategoryId =
+  | 'ai-sales'
+  | 'sales-list'
+  | 'form-marketing'
+  | 'credit-risk'
+  | 'corporate-analysis'
+  | 'data-compliance';
+
 export interface GuideArticle {
   slug: string;
-  category: 'ai-sales' | 'sales-list' | 'form-marketing' | 'credit-risk' | 'corporate-analysis';
+  category: GuideCategoryId;
   categoryLabel: {
     ja: string;
     en: string;
@@ -54,6 +88,7 @@ export interface GuideArticle {
     buttonText: { ja: string; en: string; vi: string };
     href: string;
   };
+  sections?: GuideBodySection[];
 }
 
 export const GUIDE_CATEGORIES = [
@@ -63,6 +98,7 @@ export const GUIDE_CATEGORIES = [
   { id: 'form-marketing', label: { ja: 'フォーム営業・自動化', en: 'Form Outreach', vi: 'Gửi Form tự động' } },
   { id: 'credit-risk', label: { ja: '与信管理・倒産調査', en: 'Credit Due Diligence', vi: 'Thẩm định & Rủi ro phá sản' } },
   { id: 'corporate-analysis', label: { ja: '有報・企業分析', en: 'Securities & Analysis', vi: 'Phân tích Báo cáo tài chính' } },
+  { id: 'data-compliance', label: { ja: '法人番号・インボイス・許認可', en: 'Registries & Compliance', vi: 'Pháp lý & Mã số thuế' } },
 ] as const;
 
 export const GUIDE_ARTICLES: GuideArticle[] = [
@@ -544,7 +580,8 @@ export const GUIDE_ARTICLES: GuideArticle[] = [
       },
       href: '/ja/ranking/salary'
     }
-  }
+  },
+  ...EXTRA_GUIDE_ARTICLES,
 ];
 
 export function getGuideBySlug(slug: string): GuideArticle | undefined {

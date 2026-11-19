@@ -98,3 +98,53 @@ export function parseUTCDate(dateStr: string | Date | number | null | undefined)
   return new Date(cleaned);
 }
 
+/**
+ * getTodayJstIsoDate
+ * Returns the current calendar date (YYYY-MM-DD) in Asia/Tokyo (JST).
+ */
+export function getTodayJstIsoDate(nowMs: number = Date.now()): string {
+  return new Date(nowMs + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+/**
+ * calculateStatutoryJobExpiry
+ * Calculates the statutory HelloWork expiry date (受理日の翌々月末日:
+ * last day of the second month after signalDate) in YYYY-MM-DD format.
+ */
+export function calculateStatutoryJobExpiry(signalDate?: string | null): string | null {
+  if (!signalDate) return null;
+  const match = String(signalDate).match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+  if (!match) return null;
+  const year = parseInt(match[1], 10);
+  const monthIndex = parseInt(match[2], 10) - 1;
+  if (isNaN(year) || isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) return null;
+  const lastDayDate = new Date(Date.UTC(year, monthIndex + 3, 0));
+  return lastDayDate.toISOString().split('T')[0];
+}
+
+/**
+ * resolveActiveJobPostingValidThrough
+ * Resolves an ISO-8601 `validThrough` (+09:00) string for Schema.org JobPosting.
+ * Returns `null` if the explicit or statutory expiry date is already before today (JST),
+ * ensuring expired JobPosting structured data is never emitted.
+ */
+export function resolveActiveJobPostingValidThrough(
+  explicitExpiry?: unknown,
+  datePosted?: string | null,
+  fallbackDays: number = 60,
+  nowMs: number = Date.now()
+): string | null {
+  const todayJst = getTodayJstIsoDate(nowMs);
+  const rawExp = explicitExpiry != null ? String(explicitExpiry).trim() : '';
+  const cleanExplicit = /^\d{4}-\d{2}-\d{2}/.test(rawExp) ? rawExp.slice(0, 10) : null;
+  const expiryDate =
+    cleanExplicit ||
+    calculateStatutoryJobExpiry(datePosted) ||
+    getTodayJstIsoDate(nowMs + fallbackDays * 24 * 60 * 60 * 1000);
+
+  if (expiryDate < todayJst) {
+    return null;
+  }
+  return `${expiryDate}T23:59:59+09:00`;
+}
+

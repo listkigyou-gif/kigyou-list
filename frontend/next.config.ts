@@ -2,8 +2,19 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   htmlLimitedBots: /.*/,
+  cacheMaxMemorySize: 15 * 1024 * 1024, // 15MB hard cap (Nginx handles primary HTTP micro-caching)
   async redirects() {
     return [
+      {
+        source: '/index.html/:path*',
+        destination: '/ja/:path*',
+        permanent: true,
+      },
+      {
+        source: '/index.html',
+        destination: '/ja',
+        permanent: true,
+      },
       {
         source: '/:locale(ja|en|vi)/tools/ai-sales-list',
         destination: '/:locale/guide/ai-sales-list',

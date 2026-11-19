@@ -6,13 +6,16 @@ import { deleteFileFromR2 } from './r2';
 import { isAdminEmail } from './adminAuth';
 import { loadEnvConfig } from '@next/env';
 import { getAllUserFormCredits } from './formCampaigns';
+import { getWatchlistLimit } from './planLimits';
 import { searchLRUCache, SmartSearchLRUCache } from './searchCache';
 
 // Load env variables dynamically if running in standalone script scripts
 loadEnvConfig(process.cwd());
 
 // Connection parameters
-const DATABASE_URL = process.env.DATABASE_URL || "postgresql://postgres:Hrptlcct6789%40@160.251.203.84:5432/kigyou_list";
+const DATABASE_URL = process.env.USE_SQLITE === 'true'
+  ? ''
+  : (process.env.DATABASE_URL || "postgresql://postgres:Hrptlcct6789%40@160.251.203.84:5432/kigyou_list");
 let pgPool: Pool | null = null;
 let sqliteInstance: DatabaseSync | null = null;
 
@@ -28,32 +31,54 @@ async function ensureAllTablesInitialized() {
     await initBlogPostsTable();
     await initBlockedIpsTable();
     await initHubDynamicEventsTable();
+    await initLiveSyncSummaryTable();
     allTablesInitialized = true;
   } catch (err) {
     console.error('Failed to initialize all database tables:', err);
   }
 }
 
-// Lightweight in-memory cache for static lookup queries (1 hour TTL)
+// Bounded LRU in-memory cache for lookup queries (prevents V8 heap OOM under heavy bot crawling)
 interface CacheEntry<T> {
   data: T;
   expiry: number;
 }
 const cacheMap = new Map<string, CacheEntry<any>>();
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const MAX_CACHE_MAP_ENTRIES = 1500;
 
 function getCachedData<T>(key: string): T | null {
   const entry = cacheMap.get(key);
-  if (entry && entry.expiry > Date.now()) {
+  if (!entry) return null;
+  if (entry.expiry > Date.now()) {
+    // Refresh LRU order
+    cacheMap.delete(key);
+    cacheMap.set(key, entry);
     return entry.data;
   }
+  cacheMap.delete(key);
   return null;
 }
 
-function setCachedData<T>(key: string, data: T): void {
+function setCachedData<T>(key: string, data: T, ttlMs: number = CACHE_TTL_MS): void {
+  if (cacheMap.has(key)) {
+    cacheMap.delete(key);
+  } else if (cacheMap.size >= MAX_CACHE_MAP_ENTRIES) {
+    const now = Date.now();
+    for (const [k, v] of cacheMap.entries()) {
+      if (v.expiry <= now) {
+        cacheMap.delete(k);
+      }
+    }
+    while (cacheMap.size >= MAX_CACHE_MAP_ENTRIES) {
+      const oldestKey = cacheMap.keys().next().value;
+      if (oldestKey === undefined) break;
+      cacheMap.delete(oldestKey);
+    }
+  }
   cacheMap.set(key, {
     data,
-    expiry: Date.now() + CACHE_TTL_MS
+    expiry: Date.now() + ttlMs
   });
 }
 
@@ -184,6 +209,14 @@ function convertSqlForPG(sql: string): string {
   return cleanSql.replace(/\?/g, () => `$${index++}`);
 }
 
+function normalizeSQLiteRow(row: Record<string, any>): Record<string, any> {
+  const out: Record<string, any> = {};
+  for (const [k, v] of Object.entries(row)) {
+    out[k] = typeof v === 'bigint' ? Number(v) : v;
+  }
+  return out;
+}
+
 /**
  * Executes a SELECT query returning multiple rows, supporting both PostgreSQL and SQLite.
  */
@@ -200,8 +233,9 @@ export async function runQuery(sql: string, params: any[] = []): Promise<any[]> 
   } else {
     const db = getSQLiteDB();
     const stmt = db.prepare(sql);
+    (stmt as any).setReadBigInts?.(true);
     const results = stmt.all(...params);
-    return results ? results.map(r => ({ ...r })) : [];
+    return results ? results.map(r => normalizeSQLiteRow(r)) : [];
   }
 }
 
@@ -247,8 +281,9 @@ export async function runGetQuery(sql: string, params: any[] = []): Promise<any 
   } else {
     const db = getSQLiteDB();
     const stmt = db.prepare(sql);
+    (stmt as any).setReadBigInts?.(true);
     const result = stmt.get(...params);
-    return result ? { ...result } : null;
+    return result ? normalizeSQLiteRow(result) : null;
   }
 }
 
@@ -571,7 +606,7 @@ export async function getCompanyByNumber(corpNum: string): Promise<Company | nul
     const row = await runGetQuery('SELECT * FROM companies WHERE corporate_number = ? LIMIT 1', [corpNum]);
     const result = row ? mapCompanyRow(row) : null;
     // Cache for 5 minutes (company data rarely changes)
-    if (result) cacheMap.set(cacheKey, { data: result, expiry: Date.now() + 5 * 60 * 1000 });
+    if (result) setCachedData(cacheKey, result, 5 * 60 * 1000);
     return result;
   } catch (error) {
     console.error(`Error in getCompanyByNumber(${corpNum}):`, error);
@@ -621,7 +656,7 @@ export async function getCompanyFinancials(corpNum: string): Promise<CompanyFina
     const rows = await runQuery('SELECT * FROM financial_records WHERE corporate_number = ? ORDER BY fiscal_year DESC', [corpNum]);
     const result = rows.map((row, idx) => mapFinancialRow(row, idx));
     // Cache for 5 minutes
-    cacheMap.set(cacheKey, { data: result, expiry: Date.now() + 5 * 60 * 1000 });
+    setCachedData(cacheKey, result, 5 * 60 * 1000);
     return result;
   } catch (error) {
     console.error(`Error in getCompanyFinancials(${corpNum}):`, error);
@@ -698,7 +733,7 @@ export async function getCompanyLicenses(corpNum: string): Promise<CompanyLicens
       source_url: r.source_url || null,
     }));
     // Cache for 10 minutes
-    cacheMap.set(cacheKey, { data: result, expiry: Date.now() + 10 * 60 * 1000 });
+    setCachedData(cacheKey, result, 10 * 60 * 1000);
     return result;
   } catch (error) {
     console.error(`Error in getCompanyLicenses(${corpNum}):`, error);
@@ -1815,6 +1850,10 @@ export async function getActiveIndustryPrefecturePairs(): Promise<{ industry_cod
  * Fetch aggregated statistics for an industry + prefecture category pair
  */
 export async function getCategoryStats(industryCode: string, prefectureCode: string): Promise<{ count: number; avgCapital: number }> {
+  const cacheKey = `cat_stats:${industryCode}:${prefectureCode}`;
+  const cached = getCachedData<{ count: number; avgCapital: number }>(cacheKey);
+  if (cached) return cached;
+
   try {
     const result = await runGetQuery(`
       SELECT COUNT(DISTINCT c.corporate_number) as count, AVG(c.capital_amount) as avgCapital
@@ -1822,10 +1861,12 @@ export async function getCategoryStats(industryCode: string, prefectureCode: str
       JOIN company_industries ci ON c.corporate_number = ci.corporate_number
       WHERE ci.industry_code = ? AND c.prefecture_code = ?
     `, [industryCode, prefectureCode]);
-    return {
+    const stats = {
       count: result ? Number(result.count) : 0,
       avgCapital: result && result.avgCapital ? Math.round(Number(result.avgCapital)) : 0
     };
+    setCachedData(cacheKey, stats, 60 * 60 * 1000);
+    return stats;
   } catch (error) {
     console.error('Error in getCategoryStats:', error);
     return { count: 0, avgCapital: 0 };
@@ -1927,19 +1968,37 @@ export async function getIndustryMap(): Promise<Record<string, string>> {
 }
 
 /**
- * Fetch sibling industries within the same prefecture to feed the SEO cross-linking matrix
+ * Fetch sibling industries within the same prefecture to feed the SEO cross-linking matrix.
+ * Uses precomputed `industry_prefecture_pairs` (4.2k rows) + 1h in-memory cache (<1ms).
  */
 export async function getSiblingIndustries(prefectureCode: string, industryCode: string, limit = 5): Promise<{ code: string; name: string }[]> {
+  const cacheKey = `sibling_ind:${prefectureCode}:${industryCode}:${limit}`;
+  const cached = getCachedData<{ code: string; name: string }[]>(cacheKey);
+  if (cached) return cached;
+
+  const isPG = !!DATABASE_URL;
   try {
-    const rows = await runQuery(`
-      SELECT DISTINCT m.industry_code, m.industry_name 
-      FROM m_industries m
-      JOIN company_industries ci ON m.industry_code = ci.industry_code
-      JOIN companies c ON ci.corporate_number = c.corporate_number
-      WHERE c.prefecture_code = ? AND m.industry_code != ?
-      LIMIT ?
-    `, [prefectureCode, industryCode, limit]);
-    return rows ? rows.map(r => ({ code: r.industry_code, name: r.industry_name })) : [];
+    const sql = isPG
+      ? `
+        SELECT m.industry_code, m.industry_name
+        FROM industry_prefecture_pairs p
+        JOIN m_industries m ON p.industry_code = m.industry_code
+        WHERE p.prefecture_code = ? AND p.industry_code != ?
+        ORDER BY LENGTH(m.industry_code) DESC, m.industry_code ASC
+        LIMIT ?
+      `
+      : `
+        SELECT m.industry_code, m.industry_name
+        FROM m_industries m
+        WHERE m.industry_code != ?
+        ORDER BY LENGTH(m.industry_code) DESC, m.industry_code ASC
+        LIMIT ?
+      `;
+    const params = isPG ? [prefectureCode, industryCode, limit] : [industryCode, limit];
+    const rows = await runQuery(sql, params);
+    const result = rows ? rows.map(r => ({ code: r.industry_code, name: r.industry_name })) : [];
+    setCachedData(cacheKey, result, 60 * 60 * 1000);
+    return result;
   } catch (error) {
     console.error('Error in getSiblingIndustries:', error);
     return [];
@@ -2465,9 +2524,8 @@ export async function saveMagicLinkToken(email: string, token: string, expiresAt
   await initQuotaTables();
   const now = new Date();
   
-  // Clean up tokens older than 24 hours
-  const cleanupSql = 'DELETE FROM magic_link_tokens WHERE created_at < ?';
-  const cleanupDate = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  // Clean up tokens that are actually expired based on expires_at
+  const cleanupSql = 'DELETE FROM magic_link_tokens WHERE expires_at < ?';
   
   const insertSql = 'INSERT INTO magic_link_tokens (email, token, expires_at, created_at, used) VALUES (?, ?, ?, ?, false)';
   
@@ -2475,14 +2533,14 @@ export async function saveMagicLinkToken(email: string, token: string, expiresAt
     const pool = getPGPool();
     const client = await pool.connect();
     try {
-      await client.query(convertSqlForPG(cleanupSql), [cleanupDate]);
+      await client.query(convertSqlForPG(cleanupSql), [now]);
       await client.query(convertSqlForPG(insertSql), [email, token, expiresAt, now]);
     } finally {
       client.release();
     }
   } else {
     const db = getSQLiteDB();
-    db.prepare(cleanupSql).run(cleanupDate.toISOString());
+    db.prepare(cleanupSql).run(now.toISOString());
     db.prepare(insertSql).run(email, token, expiresAt.toISOString(), now.toISOString());
   }
 }
@@ -4256,6 +4314,13 @@ export async function getUserWatchlist(email: string): Promise<string[]> {
   }
 }
 
+export async function getUserWatchlistLimit(email: string): Promise<number> {
+  if (!email) return getWatchlistLimit("free");
+  if (isAdminEmail(email)) return Infinity;
+  const quota = await getUserQuota(email);
+  return getWatchlistLimit(quota?.plan);
+}
+
 /**
  * Sync (bi-directional merge) user watchlist between client localStorage and server DB
  */
@@ -4266,8 +4331,18 @@ export async function syncUserWatchlist(email: string, clientList: string[]): Pr
     const validClientNumbers = (Array.isArray(clientList) ? clientList : [])
       .filter(n => typeof n === 'string' && /^\d{13}$/.test(n));
 
-    // 1. Insert any new ones from client
+    const [current, limit] = await Promise.all([
+      getUserWatchlist(email),
+      getUserWatchlistLimit(email),
+    ]);
+    const existingSet = new Set(current);
+
+    // 1. Insert any new ones from client up to plan limit
     for (const corpNo of validClientNumbers) {
+      if (existingSet.has(corpNo)) continue;
+      if (Number.isFinite(limit) && existingSet.size >= limit) {
+        break;
+      }
       try {
         if (DATABASE_URL) {
           const pool = getPGPool();
@@ -4284,6 +4359,7 @@ export async function syncUserWatchlist(email: string, clientList: string[]): Pr
              VALUES (?, ?, CURRENT_TIMESTAMP)`
           ).run(email, corpNo);
         }
+        existingSet.add(corpNo);
       } catch {}
     }
 
@@ -4302,6 +4378,14 @@ export async function addUserWatchlistCompany(email: string, corporateNumber: st
   if (!email || !corporateNumber || !/^\d{13}$/.test(corporateNumber)) return false;
   await initQuotaTables();
   try {
+    const [current, limit] = await Promise.all([
+      getUserWatchlist(email),
+      getUserWatchlistLimit(email),
+    ]);
+    if (!current.includes(corporateNumber) && Number.isFinite(limit) && current.length >= limit) {
+      return false;
+    }
+
     if (DATABASE_URL) {
       const pool = getPGPool();
       await pool.query(
@@ -6147,11 +6231,47 @@ export async function initHubDynamicEventsTable(): Promise<void> {
 }
 
 /**
+ * Shared SQL date filter clause builder supporting both YYYY and YYYY-MM formats (SARGable on PG).
+ */
+function buildYearMonthClause(yearMonth: string, column: string, params: any[]): string {
+  const isPG = !!DATABASE_URL;
+  const isYearOnly = yearMonth.length === 4;
+  if (isPG) {
+    if (isYearOnly && /^\d{4}$/.test(yearMonth)) {
+      const y = parseInt(yearMonth, 10);
+      params.push(`${y}-01-01`, `${y + 1}-01-01`);
+      return `${column} >= ?::date AND ${column} < ?::date`;
+    }
+    if (/^\d{4}-\d{2}$/.test(yearMonth)) {
+      const [yStr, mStr] = yearMonth.split('-');
+      const y = parseInt(yStr, 10);
+      const m = parseInt(mStr, 10);
+      const nextY = m === 12 ? y + 1 : y;
+      const nextM = m === 12 ? 1 : m + 1;
+      params.push(`${yStr}-${mStr}-01`, `${nextY}-${String(nextM).padStart(2, '0')}-01`);
+      return `${column} >= ?::date AND ${column} < ?::date`;
+    }
+    params.push(yearMonth);
+    return isYearOnly
+      ? `TO_CHAR(${column}, 'YYYY') = ?`
+      : `TO_CHAR(${column}, 'YYYY-MM') = ?`;
+  }
+  params.push(yearMonth);
+  return isYearOnly
+    ? `SUBSTR(${column}, 1, 4) = ?`
+    : `SUBSTR(${column}, 1, 7) = ?`;
+}
+
+/**
  * Retrieve paginated dynamic events for programmatic SEO Hubs.
- * Joins with companies to get rich B2B context (capital, employees, phone, website).
+ * Paginates via CTE first before joining companies to keep query latency <5ms.
  */
 export async function getHubDynamicEvents(options: GetHubEventsOptions = {}): Promise<HubDynamicEvent[]> {
   const { category, prefectureCode, yearMonth, limit = 50, offset = 0 } = options;
+  const cacheKey = `hub:events:${category || 'all'}:${prefectureCode || 'all'}:${yearMonth || 'all'}:${limit}:${offset}`;
+  const cached = getCachedData<HubDynamicEvent[]>(cacheKey);
+  if (cached) return cached;
+
   const whereClauses: string[] = [];
   const params: any[] = [];
 
@@ -6166,13 +6286,7 @@ export async function getHubDynamicEvents(options: GetHubEventsOptions = {}): Pr
   }
 
   if (yearMonth) {
-    const isPG = !!DATABASE_URL;
-    if (isPG) {
-      whereClauses.push("TO_CHAR(h.event_date, 'YYYY-MM') = ?");
-    } else {
-      whereClauses.push("SUBSTR(h.event_date, 1, 7) = ?");
-    }
-    params.push(yearMonth);
+    whereClauses.push(buildYearMonthClause(yearMonth, 'h.event_date', params));
   }
 
   const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -6180,38 +6294,44 @@ export async function getHubDynamicEvents(options: GetHubEventsOptions = {}): Pr
   const dateSelect = isPG ? "TO_CHAR(h.event_date, 'YYYY-MM-DD') AS event_date" : "h.event_date";
 
   const sql = `
+    WITH paged AS (
+      SELECT 
+        h.id,
+        h.corporate_number,
+        h.company_name,
+        h.prefecture_code,
+        h.prefecture_name,
+        h.city_name,
+        h.event_category,
+        ${dateSelect},
+        h.title_ja,
+        h.description_ja,
+        h.old_value,
+        h.new_value,
+        h.source
+      FROM hub_dynamic_events h
+      ${whereSql}
+      ORDER BY h.event_date DESC, h.id DESC
+      LIMIT ? OFFSET ?
+    )
     SELECT 
-      h.id,
-      h.corporate_number,
-      h.company_name,
-      h.prefecture_code,
-      h.prefecture_name,
-      h.city_name,
-      h.event_category,
-      ${dateSelect},
-      h.title_ja,
-      h.description_ja,
-      h.old_value,
-      h.new_value,
-      h.source,
+      p.*,
       c.capital_amount,
       c.employee_count,
       c.representative_name,
       c.phone_number,
       c.website_url,
       c.has_website
-    FROM hub_dynamic_events h
-    LEFT JOIN companies c ON h.corporate_number = c.corporate_number
-    ${whereSql}
-    ORDER BY h.event_date DESC, h.id DESC
-    LIMIT ? OFFSET ?
+    FROM paged p
+    LEFT JOIN companies c ON p.corporate_number = c.corporate_number
+    ORDER BY p.event_date DESC, p.id DESC
   `;
 
   params.push(limit, offset);
 
   try {
     const rows = await runQuery(sql, params);
-    return rows.map((r: any) => ({
+    const result: HubDynamicEvent[] = rows.map((r: any) => ({
       id: Number(r.id),
       corporate_number: String(r.corporate_number),
       company_name: String(r.company_name),
@@ -6232,6 +6352,8 @@ export async function getHubDynamicEvents(options: GetHubEventsOptions = {}): Pr
       website_url: r.website_url || null,
       has_website: Boolean(r.has_website || r.website_url),
     }));
+    setCachedData(cacheKey, result, 5 * 60 * 1000);
+    return result;
   } catch (error) {
     console.error('Error in getHubDynamicEvents:', error);
     return [];
@@ -6257,13 +6379,7 @@ export async function getHubDynamicEventsCount(options: GetHubEventsOptions = {}
   }
 
   if (yearMonth) {
-    const isPG = !!DATABASE_URL;
-    if (isPG) {
-      whereClauses.push("TO_CHAR(event_date, 'YYYY-MM') = ?");
-    } else {
-      whereClauses.push("SUBSTR(event_date, 1, 7) = ?");
-    }
-    params.push(yearMonth);
+    whereClauses.push(buildYearMonthClause(yearMonth, 'event_date', params));
   }
 
   const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -6289,13 +6405,7 @@ export async function getHubPrefectureCounts(
   const params: any[] = [category];
 
   if (yearMonth) {
-    const isPG = !!DATABASE_URL;
-    if (isPG) {
-      whereClauses.push("TO_CHAR(event_date, 'YYYY-MM') = ?");
-    } else {
-      whereClauses.push("SUBSTR(event_date, 1, 7) = ?");
-    }
-    params.push(yearMonth);
+    whereClauses.push(buildYearMonthClause(yearMonth, 'event_date', params));
   }
 
   const sql = `
@@ -6315,6 +6425,61 @@ export async function getHubPrefectureCounts(
     }));
   } catch (error) {
     console.error('Error in getHubPrefectureCounts:', error);
+    return [];
+  }
+}
+
+export interface HubAvailableMonth {
+  year_month: string;
+  count: number;
+}
+
+/**
+ * Return available YYYY-MM month buckets (and counts) for a dynamic hub category/prefecture.
+ */
+export async function getHubAvailableMonths(
+  category: string,
+  prefectureCode?: string,
+  limit: number = 12
+): Promise<HubAvailableMonth[]> {
+  const cacheKey = `hub:months:${category}:${prefectureCode || 'all'}:${limit}`;
+  const cached = getCachedData<HubAvailableMonth[]>(cacheKey);
+  if (cached) return cached;
+
+  const isPG = !!DATABASE_URL;
+  const ymExpr = isPG ? "TO_CHAR(event_date, 'YYYY-MM')" : "SUBSTR(event_date, 1, 7)";
+  const whereClauses: string[] = ['event_category = ?', 'event_date IS NOT NULL'];
+  const params: any[] = [category];
+
+  if (prefectureCode) {
+    whereClauses.push('prefecture_code = ?');
+    params.push(prefectureCode);
+  }
+  params.push(limit);
+
+  const sql = `
+    SELECT
+      ${ymExpr} AS year_month,
+      COUNT(*) AS count
+    FROM hub_dynamic_events
+    WHERE ${whereClauses.join(' AND ')}
+    GROUP BY ${ymExpr}
+    ORDER BY year_month DESC
+    LIMIT ?
+  `;
+
+  try {
+    const rows = await runQuery(sql, params);
+    const result = rows
+      .filter((r: any) => r.year_month && String(r.year_month).length === 7)
+      .map((r: any) => ({
+        year_month: String(r.year_month),
+        count: Number(r.count || 0),
+      }));
+    setCachedData(cacheKey, result, 15 * 60 * 1000);
+    return result;
+  } catch (error) {
+    console.error('Error in getHubAvailableMonths:', error);
     return [];
   }
 }
@@ -6689,6 +6854,363 @@ export async function getCorporateRankings(
     return [];
   }
 }
+
+// ============================================================================
+// REAL-TIME LIVE SYNC FEED (TICKER & /changes SEO HUB)
+// ============================================================================
+
+export interface LiveSyncItem {
+  corporate_number: string;
+  company_name: string;
+  prefecture_name: string | null;
+  city_name: string | null;
+  event_category: string;
+  event_label_ja: string;
+  event_label_en: string;
+  event_label_vi: string;
+  event_date: string;
+  synced_at?: string | null;
+  hub_path: string;
+  title_ja: string | null;
+  old_value: string | null;
+  new_value: string | null;
+}
+
+export interface LiveSyncFeed {
+  today_count: number;
+  last_sync_at: string;
+  items: LiveSyncItem[];
+}
+
+function mapEventCategoryMeta(category: string): {
+  ja: string;
+  en: string;
+  vi: string;
+  hubPath: string;
+} {
+  switch (category) {
+    case 'relocation':
+      return { ja: '本店移転', en: 'HQ Relocation', vi: 'Chuyển trụ sở', hubPath: '/changes/relocation' };
+    case 'merger':
+      return { ja: '合併・組織再編', en: 'Merger / M&A', vi: 'Sáp nhập / M&A', hubPath: '/changes/merger' };
+    case 'new_company':
+    case 'new_establishment':
+      return { ja: '新規設立', en: 'New Incorporation', vi: 'Thành lập mới', hubPath: '/new-companies' };
+    case 'hiring':
+      return { ja: '求人公開', en: 'Hiring Update', vi: 'Tin tuyển dụng mới', hubPath: '/jobs/latest' };
+    case 'bankruptcies':
+      return { ja: '解散・清算', en: 'Dissolution', vi: 'Giải thể / Phá sản', hubPath: '/status/bankruptcies' };
+    case 'subsidy':
+      return { ja: '補助金受給', en: 'Gov Subsidy', vi: 'Nhận trợ cấp', hubPath: '/search?subsidy=true' };
+    case 'bidding':
+      return { ja: '調達・入札', en: 'Public Tender', vi: 'Trúng thầu công', hubPath: '/search?bidding=true' };
+    case 'financial':
+      return { ja: '決算開示', en: 'Financial Filing', vi: 'Công bố BCTC', hubPath: '/ranking' };
+    case 'invoice':
+      return { ja: 'インボイス登録', en: 'Invoice Reg.', vi: 'Đăng ký Invoice', hubPath: '/invoice' };
+    case 'representative_change':
+      return { ja: '代表者変更', en: 'Rep. Change', vi: 'Đổi đại diện', hubPath: '/changes' };
+    case 'name_change':
+      return { ja: '商号変更', en: 'Name Change', vi: 'Đổi tên', hubPath: '/changes' };
+    default:
+      return { ja: '企業情報更新', en: 'Profile Updated', vi: 'Cập nhật hồ sơ', hubPath: '/changes' };
+  }
+}
+
+let liveSyncSummaryInitialized = false;
+let isRefreshingLiveSync = false;
+
+async function initLiveSyncSummaryTable() {
+  if (liveSyncSummaryInitialized) return;
+  const isPG = !!DATABASE_URL;
+  try {
+    if (isPG) {
+      const pool = getPGPool();
+      await pool.query(`
+        CREATE TABLE IF NOT EXISTS live_sync_summary (
+          id INTEGER PRIMARY KEY,
+          count_24h INTEGER NOT NULL DEFAULT 0,
+          items_json TEXT NOT NULL,
+          computed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    } else {
+      const db = getSQLiteDB();
+      db.exec(`
+        CREATE TABLE IF NOT EXISTS live_sync_summary (
+          id INTEGER PRIMARY KEY,
+          count_24h INTEGER NOT NULL DEFAULT 0,
+          items_json TEXT NOT NULL,
+          computed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+    }
+    liveSyncSummaryInitialized = true;
+  } catch (err) {
+    console.error('Failed to init live_sync_summary table:', err);
+  }
+}
+
+async function computeFreshLiveSyncFeed(maxItems = 50): Promise<LiveSyncFeed> {
+  const isPG = !!DATABASE_URL;
+  const items: LiveSyncItem[] = [];
+  let todayCount = 0;
+
+  try {
+    const dateExpr = isPG ? "TO_CHAR(h.event_date, 'YYYY-MM-DD') AS event_date" : "h.event_date";
+    const syncedExpr = isPG
+      ? "TO_CHAR(h.created_at, 'YYYY-MM-DD HH24:MI') AS synced_at"
+      : "strftime('%Y-%m-%d %H:%M', datetime(h.created_at, '+9 hours')) AS synced_at";
+    const recentSinceExpr = isPG ? "CURRENT_DATE - INTERVAL '14 days'" : "date('now', '-14 days')";
+    // Balanced multi-category fetch using idx_hub_cat_date (filtered to recent 14 days so stale buckets don't appear as 24h updates)
+    const categoryQuotas: [string, number][] = [
+      ['hiring', 12],
+      ['relocation', 10],
+      ['merger', 8],
+      ['new_establishment', 8],
+      ['subsidy', 6],
+      ['bidding', 6],
+      ['financial', 6],
+      ['invoice', 6],
+      ['bankruptcies', 4],
+    ];
+
+    const buckets = await Promise.all(
+      categoryQuotas.map(([cat, catLimit]) =>
+        runQuery(
+          `SELECT h.corporate_number, h.company_name, h.prefecture_name, h.city_name,
+                  h.event_category, ${dateExpr}, ${syncedExpr}, h.title_ja, h.old_value, h.new_value
+           FROM hub_dynamic_events h
+           WHERE h.event_category = ?
+             AND h.event_date >= ${recentSinceExpr}
+           ORDER BY h.event_date DESC, h.id DESC
+           LIMIT ?`,
+          [cat, catLimit]
+        ).catch(() => [])
+      )
+    );
+
+    // Round-robin interleave across categories so ticker rotates through diverse signals
+    const maxBucketLen = Math.max(0, ...buckets.map((b) => b.length));
+    const seenKeys = new Set<string>();
+    for (let idx = 0; idx < maxBucketLen && items.length < maxItems; idx++) {
+      for (const bucket of buckets) {
+        if (idx >= bucket.length) continue;
+        const r = bucket[idx];
+        const cat = String(r.event_category || 'update');
+        const corpNum = String(r.corporate_number);
+        const dedupKey = `${corpNum}:${cat}`;
+        if (seenKeys.has(dedupKey)) continue;
+        seenKeys.add(dedupKey);
+        const meta = mapEventCategoryMeta(cat);
+        items.push({
+          corporate_number: corpNum,
+          company_name: String(r.company_name),
+          prefecture_name: r.prefecture_name || null,
+          city_name: r.city_name || null,
+          event_category: cat,
+          event_label_ja: meta.ja,
+          event_label_en: meta.en,
+          event_label_vi: meta.vi,
+          event_date: String(r.event_date || ''),
+          synced_at: r.synced_at ? String(r.synced_at) : null,
+          hub_path: meta.hubPath,
+          title_ja: r.title_ja || null,
+          old_value: r.old_value || null,
+          new_value: r.new_value || null,
+        });
+        if (items.length >= maxItems) break;
+      }
+    }
+
+    // Exact unique companies updated in the last 24 hours (exclude historical backfills older than 7 days)
+    const sinceExpr = isPG ? "NOW() - INTERVAL '24 hours'" : "datetime('now', '-24 hours')";
+    const recentEventExpr = isPG ? "CURRENT_DATE - INTERVAL '7 days'" : "date('now', '-7 days')";
+    try {
+      const exact24hRow = await runGetQuery(
+        `SELECT COUNT(DISTINCT corporate_number) AS cnt FROM (
+          SELECT corporate_number FROM hub_dynamic_events
+          WHERE created_at >= ${sinceExpr} AND event_date >= ${recentEventExpr}
+          UNION
+          SELECT corporate_number FROM business_signals
+          WHERE id > (SELECT COALESCE(MAX(id), 0) - 100000 FROM business_signals)
+            AND created_at >= ${sinceExpr}
+        ) t`
+      );
+      todayCount = Number(exact24hRow?.cnt || 0);
+    } catch {
+      const hub24hRow = await runGetQuery(
+        `SELECT COUNT(DISTINCT corporate_number) AS cnt FROM hub_dynamic_events
+         WHERE created_at >= ${sinceExpr} AND event_date >= ${recentEventExpr}`
+      );
+      todayCount = Number(hub24hRow?.cnt || 0);
+    }
+  } catch (err) {
+    console.error('Error querying hub_dynamic_events in computeFreshLiveSyncFeed:', err);
+  }
+
+  // Fallback to companies table if hub_dynamic_events has fewer items than requested
+  if (items.length < maxItems) {
+    try {
+      const remaining = maxItems - items.length;
+      const existingNums = new Set(items.map(i => i.corporate_number));
+      const dateCol = isPG ? "TO_CHAR(updated_at, 'YYYY-MM-DD') AS event_date" : "SUBSTR(updated_at, 1, 10) AS event_date";
+      const companyRows = await runQuery(
+        `SELECT corporate_number, company_name, prefecture_name, city_name, ${dateCol}
+         FROM companies
+         WHERE company_name IS NOT NULL
+         LIMIT ?`,
+        [remaining + 5]
+      );
+
+      for (const r of companyRows || []) {
+        const corpNum = String(r.corporate_number);
+        if (existingNums.has(corpNum)) continue;
+        existingNums.add(corpNum);
+        const meta = mapEventCategoryMeta('update');
+        items.push({
+          corporate_number: corpNum,
+          company_name: String(r.company_name),
+          prefecture_name: r.prefecture_name || null,
+          city_name: r.city_name || null,
+          event_category: 'update',
+          event_label_ja: meta.ja,
+          event_label_en: meta.en,
+          event_label_vi: meta.vi,
+          event_date: String(r.event_date || new Date().toISOString().slice(0, 10)),
+          hub_path: meta.hubPath,
+          title_ja: null,
+          old_value: null,
+          new_value: null,
+        });
+        if (items.length >= maxItems) break;
+      }
+    } catch (err) {
+      console.error('Fallback error in computeFreshLiveSyncFeed:', err);
+    }
+  }
+
+  return {
+    today_count: todayCount,
+    last_sync_at: new Date().toISOString(),
+    items,
+  };
+}
+
+async function saveLiveSyncSummary(feed: LiveSyncFeed): Promise<void> {
+  const isPG = !!DATABASE_URL;
+  const payload = JSON.stringify(feed.items);
+  try {
+    await initLiveSyncSummaryTable();
+    if (isPG) {
+      const pool = getPGPool();
+      await pool.query(
+        `INSERT INTO live_sync_summary (id, count_24h, items_json, computed_at)
+         VALUES (1, $1, $2, NOW())
+         ON CONFLICT (id) DO UPDATE SET
+           count_24h = EXCLUDED.count_24h,
+           items_json = EXCLUDED.items_json,
+           computed_at = NOW()`,
+        [feed.today_count, payload]
+      );
+    } else {
+      const db = getSQLiteDB();
+      db.prepare(
+        `INSERT INTO live_sync_summary (id, count_24h, items_json, computed_at)
+         VALUES (1, ?, ?, datetime('now'))
+         ON CONFLICT (id) DO UPDATE SET
+           count_24h = excluded.count_24h,
+           items_json = excluded.items_json,
+           computed_at = datetime('now')`
+      ).run(feed.today_count, payload);
+    }
+  } catch (err) {
+    console.error('Failed to persist live_sync_summary:', err);
+  }
+}
+
+function refreshLiveSyncSummaryInBackground(): void {
+  if (isRefreshingLiveSync) return;
+  isRefreshingLiveSync = true;
+  computeFreshLiveSyncFeed(50)
+    .then(async (fresh) => {
+      await saveLiveSyncSummary(fresh);
+      setCachedData('live_sync_feed_master', fresh, 60 * 1000);
+    })
+    .catch((err) => {
+      console.error('Background refresh of live_sync_summary failed:', err);
+    })
+    .finally(() => {
+      isRefreshingLiveSync = false;
+    });
+}
+
+/**
+ * O(1) Stale-While-Revalidate reader for the LiveSyncTicker and /[locale]/changes SEO Hub.
+ * Reads from the materialized `live_sync_summary` table (< 1ms) and refreshes asynchronously
+ * every 2 minutes without ever blocking page TTFB.
+ */
+export async function getLiveSyncFeed(limit = 10): Promise<LiveSyncFeed> {
+  const safeLimit = Math.min(Math.max(1, limit), 100);
+  const masterCacheKey = 'live_sync_feed_master';
+  const cached = getCachedData<LiveSyncFeed>(masterCacheKey);
+  if (cached !== null && (safeLimit <= 50 || cached.items.length >= safeLimit)) {
+    return {
+      today_count: cached.today_count,
+      last_sync_at: cached.last_sync_at,
+      items: cached.items.slice(0, safeLimit),
+    };
+  }
+
+  const isPG = !!DATABASE_URL;
+  try {
+    await initLiveSyncSummaryTable();
+    const ageExpr = isPG
+      ? `EXTRACT(EPOCH FROM (NOW() - computed_at)) AS age_seconds, TO_CHAR(computed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"') AS computed_iso`
+      : `(strftime('%s', 'now') - strftime('%s', computed_at)) AS age_seconds, (REPLACE(computed_at, ' ', 'T') || 'Z') AS computed_iso`;
+    const row = await runGetQuery(
+      `SELECT count_24h, items_json, ${ageExpr} FROM live_sync_summary WHERE id = 1`
+    );
+
+    if (row && row.items_json) {
+      const parsedItems: LiveSyncItem[] = JSON.parse(String(row.items_json));
+      const ageSeconds = Number(row.age_seconds ?? 999);
+      const isStale = isNaN(ageSeconds) || ageSeconds < 0 || ageSeconds > 120;
+
+      if (isStale) {
+        refreshLiveSyncSummaryInBackground();
+      }
+
+      const masterFeed: LiveSyncFeed = {
+        today_count: Number(row.count_24h || 0),
+        last_sync_at: row.computed_iso ? String(row.computed_iso) : new Date().toISOString(),
+        items: parsedItems,
+      };
+      setCachedData(masterCacheKey, masterFeed, 60 * 1000);
+
+      if (parsedItems.length > 0 && (safeLimit <= 50 || parsedItems.length >= safeLimit)) {
+        return {
+          today_count: masterFeed.today_count,
+          last_sync_at: masterFeed.last_sync_at,
+          items: parsedItems.slice(0, safeLimit),
+        };
+      }
+    }
+  } catch (err) {
+    console.error('Error reading live_sync_summary:', err);
+  }
+
+  // Cold start: compute once, persist to live_sync_summary, and return
+  const fresh = await computeFreshLiveSyncFeed(Math.max(50, safeLimit));
+  await saveLiveSyncSummary(fresh);
+  setCachedData(masterCacheKey, fresh, 60 * 1000);
+  return {
+    today_count: fresh.today_count,
+    last_sync_at: fresh.last_sync_at,
+    items: fresh.items.slice(0, safeLimit),
+  };
+}
+
 
 
 

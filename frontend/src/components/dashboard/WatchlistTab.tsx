@@ -60,8 +60,9 @@ interface WatchlistTabProps {
 }
 
 export const WatchlistTab: React.FC<WatchlistTabProps> = ({ onEventsCountChange }) => {
-  const { savedCompanies, toggleSaveCompany } = useAuth();
+  const { savedCompanies, toggleSaveCompany, watchlistLimit, quota, user } = useAuth();
   const { locale } = useLanguage();
+  const currentPlan = (quota?.plan || user?.role || "free").toUpperCase();
 
   const [loading, setLoading] = useState(true);
   const [companies, setCompanies] = useState<WatchedCompany[]>([]);
@@ -210,7 +211,7 @@ export const WatchlistTab: React.FC<WatchlistTabProps> = ({ onEventsCountChange 
     });
   }, [events, selectedCategory]);
 
-  const maxFreeQuota = 100;
+  const maxQuotaLabel = Number.isFinite(watchlistLimit) ? watchlistLimit.toLocaleString() : (locale === "ja" ? "無制限" : locale === "vi" ? "Không giới hạn" : "Unlimited");
   const currentCount = savedCompanies.length;
 
   const categoryLabels: Record<string, { ja: string; en: string; vi: string }> = {
@@ -235,7 +236,7 @@ export const WatchlistTab: React.FC<WatchlistTabProps> = ({ onEventsCountChange 
                 {locale === "en" ? "Corporate Intelligence & Alerts" : locale === "vi" ? "Giám Sát Biến Động Doanh Nghiệp" : "企業監視・重要変動検知"}
               </span>
               <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-                {locale === "en" ? "FREE TIER (100 CO.)" : locale === "vi" ? "MIỄN PHÍ (100 CÔNG TY)" : "無料枠: 最大100社"}
+                {locale === "en" ? `${currentPlan} TIER (${maxQuotaLabel} CO.)` : locale === "vi" ? `GÓI ${currentPlan} (${maxQuotaLabel} CÔNG TY)` : `${currentPlan}枠: 最大${maxQuotaLabel}社`}
               </span>
             </div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight">
@@ -281,10 +282,10 @@ export const WatchlistTab: React.FC<WatchlistTabProps> = ({ onEventsCountChange 
               {locale === "en" ? "Monitored Capacity:" : locale === "vi" ? "Dung lượng theo dõi:" : "現在の登録数:"}
             </span>
             <strong className="text-slate-900 dark:text-white font-mono tabular-nums text-sm font-bold">
-              {currentCount} / {maxFreeQuota} 社
+              {currentCount} / {maxQuotaLabel} 社
             </strong>
             <span className="text-[10px] text-slate-400">
-              ({locale === "en" ? "Free Tier limit: 100 companies" : locale === "vi" ? "Hạn mức gói miễn phí: 100 công ty" : "無料プラン上限: 最大100社"})
+              ({locale === "en" ? `Plan limit: ${maxQuotaLabel} companies` : locale === "vi" ? `Hạn mức gói ${currentPlan}: ${maxQuotaLabel} công ty` : `現在プラン上限: 最大${maxQuotaLabel}社`})
             </span>
           </div>
 

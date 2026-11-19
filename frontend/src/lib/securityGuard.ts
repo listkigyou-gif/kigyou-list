@@ -377,6 +377,10 @@ export async function isDatacenterIp(ip: string): Promise<{ isDatacenter: boolea
         const matchesKeyword = KNOWN_DATACENTER_KEYWORDS.some(kw => orgInfo.includes(kw));
         const isDc = Boolean(data.hosting || data.proxy || matchesKeyword);
 
+        if (datacenterIpCache.size > 1000) {
+          const oldestKey = datacenterIpCache.keys().next().value;
+          if (oldestKey !== undefined) datacenterIpCache.delete(oldestKey);
+        }
         datacenterIpCache.set(cleanIp, { 
           isDatacenter: isDc, 
           org: data.org || data.as || (isDc ? "Datacenter/Hosting" : undefined), 

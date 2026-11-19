@@ -116,7 +116,7 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
   const [presets, setPresets] = useState<Template[]>(() => cachedFormCampaignsData?.presets || []);
   const [transactions, setTransactions] = useState<FormCreditTransaction[]>([]);
   const [loadingTransactions, setLoadingTransactions] = useState(false);
-  const [formCredits, setFormCredits] = useState<{ balance: number; reserved?: number; total_purchased: number; total_used: number }>(() => cachedFormCampaignsData?.credits || {
+  const [formCredits, setFormCredits] = useState<{ balance: number; reserved?: number; total_purchased: number; total_used: number; daily_free_remaining?: number; daily_free_allowance?: number; purchased_balance?: number }>(() => cachedFormCampaignsData?.credits || {
     balance: 0,
     reserved: 0,
     total_purchased: 0,
@@ -438,7 +438,8 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
         return;
       }
 
-      if (initialTargetCompanies.length < 100) {
+      const canUseDailyFree = (formCredits.daily_free_remaining ?? 0) > 0 && initialTargetCompanies.length <= (formCredits.daily_free_remaining ?? 0);
+      if (initialTargetCompanies.length < 100 && !canUseDailyFree) {
         alert(
           isJa
             ? `フォーム営業キャンペーンの作成は【最低100社以上】の選定が必要です。\n（現在選択中: ${initialTargetCompanies.length}社）\n\n少数の過剰申請を防ぎ、アプローチ成約率を担保するため、100社以上を選択して作成してください。`
@@ -474,7 +475,8 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
   // Automatically trigger campaign modal if initialTargetCompanies are passed in
   useEffect(() => {
     if (initialTargetCompanies && initialTargetCompanies.length > 0) {
-      if (initialTargetCompanies.length < 100) {
+      const canUseDailyFree = (formCredits.daily_free_remaining ?? 0) > 0 && initialTargetCompanies.length <= (formCredits.daily_free_remaining ?? 0);
+      if (initialTargetCompanies.length < 100 && !canUseDailyFree) {
         alert(
           isJa
             ? `フォーム営業キャンペーンの作成は【最低100社以上】の選定が必要です。\n（現在選択中: ${initialTargetCompanies.length}社）\n\n少数の過剰申請を防ぎ、アプローチ成約率を担保するため、100社以上を選択して作成してください。`
@@ -506,7 +508,8 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
       return;
     }
 
-    if (cmpTargetCount < 100) {
+    const canUseDailyFree = (formCredits.daily_free_remaining ?? 0) > 0 && cmpTargetCount >= 1 && cmpTargetCount <= (formCredits.daily_free_remaining ?? 0);
+    if (cmpTargetCount < 100 && !canUseDailyFree) {
       alert(
         isJa
           ? "1キャンペーンあたりの配信件数は【最低100件以上】を指定してください。\n（少数の過剰申請を防ぎ、十分なアプローチ効果を担保するため）"
@@ -629,7 +632,8 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
       return;
     }
 
-    if (cmp.target_count < 100) {
+    const canUseDailyFree = (formCredits.daily_free_remaining ?? 0) > 0 && cmp.target_count >= 1 && cmp.target_count <= (formCredits.daily_free_remaining ?? 0);
+    if (cmp.target_count < 100 && !canUseDailyFree) {
       alert(
         isJa
           ? `1キャンペーンあたりの配信件数は【最低100件以上】が必要です（現在: ${cmp.target_count}件）。\n「編集」より配信ターゲット件数を100件以上に調整してください。`
@@ -941,6 +945,11 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
                       {isJa ? "件（利用可能残高）" : isVi ? " lượt khả dụng" : " available"}
                     </span>
                   </div>
+                  {(formCredits.daily_free_allowance ?? 0) > 0 && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold">
+                      <span>{isJa ? `本日無料枠: ${formCredits.daily_free_remaining ?? 0} / ${formCredits.daily_free_allowance} 件` : isVi ? `Miễn phí hôm nay: ${formCredits.daily_free_remaining ?? 0} / ${formCredits.daily_free_allowance}` : `Free Today: ${formCredits.daily_free_remaining ?? 0} / ${formCredits.daily_free_allowance}`}</span>
+                    </span>
+                  )}
                   {(formCredits.reserved ?? 0) > 0 && (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-amber-50 dark:bg-amber-950/40 border border-amber-300/80 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-xs font-bold">
                       <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
@@ -1613,20 +1622,39 @@ export function FormCampaignsTab({ initialTargetCompanies, onClearInitialTarget 
                         <div className="relative">
                           <input
                             type="number"
-                            min={100}
+                            min={(formCredits.daily_free_remaining ?? 0) > 0 ? 1 : 100}
                             value={cmpTargetCount || ""}
-                            onChange={(e) => setCmpTargetCount(Math.max(100, parseInt(e.target.value) || 0))}
+                            onChange={(e) => {
+                              const minVal = (formCredits.daily_free_remaining ?? 0) > 0 ? 1 : 100;
+                              setCmpTargetCount(Math.max(minVal, parseInt(e.target.value) || 0));
+                            }}
                             className="w-full text-xs font-bold px-3.5 py-2.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] font-mono"
-                            placeholder="100"
+                            placeholder={(formCredits.daily_free_remaining ?? 0) > 0 ? "20" : "100"}
                           />
                           <span className="absolute right-3.5 top-2.5 text-xs font-semibold text-slate-400">
-                            {isJa ? "件 (最低100件〜)" : isVi ? "lượt (Tối thiểu 100)" : "forms (min 100)"}
+                            {(formCredits.daily_free_remaining ?? 0) > 0
+                              ? (isJa ? "件 (無料枠1〜20件 / 通常100件〜)" : isVi ? "lượt (Miễn phí 1–20 / Thường ≥100)" : "forms (Free 1–20 / ≥100)")
+                              : (isJa ? "件 (最低100件〜)" : isVi ? "lượt (Tối thiểu 100)" : "forms (min 100)")}
                           </span>
                         </div>
 
                         {/* Quick preset chips */}
                         <div className="flex items-center gap-1.5 flex-wrap mt-2">
                           <span className="text-[10px] text-slate-400 font-medium mr-0.5">{isJa ? "クイック選択:" : isVi ? "Chọn nhanh:" : "Presets:"}</span>
+                          {(formCredits.daily_free_remaining ?? 0) > 0 && (
+                            <button
+                              key="daily-free"
+                              type="button"
+                              onClick={() => setCmpTargetCount(formCredits.daily_free_remaining!)}
+                              className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all cursor-pointer ${
+                                cmpTargetCount === formCredits.daily_free_remaining
+                                  ? "bg-emerald-600 text-white"
+                                  : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100/60"
+                              }`}
+                            >
+                              {isJa ? `${formCredits.daily_free_remaining}件 (本日無料枠)` : isVi ? `${formCredits.daily_free_remaining} (Miễn phí hôm nay)` : `${formCredits.daily_free_remaining} (Free Today)`}
+                            </button>
+                          )}
                           {[100, 250, 500, 1000].map((presetNum) => (
                             <button
                               key={presetNum}

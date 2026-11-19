@@ -81,9 +81,17 @@ export class SmartSearchLRUCache {
 
     const activeEntries: [string, any][] = [];
 
-    if (filters.prefecture_code) activeEntries.push(['pref', filters.prefecture_code]);
+    if (filters.prefecture_codes && filters.prefecture_codes.length > 0) {
+      activeEntries.push(['prefs', [...filters.prefecture_codes].sort().join(',')]);
+    } else if (filters.prefecture_code) {
+      activeEntries.push(['pref', filters.prefecture_code]);
+    }
     if (filters.city_name) activeEntries.push(['city', filters.city_name]);
-    if (filters.industry_code) activeEntries.push(['ind', filters.industry_code]);
+    if (filters.industry_codes && filters.industry_codes.length > 0) {
+      activeEntries.push(['inds', [...filters.industry_codes].sort().join(',')]);
+    } else if (filters.industry_code) {
+      activeEntries.push(['ind', filters.industry_code]);
+    }
 
     if (filters.min_employees != null) activeEntries.push(['emp_min', filters.min_employees]);
     if (filters.max_employees != null) activeEntries.push(['emp_max', filters.max_employees]);
@@ -175,9 +183,17 @@ export class SmartSearchLRUCache {
     // 2. Active filters sorted alphabetically
     const activeEntries: [string, any][] = [];
 
-    if (filters.prefecture_code) activeEntries.push(['pref', filters.prefecture_code]);
+    if (filters.prefecture_codes && filters.prefecture_codes.length > 0) {
+      activeEntries.push(['prefs', [...filters.prefecture_codes].sort().join(',')]);
+    } else if (filters.prefecture_code) {
+      activeEntries.push(['pref', filters.prefecture_code]);
+    }
     if (filters.city_name) activeEntries.push(['city', filters.city_name]);
-    if (filters.industry_code) activeEntries.push(['ind', filters.industry_code]);
+    if (filters.industry_codes && filters.industry_codes.length > 0) {
+      activeEntries.push(['inds', [...filters.industry_codes].sort().join(',')]);
+    } else if (filters.industry_code) {
+      activeEntries.push(['ind', filters.industry_code]);
+    }
 
     if (filters.min_employees != null) activeEntries.push(['emp_min', filters.min_employees]);
     if (filters.max_employees != null) activeEntries.push(['emp_max', filters.max_employees]);

@@ -31,6 +31,7 @@ import {
   Phone,
   User,
   FileText,
+  Square,
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
 
@@ -297,6 +298,30 @@ export function InternalFormMarketingSubTab({
       fetchCampaignsHistory();
     }
   }, [activeSection, fetchCampaignsHistory]);
+
+  // Stop a running campaign
+  const handleStopCampaign = async (campaignId: string) => {
+    if (!confirm(isJa ? "このキャンペーンの配信を停止しますか？" : "Bạn có chắc chắn muốn dừng chiến dịch này?")) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/admin/internal-form-marketing/campaigns/${campaignId}`, {
+        method: "PATCH",
+        headers: {
+          ...getAdminHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action: "stop" }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        fetchCampaignsHistory();
+        fetchStats(true);
+      }
+    } catch (e) {
+      console.error("Stop campaign error:", e);
+    }
+  };
 
   // View Single Campaign Logs
   const handleViewLogs = async (campaign: any, filter = "all") => {
@@ -1148,6 +1173,10 @@ export function InternalFormMarketingSubTab({
                               ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
                               : cmp.status === "processing"
                               ? "bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 animate-pulse"
+                              : cmp.status === "stopped" || cmp.status === "cancelled"
+                              ? "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-400"
+                              : cmp.status === "paused"
+                              ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
                               : "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                           }`}
                         >
@@ -1155,6 +1184,10 @@ export function InternalFormMarketingSubTab({
                             ? isJa ? "完了" : "Hoàn thành"
                             : cmp.status === "processing"
                             ? isJa ? "配信中" : "Đang chạy"
+                            : cmp.status === "stopped" || cmp.status === "cancelled"
+                            ? isJa ? "停止" : "Đã dừng"
+                            : cmp.status === "paused"
+                            ? isJa ? "一時停止" : "Tạm dừng"
                             : isJa ? "準備完了" : "Sẵn sàng"}
                         </span>
                       </td>
@@ -1183,6 +1216,18 @@ export function InternalFormMarketingSubTab({
                             <Download className="w-3.5 h-3.5 text-indigo-600" />
                             <span>CSV</span>
                           </a>
+
+                          {/* Stop Campaign Button if running */}
+                          {cmp.status === "processing" && (
+                            <button
+                              onClick={() => handleStopCampaign(cmp.id)}
+                              className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 text-xs font-bold flex items-center gap-1 transition-all"
+                              title={isJa ? "配信を停止" : "Dừng chiến dịch"}
+                            >
+                              <Square className="w-3.5 h-3.5 fill-rose-600 text-rose-600" />
+                              <span>{isJa ? "停止" : "Dừng"}</span>
+                            </button>
+                          )}
 
                           {/* View Logs Detail Button */}
                           <button

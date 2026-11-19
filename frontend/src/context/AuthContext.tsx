@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useRef } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { isAdminEmail } from "@/lib/adminAuth";
+import { getWatchlistLimit } from "@/lib/planLimits";
 
 export interface User {
   email: string;
@@ -24,6 +25,7 @@ export interface AuthContextType {
   setAuthModalOpen: (open: boolean) => void;
   // MyList
   savedCompanies: string[];
+  watchlistLimit: number;
   toggleSaveCompany: (corpNum: string) => void;
   saveCompaniesBatch: (corpNums: string[]) => { addedCount: number; totalCount: number; maxReached: boolean };
   isCompanySaved: (corpNum: string) => boolean;
@@ -331,6 +333,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return false;
   };
 
+  const watchlistLimit = getWatchlistLimit(quota?.plan, user?.role);
+
   const toggleSaveCompany = (corpNum: string) => {
     const id = String(corpNum).trim();
     if (!id) return;
@@ -357,6 +361,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } catch {}
         return nextList;
       } else {
+        if (Number.isFinite(watchlistLimit) && prev.length >= watchlistLimit) {
+          if (typeof window !== "undefined") {
+            window.alert(`監視リストの上限（最大${watchlistLimit.toLocaleString()}社）に達しています。上位プランへアップグレードすると登録上限を拡張できます。`);
+          }
+          return prev;
+        }
+
         setKanbanStages((prevKanban) => ({
           ...prevKanban,
           [id]: "未連絡",
@@ -386,7 +397,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .filter(n => /^\d{13}$/.test(n));
     let added = 0;
     let limitHit = false;
-    const MAX_LIMIT = 100;
+    const MAX_LIMIT = watchlistLimit;
 
     setSavedCompanies((prev) => {
       const existingSet = new Set(prev.map(p => String(p).trim()));
@@ -394,7 +405,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       for (const num of validNums) {
         if (!existingSet.has(num)) {
-          if (existingSet.size + toAdd.length >= MAX_LIMIT) {
+          if (Number.isFinite(MAX_LIMIT) && existingSet.size + toAdd.length >= MAX_LIMIT) {
             limitHit = true;
             break;
           }
@@ -458,6 +469,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         authModalOpen,
         setAuthModalOpen,
         savedCompanies,
+        watchlistLimit,
         toggleSaveCompany,
         saveCompaniesBatch,
         isCompanySaved,

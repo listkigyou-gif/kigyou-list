@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
@@ -36,6 +36,8 @@ interface SearchSidebarProps {
   prefectures: PrefectureOption[];
   industries: MajorIndustry[];
   prefCode?: string;
+  prefCodes?: string[];
+  indCodes?: string[];
   city?: string;
   cities?: { cityName: string; count: number }[];
   indCode?: string;
@@ -84,9 +86,11 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   prefectures,
   industries,
   prefCode,
+  prefCodes,
   city,
   cities,
   indCode,
+  indCodes,
   minEmp,
   maxEmp,
   minCap,
@@ -139,8 +143,20 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   const [openSignals, setOpenSignals] = useState(true);
   const [openLicenses, setOpenLicenses] = useState(true);
 
+  const selectedPrefCodes = useMemo(() => {
+    if (prefCodes && prefCodes.length > 0) return prefCodes.slice(0, 3);
+    if (prefCode) return [prefCode];
+    return [];
+  }, [prefCodes, prefCode]);
+
+  const selectedIndCodes = useMemo(() => {
+    if (indCodes && indCodes.length > 0) return indCodes.slice(0, 3);
+    if (indCode) return [indCode];
+    return [];
+  }, [indCodes, indCode]);
+
   const activeCount = [
-    prefCode, city, indCode, minEmp, maxEmp, minCap, maxCap,
+    selectedPrefCodes.length > 0 ? 'pref' : null, city, selectedIndCodes.length > 0 ? 'ind' : null, minEmp, maxEmp, minCap, maxCap,
     hasHiring, hasSubsidy, hasBidding, hasInvoice, minEstYear, maxEstYear,
     hasAward, hasCertification, hasPatent, hasFinancials, isListed,
     hasTokuteiLic, hasShigyoLic, hasRealEstateLic, hasKobutsuLic, hasConstructionLic,
@@ -183,7 +199,9 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
     if (onFilterChange) {
       const updates: Record<string, any> = {};
       Object.entries(overrides).forEach(([key, val]) => {
-        if (key === "prefecture") updates.prefecture = val;
+        if (key === "prefectures") updates.prefectures = val;
+        else if (key === "prefecture") updates.prefecture = val;
+        else if (key === "industries") updates.industries = val;
         else if (key === "city") updates.city = val;
         else if (key === "industry") updates.industry = val;
         else if (key === "min_employees") updates.min_employees = val;
@@ -277,8 +295,10 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
   const handleClearAll = () => {
     if (onFilterChange) {
       onFilterChange({
+        prefectures: null,
         prefecture: null,
         city: null,
+        industries: null,
         industry: null,
         min_employees: null,
         max_employees: null,
@@ -368,26 +388,75 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
 
           {openArea && (
             <div className="p-3 pt-0 flex flex-col gap-2.5">
-              {/* Prefecture */}
+              {/* Prefecture (Max 3) */}
               <div>
-                <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  {t.search.prefecture}
-                </label>
+                <div className="flex items-center justify-between text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <span>{t.search.prefecture}（最大3件）</span>
+                  <span className={`text-[10px] tabular-nums font-mono px-1.5 py-0.2 rounded ${selectedPrefCodes.length >= 3 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 font-semibold' : 'text-slate-500'}`}>
+                    {selectedPrefCodes.length}/3
+                  </span>
+                </div>
+
+                {/* Selected Prefecture Pills */}
+                {selectedPrefCodes.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-1.5">
+                    {selectedPrefCodes.map((code: string) => {
+                      const prefObj = prefectures.find((p) => p.code === code);
+                      const name = (t.prefectures as Record<string, string>)?.[prefObj?.name || ''] || prefObj?.name || code;
+                      return (
+                        <span
+                          key={code}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                        >
+                          <span>{name}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = selectedPrefCodes.filter((c: string) => c !== code);
+                              navigate({ prefectures: next.length > 0 ? next.join(',') : null, prefecture: next.length === 1 ? next[0] : null, city: null }, true);
+                            }}
+                            className="text-slate-400 hover:text-rose-600 transition-colors cursor-pointer text-xs leading-none"
+                            aria-label={`Remove ${name}`}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
                 <select
-                  value={prefCode || ""}
-                  onChange={(e) => navigate({ prefecture: e.target.value || null, city: null }, true)}
-                  className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 cursor-pointer"
+                  value=""
+                  disabled={selectedPrefCodes.length >= 3}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    if (!code) return;
+                    if (selectedPrefCodes.includes(code)) return;
+                    if (selectedPrefCodes.length >= 3) return;
+                    const next = [...selectedPrefCodes, code];
+                    navigate({ prefectures: next.join(','), prefecture: next.length === 1 ? next[0] : null, city: null }, true);
+                  }}
+                  className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 cursor-pointer"
                 >
-                  <option value="">{t.search.allPrefectures}</option>
-                  {prefectures.map((pref) => (
-                    <option key={pref.code} value={pref.code}>
-                      {(t.prefectures as Record<string, string>)?.[pref.name] || pref.name} ({pref.count.toLocaleString('ja-JP')}社)
-                    </option>
-                  ))}
+                  <option value="">
+                    {selectedPrefCodes.length >= 3
+                      ? '上限（3件）に達しました'
+                      : selectedPrefCodes.length === 0
+                      ? t.search.allPrefectures
+                      : '+ 都道府県を追加...'}
+                  </option>
+                  {prefectures
+                    .filter((pref) => !selectedPrefCodes.includes(pref.code))
+                    .map((pref) => (
+                      <option key={pref.code} value={pref.code}>
+                        {(t.prefectures as Record<string, string>)?.[pref.name] || pref.name} ({pref.count.toLocaleString('ja-JP')}社)
+                      </option>
+                    ))}
                 </select>
               </div>
 
-              {/* City */}
+              {/* City (Enabled only when 1 prefecture is selected) */}
               <div>
                 <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
                   {t.search.city}
@@ -395,39 +464,112 @@ export const SearchSidebar: React.FC<SearchSidebarProps> = ({
                 <select
                   value={city || ""}
                   onChange={(e) => navigate({ city: e.target.value || null }, true)}
-                  disabled={!prefCode}
+                  disabled={selectedPrefCodes.length !== 1}
                   className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 cursor-pointer"
                 >
-                  <option value="">{t.search.allCities}</option>
-                  {prefCode && cities && cities.map((c) => (
+                  <option value="">
+                    {selectedPrefCodes.length === 0
+                      ? t.search.allCities
+                      : selectedPrefCodes.length > 1
+                      ? '複数エリア選択時は指定不可'
+                      : t.search.allCities}
+                  </option>
+                  {selectedPrefCodes.length === 1 && cities && cities.map((c) => (
                     <option key={c.cityName} value={c.cityName}>
                       {c.cityName} ({c.count.toLocaleString('ja-JP')}社)
                     </option>
                   ))}
                 </select>
+                {selectedPrefCodes.length > 1 && (
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">
+                    ※ 複数エリア選択時は市区町村の絞り込みは利用できません
+                  </p>
+                )}
               </div>
 
-              {/* Industry */}
+              {/* Industry (Max 3) */}
               <div>
-                <label className="block text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
-                  {t.search.industry}
-                </label>
+                <div className="flex items-center justify-between text-[11px] font-medium text-slate-600 dark:text-slate-400 mb-1">
+                  <span>{t.search.industry}（最大3件）</span>
+                  <span className={`text-[10px] tabular-nums font-mono px-1.5 py-0.2 rounded ${selectedIndCodes.length >= 3 ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 font-semibold' : 'text-slate-500'}`}>
+                    {selectedIndCodes.length}/3
+                  </span>
+                </div>
+
+                {/* Selected Industry Pills */}
+                {selectedIndCodes.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mb-1.5">
+                    {selectedIndCodes.map((code: string) => {
+                      let indName = code;
+                      const majorMatch = industries.find((m) => m.code === code);
+                      if (majorMatch) {
+                        indName = `${majorMatch.code} ${(t.majorIndustries as Record<string, string>)?.[majorMatch.code] || majorMatch.name}`;
+                      } else {
+                        for (const major of industries) {
+                          const medMatch = major.children.find((c) => c.code === code);
+                          if (medMatch) {
+                            indName = `${medMatch.code} ${getIndustryName(medMatch.name, locale)}`;
+                            break;
+                          }
+                        }
+                      }
+                      return (
+                        <span
+                          key={code}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-800 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700"
+                        >
+                          <span className="truncate max-w-[140px]">{indName}</span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const next = selectedIndCodes.filter((c: string) => c !== code);
+                              navigate({ industries: next.length > 0 ? next.join(',') : null, industry: next.length === 1 ? next[0] : null }, true);
+                            }}
+                            className="text-slate-400 hover:text-rose-600 transition-colors cursor-pointer text-xs leading-none"
+                            aria-label={`Remove ${indName}`}
+                          >
+                            ×
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+
                 <select
-                  value={indCode || ""}
-                  onChange={(e) => navigate({ industry: e.target.value || null }, true)}
-                  className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 cursor-pointer"
+                  value=""
+                  disabled={selectedIndCodes.length >= 3}
+                  onChange={(e) => {
+                    const code = e.target.value;
+                    if (!code) return;
+                    if (selectedIndCodes.includes(code)) return;
+                    if (selectedIndCodes.length >= 3) return;
+                    const next = [...selectedIndCodes, code];
+                    navigate({ industries: next.join(','), industry: next.length === 1 ? next[0] : null }, true);
+                  }}
+                  className="w-full text-xs text-slate-800 bg-white border border-slate-200 rounded-md px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700 disabled:opacity-50 disabled:bg-slate-100 dark:disabled:bg-slate-900 cursor-pointer"
                 >
-                  <option value="">{t.search.allIndustries}</option>
+                  <option value="">
+                    {selectedIndCodes.length >= 3
+                      ? '上限（3件）に達しました'
+                      : selectedIndCodes.length === 0
+                      ? t.search.allIndustries
+                      : '+ 業界を追加...'}
+                  </option>
                   {industries.map((major) => (
                     <React.Fragment key={major.code}>
-                      <option value={major.code} className="font-semibold text-slate-900 dark:text-white">
-                        {major.code} {(t.majorIndustries as Record<string, string>)?.[major.code] || major.name} (計 {major.totalCount.toLocaleString('ja-JP')}社)
-                      </option>
-                      {major.children.map((medium) => (
-                        <option key={medium.code} value={medium.code} className="text-slate-700 dark:text-slate-300">
-                          {"\u00A0\u00A0"}{medium.code} {getIndustryName(medium.name, locale)} ({medium.count.toLocaleString('ja-JP')}社)
+                      {!selectedIndCodes.includes(major.code) && (
+                        <option value={major.code} className="font-semibold text-slate-900 dark:text-white">
+                          {major.code} {(t.majorIndustries as Record<string, string>)?.[major.code] || major.name} (計 {major.totalCount.toLocaleString('ja-JP')}社)
                         </option>
-                      ))}
+                      )}
+                      {major.children
+                        .filter((medium) => !selectedIndCodes.includes(medium.code))
+                        .map((medium) => (
+                          <option key={medium.code} value={medium.code} className="text-slate-700 dark:text-slate-300">
+                            {"\u00A0\u00A0"}{medium.code} {getIndustryName(medium.name, locale)} ({medium.count.toLocaleString('ja-JP')}社)
+                          </option>
+                        ))}
                     </React.Fragment>
                   ))}
                 </select>

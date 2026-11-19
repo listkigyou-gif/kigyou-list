@@ -223,7 +223,7 @@ export const CompanyHubBacklinks: React.FC<CompanyHubBacklinksProps> = ({
                 {prefName}の求人募集中企業一覧
               </span>
               <span className="text-[10px] text-slate-400">
-                積極採用・ハローワーク新着
+                積極採用・求人募集新着
               </span>
             </div>
             <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 shrink-0 ml-2" />

@@ -64,6 +64,8 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
     exportComplete: "Xuất dữ liệu hoàn thành!",
     retry: "Vui lòng thử lại.",
     failMessage: "Thất bại: {message}",
+    rateLimitButton: "Vui lòng đợi 10 phút",
+    rateLimitError: "Bạn đã xuất file liên tục trong thời gian ngắn. Vui lòng đợi khoảng 10 phút trước khi thử lại.",
     onlyPaidNotice: "Các gói hạn ngạch bổ sung chỉ có thể được mua bởi tài khoản gói trả phí (từ gói PRO trở lên). Vui lòng đăng ký gói trả phí trước.",
     purchaseError: "Đã xảy ra lỗi trong quá trình xử lý yêu cầu mua hàng.",
     confirmTitle: "Xác nhận & Chọn số lượng xuất CSV",
@@ -124,6 +126,8 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
     exportComplete: "Export completed!",
     retry: "Please try again.",
     failMessage: "Failed: {message}",
+    rateLimitButton: "Please wait 10m",
+    rateLimitError: "You have exported multiple times in a short period. Please wait about 10 minutes before trying again.",
     onlyPaidNotice: "Additional packages can only be purchased by customers on a paid plan (PRO or higher). Please register for a paid plan first.",
     purchaseError: "An error occurred while processing the purchase request.",
     confirmTitle: "Confirm CSV Export & Choose Quantity",
@@ -184,6 +188,8 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
     exportComplete: "エクスポートが完了しました！",
     retry: "再試行してください。",
     failMessage: "失敗: {message}",
+    rateLimitButton: "10分ほどお待ちください",
+    rateLimitError: "短時間に連続してダウンロードされたため、約10分ほど時間をおいて再度お試しください。",
     onlyPaidNotice: "追加パッケージの購入は、PROプラン以上の有料プランをご契約中のお客様のみご利用いただけます。先に有料プランへのご登録をお願いいたします。",
     purchaseError: "購入リクエストの処理中にエラーが発生しました。",
     confirmTitle: "CSVエクスポートの確認・件数指定",
@@ -376,6 +382,13 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
           setShowBuyModal(true);
           return;
         }
+        if (errData.error === "rate_limit_exceeded") {
+          setLoading(false);
+          setStatusMessage(d.rateLimitButton);
+          alert(d.rateLimitError);
+          setTimeout(() => setStatusMessage(null), 6000);
+          return;
+        }
         throw new Error(errData.error || "Export failed");
       }
 
@@ -407,8 +420,13 @@ export const ExportCSVButton: React.FC<ExportCSVButtonProps> = ({
     } catch (e: any) {
       console.error("Export failed", e);
       setLoading(false);
-      setStatusMessage(d.failMessage.replace("{message}", e.message || d.retry));
-      setTimeout(() => setStatusMessage(null), 4000);
+      if (e.message === "rate_limit_exceeded") {
+        setStatusMessage(d.rateLimitButton);
+        alert(d.rateLimitError);
+      } else {
+        setStatusMessage(d.failMessage.replace("{message}", e.message || d.retry));
+      }
+      setTimeout(() => setStatusMessage(null), 6000);
     }
   };
 

@@ -48,7 +48,8 @@ export const BatchInvoiceModal: React.FC<BatchInvoiceModalProps> = ({
   initialNumbers,
   mode = "add",
 }) => {
-  const { saveCompaniesBatch, savedCompanies } = useAuth();
+  const { saveCompaniesBatch, savedCompanies, watchlistLimit } = useAuth();
+  const maxQuotaLabel = Number.isFinite(watchlistLimit) ? watchlistLimit.toLocaleString() : (locale === "ja" ? "無制限" : locale === "vi" ? "Không giới hạn" : "Unlimited");
 
   const [inputVal, setInputVal] = useState("");
   const [loading, setLoading] = useState(false);
@@ -176,10 +177,10 @@ export const BatchInvoiceModal: React.FC<BatchInvoiceModalProps> = ({
     if (addedCount > 0) {
       setSuccessNotice(
         locale === "en"
-          ? `Successfully added ${addedCount} companies to Watchlist! (Total: ${savedCompanies.length + addedCount}/100)`
+          ? `Successfully added ${addedCount} companies to Watchlist! (Total: ${savedCompanies.length + addedCount}/${maxQuotaLabel})`
           : locale === "vi"
-          ? `Đã thêm thành công ${addedCount} doanh nghiệp vào Danh sách theo dõi! (Tổng: ${savedCompanies.length + addedCount}/100)`
-          : `${addedCount} 社を監視リストに一括登録しました！（現在登録数: ${savedCompanies.length + addedCount} / 100社）`
+          ? `Đã thêm thành công ${addedCount} doanh nghiệp vào Danh sách theo dõi! (Tổng: ${savedCompanies.length + addedCount}/${maxQuotaLabel})`
+          : `${addedCount} 社を監視リストに一括登録しました！（現在登録数: ${savedCompanies.length + addedCount} / ${maxQuotaLabel}社）`
       );
       if (onSuccess) {
         onSuccess();
@@ -190,10 +191,10 @@ export const BatchInvoiceModal: React.FC<BatchInvoiceModalProps> = ({
     } else if (maxReached) {
       setErrorMessage(
         locale === "en"
-          ? "Watchlist capacity reached (Max 100 companies)."
+          ? `Watchlist capacity reached (Max ${maxQuotaLabel} companies).`
           : locale === "vi"
-          ? "Đã đạt giới hạn danh sách theo dõi (Tối đa 100 công ty)."
-          : "監視リストの上限（最大100社）に達しています。"
+          ? `Đã đạt giới hạn danh sách theo dõi (Tối đa ${maxQuotaLabel} công ty).`
+          : `監視リストの上限（最大${maxQuotaLabel}社）に達しています。`
       );
     } else {
       setSuccessNotice(

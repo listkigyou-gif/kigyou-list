@@ -1,6 +1,3 @@
-import fs from "fs";
-import path from "path";
-import crypto from "crypto";
 import { revalidatePath } from "next/cache";
 import { invalidateCompanyCache, runQuery } from "./db";
 
@@ -89,103 +86,10 @@ export async function purgeTwoTierCacheForCompany(corporateNumber: string): Prom
 }
 
 /**
- * Helper: Load Google Service Account credentials from google_keys/ directory
- */
-function loadGoogleServiceAccounts(): Array<{ id: string; clientEmail: string; privateKey: string }> {
-  const accounts: Array<{ id: string; clientEmail: string; privateKey: string }> = [];
-  const candidateDirs = [
-    path.resolve(process.cwd(), "../google_keys"),
-    path.resolve(process.cwd(), "google_keys"),
-    "/var/www/kigyou-list/google_keys",
-  ];
-
-  for (const dir of candidateDirs) {
-    if (fs.existsSync(dir)) {
-      try {
-        const files = fs
-          .readdirSync(dir)
-          .filter((f) => f.endsWith(".json"))
-          .sort();
-        for (const f of files) {
-          try {
-            const raw = JSON.parse(fs.readFileSync(path.join(dir, f), "utf-8"));
-            if (raw.client_email && raw.private_key) {
-              accounts.push({
-                id: f,
-                clientEmail: raw.client_email,
-                privateKey: raw.private_key,
-              });
-            }
-          } catch {}
-        }
-        if (accounts.length > 0) break;
-      } catch {}
-    }
-  }
-
-  if (accounts.length === 0) {
-    const fallbackFiles = [
-      path.resolve(process.cwd(), "../google_credentials.json"),
-      "/var/www/kigyou-list/google_credentials.json",
-    ];
-    for (const fp of fallbackFiles) {
-      if (fs.existsSync(fp)) {
-        try {
-          const raw = JSON.parse(fs.readFileSync(fp, "utf-8"));
-          if (raw.client_email && raw.private_key) {
-            accounts.push({
-              id: "default_key",
-              clientEmail: raw.client_email,
-              privateKey: raw.private_key,
-            });
-            break;
-          }
-        } catch {}
-      }
-    }
-  }
-
-  return accounts;
-}
-
-async function getGoogleAccessToken(clientEmail: string, privateKey: string): Promise<string> {
-  const now = Math.floor(Date.now() / 1000);
-  const header = Buffer.from(JSON.stringify({ alg: "RS256", typ: "JWT" })).toString("base64url");
-  const claimSet = Buffer.from(
-    JSON.stringify({
-      iss: clientEmail,
-      scope: "https://www.googleapis.com/auth/indexing",
-      aud: "https://oauth2.googleapis.com/token",
-      exp: now + 3600,
-      iat: now,
-    })
-  ).toString("base64url");
-
-  const sign = crypto.createSign("RSA-SHA256");
-  sign.update(`${header}.${claimSet}`);
-  const signature = sign.sign(privateKey, "base64url");
-  const jwt = `${header}.${claimSet}.${signature}`;
-
-  const tokenResp = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion: jwt,
-    }),
-  });
-
-  if (!tokenResp.ok) {
-    const errText = await tokenResp.text();
-    throw new Error(`Google token error (${tokenResp.status}): ${errText}`);
-  }
-
-  const tokenData = await tokenResp.json();
-  return tokenData.access_token;
-}
-
-/**
- * 2. Submit URL immediately to Google Indexing API VIP (Multi-Key Pool) & Bing IndexNow API
+ * 2. Submit URL immediately to Bing IndexNow API.
+ * Note: Google Indexing API (`indexing.googleapis.com`) is intentionally disabled
+ * for this B2B directory; Googlebot discovers fresh content via Two-Tier Cache purge,
+ * internal links, and clean sitemaps.
  */
 export async function triggerInstantSearchIndexing(
   corporateNumber: string,
@@ -194,54 +98,16 @@ export async function triggerInstantSearchIndexing(
   googleVipSubmitted: boolean;
   bingIndexNowSubmitted: boolean;
 }> {
+  void actionType;
   if (!corporateNumber || !/^\d{13}$/.test(corporateNumber)) {
     return { googleVipSubmitted: false, bingIndexNowSubmitted: false };
   }
 
   const targetUrlJa = `${BASE_URL}/ja/company/${corporateNumber}`;
-  let googleVipSubmitted = false;
+  const googleVipSubmitted = false;
   let bingIndexNowSubmitted = false;
 
-  // A. Google Indexing API VIP (Multi-Key Pool with auto-failover across keys)
-  const serviceAccounts = loadGoogleServiceAccounts();
-  for (const acc of serviceAccounts) {
-    try {
-      const accessToken = await getGoogleAccessToken(acc.clientEmail, acc.privateKey);
-      const gRes = await fetch("https://indexing.googleapis.com/v3/urlNotifications:publish", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          url: targetUrlJa,
-          type: actionType,
-        }),
-      });
-
-      if (gRes.ok) {
-        googleVipSubmitted = true;
-        try {
-          await runQuery(
-            `INSERT INTO google_indexing_submissions (url, target_type, corporate_number, status_code, submitted_at)
-             VALUES (?, 'admin_approved_company', ?, 200, CURRENT_TIMESTAMP)
-             ON CONFLICT (url) DO UPDATE SET
-               status_code = 200,
-               submitted_at = CURRENT_TIMESTAMP`,
-            [targetUrlJa, corporateNumber]
-          );
-        } catch {}
-        break;
-      } else if (gRes.status === 429) {
-        // Quota exhausted on this key, try next key in pool
-        continue;
-      }
-    } catch (gErr) {
-      console.warn(`[SEO Trigger] Google VIP key ${acc.id} warning:`, gErr);
-    }
-  }
-
-  // B. Bing IndexNow API
+  // Bing IndexNow API
   try {
     const indexNowRes = await fetch("https://api.indexnow.org/indexnow", {
       method: "POST",
@@ -292,9 +158,6 @@ export async function executePostApprovalSeoPipeline(
   );
 
   const indexRes = await triggerInstantSearchIndexing(corporateNumber, actionType);
-  if (indexRes.googleVipSubmitted) {
-    details.push(`Google Indexing VIP (${actionType}) 送信完了`);
-  }
   if (indexRes.bingIndexNowSubmitted) {
     details.push("Bing IndexNow API 送信完了");
   }

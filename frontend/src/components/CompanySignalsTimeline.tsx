@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { BusinessSignal } from '@/lib/db';
 import { useLanguage } from '@/context/LanguageContext';
+import { sanitizePublicHiringText } from '@/lib/hubUtils';
 
 interface CompanySignalsTimelineProps {
   signals: BusinessSignal[];
@@ -20,6 +21,61 @@ export function calculateHelloWorkStatutoryExpiry(signalDate?: string | null): s
   if (isNaN(year) || isNaN(monthIndex) || monthIndex < 0 || monthIndex > 11) return null;
   const lastDayDate = new Date(Date.UTC(year, monthIndex + 3, 0));
   return lastDayDate.toISOString().split('T')[0];
+}
+
+function formatSignalValue(key: string, value: unknown, locale: string): string {
+  if (typeof value === 'boolean' || value === 'true' || value === 'false') {
+    const boolVal = value === true || value === 'true';
+    if (locale === 'vi') return boolVal ? 'Có' : 'Không';
+    if (locale === 'en') return boolVal ? 'Yes' : 'No';
+    return boolVal ? 'あり' : 'なし';
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((v) => sanitizePublicHiringText(String(v).trim())).filter(Boolean).join('・');
+  }
+
+  if (key === 'salary_min' || key === 'salary_max' || key === 'capital_amount') {
+    const num = Number(value);
+    if (!isNaN(num)) {
+      return locale === 'ja'
+        ? `${num.toLocaleString('ja-JP')}円`
+        : `¥${num.toLocaleString('en-US')}`;
+    }
+  }
+
+  if (key === 'estimated_annual_salary') {
+    const num = Number(value);
+    if (!isNaN(num)) {
+      if (locale === 'vi') return `${num.toLocaleString('vi-VN')} vạn yên/năm`;
+      if (locale === 'en') return `¥${(num * 10000).toLocaleString('en-US')}/yr`;
+      return `${num.toLocaleString('ja-JP')}万円`;
+    }
+  }
+
+  if (key === 'annual_holidays') {
+    const num = Number(value);
+    if (!isNaN(num)) {
+      if (locale === 'vi') return `${num} ngày/năm`;
+      if (locale === 'en') return `${num} days/year`;
+      return `${num.toLocaleString('ja-JP')}日`;
+    }
+  }
+
+  if (key === 'monthly_overtime') {
+    const num = Number(value);
+    if (!isNaN(num)) {
+      if (locale === 'vi') return `${num} giờ/tháng`;
+      if (locale === 'en') return `${num} hrs/month`;
+      return `${num.toLocaleString('ja-JP')}時間/月`;
+    }
+  }
+
+  if (key === 'hr_contact_person' || key === 'hr_department') {
+    return sanitizePublicHiringText(String(value).replace(/^[、,\s]+|[、,\s]+$/g, '').trim());
+  }
+
+  return sanitizePublicHiringText(String(value));
 }
 
 
@@ -230,7 +286,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                                     const title = sig.signal_title || "";
                                     return `${patentType}: ${regNum} - ${title}`;
                                   } catch {
-                                    return sig.details;
+                                    return sanitizePublicHiringText(sig.details);
                                   }
                                 }
 
@@ -258,25 +314,27 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
 
                                     const expiryNote =
                                       locale === 'en'
-                                        ? '*Estimated based on standard HelloWork validity rules (end of 2nd month after reception); actual company deadline may vary'
+                                        ? '*Estimated based on standard public job posting cycles (end of 2nd month after reception); actual company deadline may vary'
                                         : locale === 'vi'
-                                          ? '*Ước tính theo quy định tiêu chuẩn của HelloWork (cuối tháng thứ 2 sau ngày tiếp nhận), không phải hạn riêng do doanh nghiệp tự đặt'
-                                          : '※ハローワーク規定（受理日の翌々月末日）に基づく目安表示であり、企業独自の募集期限とは異なる場合があります';
+                                          ? '*Ước tính theo chu kỳ niêm yết tuyển dụng phổ biến (cuối tháng thứ 2 sau ngày tiếp nhận), không phải hạn riêng do doanh nghiệp tự đặt'
+                                          : '※一般的な公開求人情報の掲載期間目安（受理日の翌々月末日）であり、企業独自の募集期限とは異なる場合があります';
 
                                     return (
                                       <div className="flex flex-col gap-1.5 mt-1">
                                         {filteredEntries.map(([key, value]) => {
+                                          const formattedValue = formatSignalValue(key, value, locale);
+                                          if (!formattedValue) return null;
                                           const label = t.company.signalLabels[key as keyof typeof t.company.signalLabels] || key;
                                           return (
-                                            <div key={key} className="flex flex-col sm:flex-row sm:items-start gap-1">
-                                              <span className="font-medium text-slate-400 dark:text-slate-500 min-w-[80px] shrink-0 text-[10px]">{label}:</span>
-                                              <span className="text-slate-700 dark:text-slate-300 text-xs whitespace-pre-wrap">{String(value)}</span>
+                                            <div key={key} className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+                                              <span className="font-medium text-slate-500 dark:text-slate-400 sm:min-w-[180px] shrink-0 text-[11px]">{label}:</span>
+                                              <span className="text-slate-700 dark:text-slate-300 text-xs whitespace-pre-wrap tabular-nums">{formattedValue}</span>
                                             </div>
                                           );
                                         })}
                                         {estExpiry && (
-                                          <div className="flex flex-col sm:flex-row sm:items-start gap-1">
-                                            <span className="font-medium text-slate-400 dark:text-slate-500 min-w-[80px] shrink-0 text-[10px]">
+                                          <div className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-2">
+                                            <span className="font-medium text-slate-500 dark:text-slate-400 sm:min-w-[180px] shrink-0 text-[11px]">
                                               {t.company.signalLabels.estimated_expiry_date}:
                                             </span>
                                             <div className="flex flex-col gap-0.5">
@@ -295,7 +353,7 @@ export const CompanySignalsTimeline: React.FC<CompanySignalsTimelineProps> = ({ 
                                 } catch {
                                   // Not JSON
                                 }
-                                return sig.details;
+                                return sanitizePublicHiringText(sig.details);
                               })()}
                             </div>
                           </div>

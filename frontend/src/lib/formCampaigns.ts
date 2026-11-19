@@ -2,6 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { Pool } from 'pg';
 import path from 'path';
 import crypto from 'crypto';
+import { FREE_DAILY_FORM_CREDITS } from './planLimits';
 
 const DATABASE_URL = process.env.DATABASE_URL;
 let pgPool: Pool | null = null;
@@ -219,6 +220,8 @@ export async function initFormCampaignTables(): Promise<void> {
       cost_jpy INTEGER DEFAULT 0,
       status TEXT DEFAULT 'draft',
       runner_mode TEXT DEFAULT 'server',
+      reserved_free_credits INTEGER DEFAULT 0,
+      reserved_free_date TEXT,
       rejection_reason TEXT,
       sent_count INTEGER DEFAULT 0,
       success_count INTEGER DEFAULT 0,
@@ -235,6 +238,8 @@ export async function initFormCampaignTables(): Promise<void> {
       balance INTEGER DEFAULT 0,
       total_purchased INTEGER DEFAULT 0,
       total_used INTEGER DEFAULT 0,
+      daily_free_used INTEGER DEFAULT 0,
+      last_free_reset_date TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     );
@@ -263,8 +268,14 @@ export async function initFormCampaignTables(): Promise<void> {
         await client.query(createCampaignsSql);
         try {
           await client.query(`ALTER TABLE user_form_campaigns ADD COLUMN IF NOT EXISTS runner_mode TEXT DEFAULT 'server'`);
+          await client.query(`ALTER TABLE user_form_campaigns ADD COLUMN IF NOT EXISTS reserved_free_credits INTEGER DEFAULT 0`);
+          await client.query(`ALTER TABLE user_form_campaigns ADD COLUMN IF NOT EXISTS reserved_free_date TEXT`);
         } catch {}
         await client.query(createCreditsSql);
+        try {
+          await client.query(`ALTER TABLE user_form_credits ADD COLUMN IF NOT EXISTS daily_free_used INTEGER DEFAULT 0`);
+          await client.query(`ALTER TABLE user_form_credits ADD COLUMN IF NOT EXISTS last_free_reset_date TEXT`);
+        } catch {}
         await client.query(createTransactionsSql);
         pgAvailable = true;
       } finally {
@@ -287,7 +298,19 @@ export async function initFormCampaignTables(): Promise<void> {
     try {
       db.exec(`ALTER TABLE user_form_campaigns ADD COLUMN runner_mode TEXT DEFAULT 'server'`);
     } catch {}
+    try {
+      db.exec(`ALTER TABLE user_form_campaigns ADD COLUMN reserved_free_credits INTEGER DEFAULT 0`);
+    } catch {}
+    try {
+      db.exec(`ALTER TABLE user_form_campaigns ADD COLUMN reserved_free_date TEXT`);
+    } catch {}
     db.exec(createCreditsSql);
+    try {
+      db.exec(`ALTER TABLE user_form_credits ADD COLUMN daily_free_used INTEGER DEFAULT 0`);
+    } catch {}
+    try {
+      db.exec(`ALTER TABLE user_form_credits ADD COLUMN last_free_reset_date TEXT`);
+    } catch {}
     db.exec(createTransactionsSql);
   } catch (e) {
     console.error('Error initializing SQLite form campaign tables:', e);
@@ -489,29 +512,39 @@ export async function saveUserCampaign(
     status = 'pending_approval';
   }
 
-  const checkSql = `SELECT id, status, target_count, target_filters FROM user_form_campaigns WHERE id = ? AND user_email = ?`;
+  const checkSql = `SELECT id, status, target_count, target_filters, reserved_free_credits, reserved_free_date FROM user_form_campaigns WHERE id = ? AND user_email = ?`;
   const existing = await queryOne(checkSql, [id, email]);
 
   // When editing an existing campaign, target conditions and counts are locked
   const finalTargetCount = existing ? Number(existing.target_count || 0) : targetCount;
   const finalFiltersJson = existing ? (existing.target_filters || filtersJson) : filtersJson;
 
+  let reservedFreeCredits = existing ? Number(existing.reserved_free_credits || 0) : 0;
+  let reservedFreeDate: string | null = existing?.reserved_free_date ? String(existing.reserved_free_date) : null;
+
   // Credit wallet deduction logic:
   // If moving to pending_approval from draft or new campaign, deduct credits
   if (status === 'pending_approval') {
     const isAlreadyPendingOrActive = existing && ['pending_approval', 'approved', 'processing'].includes(existing.status);
     if (!isAlreadyPendingOrActive) {
-      if (finalTargetCount < 100) {
-        throw new Error("MIN_TARGET_100: 1キャンペーンあたりの配信件数は最低100件以上を指定してください（過剰申請の防止およびアプローチ効果担保のため）。");
+      const currentCreditsForMin = await getUserFormCredits(email);
+      const canUseDailyFree =
+        currentCreditsForMin.daily_free_remaining > 0 &&
+        finalTargetCount >= 1 &&
+        finalTargetCount <= currentCreditsForMin.daily_free_remaining;
+      if (finalTargetCount < 100 && !canUseDailyFree) {
+        throw new Error("MIN_TARGET_100: 1キャンペーンあたりの配信件数は最低100件以上を指定してください（無料枠の1日20件以内を除く）。");
       }
       if (!finalFiltersJson || finalFiltersJson === 'null' || finalFiltersJson === '{}' || finalFiltersJson === '""') {
         throw new Error("TARGET_REQUIRED: 配信対象（ターゲット条件）が設定されていません。ターゲットを指定してください。");
       }
-      const deducted = await deductFormCredits(email, finalTargetCount);
-      if (!deducted) {
+      const deduction = await deductFormCreditsWithBreakdown(email, finalTargetCount);
+      if (!deduction.success) {
         const currentCredits = await getUserFormCredits(email);
         throw new Error(`INSUFFICIENT_CREDITS: 保有クレジットが不足しています (必要: ${finalTargetCount} 件 / 保有: ${currentCredits.balance} 件)。クレジットを購入してください。`);
       }
+      reservedFreeCredits = deduction.usedFromDaily;
+      reservedFreeDate = deduction.usedFromDaily > 0 ? deduction.freeDate : null;
       const after = await getUserFormCredits(email);
       await recordCreditTransaction(email, {
         amount: -finalTargetCount,
@@ -525,7 +558,12 @@ export async function saveUserCampaign(
   } else if (status === 'draft' && existing && existing.status === 'pending_approval') {
     // Reverting from pending_approval to draft -> refund reserved credits
     if (Number(existing.target_count) > 0) {
-      await refundFormCredits(email, Number(existing.target_count));
+      await refundFormCredits(email, Number(existing.target_count), {
+        freeCredits: reservedFreeCredits,
+        freeDate: reservedFreeDate,
+      });
+      reservedFreeCredits = 0;
+      reservedFreeDate = null;
       const after = await getUserFormCredits(email);
       await recordCreditTransaction(email, {
         amount: +Number(existing.target_count),
@@ -544,7 +582,7 @@ export async function saveUserCampaign(
       SET name = ?, template_id = ?, sender_company = ?, sender_name = ?,
           sender_email = ?, sender_phone = ?, sender_website = ?, subject = ?,
           body = ?, target_filters = ?, target_count = ?, cost_jpy = ?,
-          status = ?, updated_at = CURRENT_TIMESTAMP
+          status = ?, reserved_free_credits = ?, reserved_free_date = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND user_email = ?
     `;
     await execute(updateSql, [
@@ -561,6 +599,8 @@ export async function saveUserCampaign(
       finalTargetCount,
       costJpy,
       status,
+      reservedFreeCredits,
+      reservedFreeDate,
       id,
       email
     ]);
@@ -569,8 +609,8 @@ export async function saveUserCampaign(
       INSERT INTO user_form_campaigns (
         id, user_email, name, template_id, sender_company, sender_name,
         sender_email, sender_phone, sender_website, subject, body,
-        target_filters, target_count, cost_jpy, status, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+        target_filters, target_count, cost_jpy, status, reserved_free_credits, reserved_free_date, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `;
     await execute(insertSql, [
       id,
@@ -587,7 +627,9 @@ export async function saveUserCampaign(
       filtersJson,
       targetCount,
       costJpy,
-      status
+      status,
+      reservedFreeCredits,
+      reservedFreeDate
     ]);
   }
 
@@ -618,7 +660,7 @@ export async function saveUserCampaign(
 }
 
 export async function deleteUserCampaign(email: string, id: string): Promise<boolean> {
-  const checkSql = `SELECT id, name, target_count, status FROM user_form_campaigns WHERE id = ? AND user_email = ?`;
+  const checkSql = `SELECT id, name, target_count, status, reserved_free_credits, reserved_free_date FROM user_form_campaigns WHERE id = ? AND user_email = ?`;
   const existing = await queryOne(checkSql, [id, email]);
   if (!existing) return false;
 
@@ -630,7 +672,10 @@ export async function deleteUserCampaign(email: string, id: string): Promise<boo
 
   // If campaign was pending approval, refund reserved credits to the user's wallet
   if ((existing.status === 'pending_approval' || existing.status === 'pending_review') && Number(existing.target_count) > 0) {
-    await refundFormCredits(email, Number(existing.target_count));
+    await refundFormCredits(email, Number(existing.target_count), {
+      freeCredits: Number(existing.reserved_free_credits || 0),
+      freeDate: existing.reserved_free_date ? String(existing.reserved_free_date) : null,
+    });
     const after = await getUserFormCredits(email);
     await recordCreditTransaction(email, {
       amount: +Number(existing.target_count),
@@ -648,7 +693,7 @@ export async function deleteUserCampaign(email: string, id: string): Promise<boo
 }
 
 export async function revertCampaignToDraft(email: string, id: string): Promise<boolean> {
-  const checkSql = `SELECT id, name, target_count, status FROM user_form_campaigns WHERE id = ? AND user_email = ?`;
+  const checkSql = `SELECT id, name, target_count, status, reserved_free_credits, reserved_free_date FROM user_form_campaigns WHERE id = ? AND user_email = ?`;
   const existing = await queryOne(checkSql, [id, email]);
   if (!existing) return false;
 
@@ -659,7 +704,10 @@ export async function revertCampaignToDraft(email: string, id: string): Promise<
 
   // Refund reserved credits
   if (Number(existing.target_count) > 0) {
-    await refundFormCredits(email, Number(existing.target_count));
+    await refundFormCredits(email, Number(existing.target_count), {
+      freeCredits: Number(existing.reserved_free_credits || 0),
+      freeDate: existing.reserved_free_date ? String(existing.reserved_free_date) : null,
+    });
     const after = await getUserFormCredits(email);
     await recordCreditTransaction(email, {
       amount: +Number(existing.target_count),
@@ -671,7 +719,7 @@ export async function revertCampaignToDraft(email: string, id: string): Promise<
     });
   }
 
-  const updateSql = `UPDATE user_form_campaigns SET status = 'draft', updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_email = ?`;
+  const updateSql = `UPDATE user_form_campaigns SET status = 'draft', reserved_free_credits = 0, reserved_free_date = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_email = ?`;
   const count = await execute(updateSql, [id, email]);
   return count > 0;
 }
@@ -717,16 +765,20 @@ export async function adminUpdateCampaignStatus(
     runner_mode?: 'server' | 'local';
   }
 ): Promise<boolean> {
-  const checkSql = `SELECT user_email, name, target_count, status, success_count FROM user_form_campaigns WHERE id = ?`;
+  const checkSql = `SELECT user_email, name, target_count, status, success_count, reserved_free_credits, reserved_free_date FROM user_form_campaigns WHERE id = ?`;
   const cmp = await queryOne(checkSql, [campaignId]);
   if (!cmp) return false;
 
   const targetCount = Number(cmp.target_count || 0);
+  const freeMeta = {
+    freeCredits: Number(cmp.reserved_free_credits || 0),
+    freeDate: cmp.reserved_free_date ? String(cmp.reserved_free_date) : null,
+  };
 
   // If campaign is rejected by admin, refund reserved credits back to the customer's wallet
   if (newStatus === 'rejected' && (cmp.status === 'pending_approval' || cmp.status === 'approved')) {
     if (targetCount > 0) {
-      await refundFormCredits(cmp.user_email, targetCount);
+      await refundFormCredits(cmp.user_email, targetCount, freeMeta);
       const after = await getUserFormCredits(cmp.user_email);
       await recordCreditTransaction(cmp.user_email, {
         amount: +targetCount,
@@ -763,7 +815,7 @@ export async function adminUpdateCampaignStatus(
 
     // Refund unused portion (due to Captcha, Disclaimer, Timeout)
     if (unused > 0) {
-      await refundFormCredits(cmp.user_email, unused);
+      await refundFormCredits(cmp.user_email, unused, freeMeta);
       const after = await getUserFormCredits(cmp.user_email);
       await recordCreditTransaction(cmp.user_email, {
         amount: +unused,
@@ -804,15 +856,49 @@ export async function adminUpdateCampaignStatus(
 // ==========================================
 export interface UserFormCredits {
   user_email: string;
-  balance: number;
+  balance: number; // Total available (purchased_balance + daily_free_remaining)
+  purchased_balance: number;
+  daily_free_allowance: number;
+  daily_free_used: number;
+  daily_free_remaining: number;
+  last_free_reset_date?: string;
   reserved: number; // Credits held for pending_approval campaigns
   total_purchased: number;
   total_used: number; // Actual forms sent
 }
 
+function getCurrentJstDate(): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' }).format(new Date());
+}
+
+async function getUserEffectivePlan(email: string): Promise<string> {
+  try {
+    const row = await queryOne(
+      `SELECT plan, plan_expires_at, stripe_subscription_id FROM user_export_quotas WHERE user_email = ?`,
+      [email]
+    );
+    if (!row || !row.plan) return 'free';
+    const plan = String(row.plan).toLowerCase();
+    if (plan !== 'free' && row.plan_expires_at && !row.stripe_subscription_id) {
+      const expires = new Date(String(row.plan_expires_at));
+      if (!isNaN(expires.getTime()) && expires.getTime() < Date.now()) {
+        return 'free';
+      }
+    }
+    return plan;
+  } catch {
+    return 'free';
+  }
+}
+
 export async function getUserFormCredits(email: string): Promise<UserFormCredits> {
   await initFormCampaignTables();
-  const sql = `SELECT user_email, balance, total_purchased, total_used FROM user_form_credits WHERE user_email = ?`;
+  const currentJstDate = getCurrentJstDate();
+  const plan = await getUserEffectivePlan(email);
+  const isFreePlan = plan === 'free' || plan === 'trial';
+  const dailyFreeAllowance = isFreePlan ? FREE_DAILY_FORM_CREDITS : 0;
+
+  const sql = `SELECT user_email, balance, total_purchased, total_used, daily_free_used, last_free_reset_date FROM user_form_credits WHERE user_email = ?`;
   const row = await queryOne(sql, [email]);
   
   // Calculate reserved credits in pending_approval
@@ -830,17 +916,44 @@ export async function getUserFormCredits(email: string): Promise<UserFormCredits
   const realSent = Number(sentRow?.sent || 0);
 
   if (!row) {
+    const dailyFreeRemaining = dailyFreeAllowance;
     return {
       user_email: email,
-      balance: 0,
+      balance: dailyFreeRemaining,
+      purchased_balance: 0,
+      daily_free_allowance: dailyFreeAllowance,
+      daily_free_used: 0,
+      daily_free_remaining: dailyFreeRemaining,
+      last_free_reset_date: currentJstDate,
       reserved,
       total_purchased: 0,
       total_used: realSent
     };
   }
+
+  let dailyFreeUsed = Number(row.daily_free_used || 0);
+  let lastFreeResetDate = row.last_free_reset_date ? String(row.last_free_reset_date) : null;
+
+  if (isFreePlan && lastFreeResetDate !== currentJstDate) {
+    dailyFreeUsed = 0;
+    lastFreeResetDate = currentJstDate;
+    await execute(
+      `UPDATE user_form_credits SET daily_free_used = 0, last_free_reset_date = ?, updated_at = CURRENT_TIMESTAMP WHERE user_email = ?`,
+      [currentJstDate, email]
+    );
+  }
+
+  const dailyFreeRemaining = isFreePlan ? Math.max(0, dailyFreeAllowance - dailyFreeUsed) : 0;
+  const purchasedBalance = Number(row.balance || 0);
+
   return {
     user_email: row.user_email,
-    balance: Number(row.balance || 0),
+    balance: purchasedBalance + dailyFreeRemaining,
+    purchased_balance: purchasedBalance,
+    daily_free_allowance: dailyFreeAllowance,
+    daily_free_used: dailyFreeUsed,
+    daily_free_remaining: dailyFreeRemaining,
+    last_free_reset_date: lastFreeResetDate || currentJstDate,
     reserved,
     total_purchased: Number(row.total_purchased || 0),
     total_used: realSent
@@ -850,8 +963,9 @@ export async function getUserFormCredits(email: string): Promise<UserFormCredits
 export async function addFormCredits(email: string, amount: number): Promise<number> {
   await initFormCampaignTables();
   const current = await getUserFormCredits(email);
-  const newBalance = current.balance + amount;
+  const newPurchasedBalance = current.purchased_balance + amount;
   const newPurchased = current.total_purchased + amount;
+  const newTotalAvailable = newPurchasedBalance + current.daily_free_remaining;
 
   const checkSql = `SELECT user_email FROM user_form_credits WHERE user_email = ?`;
   const existing = await queryOne(checkSql, [email]);
@@ -862,54 +976,105 @@ export async function addFormCredits(email: string, amount: number): Promise<num
       SET balance = ?, total_purchased = ?, updated_at = CURRENT_TIMESTAMP
       WHERE user_email = ?
     `;
-    await execute(updateSql, [newBalance, newPurchased, email]);
+    await execute(updateSql, [newPurchasedBalance, newPurchased, email]);
   } else {
     const insertSql = `
-      INSERT INTO user_form_credits (user_email, balance, total_purchased, total_used, created_at, updated_at)
-      VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      INSERT INTO user_form_credits (user_email, balance, total_purchased, total_used, daily_free_used, last_free_reset_date, created_at, updated_at)
+      VALUES (?, ?, ?, 0, 0, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
     `;
-    await execute(insertSql, [email, newBalance, newPurchased]);
+    await execute(insertSql, [email, newPurchasedBalance, newPurchased, getCurrentJstDate()]);
   }
 
   await recordCreditTransaction(email, {
     amount: +amount,
-    balance_after: newBalance,
+    balance_after: newTotalAvailable,
     type: 'charge',
     note: 'クレジット購入・チャージ'
   });
 
-  return newBalance;
+  return newTotalAvailable;
+}
+
+export async function deductFormCreditsWithBreakdown(
+  email: string,
+  amount: number
+): Promise<{ success: boolean; usedFromDaily: number; usedFromPurchased: number; freeDate: string }> {
+  await initFormCampaignTables();
+  const currentJstDate = getCurrentJstDate();
+  const current = await getUserFormCredits(email);
+  if (current.balance < amount) {
+    return { success: false, usedFromDaily: 0, usedFromPurchased: 0, freeDate: currentJstDate };
+  }
+
+  const usedFromDaily = Math.min(amount, current.daily_free_remaining);
+  const usedFromPurchased = amount - usedFromDaily;
+  const newDailyUsed = current.daily_free_used + usedFromDaily;
+  const newPurchasedBalance = Math.max(0, current.purchased_balance - usedFromPurchased);
+
+  const existing = await queryOne(`SELECT user_email FROM user_form_credits WHERE user_email = ?`, [email]);
+  let success = false;
+  if (existing) {
+    const updateSql = `
+      UPDATE user_form_credits
+      SET balance = ?, daily_free_used = ?, last_free_reset_date = COALESCE(last_free_reset_date, ?), updated_at = CURRENT_TIMESTAMP
+      WHERE user_email = ?
+    `;
+    const affected = await execute(updateSql, [newPurchasedBalance, newDailyUsed, currentJstDate, email]);
+    success = affected > 0;
+  } else {
+    const insertSql = `
+      INSERT INTO user_form_credits (user_email, balance, total_purchased, total_used, daily_free_used, last_free_reset_date, created_at, updated_at)
+      VALUES (?, ?, 0, 0, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+    `;
+    const affected = await execute(insertSql, [email, newPurchasedBalance, newDailyUsed, currentJstDate]);
+    success = affected > 0;
+  }
+
+  return { success, usedFromDaily, usedFromPurchased, freeDate: currentJstDate };
 }
 
 export async function deductFormCredits(email: string, amount: number): Promise<boolean> {
-  await initFormCampaignTables();
-  const current = await getUserFormCredits(email);
-  if (current.balance < amount) {
-    return false;
-  }
-  const newBalance = Math.max(0, current.balance - amount);
-
-  const updateSql = `
-    UPDATE user_form_credits
-    SET balance = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE user_email = ?
-  `;
-  const affected = await execute(updateSql, [newBalance, email]);
-  return affected > 0;
+  const res = await deductFormCreditsWithBreakdown(email, amount);
+  return res.success;
 }
 
-export async function refundFormCredits(email: string, amount: number): Promise<number> {
+export async function refundFormCredits(
+  email: string,
+  amount: number,
+  freeMeta?: { freeCredits?: number; freeDate?: string | null }
+): Promise<number> {
   await initFormCampaignTables();
   const current = await getUserFormCredits(email);
-  const newBalance = current.balance + amount;
+  const currentJstDate = getCurrentJstDate();
 
-  const updateSql = `
-    UPDATE user_form_credits
-    SET balance = ?, updated_at = CURRENT_TIMESTAMP
-    WHERE user_email = ?
-  `;
-  await execute(updateSql, [newBalance, email]);
-  return newBalance;
+  let restoreToDaily = 0;
+  let restoreToPurchased = 0;
+
+  if (freeMeta && typeof freeMeta.freeCredits === 'number') {
+    const freePortion = Math.min(amount, Math.max(0, freeMeta.freeCredits));
+    restoreToPurchased = Math.max(0, amount - freePortion);
+    // Only restore daily free credits if still on the same JST day
+    if (freeMeta.freeDate === currentJstDate && current.daily_free_used > 0) {
+      restoreToDaily = Math.min(freePortion, current.daily_free_used);
+    }
+  } else {
+    restoreToDaily = Math.min(amount, current.daily_free_used);
+    restoreToPurchased = Math.max(0, amount - restoreToDaily);
+  }
+
+  const newDailyUsed = Math.max(0, current.daily_free_used - restoreToDaily);
+  const newPurchasedBalance = current.purchased_balance + restoreToPurchased;
+
+  const existing = await queryOne(`SELECT user_email FROM user_form_credits WHERE user_email = ?`, [email]);
+  if (existing) {
+    const updateSql = `
+      UPDATE user_form_credits
+      SET balance = ?, daily_free_used = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE user_email = ?
+    `;
+    await execute(updateSql, [newPurchasedBalance, newDailyUsed, email]);
+  }
+  return newPurchasedBalance + Math.max(0, current.daily_free_allowance - newDailyUsed);
 }
 
 export async function getAllUserFormCredits(): Promise<Record<string, UserFormCredits>> {
@@ -942,6 +1107,10 @@ export async function getAllUserFormCredits(): Promise<Record<string, UserFormCr
       map[r.user_email] = {
         user_email: r.user_email,
         balance: Number(r.balance || 0),
+        purchased_balance: Number(r.balance || 0),
+        daily_free_allowance: 0,
+        daily_free_used: 0,
+        daily_free_remaining: 0,
         reserved: Number(r.reserved || 0),
         total_purchased: Number(r.total_purchased || 0),
         total_used: Number(r.form_sent || r.total_used || 0)
@@ -1074,11 +1243,15 @@ export async function submitCampaignForApproval(
   }
 
   const targetCount = Number(existing.target_count || 0);
-  if (targetCount < 100) {
-    return { success: false, error: "MIN_TARGET_100: 1キャンペーンあたりの配信件数は最低100件以上必要です。" };
+  const currentCredits = await getUserFormCredits(email);
+  const canUseDailyFree =
+    currentCredits.daily_free_remaining > 0 &&
+    targetCount >= 1 &&
+    targetCount <= currentCredits.daily_free_remaining;
+  if (targetCount < 100 && !canUseDailyFree) {
+    return { success: false, error: "MIN_TARGET_100: 1キャンペーンあたりの配信件数は最低100件以上必要です（無料枠の1日20件以内を除く）。" };
   }
 
-  const currentCredits = await getUserFormCredits(email);
   if (currentCredits.balance < targetCount) {
     return { 
       success: false, 
@@ -1086,17 +1259,17 @@ export async function submitCampaignForApproval(
     };
   }
 
-  const deducted = await deductFormCredits(email, targetCount);
-  if (!deducted) {
+  const deduction = await deductFormCreditsWithBreakdown(email, targetCount);
+  if (!deduction.success) {
     return { success: false, error: "クレジットの差し引きに失敗しました。" };
   }
 
   const updateSql = `
     UPDATE user_form_campaigns 
-    SET status = 'pending_approval', rejection_reason = null, updated_at = CURRENT_TIMESTAMP 
+    SET status = 'pending_approval', rejection_reason = null, reserved_free_credits = ?, reserved_free_date = ?, updated_at = CURRENT_TIMESTAMP 
     WHERE id = ? AND user_email = ?
   `;
-  await execute(updateSql, [id, email]);
+  await execute(updateSql, [deduction.usedFromDaily, deduction.usedFromDaily > 0 ? deduction.freeDate : null, id, email]);
 
   const after = await getUserFormCredits(email);
   await recordCreditTransaction(email, {

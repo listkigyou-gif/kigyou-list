@@ -17,6 +17,9 @@ import { useLanguage } from "@/context/LanguageContext";
 import { getIndustryName } from "@/lib/locale-mapping";
 import { CopyTextButton } from "@/components/CopyTextButton";
 import { CompanyLogo } from "@/components/CompanyLogo";
+import { LiveSyncTicker } from "@/components/LiveSyncTicker";
+import type { LiveSyncFeed } from "@/lib/db";
+import { normalizePlanId } from "@/lib/planLimits";
 import { trackSearch, trackSignUpIntent } from "@/lib/gtag";
 
 function formatJapaneseCurrency(amount: number | string | null | undefined, locale: string): string {
@@ -122,11 +125,14 @@ interface SearchClientContainerProps {
   prefectures: PrefectureOption[];
   industries: MajorIndustry[];
   industryMap: Record<string, string>;
+  initialLiveFeed?: LiveSyncFeed;
   
   // initial filter state from SSR params
   initialFilters: {
     keyword?: string;
     prefCode?: string;
+    prefCodes?: string[];
+    indCodes?: string[];
     city?: string;
     indCode?: string;
     minEmp?: number;
@@ -216,11 +222,17 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   initialCities,
   prefectures,
   industries,
-  initialFilters
+  initialFilters,
+  initialLiveFeed
 }) => {
   const { locale, t } = useLanguage();
   const { user, isLoggedIn, setAuthModalOpen, isCompanySaved, toggleSaveCompany } = useAuth();
   const [formCredits, setFormCredits] = useState<number | null>(null);
+  const [nowMs, setNowMs] = useState<number | null>(null);
+
+  useEffect(() => {
+    setNowMs(Date.now());
+  }, []);
 
   // 1. Local States
   const [companies, setCompanies] = useState<Company[]>(initialCompanies);
@@ -270,8 +282,14 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   // Individual filter states
   const [keyword, setKeyword] = useState(initialFilters.keyword || "");
   const [prefCode, setPrefCode] = useState(initialFilters.prefCode);
+  const [prefCodes, setPrefCodes] = useState<string[]>(
+    initialFilters.prefCodes || (initialFilters.prefCode ? [initialFilters.prefCode] : [])
+  );
   const [city, setCity] = useState(initialFilters.city);
   const [indCode, setIndCode] = useState(initialFilters.indCode);
+  const [indCodes, setIndCodes] = useState<string[]>(
+    initialFilters.indCodes || (initialFilters.indCode ? [initialFilters.indCode] : [])
+  );
   const [minEmp, setMinEmp] = useState(initialFilters.minEmp);
   const [maxEmp, setMaxEmp] = useState(initialFilters.maxEmp);
   const [minCap, setMinCap] = useState(initialFilters.minCap);
@@ -355,9 +373,17 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
   useEffect(() => {
     const initialParams = new URLSearchParams();
     if (initialFilters.keyword) initialParams.set("q", initialFilters.keyword);
-    if (initialFilters.prefCode) initialParams.set("prefecture", initialFilters.prefCode);
+    if (initialFilters.prefCodes && initialFilters.prefCodes.length > 0) {
+      initialParams.set("prefectures", initialFilters.prefCodes.join(","));
+    } else if (initialFilters.prefCode) {
+      initialParams.set("prefecture", initialFilters.prefCode);
+    }
     if (initialFilters.city) initialParams.set("city", initialFilters.city);
-    if (initialFilters.indCode) initialParams.set("industry", initialFilters.indCode);
+    if (initialFilters.indCodes && initialFilters.indCodes.length > 0) {
+      initialParams.set("industries", initialFilters.indCodes.join(","));
+    } else if (initialFilters.indCode) {
+      initialParams.set("industry", initialFilters.indCode);
+    }
     if (initialFilters.minEmp != null) initialParams.set("min_employees", String(initialFilters.minEmp));
     if (initialFilters.maxEmp != null) initialParams.set("max_employees", String(initialFilters.maxEmp));
     if (initialFilters.minCap != null) initialParams.set("min_capital", String(initialFilters.minCap));
@@ -412,8 +438,10 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     // Resolve what the values would be after applying overrides
     const newKeyword = overrides.keyword !== undefined ? overrides.keyword : keyword;
     const newPrefCode = overrides.prefCode !== undefined ? overrides.prefCode : prefCode;
+    const newPrefCodes = overrides.prefCodes !== undefined ? overrides.prefCodes : prefCodes;
     const newCity = overrides.city !== undefined ? overrides.city : city;
     const newIndCode = overrides.indCode !== undefined ? overrides.indCode : indCode;
+    const newIndCodes = overrides.indCodes !== undefined ? overrides.indCodes : indCodes;
     const newMinEmp = overrides.minEmp !== undefined ? overrides.minEmp : minEmp;
     const newMaxEmp = overrides.maxEmp !== undefined ? overrides.maxEmp : maxEmp;
     const newMinCap = overrides.minCap !== undefined ? overrides.minCap : minCap;
@@ -456,9 +484,17 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     // Build API query URL
     const apiParams = new URLSearchParams();
     if (newKeyword) apiParams.set("q", newKeyword);
-    if (newPrefCode) apiParams.set("prefecture", newPrefCode);
+    if (newPrefCodes && newPrefCodes.length > 0) {
+      apiParams.set("prefectures", newPrefCodes.join(","));
+    } else if (newPrefCode) {
+      apiParams.set("prefecture", newPrefCode);
+    }
     if (newCity) apiParams.set("city", newCity);
-    if (newIndCode) apiParams.set("industry", newIndCode);
+    if (newIndCodes && newIndCodes.length > 0) {
+      apiParams.set("industries", newIndCodes.join(","));
+    } else if (newIndCode) {
+      apiParams.set("industry", newIndCode);
+    }
     if (newMinEmp != null) apiParams.set("min_employees", String(newMinEmp));
     if (newMaxEmp != null) apiParams.set("max_employees", String(newMaxEmp));
     if (newMinCap != null) apiParams.set("min_capital", String(newMinCap));
@@ -514,9 +550,17 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       // Update URL in browser address bar (without reloading page)
       const browserParams = new URLSearchParams();
       if (newKeyword) browserParams.set("q", newKeyword);
-      if (newPrefCode) browserParams.set("prefecture", newPrefCode);
+      if (newPrefCodes && newPrefCodes.length > 0) {
+        browserParams.set("prefectures", newPrefCodes.join(","));
+      } else if (newPrefCode) {
+        browserParams.set("prefecture", newPrefCode);
+      }
       if (newCity) browserParams.set("city", newCity);
-      if (newIndCode) browserParams.set("industry", newIndCode);
+      if (newIndCodes && newIndCodes.length > 0) {
+        browserParams.set("industries", newIndCodes.join(","));
+      } else if (newIndCode) {
+        browserParams.set("industry", newIndCode);
+      }
       if (newMinEmp != null) browserParams.set("min_employees", String(newMinEmp));
       if (newMaxEmp != null) browserParams.set("max_employees", String(newMaxEmp));
       if (newMinCap != null) browserParams.set("min_capital", String(newMinCap));
@@ -601,9 +645,17 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
       // Update URL in browser address bar (without reloading page)
       const browserParams = new URLSearchParams();
       if (newKeyword) browserParams.set("q", newKeyword);
-      if (newPrefCode) browserParams.set("prefecture", newPrefCode);
+      if (newPrefCodes && newPrefCodes.length > 0) {
+        browserParams.set("prefectures", newPrefCodes.join(","));
+      } else if (newPrefCode) {
+        browserParams.set("prefecture", newPrefCode);
+      }
       if (newCity) browserParams.set("city", newCity);
-      if (newIndCode) browserParams.set("industry", newIndCode);
+      if (newIndCodes && newIndCodes.length > 0) {
+        browserParams.set("industries", newIndCodes.join(","));
+      } else if (newIndCode) {
+        browserParams.set("industry", newIndCode);
+      }
       if (newMinEmp != null) browserParams.set("min_employees", String(newMinEmp));
       if (newMaxEmp != null) browserParams.set("max_employees", String(newMaxEmp));
       if (newMinCap != null) browserParams.set("min_capital", String(newMinCap));
@@ -661,21 +713,48 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
 
   // 3. Callback handlers for Sidebar and inputs
   const handleFilterChange = async (updates: Record<string, any>, autoExecute: boolean = false) => {
-    // Determine and update individual states
-    
+    let newPrefCodes = prefCodes;
+    let newIndCodes = indCodes;
+    let newPrefCode = prefCode;
+    let newIndCode = indCode;
+
     if (updates.keyword !== undefined) {
       setKeyword(updates.keyword || "");
     }
-    if (updates.prefecture !== undefined) {
-      const newPref = updates.prefecture || undefined;
-      setPrefCode(newPref);
-      // Reset city filter when prefecture changes
+
+    if (updates.prefectures !== undefined) {
+      const list = Array.isArray(updates.prefectures)
+        ? updates.prefectures
+        : (typeof updates.prefectures === 'string' && updates.prefectures ? updates.prefectures.split(',') : []);
+      newPrefCodes = list.slice(0, 3);
+      setPrefCodes(newPrefCodes);
+      newPrefCode = newPrefCodes.length === 1 ? newPrefCodes[0] : (newPrefCodes.length === 0 ? undefined : newPrefCodes[0]);
+      setPrefCode(newPrefCode);
+      setCity(undefined);
+
+      if (newPrefCodes.length === 1) {
+        try {
+          const res = await fetch(`/api/metadata/cities?prefecture=${newPrefCodes[0]}`);
+          if (res.ok) {
+            const data = await res.json();
+            setCities(data);
+          }
+        } catch (e) {
+          console.error("Error fetching cities", e);
+        }
+      } else {
+        setCities([]);
+      }
+    } else if (updates.prefecture !== undefined) {
+      newPrefCode = updates.prefecture || undefined;
+      setPrefCode(newPrefCode);
+      newPrefCodes = newPrefCode ? [newPrefCode] : [];
+      setPrefCodes(newPrefCodes);
       setCity(undefined);
       
-      // Fetch cities dynamically without triggering a full search
-      if (newPref) {
+      if (newPrefCode) {
         try {
-          const res = await fetch(`/api/metadata/cities?prefecture=${newPref}`);
+          const res = await fetch(`/api/metadata/cities?prefecture=${newPrefCode}`);
           if (res.ok) {
             const data = await res.json();
             setCities(data);
@@ -687,11 +766,24 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
         setCities([]);
       }
     }
+
     if (updates.city !== undefined) {
       setCity(updates.city || undefined);
     }
-    if (updates.industry !== undefined) {
-      setIndCode(updates.industry || undefined);
+
+    if (updates.industries !== undefined) {
+      const list = Array.isArray(updates.industries)
+        ? updates.industries
+        : (typeof updates.industries === 'string' && updates.industries ? updates.industries.split(',') : []);
+      newIndCodes = list.slice(0, 3);
+      setIndCodes(newIndCodes);
+      newIndCode = newIndCodes.length === 1 ? newIndCodes[0] : (newIndCodes.length === 0 ? undefined : newIndCodes[0]);
+      setIndCode(newIndCode);
+    } else if (updates.industry !== undefined) {
+      newIndCode = updates.industry || undefined;
+      setIndCode(newIndCode);
+      newIndCodes = newIndCode ? [newIndCode] : [];
+      setIndCodes(newIndCodes);
     }
     if (updates.min_employees !== undefined) {
       setMinEmp(updates.min_employees ? parseInt(updates.min_employees, 10) : undefined);
@@ -805,12 +897,23 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
     if (autoExecute) {
       const overrides: Record<string, any> = { page: 1, forceOffset: true };
       if (updates.keyword !== undefined) overrides.keyword = updates.keyword || "";
-      if (updates.prefecture !== undefined) {
+      if (updates.prefectures !== undefined) {
+        overrides.prefCodes = newPrefCodes;
+        overrides.prefCode = newPrefCode;
+        overrides.city = undefined;
+      } else if (updates.prefecture !== undefined) {
         overrides.prefCode = updates.prefecture || undefined;
+        overrides.prefCodes = updates.prefecture ? [updates.prefecture] : [];
         overrides.city = undefined;
       }
       if (updates.city !== undefined) overrides.city = updates.city || undefined;
-      if (updates.industry !== undefined) overrides.indCode = updates.industry || undefined;
+      if (updates.industries !== undefined) {
+        overrides.indCodes = newIndCodes;
+        overrides.indCode = newIndCode;
+      } else if (updates.industry !== undefined) {
+        overrides.indCode = updates.industry || undefined;
+        overrides.indCodes = updates.industry ? [updates.industry] : [];
+      }
       if (updates.min_employees !== undefined) overrides.minEmp = updates.min_employees ? parseInt(updates.min_employees, 10) : undefined;
       if (updates.max_employees !== undefined) overrides.maxEmp = updates.max_employees ? parseInt(updates.max_employees, 10) : undefined;
       if (updates.min_capital !== undefined) overrides.minCap = updates.min_capital ? parseFloat(updates.min_capital) : undefined;
@@ -983,6 +1086,8 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             prefCode={prefCode}
             city={city}
             indCode={indCode}
+            prefCodes={prefCodes}
+            indCodes={indCodes}
             minEmp={minEmp}
             maxEmp={maxEmp}
             minCap={minCap}
@@ -1035,6 +1140,8 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
             prefCode={prefCode}
             city={city}
             indCode={indCode}
+            prefCodes={prefCodes}
+            indCodes={indCodes}
             minEmp={minEmp}
             maxEmp={maxEmp}
             minCap={minCap}
@@ -1402,6 +1509,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
           );
         })()}
 
+        {/* Real-Time Live Sync Ticker */}
+        {initialLiveFeed && initialLiveFeed.items.length > 0 && (
+          <LiveSyncTicker initialFeed={initialLiveFeed} locale={locale} />
+        )}
+
         {/* Stats & Actions Bar */}
         <div className="flex flex-wrap items-center justify-between gap-4 text-xs text-slate-500 dark:text-slate-400 bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 p-3.5 sm:p-4 rounded-xl shadow-2xs">
           <div>
@@ -1433,8 +1545,10 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               keyword={keyword}
               filters={{
                 prefecture_code: prefCode,
+                prefecture_codes: prefCodes,
                 city_name: city,
                 industry_code: indCode,
+                industry_codes: indCodes,
                 min_employees: minEmp,
                 max_employees: maxEmp,
                 min_capital: minCap,
@@ -1486,6 +1600,11 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>{locale === 'ja' ? 'この条件でフォーム営業 (自動配信)' : locale === 'vi' ? 'Gửi Form tự động (Self-serve)' : 'Automated Form Outreach'}</span>
+                {(!isLoggedIn || (user?.role !== 'admin' && normalizePlanId(undefined, user?.role) === 'free')) && (
+                  <span className="text-[10px] bg-emerald-50 dark:bg-emerald-950/90 text-emerald-800 dark:text-emerald-300 font-extrabold px-1.5 py-0.5 rounded-sm">
+                    {locale === 'ja' ? '毎日20件無料' : locale === 'vi' ? '20 form/ngày free' : '20 free/day'}
+                  </span>
+                )}
               </button>
               {isLoggedIn && formCredits !== null && (
                 <span className="text-[10px] mt-1 text-slate-400 dark:text-slate-500">
@@ -1582,6 +1701,18 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
 
                       {/* Right Meta: Updated Date & Corporate Number */}
                       <div className="flex items-center gap-2 text-[11px] text-slate-400 dark:text-slate-500">
+                        {nowMs !== null &&
+                          company.updated_at &&
+                          nowMs - new Date(company.updated_at).getTime() < 24 * 60 * 60 * 1000 && (
+                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60 font-semibold text-[10px]">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                              {locale === "ja"
+                                ? "本日更新"
+                                : locale === "vi"
+                                ? "Cập nhật hôm nay"
+                                : "Updated today"}
+                            </span>
+                          )}
                         <span>{formatShortDate(company.updated_at)}</span>
                         <span className="text-slate-300 dark:text-slate-700">|</span>
                         <div className="inline-flex items-center gap-1 font-mono">
@@ -1603,6 +1734,24 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                         </span>
                       </Link>
                     </h3>
+
+                    {/* Company Address */}
+                    {(() => {
+                      const displayAddress =
+                        company.full_address ||
+                        [company.prefecture_name, company.city_name, company.street_address]
+                          .filter(Boolean)
+                          .join("");
+                      if (!displayAddress) return null;
+                      return (
+                        <div className="mt-1 flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 min-w-0">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0" />
+                          <span className="truncate" title={displayAddress}>
+                            {displayAddress}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 
@@ -1690,7 +1839,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                       <a 
                         href={company.website_url} 
                         target="_blank" 
-                        rel="noopener noreferrer" 
+                        rel="noopener noreferrer nofollow" 
                         className="inline-flex items-center gap-1 text-[#1B4F8A] hover:underline dark:text-blue-400 font-medium"
                       >
                         <Globe className="w-3.5 h-3.5 shrink-0" />

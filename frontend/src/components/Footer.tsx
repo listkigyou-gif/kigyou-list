@@ -272,6 +272,11 @@ export const Footer: React.FC = () => {
                 </LocaleLink>
               </li>
               <li>
+                <LocaleLink href="/press" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
+                  {locale === "en" ? "Press & Media Coverage" : locale === "vi" ? "Báo chí & Truyền thông" : "プレスリリース・メディア掲載"}
+                </LocaleLink>
+              </li>
+              <li>
                 <LocaleLink href="/unsubscribe" rel="nofollow" className="hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors">
                   {locale === "en" ? "Email Unsubscribe" : locale === "vi" ? "Hủy nhận email" : "メール配信解除"}
                 </LocaleLink>

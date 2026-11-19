@@ -109,7 +109,7 @@ export const FormCampaignModal: React.FC<FormCampaignModalProps> = ({
   const isVi = locale === "vi";
 
   const [customCount, setCustomCount] = useState<number>(200);
-  const [formCredits, setFormCredits] = useState<{ balance: number; total_purchased: number; total_used: number }>({
+  const [formCredits, setFormCredits] = useState<{ balance: number; total_purchased: number; total_used: number; daily_free_remaining?: number; daily_free_allowance?: number }>({
     balance: 0,
     total_purchased: 0,
     total_used: 0
@@ -427,20 +427,39 @@ ${pitchMessage}`
               <div className="relative mb-2">
                 <input
                   type="number"
-                  min={100}
+                  min={(formCredits.daily_free_remaining ?? 0) > 0 ? 1 : 100}
                   value={customCount || ""}
-                  onChange={(e) => setCustomCount(Math.max(100, parseInt(e.target.value) || 0))}
+                  onChange={(e) => {
+                    const minVal = (formCredits.daily_free_remaining ?? 0) > 0 ? 1 : 100;
+                    setCustomCount(Math.max(minVal, parseInt(e.target.value) || 0));
+                  }}
                   className="w-full text-xs font-bold px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-1 focus:ring-[#1B4F8A] focus:border-[#1B4F8A] shadow-2xs font-mono"
-                  placeholder="100"
+                  placeholder={(formCredits.daily_free_remaining ?? 0) > 0 ? "20" : "100"}
                 />
                 <span className="absolute right-3 top-2 text-xs font-medium text-slate-400">
-                  {isJa ? "件 (最低100件〜)" : isVi ? "form (Tối thiểu 100)" : "forms (min 100)"}
+                  {(formCredits.daily_free_remaining ?? 0) > 0
+                    ? (isJa ? "件 (無料枠1〜20件 / 通常100件〜)" : isVi ? "form (Miễn phí 1–20 / Thường ≥100)" : "forms (Free 1–20 / ≥100)")
+                    : (isJa ? "件 (最低100件〜)" : isVi ? "form (Tối thiểu 100)" : "forms (min 100)")}
                 </span>
               </div>
 
               {/* Quick Presets */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[10px] text-slate-400 font-medium mr-0.5">{isJa ? "クイック選択:" : isVi ? "Chọn nhanh:" : "Presets:"}</span>
+                {(formCredits.daily_free_remaining ?? 0) > 0 && (
+                  <button
+                    key="daily-free-btn"
+                    type="button"
+                    onClick={() => setCustomCount(formCredits.daily_free_remaining!)}
+                    className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-colors cursor-pointer ${
+                      customCount === formCredits.daily_free_remaining
+                        ? "bg-emerald-600 text-white shadow-2xs"
+                        : "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 hover:bg-emerald-100/60"
+                    }`}
+                  >
+                    {isJa ? `${formCredits.daily_free_remaining}件 (本日無料枠)` : isVi ? `${formCredits.daily_free_remaining} (Miễn phí hôm nay)` : `${formCredits.daily_free_remaining} (Free Today)`}
+                  </button>
+                )}
                 {[100, 250, 500, 1000].map((presetNum) => (
                   <button
                     key={presetNum}

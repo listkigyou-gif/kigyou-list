@@ -60,6 +60,8 @@ export const CompanyConversionBar: React.FC<CompanyConversionBarProps> = ({
         <div className="flex flex-col gap-2 pt-1">
           <Link
             href={`/${locale}/form-marketing?target=${corporateNumber}`}
+            prefetch={false}
+            rel="nofollow"
             onClick={() => trackFormMarketingClick("company_detail_sidebar", corporateNumber)}
             className="w-full inline-flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-lg bg-[#1B4F8A] hover:bg-[#143D6C] text-white text-xs font-bold shadow-xs transition-colors duration-150 active:scale-[0.98] cursor-pointer group"
           >
@@ -118,6 +120,8 @@ export const CompanyConversionBar: React.FC<CompanyConversionBarProps> = ({
           {/* CTA 1: Form DM Marketing */}
           <Link
             href={`/${locale}/form-marketing?target=${corporateNumber}`}
+            prefetch={false}
+            rel="nofollow"
             onClick={() => trackFormMarketingClick("company_detail_bar", corporateNumber)}
             className="inline-flex items-center justify-center gap-2 px-3.5 py-2 rounded-lg bg-[#1B4F8A] hover:bg-[#143D6C] text-white text-xs font-bold shadow-xs transition-colors duration-150 active:scale-[0.98] whitespace-nowrap cursor-pointer group"
           >
