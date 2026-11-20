@@ -4,6 +4,7 @@ Allow: /llms.txt
 Allow: /llms-full.txt
 Allow: /_next/static/
 Allow: /_next/image
+Allow: /api/auth/session
 Disallow: /_next/
 Disallow: /static/
 Disallow: /api/
@@ -44,6 +45,7 @@ Allow: /llms.txt
 Allow: /llms-full.txt
 Allow: /_next/static/
 Allow: /_next/image
+Allow: /api/auth/session
 Disallow: /_next/
 Disallow: /static/
 Disallow: /api/

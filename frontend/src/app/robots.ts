@@ -24,7 +24,7 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/llms.txt', '/llms-full.txt'],
+        allow: ['/', '/llms.txt', '/llms-full.txt', '/api/auth/session'],
         disallow: commonDisallow,
       },
       // AI Search & Knowledge Grounding Bots (Allow to cite and index public directory/profiles)
@@ -49,7 +49,7 @@ export default function robots(): MetadataRoute.Robots {
           'cohere-ai',
           'meta-externalagent',
         ],
-        allow: ['/', '/ja/', '/llms.txt', '/llms-full.txt'],
+        allow: ['/', '/ja/', '/llms.txt', '/llms-full.txt', '/api/auth/session'],
         disallow: commonDisallow,
       },
       // Block non-search / abusive scrapers that do not provide traffic attribution or search citations
