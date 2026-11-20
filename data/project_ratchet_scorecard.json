@@ -1,7 +1,7 @@
 {
   "system": "Kigyou-list 5-Stage Compounding Ratchet Scorecard (Cross-Layer Non-Regression Gate)",
   "version": "1.0.0",
-  "updated_at": "2026-11-20T12:08:00+07:00",
+  "updated_at": "2026-11-20T12:13:04+07:00",
   "invariants": {
     "robots_txt_disallow_en": true,
     "robots_txt_disallow_vi": true,
@@ -23,9 +23,49 @@
     "area_13_min_static_company_links": 100,
     "guide_min_published_articles": 15,
     "max_allowed_pairwise_hub_similarity_pct": 60.0,
-    "min_campaigns_logged": 15,
-    "min_press_media_synced": 29,
+    "min_campaigns_logged": 16,
+    "min_press_media_synced": 32,
     "min_manual_gsc_tracked_urls": 26
   },
-  "latest_measured": {}
+  "latest_measured": {
+    "layer1_2_vps": {
+      "robots_txt_disallow_en": true,
+      "robots_txt_disallow_vi": true,
+      "googlebot_root_redirects_to_ja": true,
+      "core_sitemap_hub_urls": 5129,
+      "core_sitemap_company_leaf_urls": 0,
+      "public_hubs_verified_count": 22,
+      "public_hubs_noindex_list": [],
+      "public_hubs_missing_canonical_list": [],
+      "en_vi_hreflang_leaks": [],
+      "entity_assertion_failures": [],
+      "directory_static_area_links": 47,
+      "directory_static_ind_loc_links": 410,
+      "area_13_static_company_links": 100,
+      "guide_published_articles": 15,
+      "max_pairwise_similarity_pct": 55.4,
+      "pairwise_details": {
+        "/ja/area/13 vs /ja/area/27": 18.1,
+        "/ja/license/kensetsu vs /ja/license/tokutei": 55.4,
+        "/ja/changes/relocation vs /ja/changes/merger": 19.3,
+        "/ja/ranking/salary vs /ja/ranking/tenure": 7.9,
+        "/ja/form-marketing vs /ja/watchlist": 1.4
+      }
+    },
+    "layer3_mobile": {
+      "console_errors": 0,
+      "page_errors": 0,
+      "failed_requests": 0,
+      "details": {
+        "console": [],
+        "page": [],
+        "network": []
+      }
+    },
+    "layer4_ledgers": {
+      "campaigns_logged": 16,
+      "press_media_synced": 32,
+      "manual_gsc_tracked_urls": 26
+    }
+  }
 }
