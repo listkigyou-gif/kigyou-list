@@ -132,6 +132,10 @@ const prefectureNameToCode: Record<string, string> = {
   "沖縄県": "47"
 };
 
+const prefectureCodeToName: Record<string, string> = Object.fromEntries(
+  Object.entries(prefectureNameToCode).map(([name, code]) => [code, name])
+);
+
 /**
  * Parses search keyword to extract prefecture, city, or industry intent.
  * Maps unstructured queries to structured B-Tree indexed filters to avoid slow full-text LIKE searches.
@@ -1821,8 +1825,13 @@ export async function getIndustryByCode(code: string): Promise<Industry | null> 
  * Fetch prefecture code and name by prefecture_code
  */
 export async function getPrefectureByCode(code: string): Promise<{ code: string; name: string } | null> {
+  const padded = String(code || '').trim().padStart(2, '0');
+  const mappedName = prefectureCodeToName[padded];
+  if (mappedName) {
+    return { code: padded, name: mappedName };
+  }
   try {
-    const result = await runGetQuery('SELECT DISTINCT prefecture_code as code, prefecture_name as name FROM companies WHERE prefecture_code = ? LIMIT 1', [code]);
+    const result = await runGetQuery('SELECT DISTINCT prefecture_code as code, prefecture_name as name FROM companies WHERE prefecture_code = ? LIMIT 1', [padded]);
     return result ? { code: result.code, name: result.name } : null;
   } catch (error) {
     console.error(`Error in getPrefectureByCode(${code}):`, error);
