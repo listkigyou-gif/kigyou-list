@@ -1,0 +1,31 @@
+{
+  "system": "Kigyou-list 5-Stage Compounding Ratchet Scorecard (Cross-Layer Non-Regression Gate)",
+  "version": "1.0.0",
+  "updated_at": "2026-11-20T12:08:00+07:00",
+  "invariants": {
+    "robots_txt_disallow_en": true,
+    "robots_txt_disallow_vi": true,
+    "googlebot_root_redirects_to_ja": true,
+    "core_sitemap_max_company_leaf_urls": 0,
+    "en_vi_hreflang_leaks_count": 0,
+    "public_hubs_noindex_count": 0,
+    "public_hubs_missing_canonical_count": 0,
+    "entity_title_h1_assertions_passed": true,
+    "mobile_console_errors_count": 0,
+    "mobile_page_errors_count": 0,
+    "mobile_failed_network_requests_count": 0
+  },
+  "high_water_marks": {
+    "core_sitemap_min_hub_urls": 5129,
+    "public_hubs_verified_count": 22,
+    "directory_min_static_area_links": 47,
+    "directory_min_static_industry_location_links": 410,
+    "area_13_min_static_company_links": 100,
+    "guide_min_published_articles": 15,
+    "max_allowed_pairwise_hub_similarity_pct": 60.0,
+    "min_campaigns_logged": 15,
+    "min_press_media_synced": 29,
+    "min_manual_gsc_tracked_urls": 26
+  },
+  "latest_measured": {}
+}

@@ -55,8 +55,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `/${locale}/building/${slug}`,
       languages: {
         ja: `/ja/building/${slug}`,
-        en: `/en/building/${slug}`,
-        vi: `/vi/building/${slug}`,
         "x-default": `/ja/building/${slug}`,
       },
     },

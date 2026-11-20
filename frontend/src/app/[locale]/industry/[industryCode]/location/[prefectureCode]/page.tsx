@@ -68,8 +68,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `/${locale}/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
       languages: {
         ja: `/ja/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
-        en: `/en/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
-        vi: `/vi/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
         'x-default': `/ja/industry/${resolvedParams.industryCode}/location/${resolvedParams.prefectureCode}`,
       }
     },

@@ -69,7 +69,7 @@ Khi kiểm tra báo cáo **Page Indexing (Trang)** trên GSC, Agent bắt buộc
 
 | Bệnh Lý Trên GSC | Nguyên Nhân Kỹ Thuật | Phác Đồ Điều Trị Cho Kigyou-list |
 | :--- | :--- | :--- |
-| **1. Discovered - currently not indexed**<br>*(Đã phát hiện - hiện chưa lập chỉ mục)* | Googlebot đã tìm thấy URL qua sitemap/internal link nhưng chưa đủ Crawl Budget hoặc đang xếp hàng đợi (Queue).<br>*(Bot chưa hề đọc HTML - Last crawled: N/A)*. | • **TUYỆT ĐỐI CẤM BẤM NÚT 'VALIDATE FIX'**: Bấm nút này sẽ ép Googlebot quét lại các link rác/link cũ và dễ bị báo `Validation Failed`.<br>• Đảm bảo sitemap chỉ chứa 100% tiếng Nhật (`/ja/`) để không làm loãng hàng đợi.<br>• Bơm Internal Link từ Hub ngành/khu vực.<br>• Kích hoạt `auto_google_indexing_pg.js` đưa các URL có biến động vào VIP Queue. |
+| **1. Discovered - currently not indexed**<br>*(Đã phát hiện - hiện chưa lập chỉ mục)* | Googlebot đã tìm thấy URL qua sitemap/internal link nhưng chưa đủ Crawl Budget hoặc đánh giá là mass programmatic leaf pages chưa có Crawl Demand.<br>*(Bot chưa hề đọc HTML - Last crawled: N/A)*. | • **TUYỆT ĐỐI CẤM BẤM NÚT 'VALIDATE FIX'**: Bấm nút này sẽ ép Googlebot quét lại các link rác/link cũ và dễ bị báo `Validation Failed`.<br>• **Cấm nhồi trang `/ja/company/*` vào `core.xml`**: Giữ `core.xml` chỉ chứa ~5,119 Hub URLs chuẩn tiếng Nhật (`/ja/`), có `<lastmod>` thực tế.<br>• **ĐÃ NGƯNG GOOGLE INDEXING API**: Không bắn `indexing.googleapis.com`; thay bằng bơm Internal Link từ `/ja`, dùng GSC UI Request Indexing (~10 Hub/ngày) và Backlink vệ tinh. |
 | **2. Crawled - currently not indexed**<br>*(Đã thu thập dữ liệu - hiện chưa lập chỉ mục)* | Googlebot đã tải HTML về nhưng đánh giá trang đang trong giai đoạn Sandbox hoặc chờ đánh giá tín hiệu chất lượng/người dùng. | • **TUYỆT ĐỐI CẤM BẤM NÚT 'VALIDATE FIX'**: Đây không phải lỗi kỹ thuật.<br>• Kích hoạt ETL làm giàu dữ liệu: Bổ sung mã Invoice NTA, Báo cáo EDINET, Giấy phép ngành nghề (đạt richnessScore >= 3).<br>• Đảm bảo Schema JSON-LD `Corporation` & `Dataset` hợp lệ. |
 | **3. Page with redirect**<br>*(Trang có chuyển hướng)* | URL gốc chuyển hướng 301 sang URL mới (vd: http sang https, www sang non-www, `/company/*` sang `/ja/company/*`). | • Đây là **trạng thái bình thường** nếu người dùng truy cập link cũ.<br>• Tuy nhiên, trong Internal Link và Sitemap **tuyệt đối không được chứa link chuyển hướng**; phải trỏ trực tiếp đến URL đích chuẩn. |
 | **4. Alternate page with proper canonical tag**<br>*(Trang thay thế có thẻ chuẩn tắc thích hợp)* | URL phụ (vd: có tham số `?ref=`, `?page=1`) trỏ canonical về trang gốc. | • Trạng thái hoàn toàn chính xác theo chuẩn SEO.<br>• Đảm bảo thẻ `<link rel="canonical" href="..." />` luôn là link tuyệt đối https không có trailing slash thừa. |
@@ -106,36 +106,122 @@ python c:\kigyou-list\scripts\gsc_optimizer.py sitemaps
 
 # 7. Xuất toàn bộ báo cáo tổng hợp chuẩn SEO Health Check
 python c:\kigyou-list\scripts\gsc_optimizer.py report
+
+# 8. Chạy bộ kiểm toán thực chứng 4 tầng (Nginx Googlebot IP + Endpoints/Sitemap Purity + PG Queue + GSC API)
+python c:\kigyou-list\scripts\google_seo_forensic_auditor.py --days 7
+
+# 9. Tái tạo sitemap/core.xml tinh gọn (~5,119 Pure Hubs) và sitemap.xml + nạp lại GSC
+python c:\kigyou-list\scripts\generate_clean_core_sitemap.py
 ```
 
 ---
 
-## 5. QUY CHUẨN NỘP SITEMAP INDEX DUY NHẤT (MASTER SITEMAP INDEX PROTOCOL)
+## 5. QUY CHUẨN SITEMAP TINH GỌN & STATIC NVME SITEMAP ENGINE (~5,119 PURE HUBS PROTOCOL)
 
-Theo tài liệu chính thức từ Google Search Console, hệ thống tuân thủ nghiêm ngặt **Quy chuẩn nộp 1 file Sitemap Index duy nhất**:
+Hệ thống vận hành theo kiến trúc **Static NVMe Sitemap Engine (`Kigyoulist-StaticSitemapEngine`)** đảm bảo tốc độ tải `< 1ms` và tính tinh khiết tuyệt đối cho Googlebot:
 
-1. **URL Nộp Duy Nhất:** `https://kigyoulist.com/sitemap.xml` (Tệp mục lục gốc chuẩn XML `<sitemapindex>`).
-2. **Cấu trúc phân nhánh tự động:** Bên trong file index tự động khai báo toàn bộ các phân mảnh con:
-   * `sitemap/core.xml`: ~4,980 URLs tinh hoa 100% tiếng Nhật (đã loại bỏ 10.000 link đa ngôn ngữ rác để tối ưu hóa Crawl Budget).
-   * `sitemap/0.xml` đến `sitemap/16.xml`: Mỗi shard chứa 10.000 - 50.000 URLs doanh nghiệp.
-3. **Tuyệt đối cấm nộp thủ công từng file con rời rạc:** Việc nộp riêng lẻ `0.xml` – `9.xml` sẽ làm nghẽn hàng đợi Googlebot và gây ra lỗi hiển thị giả lập "Couldn't fetch" trên giao diện GSC.
-4. **Script quản trị & nạp tự động:** [submit_all_sitemaps_gsc.py](file:///c:/kigyou-list/scripts/submit_all_sitemaps_gsc.py).
+1. **2 URL Sitemap Duy Nhất Được Nộp Trên GSC (`sitemap.xml` + `sitemap/core.xml`):**
+   * `https://kigyoulist.com/sitemap.xml`: Tệp mục lục gốc `<sitemapindex>` chứa `sitemap/core.xml` (đứng đầu tiên) + **47 mảnh công ty (`0.xml` .. `46.xml`)**.
+   * `https://kigyoulist.com/sitemap/core.xml`: **CHỈ chứa ~5,119 trang Hub 100% tiếng Nhật (`/ja/*`) trả mã `200 OK`**, bao gồm: Core Static Hubs (`/ja`, `/ja/directory`, `/ja/compare`, `/ja/press`, `/ja/guide`, `/ja/invoice`, `/ja/watchlist`, `/ja/changes`...), toàn bộ bài Cẩm nang (`/ja/guide/*`), 5 Event Hubs + 6 tháng lưu trữ gần nhất (`2026-11`..`2026-06`) + 47 tỉnh thành, `/ja/building` + 101 Cao ốc văn phòng, 3 Ranking Hubs (`/salary`, `/tenure`, `/employees`), 47 `/ja/area/*`, `/ja/licenses` + 432 License Hubs, và 4,251 cặp `Industry × Prefecture`.
+2. **Tại sao TUYỆT ĐỐI CẤM nhồi 44,000 trang `/ja/company/*` vào `core.xml`?**
+   * **Bài học kiểm chứng (Forensic Nov 2026):** Khi từng nhồi 44,000 trang hồ sơ công ty lẻ (chiếm 89.8% `core.xml`) với cùng một `<lastmod>`, toàn bộ 44,000 trang đó vừa **trùng lặp với `0.xml`..`4.xml`**, vừa làm Google đánh giá toàn bộ `core.xml` là *mass programmatic leaf pages* và đẩy **49,008 URL vào `Discovered - currently not indexed`** (cột Not indexed nhảy vọt từ ~16K lên 52.5K).
+   * Tách `core.xml` về **0 `/ja/company/*`**, **0 URL redirect (`/`, `/ja/ranking`)**, **0 URL 404**, và gán `<lastmod>` chuẩn `YYYY-MM-DD` phản ánh ngày cập nhật dữ liệu thật giúp Googlebot nhận diện rõ 5,119 Hub trụ cột có thẩm quyền cao.
+3. **Cấu hình Tái Tạo & Cache Bắt Buộc:**
+   * Luôn dùng [`scripts/generate_clean_core_sitemap.py`](file:///c:/kigyou-list/scripts/generate_clean_core_sitemap.py) (script cũ [`scripts/boost_core_sitemap_49k.py`](file:///c:/kigyou-list/scripts/boost_core_sitemap_49k.py) đã bị vô hiệu hóa và trỏ ngược về đây) để kết xuất tĩnh ra `/var/www/kigyou-list/frontend/public/sitemap*.xml`, giữ `Nginx` phục vụ trực tiếp từ NVMe (`Cache-Control: public, max-age=86400, s-maxage=604800`), và chỉ purge đúng 2 URL `/sitemap.xml` & `/sitemap/core.xml` trên Cloudflare.
 
 ---
 
 ## 6. PHỐI HỢP ĐỒNG BỘ ĐA KÊNH TRONG HỆ SINH THÁI KIGYOU-LIST
 
-* **Phối hợp với `b2b-seo-engine`:** Khi `gsc_optimizer.py` phát hiện trang có lỗi `Crawled - currently not indexed`, tự động kích hoạt Cloudflare cache purge và bổ sung trang đó vào hàng đợi ưu tiên của `auto_google_indexing_pg.js`.
-* **Phối hợp với `growth-orchestrator`:** Khi phát hiện các từ khóa Top Queries trên GSC (như `IT企業 東京都豊島区`, ngành nghề, tỉnh thành, tín hiệu B2B), tự động đưa danh sách này vào kế hoạch bài viết trên Note.com, Zenn, Qiita và Press Release để thâu tóm toàn bộ trang 1 Google (Lưu ý: Luôn loại trừ các truy vấn nội bộ TQC/SĐT).
-* **Phối hợp với `bing-webmaster`:** So sánh chéo tỷ lệ index giữa Googlebot và Bingbot để đánh giá thuật toán đánh giá chất lượng trang của hai công cụ tìm kiếm lớn nhất thế giới.
+* **Phối hợp với `b2b-seo-engine`:** Duy trì hai đường ray tách biệt: Bingbot đẩy mạnh qua IndexNow 5,000 URL/đêm; Googlebot **KHÔNG dùng Indexing API** mà dồn lực vào Sitemap Hubs tinh gọn (`core.xml`), Spider-Web từ `/ja`, GSC UI Request Indexing và off-page authority.
+* **Phối hợp với `growth-orchestrator`:** Khi phát hiện các từ khóa Top Queries thực tế của người dùng trên GSC (ngành nghề, tỉnh thành, tín hiệu B2B), đưa vào kế hoạch bài viết trên Note.com, Zenn, Qiita, Wantedly và các cổng Press Release để tạo backlink và tăng Crawl Demand cho các Hub đầu tàu (Lưu ý: Bắt buộc loại trừ toàn bộ truy vấn nội bộ do Founder/Developer test theo Mục 7).
+* **Phối hợp với `bing-webmaster`:** Không lấy tốc độ Index của Bing (4,000+ trang/ngày qua IndexNow) làm kỳ vọng sai cho Googlebot; sử dụng Bing để kiểm tra khả năng render HTML và tìm nhu cầu từ khóa thực tế tại Nhật Bản.
 
 ---
 
 ## 7. BỘ LỌC LOẠI TRỪ TỪ KHÓA NỘI BỘ (INTERNAL DEVELOPER TRAFFIC EXCLUSION)
 
 > [!IMPORTANT]
-> **QUY TẮC BẤT DI BẤT DỊCH KHI PHÂN TÍCH SEO CHO KIGYOU-LIST:**
-> Toàn bộ các truy vấn liên quan đến đơn vị chủ quản **TQC株式会社** và số hotline **`03-6907-1219`** (bao gồm: `tqc`, `tqc株式会社`, `03-6907-1219`, `0369071219`, `tcq`, `tqa`, `tqq`, `tqcs`, `tqi`, `tqr`, `ｔｑｃ`) là **lưu lượng click và tìm kiếm nội bộ do Developer thực hiện trong quá trình phát triển và kiểm thử dự án**.
+> **QUY TẮC BẤT DI BẤT DỊCH KHI PHÂN TÍCH & BÁO CÁO SEO CHO KIGYOU-LIST:**
+> Toàn bộ các nhóm truy vấn dưới đây đều là **lưu lượng tìm kiếm và click nội bộ do Founder/Developer thực hiện trong quá trình phát triển và kiểm thử dự án**:
+> 1. **Nhóm pháp nhân & hotline:** `tqc`, `tqc株式会社`, `t.q.c`, `tcq`, `ctq`, `tqa`, `tqq`, `tqcs`, `tqi`, `tqr`, `ｔｑｃ`, `03-6907-1219`, `0369071219`.
+> 2. **Nhóm từ khóa test khu vực Toshima-ku / Kita-ku / Itabashi-ku:** `it企業 東京都豊島区`, `itコンサルティング 東京都豊島区`, `itサービス 東京都豊島区`, `it関連 東京都豊島区`, `itコンサルティング 東京都北区`, `itコンサルティング 東京都板橋区`.
 > 
-> * **Tuyệt đối KHÔNG sử dụng** các từ khóa này để phân tích thị trường, không đánh giá là cơ hội Quick-Wins, và không dùng làm căn cứ định hướng kế hoạch SEO/content.
-> * Mọi báo cáo và thuật toán tối ưu hóa tự động phải chủ động **loại trừ (filter out)** nhóm từ khóa này để đảm bảo dữ liệu phản ánh 100% nhu cầu tìm kiếm thực tế của khách hàng B2B Nhật Bản.
+> * **Tuyệt đối KHÔNG đưa** các từ khóa này vào thống kê báo cáo SEO/GSC, không tính làm thành tích Top 1, không đánh giá là cơ hội Quick-Wins, và không dùng làm căn cứ định hướng kế hoạch SEO/content.
+> * Mọi báo cáo và script phân tích GSC phải chủ động **loại trừ (filter out)** toàn bộ nhóm từ khóa này để dữ liệu phản ánh 100% lưu lượng tìm kiếm tự nhiên (organic) của khách hàng thực tế.
+
+---
+
+## 8. QUY CHUẨN PHÁ BĂNG LẬP CHỈ MỤC GOOGLEBOT & KIỂM TOÁN THỰC CHỨNG (GOOGLEBOT FORENSIC PLAYBOOK)
+
+Quy chuẩn này đúc kết từ đợt điều tra pháp y (Forensic Audit 11/2026) để chấm dứt tình trạng "bắn API mù quáng" mà vẫn dậm chân ở 4 trang được lập chỉ mục:
+
+### 8.1. Tách Bạch Thực Tế: Googlebot Khác Hoàn Toàn Bingbot
+| Tiêu chí | Bingbot (IndexNow) | Googlebot (Google Search) |
+| :--- | :--- | :--- |
+| **Cơ chế Push API** | IndexNow chấp nhận mọi URL B2B và kích hoạt bot cào hàng nghìn trang/ngày. | **ĐÃ BỎ HẲN Google Indexing API (`indexing.googleapis.com`).** Thực chứng 19,182 URL (gồm 14,978 `has_hiring=true`) đều bị Googlebot bỏ qua; API này chỉ hợp với site tuyển dụng thuần có tin mới còn hạn `validThrough`. |
+| **Quy tắc `auto_google_indexing_pg.js`** | *(Không áp dụng — dùng `auto_indexnow_submitter_pg.js`)* | **ĐÃ VÔ HIỆU HÓA HOÀN TOÀN:** Đã gỡ khỏi Crontab VPS, [`vps_api_daemon.py`](file:///c:/kigyou-list/scripts/vps_api_daemon.py) và [`seoIndexingTrigger.ts`](file:///c:/kigyou-list/frontend/src/lib/seoIndexingTrigger.ts). Không bật lại. |
+| **Động lực Crawl chính** | Sitemap + IndexNow API. | **Internal Links từ trang đã Index (`/ja`)** + **Clean Hub `core.xml` (~5,119 URLs)** + **GSC UI Manual Request Indexing** + **Backlinks chất lượng cao**. |
+
+### 8.2. Chống Ngộ Nhận Qua Độ Trễ GSC UI (Real-Time Verification Protocol)
+* Biểu đồ *Page Indexing* trên GSC Web UI thường **trễ 4–5 ngày** (`Last update` chậm so với thực tế). Không bao giờ dựa duy nhất vào số đếm `200 OK` của Indexing API hay biểu đồ Web UI để kết luận bot đã cào.
+* **Bắt buộc chạy công cụ kiểm toán 4 tầng** sau mỗi đợt nâng cấp hoặc định kỳ hàng tuần:
+  ```bash
+  python c:\kigyou-list\scripts\google_seo_forensic_auditor.py --days 7
+  ```
+  1. **Tầng 1 (Log Nginx IP Google thật):** Chỉ đếm IP thuộc dải chính thức Google (`66.249.*`, `192.178.*`, `74.125.*`, `64.233.*`, `209.85.*`, `216.239.*`), tách riêng `Googlebot` vs `Google-InspectionTool`, và đảm bảo bot giả mạo bị chặn `403`.
+  2. **Tầng 2 (Sức khỏe Endpoint & Sitemap Purity):** Kiểm tra `200 OK` trên `/robots.txt`, `/favicon.ico`, `/sitemap.xml`, `/sitemap/core.xml` và xác nhận `company_leaves == 0`, `empty_locs == 0` trong `core.xml`.
+  3. **Tầng 3 (PostgreSQL Queue Health):** Kiểm tra `bad_legacy_urls == 0` trong bảng `google_indexing_submissions`.
+  4. **Tầng 4 (GSC Sitemaps & URL Inspection API):** Xem trực tiếp `verdict`, `coverageState` và `lastCrawlTime` của từng Hub trọng điểm theo thời gian thực.
+
+### 8.3. Quy Tắc Hạ Tầng Sống Còn (Zero-5xx & Spider-Web Từ `/ja`)
+* **Zero-5xx trên `/robots.txt` và `/favicon.ico`:** Cả 2 file bắt buộc phục vụ tĩnh từ ổ NVMe qua Nginx ở mức `0ms`. Nếu `/robots.txt` dính dù chỉ một lỗi `504` khi server restart, Googlebot sẽ tạm dừng cào toàn bộ tên miền.
+* **Sổ cái theo dõi Request Indexing thủ công (`c:\kigyou-list\data\gsc_manual_request_indexing_history.json`):**
+  * **BẮT BUỘC ĐỌC FILE NÀY TRƯỚC KHI ĐỀ XUẤT DANH SÁCH REQUEST INDEXING MỚI:** Vì người dùng có thể trao đổi ở cửa sổ `Side Question` độc lập với luồng chat chính (và Cloudflare Edge Cache phục vụ trực tiếp `Google-InspectionTool` tại Edge mà không ghi log xuống Nginx VPS), mọi URL đã bấm Request Indexing đều được lưu tập trung trong [`data/gsc_manual_request_indexing_history.json`](file:///c:/kigyou-list/data/gsc_manual_request_indexing_history.json).
+  * Tuyệt đối không đề xuất lặp lại bất kỳ URL nào đã nằm trong `already_submitted_urls`. Khi đề xuất đợt mới, cập nhật ngay vào sổ cái này.
+* **Cổng Kiểm định Bánh cóc 4 Tầng (`c:\kigyou-list\scripts\ratchet_gate.py` & `c:\kigyou-list\data\project_ratchet_scorecard.json`):**
+  * Sau mọi đợt sửa code SEO, Sitemap, Metadata hoặc Deploy VPS, bắt buộc chạy `python c:\kigyou-list\scripts\ratchet_gate.py` để xác minh không có bất kỳ chỉ số nào bị tụt lùi so với kỷ lục trong `data/project_ratchet_scorecard.json`.
+* Kết hợp đồng thời liên kết trực tiếp từ trang chủ đã Index (`/ja`) và backlink ngữ cảnh từ `note-publisher`, `qiita-publisher`, `zenn-publisher`, `wantedly-publisher` và các cổng Thông cáo báo chí để nâng Crawl Demand tự nhiên, kéo các nhánh con thoát khỏi trạng thái `Discovered / Crawled - currently not indexed`.
+
+---
+
+## 9. BỘ BA CÔNG CỤ KIỂM TOÁN QUALITY GATE & 5 BÀI HỌC XƯƠNG MÁU CHO PROGRAMMATIC SEO (CROSS-PROJECT PLAYBOOK)
+
+Để không bao giờ "ngồi chờ Google trong mù quáng" khi các trang bị kẹt ở `Discovered` hoặc `Crawled - currently not indexed`, hệ thống tích hợp phương pháp luận của **3 bộ công cụ mã nguồn mở hàng đầu trên GitHub** vào 2 script kiểm toán thực chiến chạy trực tiếp trên server:
+
+### 9.1. Bộ Ba Công Cụ Phân Tích & Script Thực Thi
+1. **Phương pháp `eliasdabbas/advertools` & `sethblack/python-seo-analyzer` (Đo Boilerplate Similarity & Xung đột Robots):**
+   * Bóc tách phần thân `<main>` (loại bỏ `<header>`, `<footer>`, `<nav>`), tính **5-char Shingle Jaccard Similarity** giữa các trang cùng template:
+     * `< 35%`: **Độc bản an toàn (`UNIQUE`)** — vượt qua bộ lọc Near-Duplicate của Google.
+     * `35% – 60%`: **Trung bình (`MODERATE`)** — cần theo dõi tỷ lệ chữ tĩnh.
+     * `> 60%`: **Nguy cơ cao bị giữ ở `Crawled - currently not indexed`** do trùng khung giao diện.
+   * Quét toàn bộ thẻ `<meta name="robots">`, `<meta name="googlebot">` và HTTP Header `X-Robots-Tag` để bắt sống mọi cờ `noindex` rơi rớt hoặc xung đột đa thẻ.
+2. **Phương pháp `GoogleChrome/lighthouse` (Kiểm toán 16/16 Nhóm Template trong Sitemap):**
+   * Quét đồng thời toàn bộ các nhóm cấu trúc route trong `sitemap/core.xml` để kiểm tra 8 tiêu chí sống còn:
+     1) `HTTP != 200`, 2) `Noindex detected`, 3) `Canonical mismatch`, 4) `Missing H1`, 5) `Thin content (<600 chars)`, 6) `Invalid JSON-LD Schema`, 7) `Duplicate <title> groups`, 8) `Duplicate <h1> groups`.
+3. **Phương pháp `viasite/site-audit-seo` & Playwright Mobile-First Googlebot Renderer:**
+   * Giả lập `Googlebot Smartphone` (`412x915`), kiểm tra DOM thực tế sau khi hydrate JS, bắt toàn bộ lỗi `JS Console Error`, `Page Error` và các request API ngầm trả mã `4xx/5xx`.
+
+* **Lệnh vận hành bắt buộc sau mỗi đợt nâng cấp SEO (hoặc khi tái sử dụng cho dự án mới):**
+  ```bash
+  # 1. Kiểm toán chiều sâu Quality Gate, Boilerplate Similarity & Playwright Mobile Render
+  python c:\kigyou-list\scripts\google_quality_gate_auditor.py
+
+  # 2. Quét toàn diện 180 URL đại diện cho 100% (16/16) nhóm Template trong core.xml
+  python c:\kigyou-list\scripts\audit_all_core_hub_templates.py
+  ```
+
+### 9.2. Năm Bài Học Xương Máu Đúc Kết Từ Dự Án (Áp Dụng Cho Mọi Dự Án Dữ Liệu Lớn)
+1. **Bài học 1 — Chặn rò rỉ Crawl Budget đa ngôn ngữ (`Accept-Language` Redirect + `hreflang`):**
+   * **Sai lầm từng gặp:** `middleware.ts` đọc header `Accept-Language: en-US` của Googlebot (cào từ IP Mỹ) và redirect `308` sang `/en`, kết hợp với 21 trang `/ja/*` phát thẻ `<link rel="alternate" hreflang="en">`. Kết quả là **81.2% (`591/728` hits/ngày) ngân sách cào của Googlebot bị đốt vào `/en/industry/*` và `/en/area/*`**.
+   * **Quy chuẩn bắt buộc:** Trong `middleware.ts`, mọi User-Agent của Bot tìm kiếm/AI (`Googlebot`, `Bingbot`, `OAI-SearchBot`, `ClaudeBot`, `PerplexityBot`...) phải luôn điều hướng về ngôn ngữ chính (`/ja`). Đồng thời chặn `/en/`, `/vi/` trong `robots.txt`, gỡ `hreflang` ngôn ngữ phụ và đặt `robots: noindex, nofollow` cho các locale phụ.
+2. **Bài học 2 — Tuyệt đối cấm dùng `SELECT DISTINCT ... LIMIT 1` trên bảng lớn để lấy tên Tỉnh/Danh mục (Vụ án `三重県` trên 4,298 trang Hub):**
+   * **Sai lầm từng gặp:** Hàm `getPrefectureByCode(code)` chạy `SELECT DISTINCT prefecture_code, prefecture_name FROM companies WHERE prefecture_code = ? LIMIT 1`. Do trong bảng 5 triệu dòng có vài dòng nhiễu mang tên `三重県` và ký tự `三` (`U+4E09`) đứng đầu bảng mã Unicode chữ Hán khi PostgreSQL sort `DISTINCT`, toàn bộ **47 trang `/ja/area/01..47` và 4,251 trang `/ja/industry/*/location/*` đều xuất ra cùng một `<title>` và `<h1>` là `三重県` (Tỉnh Mie)**, đồng thời làm chậm TTFB mất 2–5 giây!
+   * **Quy chuẩn bắt buộc:** Mọi danh mục cố định (47 tỉnh thành JIS X 0401, mã ngành JSIC, loại giấy phép) bắt buộc tra cứu `O(1)` (`0ms`) từ Dictionary hằng số trong bộ nhớ, tuyệt đối không quét bảng giao dịch để suy ra tên danh mục.
+3. **Bài học 3 — Rà soát cờ `noindex` sót lại trong `layout.tsx` con và phân biệt `<h1>` cho trang lưu trữ tháng:**
+   * **Sai lầm từng gặp:** Trang `/ja/watchlist` được đưa vào `sitemap/core.xml` nhưng file `watchlist/layout.tsx` cũ vẫn để `index: false, follow: false` (khiến Googlebot bị cấm index). Các trang lưu trữ theo tháng (`/2026-11` .. `/2026-06`) có `<title>` khác nhau nhưng quên chèn biến `yearMonth` vào thẻ `<h1>`.
+   * **Quy chuẩn bắt buộc:** Mọi URL có mặt trong Sitemap bắt buộc có `robots: index, follow` và phải có bộ đôi `<title>` + `<h1>` độc nhất 100% trên toàn site.
+4. **Bài học 4 — Không dùng Google Indexing API cho trang danh bạ B2B & Không nhồi trang lá vào `core.xml`:**
+   * Thực chứng 19,182 URL bắn qua `indexing.googleapis.com` đều bị Googlebot bỏ qua, và việc nhồi 44,000 trang lá `/company/*` cùng một `<lastmod>` vào `core.xml` khiến Google đóng băng toàn bộ Sitemap ở `Discovered - currently not indexed`. Chỉ giữ các trang Hub tinh gọn trong `core.xml` và loại bỏ mọi Schema `JobPosting` đã quá hạn `validThrough`.
+5. **Bài học 5 — Lưu ý khi đọc Log VPS phía sau Cloudflare Edge Cache:**
+   * Khi bật Cloudflare `Cache Everything` (TTL 7 ngày), các lượt Googlebot hoặc `Google-InspectionTool` trúng `CF-Cache-Status: HIT` sẽ được Cloudflare trả HTML ở tốc độ `5–15ms` ngay tại trạm biên (rất tốt cho Crawl Budget) nhưng sẽ không ghi xuống `/var/log/nginx/access.log` của VPS. Do đó phải quản lý lịch sử bấm `Request Indexing` qua file sổ cái cố định [`data/gsc_manual_request_indexing_history.json`](file:///c:/kigyou-list/data/gsc_manual_request_indexing_history.json) và luôn gọi API `purge_cache` của Cloudflare sau mỗi lần sửa thẻ SEO/HTML.

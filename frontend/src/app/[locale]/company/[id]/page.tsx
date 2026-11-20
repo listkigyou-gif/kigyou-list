@@ -458,8 +458,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `/${locale}/company/${companyId}`,
       languages: {
         ja: `/ja/company/${companyId}`,
-        en: `/en/company/${companyId}`,
-        vi: `/vi/company/${companyId}`,
         'x-default': `/ja/company/${companyId}`,
       },
     },

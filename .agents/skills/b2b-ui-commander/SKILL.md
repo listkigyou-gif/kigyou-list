@@ -152,7 +152,7 @@ graph TD
      - Cumulative Layout Shift (CLS) = 0 (tất cả hình ảnh, khung dữ liệu đều có kích thước cố định).
      - First Contentful Paint (FCP) < 1.0s.
      - Next.js Server Components kết xuất SSR / ISR, Googlebot và Bingbot cào được 100% nội dung không cần chờ Javascript.
-  4. **Dynamic Metadata**: Đảm bảo đầy đủ `title`, `description`, `canonical`, `hreflang` (ja, en, vi, x-default), OpenGraph và Twitter Card.
+  4. **Dynamic Metadata**: Đảm bảo đầy đủ `title`, `description`, `canonical`, `hreflang` (chỉ giữ `ja` và `x-default`; tuyệt đối cấm xuất `hreflang` cho `en`/`vi` để bảo vệ 100% Crawl Budget tiếng Nhật), OpenGraph và Twitter Card.
 
 ---
 
@@ -171,7 +171,7 @@ graph TD
 
 ## 4. QUY TRÌNH PHỐI HỢP VẬN HÀNH (ORCHESTRATION PIPELINE)
 
-Bất kỳ khi nào thực hiện nâng cấp một trang hoặc component, Commander sẽ điều phối theo quy trình 4 bước:
+Bất kỳ khi nào thực hiện nâng cấp một trang hoặc component, Commander sẽ điều phối theo quy trình 5 bước (kết thúc bằng Cổng Kiểm định Bánh cóc):
 
 ```
 [BƯỚC 1: QUY HOẠCH NỘI DUNG] ➔ Agent chuyên trách (Agent 1-7) soạn thảo cấu trúc dựa trên 4 Trụ Cột.
@@ -180,5 +180,7 @@ Bất kỳ khi nào thực hiện nâng cấp một trang hoặc component, Comm
          │
 [BƯỚC 3: NGHIỆM THU THẨM MỸ & DARK MODE] ➔ Agent 9 (UI Auditor) kiểm tra Chrome Dark Mode & phong cách B2B Nhật.
          │
-[BƯỚC 4: TRIỂN KHAI & ĐỒNG BỘ VPS] ➔ Build production Next.js và reload PM2 trên VPS (160.251.203.84).
+[BƯỚC 4: TRIỂN KHAI & ĐỒNG BỘ VPS] ➔ Build production Next.js, reload PM2 trên VPS (160.251.203.84) & Purge Cache.
+         │
+[BƯỚC 5: KHÓA CHỐT BÁNH CÓC 4 TẦNG] ➔ Chạy `python c:\kigyou-list\scripts\ratchet_gate.py` (đối chiếu `data/project_ratchet_scorecard.json`) đảm bảo 0 lỗi thoái lui về SEO, UI Console và dữ liệu.
 ```

@@ -1,0 +1,94 @@
+{
+  "system": "Kigyou-list GSC Manual Request Indexing Ledger (Single Source of Truth across all Chat & Side Question tabs)",
+  "updated_at": "2026-11-20T11:05:00+07:00",
+  "already_submitted_urls": [
+    "https://kigyoulist.com/ja/status/bankruptcies",
+    "https://kigyoulist.com/ja/changes/relocation",
+    "https://kigyoulist.com/ja/new-companies",
+    "https://kigyoulist.com/ja/changes/merger",
+    "https://kigyoulist.com/ja/jobs/latest",
+    "https://kigyoulist.com/ja/building",
+    "https://kigyoulist.com/ja/guide",
+    "https://kigyoulist.com/ja/invoice",
+    "https://kigyoulist.com/ja/ranking/salary",
+    "https://kigyoulist.com/ja/licenses",
+    "https://kigyoulist.com/ja/area/13",
+    "https://kigyoulist.com/ja/area/27",
+    "https://kigyoulist.com/ja/area/23",
+    "https://kigyoulist.com/ja/area/14",
+    "https://kigyoulist.com/ja/area/40",
+    "https://kigyoulist.com/ja/area/01",
+    "https://kigyoulist.com/ja/area/28",
+    "https://kigyoulist.com/ja/area/26",
+    "https://kigyoulist.com/ja/directory",
+    "https://kigyoulist.com/ja/ranking/employees",
+    "https://kigyoulist.com/ja/ranking/tenure",
+    "https://kigyoulist.com/ja/license/tokutei",
+    "https://kigyoulist.com/ja/license/takken",
+    "https://kigyoulist.com/ja/license/kensetsu",
+    "https://kigyoulist.com/ja/guide/ai-sales-list",
+    "https://kigyoulist.com/ja/guide/bankruptcy-signs-check"
+  ],
+  "batches": [
+    {
+      "batch_id": "BATCH-01-20261118-A",
+      "date": "2026-11-18",
+      "status": "SUBMITTED_BY_USER",
+      "urls": [
+        "https://kigyoulist.com/ja/status/bankruptcies",
+        "https://kigyoulist.com/ja/changes/relocation",
+        "https://kigyoulist.com/ja/new-companies",
+        "https://kigyoulist.com/ja/changes/merger",
+        "https://kigyoulist.com/ja/jobs/latest",
+        "https://kigyoulist.com/ja/building",
+        "https://kigyoulist.com/ja/guide",
+        "https://kigyoulist.com/ja/invoice",
+        "https://kigyoulist.com/ja/ranking/salary",
+        "https://kigyoulist.com/ja/licenses",
+        "https://kigyoulist.com/ja/area/13",
+        "https://kigyoulist.com/ja/area/27",
+        "https://kigyoulist.com/ja/area/23"
+      ]
+    },
+    {
+      "batch_id": "BATCH-02-20261118-B",
+      "date": "2026-11-18",
+      "status": "SUBMITTED_BY_USER_IN_SIDE_QUESTION",
+      "urls": [
+        "https://kigyoulist.com/ja/area/14",
+        "https://kigyoulist.com/ja/area/40",
+        "https://kigyoulist.com/ja/area/01",
+        "https://kigyoulist.com/ja/area/28",
+        "https://kigyoulist.com/ja/area/26",
+        "https://kigyoulist.com/ja/directory",
+        "https://kigyoulist.com/ja/ranking/employees",
+        "https://kigyoulist.com/ja/ranking/tenure",
+        "https://kigyoulist.com/ja/license/tokutei",
+        "https://kigyoulist.com/ja/license/takken",
+        "https://kigyoulist.com/ja/license/kensetsu",
+        "https://kigyoulist.com/ja/guide/ai-sales-list",
+        "https://kigyoulist.com/ja/guide/bankruptcy-signs-check"
+      ]
+    },
+    {
+      "batch_id": "BATCH-03-20261120",
+      "date": "2026-11-20",
+      "status": "RECOMMENDED_NEXT",
+      "urls": [
+        "https://kigyoulist.com/ja/form-marketing",
+        "https://kigyoulist.com/ja/watchlist",
+        "https://kigyoulist.com/ja/compare",
+        "https://kigyoulist.com/ja/license/haken",
+        "https://kigyoulist.com/ja/license/shokugyo",
+        "https://kigyoulist.com/ja/license/shigyo",
+        "https://kigyoulist.com/ja/area/11",
+        "https://kigyoulist.com/ja/area/12",
+        "https://kigyoulist.com/ja/area/22",
+        "https://kigyoulist.com/ja/guide/corporate-number-search-api-guide",
+        "https://kigyoulist.com/ja/guide/invoice-system-t-number-bulk-check",
+        "https://kigyoulist.com/ja/guide/construction-license-kensetsu-sales-guide",
+        "https://kigyoulist.com/ja/guide/tokyo-b2b-prospecting-area-building-strategy"
+      ]
+    }
+  ]
+}

@@ -56,8 +56,6 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       canonical: `https://kigyoulist.com/${locale}/area/${resolvedParams.prefectureCode}`,
       languages: {
         'ja': `https://kigyoulist.com/ja/area/${resolvedParams.prefectureCode}`,
-        'en': `https://kigyoulist.com/en/area/${resolvedParams.prefectureCode}`,
-        'vi': `https://kigyoulist.com/vi/area/${resolvedParams.prefectureCode}`,
       }
     },
     openGraph: {

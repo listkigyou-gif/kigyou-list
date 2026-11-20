@@ -65,6 +65,9 @@ Toàn bộ bí quyết thực tế đã được lập trình sẵn trong [`scri
 - **Tần suất nộp bài tiếp theo**:
   - ValuePress Free Plan áp dụng quy định: **1 bài / chu kỳ 30 ngày / 1 pháp nhân** và cấm gửi bài trùng lặp nội dung.
   - 📅 **Thời điểm đăng bài ValuePress tiếp theo: Khoảng ngày 13/11/2026 đến 15/11/2026** (Sau khi bài hiện tại lên sóng đủ 30 ngày).
+- **Lưu ý phối hợp liên dự án (Kigyou-list vs Keibai-koubai):**
+  - Tài khoản pháp nhân `TQC株式会社` trên ValuePress khi đã dùng để phát hành cho `kigyoulist.com` thì **trong vòng 30 ngày sẽ không thể nộp bài cho `keibai-koubai.com`** (và ngược lại).
+  - Để đăng bài cho Keibai-koubai mà không bị nghẽn chu kỳ của Kigyou-list: Bắt buộc đăng ký tài khoản ValuePress riêng biệt bằng email `info@keibai-koubai.com`, hoặc xếp lịch luân phiên 2 tháng/lần giữa 2 nền tảng.
 
 ### B. Lộ Trình 4 Giai Đoạn Phủ Sóng PR B2B Cho Kigyou-list:
 

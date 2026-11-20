@@ -122,4 +122,6 @@ Mọi thay đổi giao diện trước khi bàn giao bắt buộc phải qua 5 c
 3. [ ] **Mật độ Icon**: Các icon xuất hiện có thực sự cần thiết không? Có bị lạm dụng trước từng dòng chữ không? (Nếu chỉ mang tính trang trí ➔ xóa bỏ).
 4. [ ] **Cảm giác tổng thể**: Giao diện có toát lên sự chuyên nghiệp, chuẩn mực của một ngân hàng dữ liệu doanh nghiệp Nhật Bản (không mang cảm giác AI làm) không?
 5. [ ] **Tương thích Chế độ Tối Google Chrome**: Khi mở trên Google Chrome ở Dark Mode (cài đặt hệ thống hoặc dark mode trình duyệt), giao diện có tự động thích ứng mượt mà không? Có khối thẻ nào bị giữ màu trắng bệch gây chói mắt không?
+6. [ ] **Cổng Kiểm định Bánh cóc 4 Tầng (`ratchet_gate.py`)**: Sau khi hoàn tất tính năng và deploy, đã chạy `python c:\kigyou-list\scripts\ratchet_gate.py` đạt `ALL 4 RATCHET LAYERS PASSED (100%)` và cập nhật [`data/project_ratchet_scorecard.json`](file:///c:/kigyou-list/data/project_ratchet_scorecard.json) mà không làm thoái lui bất kỳ chỉ số SEO, Sitemap, Internal Link hay Mobile JS Console nào chưa?
+
 

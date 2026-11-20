@@ -12,6 +12,15 @@ Kỹ năng này định vị AI ở vai trò **B2B Content Producer & SEO Link-B
 > LinkedIn là mạng xã hội kiểm soát rất nghiêm ngặt bot tự động hóa (nguy cơ bóp tương tác hoặc checkpoint/tạm khóa).
 > Vì vậy, **Chế độ Mặc định & Ưu tiên hàng đầu là SẢN XUẤT NỘI DUNG ĐÓNG GÓI HOÀN CHỈNH (Ready-to-Post)**: AI chịu trách nhiệm 100% việc nghiên cứu chủ đề, viết bài tiếng Nhật chuẩn B2B, tạo ảnh bìa SaaS chuyên nghiệp và soạn sẵn **First Comment chứa Backlink chất lượng cao** để người dùng chỉ việc copy-paste đăng thủ công an toàn trong 30 giây.
 
+> [!IMPORTANT]
+> **QUY CHUẨN BẮT BUỘC VỀ LƯU TRỮ VÀO GOOGLE DRIVE (`G:\My Drive\BaiDangLinkedIn`):**
+> Từ ngày 14/11/2026 trở đi, trong **MỌI LẦN** tạo bài đăng LinkedIn (khi người dùng ra lệnh đơn lẻ hoặc trong chiến dịch đa kênh hàng ngày), Agent **BẮT BUỘC TỰ ĐỘNG THỰC HIỆN KHÔNG CẦN NHẮC LẠI**:
+> 1. **Thư mục mẹ:** `G:\My Drive\BaiDangLinkedIn`
+> 2. **Tạo thư mục con cho mỗi bài:** `G:\My Drive\BaiDangLinkedIn\YYYY-MM-DD_TenChuDe` (ví dụ: `2026-11-14_LandmarkBuilding`).
+> 3. **Lưu file bài viết text riêng biệt:** `BaiDang_LinkedIn_YYYYMMDD.txt` (bao gồm đầy đủ Hướng dẫn nhanh, Post Caption tiếng Nhật và First Comment chứa link SEO Hub & Spoke).
+> 4. **Lưu file ảnh riêng biệt:** Đặt trực tiếp file ảnh 16:9 (`banner_16x9_...jpg`) vào cùng thư mục con đó để người dùng tiện kéo thả đính kèm khi đăng bài.
+> 5. Cung cấp đường dẫn file tuyệt đối trong báo cáo để người dùng bấm vào là mở được ngay.
+
 ---
 
 ## 1. Quy Trình Sản Xuất Nội Dung LinkedIn Đóng Gói (Ready-to-Post Workflow)
@@ -63,6 +72,13 @@ Theo chuẩn mực **Hub & Spoke Protocol** và **Mỏ neo từ khóa vàng ti�
 - Tự động gọi `generate_image` với tỉ lệ `16:9` hoặc `1:1`.
 - Phong cách: Modern SaaS Blue/Slate, Clean Layout, phong cách doanh nghiệp Nhật Bản thanh lịch (như Basecamp, Nikkei, SalesMarker).
 - Lưu ảnh vào artifact và cung cấp đường dẫn rõ ràng để người dùng tải lên LinkedIn cùng bài viết.
+
+### Bước 5: BẮT BUỘC Tự Động Lưu Trữ Vào Google Drive (`G:\My Drive\BaiDangLinkedIn`)
+Theo yêu cầu quản trị của Founder, từ ngày 14/11/2026 trở đi, mỗi khi sản xuất gói bài đăng LinkedIn:
+1. **Thư mục gốc:** `G:\My Drive\BaiDangLinkedIn`
+2. **Tạo thư mục con theo ngày & chủ đề:** `G:\My Drive\BaiDangLinkedIn\YYYY-MM-DD_TenChuDe` (ví dụ: `2026-11-14_LandmarkBuilding`).
+3. **Lưu file bài viết text riêng (`BaiDang_LinkedIn_YYYYMMDD.txt`):** Chứa đầy đủ hướng dẫn, Post Caption và First Comment để Founder mở ra copy trong 1 click.
+4. **Lưu file ảnh riêng (`banner_16x9_...jpg`):** Đặt trực tiếp trong cùng thư mục con đó để Founder kéo thả/đính kèm vào LinkedIn.
 
 ---
 
