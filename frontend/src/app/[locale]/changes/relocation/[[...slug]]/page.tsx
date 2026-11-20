@@ -255,7 +255,9 @@ export default async function RelocationHubPage({ params, searchParams }: PagePr
               ? `${prefLabel} Corporate HQ Relocations`
               : `${prefLabel}の本社移転・オフィス移転企業一覧`}
             <span className="text-base sm:text-lg font-normal text-slate-500 dark:text-slate-400 ml-2">
-              {isVi ? `(${currentYear} Mới nhất)` : isEn ? `(${currentYear} Latest Updates)` : `（${currentYear}年最新速報）`}
+              {yearMonth
+                ? (isVi ? `(${yearMonth})` : isEn ? `(${yearMonth} Archive)` : `（${yearMonth.replace('-', '年')}月）`)
+                : (isVi ? `(${currentYear} Mới nhất)` : isEn ? `(${currentYear} Latest Updates)` : `（${currentYear}年最新速報）`)}
             </span>
           </h1>
 

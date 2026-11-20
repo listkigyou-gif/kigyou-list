@@ -262,7 +262,9 @@ export default async function BankruptciesHubPage({ params, searchParams }: Page
               ? `Bankruptcies & Dissolved Companies in ${prefLabel}`
               : `${prefLabel}の倒産・解散・清算企業一覧`}
             <span className="text-base sm:text-lg font-normal text-slate-500 dark:text-slate-400 ml-2">
-              {isVi ? `(Cập nhật mới nhất ${currentYear})` : isEn ? `(${currentYear} Latest Updates)` : `（${currentYear}年最新速報）`}
+              {yearMonth
+                ? (isVi ? `(${yearMonth})` : isEn ? `(${yearMonth} Archive)` : `（${yearMonth.replace('-', '年')}月）`)
+                : (isVi ? `(Cập nhật mới nhất ${currentYear})` : isEn ? `(${currentYear} Latest Updates)` : `（${currentYear}年最新速報）`)}
             </span>
           </h1>
 

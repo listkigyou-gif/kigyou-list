@@ -256,7 +256,9 @@ export default async function NewCompaniesHubPage({ params, searchParams }: Page
               ? `${prefLabel} Newly Established Companies`
               : `${prefLabel}の新設法人・新規設立企業一覧`}
             <span className="text-base sm:text-lg font-normal text-slate-500 dark:text-slate-400 ml-2">
-              {isVi ? `(${currentYear} Mới nhất)` : isEn ? `(${currentYear} Latest Updates)` : `（${currentYear}年最新速報）`}
+              {yearMonth
+                ? (isVi ? `(${yearMonth})` : isEn ? `(${yearMonth} Archive)` : `（${yearMonth.replace('-', '年')}月）`)
+                : (isVi ? `(${currentYear} Mới nhất)` : isEn ? `(${currentYear} Latest Updates)` : `（${currentYear}年最新速報）`)}
             </span>
           </h1>
 
