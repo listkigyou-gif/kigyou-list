@@ -190,10 +190,22 @@ export default async function Home({ params }: PageParams) {
   const datasetSchema = {
     "@context": "https://schema.org",
     "@type": "Dataset",
-    "name": "Kigyou-list Japan Corporate Intelligence Database",
-    "description": "Comprehensive B2B directory covering over 5,000,000 registered Japanese corporate entities across 47 prefectures and all JSIC industries.",
-    "keywords": ["企業リスト", "企業データ", "営業リスト", "日本企業データベース", "500万社"],
-    "license": "https://kigyoulist.com/terms",
+    "name": isJa 
+      ? "Kigyou-list 日本全国企業インテリジェンスデータベース" 
+      : isVi 
+      ? "Cơ sở dữ liệu doanh nghiệp Nhật Bản Kigyou-list" 
+      : "Kigyou-list Japan Corporate Intelligence Database",
+    "description": isJa
+      ? "全国47都道府県・全業種を網羅する500万社超の日本国内法人登記情報・公的オープンデータ・営業リストデータベース。国税庁法人番号、適格請求書発行事業者登録状況（インボイス）、財務指標を週次・月次で更新。"
+      : isVi
+      ? "Cơ sở dữ liệu B2B bao quát hơn 5.000.000 pháp nhân trên 47 tỉnh thành Nhật Bản, cập nhật liên tục từ dữ liệu công Quốc thuế và Bộ Tư pháp."
+      : "Comprehensive B2B directory covering over 5,000,000 registered Japanese corporate entities across 47 prefectures and all JSIC industries.",
+    "keywords": isJa
+      ? ["企業リスト", "企業データ", "営業リスト", "日本企業データベース", "500万社", "法人番号検索", "B2Bデータベース", "適格請求書発行事業者"]
+      : isVi
+      ? ["danh sách công ty Nhật Bản", "dữ liệu doanh nghiệp", "danh bạ B2B", "mã số thuế Nhật Bản", "5 triệu công ty"]
+      : ["Japan Company List", "B2B Database", "Japanese Corporate Directory", "Corporate Number Search", "5 Million Companies"],
+    "license": `https://kigyoulist.com/${locale}/terms`,
     "isAccessibleForFree": true,
     "creator": {
       "@type": "Organization",
