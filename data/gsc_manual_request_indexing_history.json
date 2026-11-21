@@ -1,6 +1,6 @@
 {
   "system": "Kigyou-list GSC Manual Request Indexing Ledger (Single Source of Truth across all Chat & Side Question tabs)",
-  "updated_at": "2026-11-20T11:05:00+07:00",
+  "updated_at": "2026-11-21T12:33:00+07:00",
   "already_submitted_urls": [
     "https://kigyoulist.com/ja/status/bankruptcies",
     "https://kigyoulist.com/ja/changes/relocation",
@@ -27,7 +27,14 @@
     "https://kigyoulist.com/ja/license/takken",
     "https://kigyoulist.com/ja/license/kensetsu",
     "https://kigyoulist.com/ja/guide/ai-sales-list",
-    "https://kigyoulist.com/ja/guide/bankruptcy-signs-check"
+    "https://kigyoulist.com/ja/guide/bankruptcy-signs-check",
+    "https://kigyoulist.com/ja/form-marketing",
+    "https://kigyoulist.com/ja/compare",
+    "https://kigyoulist.com/ja/license/haken",
+    "https://kigyoulist.com/ja/guide/corporate-number-search-api-guide",
+    "https://kigyoulist.com/ja/guide/invoice-system-t-number-bulk-check",
+    "https://kigyoulist.com/ja/watchlist",
+    "https://kigyoulist.com/ja/area/11"
   ],
   "batches": [
     {
@@ -73,21 +80,51 @@
     {
       "batch_id": "BATCH-03-20261120",
       "date": "2026-11-20",
-      "status": "RECOMMENDED_NEXT",
+      "status": "SUBMITTED_BY_USER",
+      "notes": "Verified in VPS Nginx logs 14:08..14:28 JST: 5 major prefectures re-submitted with fixed Titles + 5 new Hubs/Guides. Quota Exceeded hit on /ja/area/11 (and /ja/watchlist was skipped when multi-line paste occurred at 14:26:04).",
       "urls": [
+        "https://kigyoulist.com/ja/area/13",
+        "https://kigyoulist.com/ja/area/27",
+        "https://kigyoulist.com/ja/area/23",
+        "https://kigyoulist.com/ja/area/14",
+        "https://kigyoulist.com/ja/area/40",
         "https://kigyoulist.com/ja/form-marketing",
-        "https://kigyoulist.com/ja/watchlist",
         "https://kigyoulist.com/ja/compare",
         "https://kigyoulist.com/ja/license/haken",
-        "https://kigyoulist.com/ja/license/shokugyo",
-        "https://kigyoulist.com/ja/license/shigyo",
+        "https://kigyoulist.com/ja/guide/corporate-number-search-api-guide",
+        "https://kigyoulist.com/ja/guide/invoice-system-t-number-bulk-check"
+      ]
+    },
+    {
+      "batch_id": "BATCH-04-20261121",
+      "date": "2026-11-21",
+      "status": "SUBMITTED_BY_USER",
+      "notes": "Verified in VPS Nginx logs 14:28..14:32 JST: Google-InspectionTool hit all 8 priority targets with HTTP 200 OK. /api/auth/session successfully returned HTTP 200 (authjs error completely solved).",
+      "urls": [
+        "https://kigyoulist.com/ja/watchlist",
         "https://kigyoulist.com/ja/area/11",
+        "https://kigyoulist.com/ja/area/01",
+        "https://kigyoulist.com/ja/area/28",
+        "https://kigyoulist.com/ja/area/26",
+        "https://kigyoulist.com/ja/directory",
+        "https://kigyoulist.com/ja/ranking/employees",
+        "https://kigyoulist.com/ja/ranking/tenure"
+      ]
+    },
+    {
+      "batch_id": "BATCH-05-20261122",
+      "date": "2026-11-22",
+      "status": "QUEUED_FOR_TOMORROW",
+      "notes": "Next priority batch: Additional high-traffic prefectures (Chiba, Shizuoka) + Industry Licenses & In-depth Guides.",
+      "urls": [
         "https://kigyoulist.com/ja/area/12",
         "https://kigyoulist.com/ja/area/22",
-        "https://kigyoulist.com/ja/guide/corporate-number-search-api-guide",
-        "https://kigyoulist.com/ja/guide/invoice-system-t-number-bulk-check",
+        "https://kigyoulist.com/ja/license/shokugyo",
+        "https://kigyoulist.com/ja/license/shigyo",
         "https://kigyoulist.com/ja/guide/construction-license-kensetsu-sales-guide",
-        "https://kigyoulist.com/ja/guide/tokyo-b2b-prospecting-area-building-strategy"
+        "https://kigyoulist.com/ja/guide/tokyo-b2b-prospecting-area-building-strategy",
+        "https://kigyoulist.com/ja/guide/anti-social-forces-check-procedure",
+        "https://kigyoulist.com/ja/pricing"
       ]
     }
   ]
