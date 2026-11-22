@@ -1,6 +1,6 @@
 {
   "system": "Kigyou-list GSC Manual Request Indexing Ledger (Single Source of Truth across all Chat & Side Question tabs)",
-  "updated_at": "2026-11-21T12:33:00+07:00",
+  "updated_at": "2026-11-22T20:54:00+07:00",
   "already_submitted_urls": [
     "https://kigyoulist.com/ja/status/bankruptcies",
     "https://kigyoulist.com/ja/changes/relocation",
@@ -34,7 +34,14 @@
     "https://kigyoulist.com/ja/guide/corporate-number-search-api-guide",
     "https://kigyoulist.com/ja/guide/invoice-system-t-number-bulk-check",
     "https://kigyoulist.com/ja/watchlist",
-    "https://kigyoulist.com/ja/area/11"
+    "https://kigyoulist.com/ja/area/11",
+    "https://kigyoulist.com/ja/area/12",
+    "https://kigyoulist.com/ja/area/22",
+    "https://kigyoulist.com/ja/license/shokugyo",
+    "https://kigyoulist.com/ja/license/shigyo",
+    "https://kigyoulist.com/ja/guide/construction-license-kensetsu-sales-guide",
+    "https://kigyoulist.com/ja/guide/tokyo-b2b-prospecting-area-building-strategy",
+    "https://kigyoulist.com/ja/pricing"
   ],
   "batches": [
     {
@@ -114,8 +121,8 @@
     {
       "batch_id": "BATCH-05-20261122",
       "date": "2026-11-22",
-      "status": "QUEUED_FOR_TOMORROW",
-      "notes": "Next priority batch: Additional high-traffic prefectures (Chiba, Shizuoka) + Industry Licenses & In-depth Guides.",
+      "status": "SUBMITTED_BY_USER",
+      "notes": "Verified in VPS Nginx logs 22:49..22:52 JST: Google-InspectionTool successfully crawled all submitted URLs with HTTP 200 OK. /api/auth/session consistently returned HTTP 200.",
       "urls": [
         "https://kigyoulist.com/ja/area/12",
         "https://kigyoulist.com/ja/area/22",
@@ -123,8 +130,22 @@
         "https://kigyoulist.com/ja/license/shigyo",
         "https://kigyoulist.com/ja/guide/construction-license-kensetsu-sales-guide",
         "https://kigyoulist.com/ja/guide/tokyo-b2b-prospecting-area-building-strategy",
-        "https://kigyoulist.com/ja/guide/anti-social-forces-check-procedure",
         "https://kigyoulist.com/ja/pricing"
+      ]
+    },
+    {
+      "batch_id": "BATCH-06-20261123",
+      "date": "2026-11-23",
+      "status": "QUEUED_FOR_TOMORROW",
+      "notes": "Next priority batch: Additional regional hubs (Mie, Miyagi, Hiroshima) + Compliance Guides & Corporate Inquiry Pages.",
+      "urls": [
+        "https://kigyoulist.com/ja/area/24",
+        "https://kigyoulist.com/ja/area/04",
+        "https://kigyoulist.com/ja/area/34",
+        "https://kigyoulist.com/ja/guide/anti-social-forces-check-procedure",
+        "https://kigyoulist.com/ja/guide/corporate-list-creation-methods",
+        "https://kigyoulist.com/ja/contact",
+        "https://kigyoulist.com/ja/terms"
       ]
     }
   ]
