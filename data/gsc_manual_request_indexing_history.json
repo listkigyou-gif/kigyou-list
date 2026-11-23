@@ -1,6 +1,6 @@
 {
   "system": "Kigyou-list GSC Manual Request Indexing Ledger (Single Source of Truth across all Chat & Side Question tabs)",
-  "updated_at": "2026-11-23T18:08:00+07:00",
+  "updated_at": "2026-11-23T19:22:00+07:00",
   "architectural_guardrails": [
     "NEVER add loading.tsx to public SEO route segments ([locale]/loading.tsx, directory/loading.tsx, pricing/loading.tsx, search/loading.tsx): Next.js App Router streams the empty loading.tsx skeleton (<main class='animate-pulse'> 0 chars + duplicate <Header>/<Footer>) as the primary <body> and buries 88%-94% of actual content (110KB-397KB) inside <div hidden id='S:0..S:30'>, causing Google Wave-1 indexer to classify pages as near-duplicate empty shells (Crawled - currently not indexed) and causing Soft 404 (HTTP 200 OK) on missing dynamic routes.",
     "NEVER call useSearchParams() from next/navigation in layout-wide or server-rendered page components (TopProgressBar, CompanyActions, CompanyManagementModal) without isolating client URLSearchParams(window.location.search) inside useEffect, to avoid BAILOUT_TO_CLIENT_SIDE_RENDERING.",
@@ -8,6 +8,7 @@
     "ALWAYS wait for the 2nd step confirmation popup ('Indexing requested') when clicking Request Indexing in GSC UI (Step 1 'Testing if live URL can be indexed' only runs Google-InspectionTool without enqueueing real Googlebot)."
   ],
   "already_submitted_urls": [
+    "https://kigyoulist.com/ja",
     "https://kigyoulist.com/ja/status/bankruptcies",
     "https://kigyoulist.com/ja/changes/relocation",
     "https://kigyoulist.com/ja/new-companies",
@@ -142,15 +143,29 @@
     {
       "batch_id": "BATCH-06-20261123",
       "date": "2026-11-23",
-      "status": "QUEUED_POST_SSR_UNHIDE_FIX",
-      "notes": "After deploying SSR Unhide (<div hidden> reduced from 110KB-397KB to 0 bytes, <main> visible text jumped from 0% to 68%-89%, Soft-404 fixed to true HTTP 404), prioritize the URLs that GSC API reported as 'URL is unknown to Google (Crawl: Never)' or old crawl (/ja/watchlist, /ja/pricing, /ja/licenses, /ja/license/tokutei, /ja/license/takken, /ja/license/kensetsu, /ja/guide/ai-sales-list, /ja/guide/bankruptcy-signs-check, /ja/guide/corporate-number-search-api-guide, /ja/guide/invoice-system-t-number-bulk-check) + key regional hubs (/ja/area/13, /ja/area/24).",
+      "status": "SUBMITTED_BY_USER",
+      "notes": "Verified in VPS Nginx logs: 17:09:08 JST (/ja/watchlist HTTP 200) and 21:10:25..21:18:11 JST POST-SSR-UNHIDE FIX (/ja HTTP 200 79KB, /ja/area/13 HTTP 200 131KB, /ja/area/27 HTTP 200 132KB, /ja/area/23 HTTP 200 132KB, /ja/area/14 HTTP 200 133KB — all with 0 bytes <div hidden> and 68%-89% visible text directly in <main>). Daily quota reached after /ja/area/14.",
       "urls": [
         "https://kigyoulist.com/ja/watchlist",
+        "https://kigyoulist.com/ja",
+        "https://kigyoulist.com/ja/area/13",
+        "https://kigyoulist.com/ja/area/27",
+        "https://kigyoulist.com/ja/area/23",
+        "https://kigyoulist.com/ja/area/14"
+      ]
+    },
+    {
+      "batch_id": "BATCH-07-20261124-QUEUED",
+      "date": "2026-11-24",
+      "status": "QUEUED_FOR_NEXT_QUOTA_WINDOW",
+      "notes": "Priority URLs for tomorrow's quota window (all verified HTTP 200 OK in sitemap/core.xml with 0 <div hidden>). Note: use /ja/directory (not /ja/industry or /ja/Area-index) and /ja/license/takken (not /ja/license/real-estate).",
+      "urls": [
+        "https://kigyoulist.com/ja/directory",
         "https://kigyoulist.com/ja/pricing",
         "https://kigyoulist.com/ja/licenses",
-        "https://kigyoulist.com/ja/license/tokutei",
         "https://kigyoulist.com/ja/license/takken",
         "https://kigyoulist.com/ja/license/kensetsu",
+        "https://kigyoulist.com/ja/license/tokutei",
         "https://kigyoulist.com/ja/guide/ai-sales-list",
         "https://kigyoulist.com/ja/guide/bankruptcy-signs-check",
         "https://kigyoulist.com/ja/guide/corporate-number-search-api-guide",
