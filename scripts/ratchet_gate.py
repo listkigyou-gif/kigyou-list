@@ -70,6 +70,9 @@ out = {{
     "public_hubs_verified_count": 0,
     "public_hubs_noindex_list": [],
     "public_hubs_missing_canonical_list": [],
+    "public_hubs_hidden_div_leaks": [],
+    "public_hubs_duplicate_main_leaks": [],
+    "soft_404_regressions": [],
     "en_vi_hreflang_leaks": [],
     "entity_assertion_failures": [],
     "directory_static_area_links": 0,
@@ -126,6 +129,13 @@ for path in hubs:
         out["guide_published_articles"] = len(set(re.findall(r'href="/ja/guide/[a-z0-9-]+"', html)))
 
     soup = BeautifulSoup(html, "html.parser")
+    hidden_divs = [d for d in soup.find_all("div", attrs={{"hidden": True}}) if len(d.get_text(strip=True)) > 0]
+    if hidden_divs:
+        out["public_hubs_hidden_div_leaks"].append(f"{{path}}:{{len(hidden_divs)}}")
+    mains = soup.find_all("main")
+    if len(mains) != 1 or len(mains[0].get_text(strip=True)) == 0:
+        out["public_hubs_duplicate_main_leaks"].append(f"{{path}}:mains={{len(mains)}}")
+
     rmetas = [m.get("content", "") for m in soup.find_all("meta", attrs={{"name": re.compile(r"^(robots|googlebot)$", re.I)}})]
     if any("noindex" in r.lower() for r in rmetas):
         out["public_hubs_noindex_list"].append(path)
@@ -157,6 +167,15 @@ if "東京都" not in titles.get("/ja/industry/39/location/13", ""):
     out["entity_assertion_failures"].append(f"/ja/industry/39/location/13 missing 東京都: title={{titles.get('/ja/industry/39/location/13')}}")
 if "2026年10月" not in h1s_map.get("/ja/changes/relocation/2026-10", ""):
     out["entity_assertion_failures"].append(f"/ja/changes/relocation/2026-10 H1 missing 2026年10月: h1={{h1s_map.get('/ja/changes/relocation/2026-10')}}")
+
+# 5b. True HTTP 404 Check (prevent Soft-404 regression from loading.tsx or generateMetadata)
+for bad_p in ["/ja/area/99", "/ja/company/0000000000000", "/ja/license/nonexistent-slug"]:
+    try:
+        urllib.request.urlopen(urllib.request.Request(base + bad_p, headers={{"User-Agent": ua}}), timeout=10)
+        out["soft_404_regressions"].append(f"{{bad_p}}:200")
+    except urllib.error.HTTPError as e:
+        if e.code != 404:
+            out["soft_404_regressions"].append(f"{{bad_p}}:{{e.code}}")
 
 # 6. Pairwise 5-char shingle similarity
 def shingles(t, k=5):
@@ -265,6 +284,12 @@ def main():
         failures.append(f"Public hubs missing canonical: {v['public_hubs_missing_canonical_list']}")
     if v["en_vi_hreflang_leaks"]:
         failures.append(f"en/vi hreflang leaks detected: {v['en_vi_hreflang_leaks']}")
+    if v.get("public_hubs_hidden_div_leaks"):
+        failures.append(f"SSR <div hidden> streaming skeleton trap detected: {v['public_hubs_hidden_div_leaks']}")
+    if v.get("public_hubs_duplicate_main_leaks"):
+        failures.append(f"Duplicate or empty <main> tag detected: {v['public_hubs_duplicate_main_leaks']}")
+    if v.get("soft_404_regressions"):
+        failures.append(f"Soft-404 regression (expected HTTP 404): {v['soft_404_regressions']}")
     if v["entity_assertion_failures"]:
         failures.append(f"Entity Title/H1 failures: {v['entity_assertion_failures']}")
     if m["console_errors"] > 0 or m["page_errors"] > 0 or m["failed_requests"] > 0:

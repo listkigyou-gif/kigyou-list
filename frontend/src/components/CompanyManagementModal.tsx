@@ -35,7 +35,6 @@ import {
   Briefcase,
 } from "lucide-react";
 import { useLanguage } from "@/context/LanguageContext";
-import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { isAdminEmail } from "@/lib/adminAuth";
 import { CompanyOwnershipClaimForm } from "./CompanyOwnershipClaimForm";
@@ -106,7 +105,6 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
   onSuccess,
 }) => {
   const { locale } = useLanguage();
-  const searchParams = useSearchParams();
   const { user, isLoggedIn, setAuthModalOpen, loginWithGoogle } = useAuth();
 
   const isJa = locale === "ja";
@@ -135,15 +133,25 @@ export const CompanyManagementModal: React.FC<CompanyManagementModalProps> = ({
   const [activeTab, setActiveTab] = useState<"badge_pr" | "edit_info" | "unpublish">("badge_pr");
 
   // Authentication State: Direct access only if Admin, Verified Owner, or secure claim token in URL
-  const tokenFromUrl = searchParams.get("claim_token") || "";
-  const emailFromUrl = searchParams.get("email") || (isUserAdmin || isOwner ? user?.email : "") || initialEmail || "";
+  const [tokenFromUrl, setTokenFromUrl] = useState<string>("");
+  const defaultEmail = (isUserAdmin || isOwner ? user?.email : "") || initialEmail || "";
 
   const isDirectAuthorized = Boolean(isUserAdmin || isOwner || Boolean(tokenFromUrl));
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(isDirectAuthorized);
   const [personInCharge, setPersonInCharge] = useState(isUserAdmin ? (user?.name || "管理者") : (isOwner && user?.name) ? user.name : "");
   const [department, setDepartment] = useState(isUserAdmin ? "システム管理者" : "広報・総務部");
-  const [email, setEmail] = useState(emailFromUrl);
+  const [email, setEmail] = useState(defaultEmail);
   const [mobilePhone, setMobilePhone] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      const t = sp.get("claim_token") || "";
+      const e = sp.get("email") || "";
+      if (t) setTokenFromUrl(t);
+      if (e) setEmail(e);
+    }
+  }, [isOpen]);
 
   // Guest Direct Inquiry State (No login required - APPI Compliance)
   const [isGuestInquiryMode, setIsGuestInquiryMode] = useState<boolean>(Boolean(initialGuestMode));

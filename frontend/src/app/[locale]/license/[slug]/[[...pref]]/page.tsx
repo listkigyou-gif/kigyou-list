@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   const config = LICENSE_HUBS[slug];
   if (!config) {
-    return { title: 'Not Found | Kigyou-list' };
+    return notFound();
   }
 
   const isEn = locale === 'en';

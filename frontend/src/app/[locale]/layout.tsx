@@ -32,14 +32,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale } = await params;
   if (!VALID_LOCALES.includes(locale)) {
-    return {
-      title: "Not Found | Kigyou-list",
-      robots: {
-        index: false,
-        follow: false,
-        googleBot: { index: false, follow: false },
-      },
-    };
+    return notFound();
   }
   
   let title = "企業リスト・企業データ検索ならKigyou-list | 全国500万社の営業リスト作成・無料ダウンロード";
@@ -211,9 +204,7 @@ export default async function LocalizedLayout({
             </Script>
           </>
         )}
-        <Suspense fallback={null}>
-          <TopProgressBar />
-        </Suspense>
+        <TopProgressBar />
         <SessionProvider refetchOnWindowFocus={true}>
           <LanguageProvider locale={locale} translations={translations}>
             <AuthProvider>

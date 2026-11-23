@@ -329,14 +329,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const locale = resolvedParams.locale || 'ja';
 
   if (!/^\d{13}$/.test(companyId)) {
-    return {
-      title: 'Not Found | Kigyou-list',
-      robots: {
-        index: false,
-        follow: false,
-        googleBot: { index: false, follow: false },
-      },
-    };
+    return notFound();
   }
 
   const [company, industryDetailsList] = await Promise.all([
@@ -345,14 +338,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   ]);
 
   if (!company) {
-    return {
-      title: 'Not Found | Kigyou-list',
-      robots: {
-        index: false,
-        follow: false,
-        googleBot: { index: false, follow: false },
-      },
-    };
+    return notFound();
   }
 
   const primaryIndustry = industryDetailsList[0] || null;

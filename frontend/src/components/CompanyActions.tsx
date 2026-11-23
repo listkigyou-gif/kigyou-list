@@ -4,7 +4,6 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useLanguage } from "@/context/LanguageContext";
 import { Plus, Check, ShieldCheck, CheckCircle2, Printer, Activity, FileText } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { CompanyManagementModal } from "./CompanyManagementModal";
 import { CompanyClaimModal } from "./CompanyClaimModal";
 import { CompanyQuickAuditModal } from "./company/CompanyQuickAuditModal";
@@ -74,7 +73,6 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
 }) => {
   const { isLoggedIn, user, isCompanySaved, toggleSaveCompany, setAuthModalOpen } = useAuth();
   const { locale } = useLanguage();
-  const searchParams = useSearchParams();
 
   const isEn = locale === "en";
   const isVi = locale === "vi";
@@ -87,17 +85,18 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
 
   useEffect(() => {
     setMounted(true);
+    const sp = new URLSearchParams(window.location.search);
     // Auto-open claim modal if action=claim or claim=1 in query params
-    const action = searchParams.get("action");
-    const isClaimAction = action === "claim" || searchParams.get("claim") === "1" || searchParams.get("claim") === "true";
+    const action = sp.get("action");
+    const isClaimAction = action === "claim" || sp.get("claim") === "1" || sp.get("claim") === "true";
     if (isClaimAction) {
       setModalGuestMode(false);
       setManageModalOpen(true);
     }
 
     // Auto-open unified portal if manage/edit/correction in query params
-    const isCorrection = searchParams.get("correction") === "1" || searchParams.get("correction") === "true";
-    const openParam = searchParams.get("manage") || searchParams.get("edit");
+    const isCorrection = sp.get("correction") === "1" || sp.get("correction") === "true";
+    const openParam = sp.get("manage") || sp.get("edit");
     if (openParam === "1" || openParam === "true" || isCorrection) {
       setModalGuestMode(isCorrection);
       setManageModalOpen(true);
@@ -119,7 +118,7 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
       window.removeEventListener("open-company-claim-modal", handleOpenClaim);
       window.removeEventListener("open-company-correction-modal", handleOpenCorrection);
     };
-  }, [searchParams]);
+  }, []);
 
   if (!mounted) {
     return (

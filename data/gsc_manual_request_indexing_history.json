@@ -1,6 +1,12 @@
 {
   "system": "Kigyou-list GSC Manual Request Indexing Ledger (Single Source of Truth across all Chat & Side Question tabs)",
-  "updated_at": "2026-11-22T20:54:00+07:00",
+  "updated_at": "2026-11-23T18:08:00+07:00",
+  "architectural_guardrails": [
+    "NEVER add loading.tsx to public SEO route segments ([locale]/loading.tsx, directory/loading.tsx, pricing/loading.tsx, search/loading.tsx): Next.js App Router streams the empty loading.tsx skeleton (<main class='animate-pulse'> 0 chars + duplicate <Header>/<Footer>) as the primary <body> and buries 88%-94% of actual content (110KB-397KB) inside <div hidden id='S:0..S:30'>, causing Google Wave-1 indexer to classify pages as near-duplicate empty shells (Crawled - currently not indexed) and causing Soft 404 (HTTP 200 OK) on missing dynamic routes.",
+    "NEVER call useSearchParams() from next/navigation in layout-wide or server-rendered page components (TopProgressBar, CompanyActions, CompanyManagementModal) without isolating client URLSearchParams(window.location.search) inside useEffect, to avoid BAILOUT_TO_CLIENT_SIDE_RENDERING.",
+    "ALWAYS call return notFound() inside generateMetadata() when a dynamic record (!company, !pref, !config, !building, !article) does not exist, ensuring real HTTP 404 Not Found status codes.",
+    "ALWAYS wait for the 2nd step confirmation popup ('Indexing requested') when clicking Request Indexing in GSC UI (Step 1 'Testing if live URL can be indexed' only runs Google-InspectionTool without enqueueing real Googlebot)."
+  ],
   "already_submitted_urls": [
     "https://kigyoulist.com/ja/status/bankruptcies",
     "https://kigyoulist.com/ja/changes/relocation",
@@ -136,16 +142,19 @@
     {
       "batch_id": "BATCH-06-20261123",
       "date": "2026-11-23",
-      "status": "QUEUED_FOR_TOMORROW",
-      "notes": "Next priority batch: Additional regional hubs (Mie, Miyagi, Hiroshima) + Compliance Guides & Corporate Inquiry Pages.",
+      "status": "QUEUED_POST_SSR_UNHIDE_FIX",
+      "notes": "After deploying SSR Unhide (<div hidden> reduced from 110KB-397KB to 0 bytes, <main> visible text jumped from 0% to 68%-89%, Soft-404 fixed to true HTTP 404), prioritize the URLs that GSC API reported as 'URL is unknown to Google (Crawl: Never)' or old crawl (/ja/watchlist, /ja/pricing, /ja/licenses, /ja/license/tokutei, /ja/license/takken, /ja/license/kensetsu, /ja/guide/ai-sales-list, /ja/guide/bankruptcy-signs-check, /ja/guide/corporate-number-search-api-guide, /ja/guide/invoice-system-t-number-bulk-check) + key regional hubs (/ja/area/13, /ja/area/24).",
       "urls": [
-        "https://kigyoulist.com/ja/area/24",
-        "https://kigyoulist.com/ja/area/04",
-        "https://kigyoulist.com/ja/area/34",
-        "https://kigyoulist.com/ja/guide/anti-social-forces-check-procedure",
-        "https://kigyoulist.com/ja/guide/corporate-list-creation-methods",
-        "https://kigyoulist.com/ja/contact",
-        "https://kigyoulist.com/ja/terms"
+        "https://kigyoulist.com/ja/watchlist",
+        "https://kigyoulist.com/ja/pricing",
+        "https://kigyoulist.com/ja/licenses",
+        "https://kigyoulist.com/ja/license/tokutei",
+        "https://kigyoulist.com/ja/license/takken",
+        "https://kigyoulist.com/ja/license/kensetsu",
+        "https://kigyoulist.com/ja/guide/ai-sales-list",
+        "https://kigyoulist.com/ja/guide/bankruptcy-signs-check",
+        "https://kigyoulist.com/ja/guide/corporate-number-search-api-guide",
+        "https://kigyoulist.com/ja/guide/invoice-system-t-number-bulk-check"
       ]
     }
   ]

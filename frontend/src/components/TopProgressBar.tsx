@@ -1,15 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useTransition } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import React, { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 
 export const TopProgressBar: React.FC = () => {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const [progress, setProgress] = useState(0);
   const [visible, setVisible] = useState(false);
 
-  // Complete progress whenever the pathname or search parameters change
+  // Complete progress whenever the pathname changes
   useEffect(() => {
     if (visible) {
       setProgress(100);
@@ -19,7 +18,7 @@ export const TopProgressBar: React.FC = () => {
       }, 250);
       return () => clearTimeout(timer);
     }
-  }, [pathname, searchParams]);
+  }, [pathname, visible]);
 
   // Intercept click on internal links to start progress immediately (0ms visual feedback)
   useEffect(() => {

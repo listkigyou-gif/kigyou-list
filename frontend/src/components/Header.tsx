@@ -183,7 +183,7 @@ export const Header: React.FC = () => {
           <nav className="hidden md:flex items-center gap-6 lg:gap-8 text-xs lg:text-sm font-semibold shrink-0">
             <LocaleLink
               href="/search"
-              prefetch={true}
+              prefetch={false}
               className={`whitespace-nowrap transition-colors py-1 ${
                 isNavActive("/search")
                   ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
@@ -195,7 +195,7 @@ export const Header: React.FC = () => {
 
             <LocaleLink
               href="/form-marketing"
-              prefetch={true}
+              prefetch={false}
               className={`whitespace-nowrap transition-colors py-1 ${
                 isNavActive("/form-marketing")
                   ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
@@ -207,7 +207,7 @@ export const Header: React.FC = () => {
 
             <LocaleLink
               href="/invoice"
-              prefetch={true}
+              prefetch={false}
               className={`whitespace-nowrap transition-colors py-1 ${
                 isNavActive("/invoice")
                   ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
@@ -219,7 +219,7 @@ export const Header: React.FC = () => {
 
             <LocaleLink
               href="/watchlist"
-              prefetch={true}
+              prefetch={false}
               className={`whitespace-nowrap transition-colors py-1 ${
                 isNavActive("/watchlist")
                   ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
@@ -231,7 +231,7 @@ export const Header: React.FC = () => {
 
             <LocaleLink
               href="/guide"
-              prefetch={true}
+              prefetch={false}
               className={`whitespace-nowrap transition-colors py-1 ${
                 isNavActive("/guide")
                   ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
@@ -243,7 +243,7 @@ export const Header: React.FC = () => {
 
             <LocaleLink
               href="/pricing"
-              prefetch={true}
+              prefetch={false}
               className={`whitespace-nowrap transition-colors py-1 ${
                 isNavActive("/pricing")
                   ? "text-[#1B4F8A] dark:text-blue-400 font-bold"
