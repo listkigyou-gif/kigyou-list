@@ -1,7 +1,7 @@
 {
   "system": "Kigyou-list 5-Stage Compounding Ratchet Scorecard (Cross-Layer Non-Regression Gate)",
   "version": "1.0.0",
-  "updated_at": "2026-11-24T11:53:30+07:00",
+  "updated_at": "2026-11-24T12:10:30+07:00",
   "invariants": {
     "robots_txt_disallow_en": true,
     "robots_txt_disallow_vi": true,
@@ -19,7 +19,7 @@
     "core_sitemap_min_hub_urls": 5129,
     "public_hubs_verified_count": 22,
     "directory_min_static_area_links": 47,
-    "directory_min_static_industry_location_links": 82,
+    "directory_min_static_industry_location_links": 410,
     "area_13_min_static_company_links": 30,
     "guide_min_published_articles": 15,
     "max_allowed_pairwise_hub_similarity_pct": 60.0,
@@ -39,22 +39,17 @@
       "public_hubs_missing_canonical_list": [],
       "public_hubs_hidden_div_leaks": [],
       "public_hubs_duplicate_main_leaks": [],
-      "public_hubs_thin_prose_leaks": [],
-      "public_hubs_link_farm_leaks": [],
       "soft_404_regressions": [],
       "en_vi_hreflang_leaks": [],
       "entity_assertion_failures": [],
       "directory_static_area_links": 47,
-      "directory_static_ind_loc_links": 82,
+      "directory_static_ind_loc_links": 410,
       "area_13_static_company_links": 30,
-      "area_13_h2_count": 6,
-      "area_13_prose_p_count": 10,
-      "area_13_table_count": 2,
       "guide_published_articles": 15,
-      "max_pairwise_similarity_pct": 52.3,
+      "max_pairwise_similarity_pct": 50.6,
       "pairwise_details": {
-        "/ja/area/13 vs /ja/area/27": 29.1,
-        "/ja/license/kensetsu vs /ja/license/tokutei": 52.3,
+        "/ja/area/13 vs /ja/area/27": 36.5,
+        "/ja/license/kensetsu vs /ja/license/tokutei": 50.6,
         "/ja/changes/relocation vs /ja/changes/merger": 19.3,
         "/ja/ranking/salary vs /ja/ranking/tenure": 7.9,
         "/ja/form-marketing vs /ja/watchlist": 1.4
@@ -64,7 +59,11 @@
       "console_errors": 0,
       "page_errors": 0,
       "failed_requests": 0,
-      "skipped": true
+      "details": {
+        "console": [],
+        "page": [],
+        "network": []
+      }
     },
     "layer4_ledgers": {
       "campaigns_logged": 17,

@@ -1,12 +1,14 @@
 {
   "system": "Kigyou-list GSC Manual Request Indexing Ledger (Single Source of Truth across all Chat & Side Question tabs)",
-  "updated_at": "2026-11-24T11:55:00+07:00",
+  "updated_at": "2026-11-24T12:12:00+07:00",
   "architectural_guardrails": [
     "NEVER add loading.tsx to public SEO route segments ([locale]/loading.tsx, directory/loading.tsx, pricing/loading.tsx, search/loading.tsx): Next.js App Router streams the empty loading.tsx skeleton (<main class='animate-pulse'> 0 chars + duplicate <Header>/<Footer>) as the primary <body> and buries 88%-94% of actual content (110KB-397KB) inside <div hidden id='S:0..S:30'>, causing Google Wave-1 indexer to classify pages as near-duplicate empty shells (Crawled - currently not indexed) and causing Soft 404 (HTTP 200 OK) on missing dynamic routes.",
     "NEVER call useSearchParams() from next/navigation in layout-wide or server-rendered page components (TopProgressBar, CompanyActions, CompanyManagementModal) without isolating client URLSearchParams(window.location.search) inside useEffect, to avoid BAILOUT_TO_CLIENT_SIDE_RENDERING.",
     "ALWAYS call return notFound() inside generateMetadata() when a dynamic record (!company, !pref, !config, !building, !article) does not exist, ensuring real HTTP 404 Not Found status codes.",
-    "NEVER build Thin Directory / Link-Farm Hubs (1 H2 + 1 <p> + 260-644 links + 0 <table>): Every public Hub (/area/*, /industry/*/location/*, /directory, /license/*, /jobs/latest/*) MUST include >= 3-6 H2 sections, >= 3-10 data-driven analytical <p> paragraphs, >= 1-2 real database aggregation <table> elements (e.g., municipality distribution from city_counts, regional B2B signal counts), localized FAQPage + Dataset JSON-LD schemas, at most 30 company cards with a single clean link per card (no duplicate 'View Detail' link), and regional neighbor silos (getRegionalNeighbors, 10-12 prefectures) instead of dumping all 46 prefectures on every page (keep <main> links <= 220 and total HTML < 460KB).",
-    "ALWAYS wait for the 2nd step confirmation popup ('Indexing requested') when clicking Request Indexing in GSC UI (Step 1 'Testing if live URL can be indexed' only runs Google-InspectionTool without enqueueing real Googlebot)."
+    "ALWAYS wait for the 2nd step confirmation popup ('Indexing requested') when clicking Request Indexing in GSC UI (Step 1 'Testing if live URL can be indexed' only runs Google-InspectionTool without enqueueing real Googlebot).",
+    "NEVER build 'Thin Directory / Link Farm' Hub pages with high link-to-text ratio: Pages with 200+ links but only 1 <p> tag get classified by Google Quality Classifier as pure link directories (Crawled - currently not indexed). Every programmatic hub MUST provide high Information Gain: at least 6 <h2> headings, 8-12 substantive analytical <p> paragraphs, localized municipality distribution tables (from city_counts), and localized FAQs with FAQPage schema.",
+    "ALWAYS limit featured companies per hub to 30 cards with a single primary semantic link (instead of 100 cards with 2x duplicate links) to eliminate HTML bloat (from 618KB down to 430KB) and prevent Next.js __next_f RSC payload explosions (from 334KB down to 230KB).",
+    "ALWAYS use Regional Silos (linking to neighboring prefectures in the same region, e.g. Kanto, Kansai, Chubu) rather than dumping all 46 nationwide links on every regional page, creating tight topical authority and preventing link equity dilution."
   ],
   "already_submitted_urls": [
     "https://kigyoulist.com/ja",

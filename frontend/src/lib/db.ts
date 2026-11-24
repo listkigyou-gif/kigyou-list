@@ -807,8 +807,8 @@ async function getPrefectureCount(prefectureCode: string): Promise<number> {
  * PostgreSQL path: unchanged — uses the original single-query + ORDER BY CASE WHEN.
  */
 export async function getRelatedCompanies(
-  corpNum: string, 
-  industryCodes: string[], 
+  corpNum: string,
+  industryCodes: string[],
   prefectureCode: string | null
 ): Promise<{ sameIndustry: Company[]; nearby: Company[] }> {
   const sameIndustry: Company[] = [];
@@ -983,7 +983,7 @@ export async function getRelatedCompanies(
       } else {
         finRows = getSQLiteDB().prepare(finSql).all(...uniqueIds) as any[];
       }
-      
+
       if (finRows && finRows.length > 0) {
         const finMap = new Map<string, number>();
         for (const row of finRows) {
@@ -991,7 +991,7 @@ export async function getRelatedCompanies(
             finMap.set(row.corporate_number, Number(row.ordinary_income));
           }
         }
-        
+
         for (const c of sameIndustry) {
           if (finMap.has(c.corporate_number)) c.ordinary_income = finMap.get(c.corporate_number);
         }
@@ -1034,111 +1034,24 @@ export async function getPrefecturesWithCounts(): Promise<{ code: string; name: 
  * Fetch cities with company counts for a specific prefecture code
  */
 export async function getCitiesWithCounts(prefectureCode: string): Promise<{ cityName: string; count: number }[]> {
+  const padded = String(prefectureCode || '').trim().padStart(2, '0');
+  const cacheKey = `cities_with_counts:${padded}`;
+  const cached = getCachedData<{ cityName: string; count: number }[]>(cacheKey);
+  if (cached) return cached;
+
   try {
     const rows = await runQuery(`
       SELECT city_name, company_count
       FROM city_counts
       WHERE prefecture_code = ?
       ORDER BY company_count DESC, city_name ASC
-    `, [prefectureCode]);
-    return rows ? rows.map(r => ({ cityName: r.city_name, count: Number(r.company_count) })) : [];
+    `, [padded]);
+    const result = rows ? rows.map(r => ({ cityName: r.city_name, count: Number(r.company_count) })) : [];
+    setCachedData(cacheKey, result, 60 * 60 * 1000); // 1 hour cache
+    return result;
   } catch (error) {
     console.error(`Error in getCitiesWithCounts(${prefectureCode}):`, error);
     return [];
-  }
-}
-
-export interface PrefectureAreaInsights {
-  totalCompanies: number;
-  nationalTotal: number;
-  nationalRank: number;
-  nationalSharePct: number;
-  totalCitiesCount: number;
-  topCities: { cityName: string; count: number; sharePct: number }[];
-  hiringCount: number;
-  licenseCount: number;
-  constructionLicCount: number;
-  realEstateLicCount: number;
-  invoiceCount: number;
-  listedCount: number;
-}
-
-/**
- * Fetch pre-aggregated & partial-indexed regional intelligence for Prefecture Area Hub (/area/[prefectureCode]).
- * Provides real municipality distribution, national share/rank, and B2B signal counts with 6-hour LRU cache.
- */
-export async function getPrefectureAreaInsights(prefectureCode: string): Promise<PrefectureAreaInsights> {
-  const padded = String(prefectureCode || '').trim().padStart(2, '0');
-  const cacheKey = `pref_area_insights:${padded}`;
-  const cached = getCachedData<PrefectureAreaInsights>(cacheKey);
-  if (cached) return cached;
-
-  const isPG = !!DATABASE_URL;
-  try {
-    const [allPrefs, cities, signalRow] = await Promise.all([
-      getPrefecturesWithCounts(),
-      getCitiesWithCounts(padded),
-      isPG
-        ? runGetQuery(
-            `SELECT
-              (SELECT COUNT(*) FROM companies WHERE prefecture_code = ? AND has_hiring = true) AS hiring_count,
-              (SELECT COUNT(*) FROM companies WHERE prefecture_code = ? AND has_license = true) AS license_count,
-              (SELECT COUNT(*) FROM companies WHERE prefecture_code = ? AND has_construction_lic = true) AS construction_lic_count,
-              (SELECT COUNT(*) FROM companies WHERE prefecture_code = ? AND has_real_estate_lic = true) AS real_estate_lic_count,
-              (SELECT COUNT(*) FROM companies WHERE prefecture_code = ? AND has_invoice = true) AS invoice_count,
-              (SELECT COUNT(*) FROM companies WHERE prefecture_code = ? AND is_listed = true) AS listed_count`,
-            [padded, padded, padded, padded, padded, padded]
-          )
-        : Promise.resolve(null),
-    ]);
-
-    const sortedPrefs = [...allPrefs].sort((a, b) => b.count - a.count);
-    const nationalTotal = sortedPrefs.reduce((acc, p) => acc + (p.count || 0), 0) || 5070092;
-    const rankIdx = sortedPrefs.findIndex(p => p.code === padded);
-    const nationalRank = rankIdx >= 0 ? rankIdx + 1 : 1;
-    const totalCompanies = rankIdx >= 0 ? sortedPrefs[rankIdx].count : 0;
-    const nationalSharePct = nationalTotal > 0 ? Number(((totalCompanies / nationalTotal) * 100).toFixed(2)) : 0;
-
-    const validCities = cities.filter(c => c.cityName && c.cityName.trim().length > 0);
-    const topCities = validCities.slice(0, 15).map(c => ({
-      cityName: c.cityName,
-      count: c.count,
-      sharePct: totalCompanies > 0 ? Number(((c.count / totalCompanies) * 100).toFixed(1)) : 0,
-    }));
-
-    const result: PrefectureAreaInsights = {
-      totalCompanies,
-      nationalTotal,
-      nationalRank,
-      nationalSharePct,
-      totalCitiesCount: validCities.length,
-      topCities,
-      hiringCount: signalRow ? Number(signalRow.hiring_count || 0) : 0,
-      licenseCount: signalRow ? Number(signalRow.license_count || 0) : 0,
-      constructionLicCount: signalRow ? Number(signalRow.construction_lic_count || 0) : 0,
-      realEstateLicCount: signalRow ? Number(signalRow.real_estate_lic_count || 0) : 0,
-      invoiceCount: signalRow ? Number(signalRow.invoice_count || 0) : 0,
-      listedCount: signalRow ? Number(signalRow.listed_count || 0) : 0,
-    };
-
-    setCachedData(cacheKey, result, 6 * 60 * 60 * 1000);
-    return result;
-  } catch (error) {
-    console.error(`Error in getPrefectureAreaInsights(${padded}):`, error);
-    return {
-      totalCompanies: 0,
-      nationalTotal: 5070092,
-      nationalRank: 1,
-      nationalSharePct: 0,
-      totalCitiesCount: 0,
-      topCities: [],
-      hiringCount: 0,
-      licenseCount: 0,
-      constructionLicCount: 0,
-      realEstateLicCount: 0,
-      invoiceCount: 0,
-      listedCount: 0,
-    };
   }
 }
 
@@ -1234,8 +1147,8 @@ export async function getIndustriesHierarchy(): Promise<MajorIndustry[]> {
  * Helper to build dynamic SQL queries for faceted search
  */
 function buildSearchQuery(
-  keyword: string, 
-  filters: SearchFilters, 
+  keyword: string,
+  filters: SearchFilters,
   isCountOnly = false,
   useForcedIndex = false
 ): { sql: string; params: any[] } {
@@ -1253,10 +1166,10 @@ function buildSearchQuery(
     c.is_listed, c.listing_market, c.stock_code,
     ${isPG ? 'c.has_financials' : 'cfs.corporate_number AS has_financials'}
   `;
-  const sql = isCountOnly 
-    ? 'SELECT COUNT(*) as count FROM companies c' 
+  const sql = isCountOnly
+    ? 'SELECT COUNT(*) as count FROM companies c'
     : (isPG ? `SELECT ${selectColumns} FROM companies c` : `SELECT ${selectColumns} FROM companies c LEFT JOIN company_financial_status cfs ON c.corporate_number = cfs.corporate_number`);
-  
+
   const params: any[] = [];
   const whereClauses: string[] = [];
 
@@ -1361,7 +1274,7 @@ function buildSearchQuery(
 
   // Signal filters (Super-fast direct column scan using Partial Covering Indexes on companies)
   if (filters.has_hiring) {
-    whereClauses.push(isPG 
+    whereClauses.push(isPG
       ? "c.has_hiring = true"
       : "c.corporate_number IN (SELECT bs.corporate_number FROM business_signals bs WHERE bs.signal_type = '求人あり')");
   }
@@ -1482,7 +1395,7 @@ function buildSearchQuery(
   // Growth & Advanced Financial Filters
   const financialClauses: string[] = [];
   const financialParams: any[] = [];
-  
+
 
   if (filters.min_operating_income !== undefined) {
     financialClauses.push('fr.operating_income >= ?');
@@ -1533,7 +1446,7 @@ function buildSearchQuery(
       sqliteSubquery += ')';
       subquery = sqliteSubquery;
     }
-    
+
     whereClauses.push(subquery);
     params.push(...financialParams);
   }
@@ -1601,9 +1514,9 @@ export interface DatabaseStats {
  * Core search query executor with cursor-based Keyset Pagination support
  */
 export async function searchCompanies(
-  keyword: string, 
-  filters: SearchFilters, 
-  limit = 20, 
+  keyword: string,
+  filters: SearchFilters,
+  limit = 20,
   offset = 0
 ): Promise<{ companies: Company[]; totalCount: number }> {
   try {
@@ -1771,7 +1684,7 @@ export async function searchCompanies(
     } else {
       sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
     }
-    
+
     const params = [...dataQuery.params];
     if (filters.cursor_has_fin !== undefined && filters.cursor_cap !== undefined && filters.cursor_corp !== undefined) {
       sql += ' LIMIT ?';
@@ -1780,7 +1693,7 @@ export async function searchCompanies(
       sql += ' LIMIT ? OFFSET ?';
       params.push(limit, offset);
     }
-    
+
     console.log(`[DB.ts searchCompanies] EXECUTING SQL (isPG: ${isPG}): \n${sql}\n`);
 
     // 3. Execute count and data query in parallel via Promise.all
@@ -2189,14 +2102,14 @@ let tablesInitialized = false;
  */
 async function initQuotaTables(): Promise<void> {
   if (tablesInitialized) return;
-  
+
   const isPG = !!DATABASE_URL;
   if (isPG) {
     try {
       const pool = getPGPool();
       const client = await pool.connect();
       try {
-      await client.query(`
+        await client.query(`
         CREATE TABLE IF NOT EXISTS user_export_quotas (
           user_email VARCHAR(255) PRIMARY KEY,
           monthly_base_allowance INTEGER DEFAULT 20,
@@ -2211,36 +2124,36 @@ async function initQuotaTables(): Promise<void> {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
-      // Attempt to alter table if columns don't exist (Postgres migrations)
-      try {
-        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN last_reset_date VARCHAR(10);`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN plan VARCHAR(50) DEFAULT 'free';`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN stripe_subscription_id VARCHAR(255);`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN stripe_customer_id VARCHAR(255);`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(50) DEFAULT 'inactive';`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS plan_expires_at TIMESTAMP;`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS registration_ip VARCHAR(50);`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS last_login_ip VARCHAR(50);`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP;`);
-      } catch {}
+        // Attempt to alter table if columns don't exist (Postgres migrations)
+        try {
+          await client.query(`ALTER TABLE user_export_quotas ADD COLUMN last_reset_date VARCHAR(10);`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_export_quotas ADD COLUMN plan VARCHAR(50) DEFAULT 'free';`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_export_quotas ADD COLUMN stripe_subscription_id VARCHAR(255);`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_export_quotas ADD COLUMN stripe_customer_id VARCHAR(255);`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(50) DEFAULT 'inactive';`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS plan_expires_at TIMESTAMP;`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS registration_ip VARCHAR(50);`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS last_login_ip VARCHAR(50);`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_export_quotas ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMP;`);
+        } catch { }
 
-      await client.query(`
+        await client.query(`
         CREATE TABLE IF NOT EXISTS user_watchlist (
           id SERIAL PRIMARY KEY,
           user_email VARCHAR(255) NOT NULL,
@@ -2249,14 +2162,14 @@ async function initQuotaTables(): Promise<void> {
           UNIQUE(user_email, corporate_number)
         );
       `);
-      try {
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_user_watchlist_email ON user_watchlist(user_email);`);
-      } catch {}
-      try {
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_user_watchlist_corp ON user_watchlist(corporate_number);`);
-      } catch {}
+        try {
+          await client.query(`CREATE INDEX IF NOT EXISTS idx_user_watchlist_email ON user_watchlist(user_email);`);
+        } catch { }
+        try {
+          await client.query(`CREATE INDEX IF NOT EXISTS idx_user_watchlist_corp ON user_watchlist(corporate_number);`);
+        } catch { }
 
-      await client.query(`
+        await client.query(`
         CREATE TABLE IF NOT EXISTS export_jobs (
           id VARCHAR(50) PRIMARY KEY,
           user_email VARCHAR(255) NOT NULL,
@@ -2269,14 +2182,14 @@ async function initQuotaTables(): Promise<void> {
         );
       `);
 
-      try {
-        await client.query(`ALTER TABLE export_jobs ADD COLUMN ip_address VARCHAR(50);`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE export_jobs ADD COLUMN user_agent TEXT;`);
-      } catch {}
+        try {
+          await client.query(`ALTER TABLE export_jobs ADD COLUMN ip_address VARCHAR(50);`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE export_jobs ADD COLUMN user_agent TEXT;`);
+        } catch { }
 
-      await client.query(`
+        await client.query(`
         CREATE TABLE IF NOT EXISTS deposit_history (
           id VARCHAR(100) PRIMARY KEY,
           user_email VARCHAR(255) NOT NULL,
@@ -2291,17 +2204,17 @@ async function initQuotaTables(): Promise<void> {
         );
       `);
 
-      try {
-        await client.query(`ALTER TABLE deposit_history ADD COLUMN ip_address VARCHAR(50);`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE deposit_history ADD COLUMN user_agent TEXT;`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE deposit_history ADD COLUMN refunded_at TIMESTAMP WITH TIME ZONE;`);
-      } catch {}
+        try {
+          await client.query(`ALTER TABLE deposit_history ADD COLUMN ip_address VARCHAR(50);`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE deposit_history ADD COLUMN user_agent TEXT;`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE deposit_history ADD COLUMN refunded_at TIMESTAMP WITH TIME ZONE;`);
+        } catch { }
 
-      await client.query(`
+        await client.query(`
         CREATE TABLE IF NOT EXISTS user_billing_info (
           user_email VARCHAR(255) PRIMARY KEY,
           billing_name VARCHAR(255),
@@ -2315,23 +2228,23 @@ async function initQuotaTables(): Promise<void> {
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
       `);
-      try {
-        await client.query(`ALTER TABLE user_billing_info ADD COLUMN billing_phone VARCHAR(50);`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_billing_info ADD COLUMN logo_url TEXT;`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_billing_info ADD COLUMN is_featured_partner BOOLEAN DEFAULT false;`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_billing_info ADD COLUMN contact_person VARCHAR(255);`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_billing_info ADD COLUMN contact_phone VARCHAR(50);`);
-      } catch {}
+        try {
+          await client.query(`ALTER TABLE user_billing_info ADD COLUMN billing_phone VARCHAR(50);`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_billing_info ADD COLUMN logo_url TEXT;`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_billing_info ADD COLUMN is_featured_partner BOOLEAN DEFAULT false;`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_billing_info ADD COLUMN contact_person VARCHAR(255);`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_billing_info ADD COLUMN contact_phone VARCHAR(50);`);
+        } catch { }
 
-      await client.query(`
+        await client.query(`
         CREATE TABLE IF NOT EXISTS user_api_keys (
           id VARCHAR(100) PRIMARY KEY,
           user_email VARCHAR(255) NOT NULL,
@@ -2344,24 +2257,24 @@ async function initQuotaTables(): Promise<void> {
           last_user_agent TEXT
         );
       `);
-      try {
-        await client.query(`ALTER TABLE user_api_keys ADD COLUMN revoked_reason TEXT;`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_api_keys ADD COLUMN revoked_at TIMESTAMP;`);
-      } catch {}
-      try {
-        await client.query(`ALTER TABLE user_api_keys ADD COLUMN revoked_by VARCHAR(50);`);
-      } catch {}
-      try {
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON user_api_keys(api_key_hash);`);
-      } catch {}
-      try {
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_email ON user_api_keys(user_email);`);
-      } catch {}
+        try {
+          await client.query(`ALTER TABLE user_api_keys ADD COLUMN revoked_reason TEXT;`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_api_keys ADD COLUMN revoked_at TIMESTAMP;`);
+        } catch { }
+        try {
+          await client.query(`ALTER TABLE user_api_keys ADD COLUMN revoked_by VARCHAR(50);`);
+        } catch { }
+        try {
+          await client.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON user_api_keys(api_key_hash);`);
+        } catch { }
+        try {
+          await client.query(`CREATE INDEX IF NOT EXISTS idx_api_keys_email ON user_api_keys(user_email);`);
+        } catch { }
 
-      // Magic Link Tokens Table for PG
-      await client.query(`
+        // Magic Link Tokens Table for PG
+        await client.query(`
         CREATE TABLE IF NOT EXISTS magic_link_tokens (
           email VARCHAR(255) NOT NULL,
           token VARCHAR(255) PRIMARY KEY,
@@ -2370,14 +2283,14 @@ async function initQuotaTables(): Promise<void> {
           used BOOLEAN DEFAULT false
         );
       `);
-      try {
-        await client.query(`ALTER TABLE magic_link_tokens ADD COLUMN IF NOT EXISTS used BOOLEAN DEFAULT false;`);
-      } catch {}
-      try {
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_magic_link_tokens_email ON magic_link_tokens(email);`);
-      } catch {}
+        try {
+          await client.query(`ALTER TABLE magic_link_tokens ADD COLUMN IF NOT EXISTS used BOOLEAN DEFAULT false;`);
+        } catch { }
+        try {
+          await client.query(`CREATE INDEX IF NOT EXISTS idx_magic_link_tokens_email ON magic_link_tokens(email);`);
+        } catch { }
 
-      await client.query(`
+        await client.query(`
         CREATE TABLE IF NOT EXISTS system_blacklists (
           id SERIAL PRIMARY KEY,
           type VARCHAR(50) NOT NULL,
@@ -2388,10 +2301,10 @@ async function initQuotaTables(): Promise<void> {
           created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
       `);
-      try {
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_blacklists_target ON system_blacklists(target);`);
-        await client.query(`CREATE INDEX IF NOT EXISTS idx_blacklists_expires ON system_blacklists(expires_at);`);
-      } catch {}
+        try {
+          await client.query(`CREATE INDEX IF NOT EXISTS idx_blacklists_target ON system_blacklists(target);`);
+          await client.query(`CREATE INDEX IF NOT EXISTS idx_blacklists_expires ON system_blacklists(expires_at);`);
+        } catch { }
 
       } finally {
         client.release();
@@ -2414,7 +2327,7 @@ async function initQuotaTables(): Promise<void> {
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
           );
         `);
-      } catch {}
+      } catch { }
     }
   } else {
     try {
@@ -2437,31 +2350,31 @@ async function initQuotaTables(): Promise<void> {
       // Attempt to alter table if columns don't exist (SQLite migrations)
       try {
         db.exec(`ALTER TABLE user_export_quotas ADD COLUMN last_reset_date TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_export_quotas ADD COLUMN plan TEXT DEFAULT 'free';`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_export_quotas ADD COLUMN stripe_subscription_id TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_export_quotas ADD COLUMN stripe_customer_id TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_export_quotas ADD COLUMN subscription_status TEXT DEFAULT 'inactive';`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_export_quotas ADD COLUMN plan_expires_at TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_export_quotas ADD COLUMN registration_ip TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_export_quotas ADD COLUMN last_login_ip TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_export_quotas ADD COLUMN last_login_at TIMESTAMP;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`
           CREATE TABLE IF NOT EXISTS user_watchlist (
@@ -2472,7 +2385,7 @@ async function initQuotaTables(): Promise<void> {
             UNIQUE(user_email, corporate_number)
           );
         `);
-      } catch {}
+      } catch { }
 
       db.exec(`
         CREATE TABLE IF NOT EXISTS export_jobs (
@@ -2489,10 +2402,10 @@ async function initQuotaTables(): Promise<void> {
 
       try {
         db.exec(`ALTER TABLE export_jobs ADD COLUMN ip_address TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE export_jobs ADD COLUMN user_agent TEXT;`);
-      } catch {}
+      } catch { }
 
       db.exec(`
         CREATE TABLE IF NOT EXISTS deposit_history (
@@ -2511,13 +2424,13 @@ async function initQuotaTables(): Promise<void> {
 
       try {
         db.exec(`ALTER TABLE deposit_history ADD COLUMN ip_address TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE deposit_history ADD COLUMN user_agent TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE deposit_history ADD COLUMN refunded_at TEXT;`);
-      } catch {}
+      } catch { }
 
       db.exec(`
         CREATE TABLE IF NOT EXISTS user_billing_info (
@@ -2535,19 +2448,19 @@ async function initQuotaTables(): Promise<void> {
       `);
       try {
         db.exec(`ALTER TABLE user_billing_info ADD COLUMN billing_phone TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_billing_info ADD COLUMN logo_url TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_billing_info ADD COLUMN is_featured_partner INTEGER DEFAULT 0;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_billing_info ADD COLUMN contact_person TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_billing_info ADD COLUMN contact_phone TEXT;`);
-      } catch {}
+      } catch { }
 
       db.exec(`
         CREATE TABLE IF NOT EXISTS user_api_keys (
@@ -2564,19 +2477,19 @@ async function initQuotaTables(): Promise<void> {
       `);
       try {
         db.exec(`ALTER TABLE user_api_keys ADD COLUMN revoked_reason TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_api_keys ADD COLUMN revoked_at TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE user_api_keys ADD COLUMN revoked_by TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON user_api_keys(api_key_hash);`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_email ON user_api_keys(user_email);`);
-      } catch {}
+      } catch { }
 
       // Magic Link Tokens Table for SQLite
       db.exec(`
@@ -2597,7 +2510,7 @@ async function initQuotaTables(): Promise<void> {
       }
       try {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_magic_link_tokens_email ON magic_link_tokens(email);`);
-      } catch {}
+      } catch { }
 
       // System Blacklists Table for SQLite
       db.exec(`
@@ -2613,25 +2526,25 @@ async function initQuotaTables(): Promise<void> {
       `);
       try {
         db.exec(`CREATE INDEX IF NOT EXISTS idx_blacklists_target ON system_blacklists(target);`);
-      } catch {}
+      } catch { }
 
     } catch (e) {
       console.error('Error initializing SQLite quota tables:', e);
     }
   }
-  
+
   tablesInitialized = true;
 }
 
 export async function saveMagicLinkToken(email: string, token: string, expiresAt: Date): Promise<void> {
   await initQuotaTables();
   const now = new Date();
-  
+
   // Clean up tokens that are actually expired based on expires_at
   const cleanupSql = 'DELETE FROM magic_link_tokens WHERE expires_at < ?';
-  
+
   const insertSql = 'INSERT INTO magic_link_tokens (email, token, expires_at, created_at, used) VALUES (?, ?, ?, ?, false)';
-  
+
   if (DATABASE_URL) {
     const pool = getPGPool();
     const client = await pool.connect();
@@ -2650,14 +2563,14 @@ export async function saveMagicLinkToken(email: string, token: string, expiresAt
 
 export async function checkMagicLinkRateLimit(email: string): Promise<{ allowed: boolean; reason?: "RATE_LIMIT_60S" | "RATE_LIMIT_24H" }> {
   await initQuotaTables();
-  
+
   const sql = 'SELECT created_at FROM magic_link_tokens WHERE email = ?';
   const rows = await runQuery(sql, [email]);
-  
+
   const now = new Date();
   const oneMinuteAgo = new Date(now.getTime() - 60 * 1000);
   const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-  
+
   const parseDate = (val: any): Date => {
     if (val instanceof Date) return val;
     if (typeof val === 'string') {
@@ -2665,10 +2578,10 @@ export async function checkMagicLinkRateLimit(email: string): Promise<{ allowed:
     }
     return new Date(val);
   };
-  
+
   let sentInLastMinute = false;
   let sentInLast24Hours = 0;
-  
+
   for (const row of rows) {
     const createdAt = parseDate(row.created_at);
     if (createdAt > oneMinuteAgo) {
@@ -2678,32 +2591,32 @@ export async function checkMagicLinkRateLimit(email: string): Promise<{ allowed:
       sentInLast24Hours++;
     }
   }
-  
+
   if (sentInLastMinute) {
     return { allowed: false, reason: "RATE_LIMIT_60S" };
   }
   if (sentInLast24Hours >= 3) {
     return { allowed: false, reason: "RATE_LIMIT_24H" };
   }
-  
+
   return { allowed: true };
 }
 
 export async function verifyAndConsumeMagicLinkToken(email: string, token: string): Promise<boolean> {
   await initQuotaTables();
-  
+
   // Reusable token during valid expiration window (supports email security bots, multiple devices/tabs)
   const selectSql = 'SELECT * FROM magic_link_tokens WHERE email = ? AND token = ? LIMIT 1';
   const updateSql = 'UPDATE magic_link_tokens SET used = true WHERE token = ?';
-  
+
   const row = await runGetQuery(selectSql, [email, token]);
   if (!row) {
     return false;
   }
-  
+
   const expiresAt = new Date(row.expires_at);
   const now = new Date();
-  
+
   if (expiresAt < now) {
     console.log(`Magic link token expired for ${email}. Expired at: ${expiresAt}, now: ${now}`);
     return false;
@@ -2717,7 +2630,7 @@ export async function verifyAndConsumeMagicLinkToken(email: string, token: strin
     const db = getSQLiteDB();
     db.prepare(updateSql).run(token);
   }
-  
+
   return true;
 }
 
@@ -2851,7 +2764,7 @@ export async function getUserQuota(email: string): Promise<UserQuota & { last_re
 
     const sql = 'SELECT * FROM user_export_quotas WHERE user_email = ?';
     const row = await runGetQuery(sql, [email]);
-    
+
     if (row) {
       let used = Number(row.monthly_base_used);
       let lastReset = row.last_reset_date;
@@ -2924,7 +2837,7 @@ export async function getUserQuota(email: string): Promise<UserQuota & { last_re
           const [currYear, currMonth, currDay] = currentJstDate.split('-').map(Number);
           const monthsPassed = (currYear - lastYear) * 12 + (currMonth - lastMonth);
           const isPastSameDay = currDay >= lastDay;
-          
+
           if (monthsPassed > 1 || (monthsPassed === 1 && isPastSameDay)) {
             used = 0;
             lastReset = currentJstDate;
@@ -2954,10 +2867,10 @@ export async function getUserQuota(email: string): Promise<UserQuota & { last_re
         plan_expires_at: planExpiresAt
       };
     }
-    
+
     // Create default quota for new user: 20 or 50 rows, reset today
     const insertSql = 'INSERT INTO user_export_quotas (user_email, monthly_base_allowance, monthly_base_used, purchased_add_on_balance, last_reset_date, plan, subscription_status) VALUES (?, ?, 0, 0, ?, \'free\', \'inactive\')';
-    
+
     if (DATABASE_URL) {
       const pool = getPGPool();
       await pool.query(convertSqlForPG(insertSql), [email, expectedBaseAllowance, currentJstDate]);
@@ -2966,7 +2879,7 @@ export async function getUserQuota(email: string): Promise<UserQuota & { last_re
       const stmt = db.prepare(insertSql);
       stmt.run(email, expectedBaseAllowance, currentJstDate);
     }
-    
+
     return {
       user_email: email,
       monthly_base_allowance: expectedBaseAllowance,
@@ -3006,30 +2919,30 @@ export async function deductUserQuota(email: string, amount: number): Promise<bo
     const baseRemaining = quota.monthly_base_allowance - quota.monthly_base_used;
     const addOnBalance = quota.purchased_add_on_balance || 0;
     const totalAvailable = baseRemaining + addOnBalance;
-    
+
     if (totalAvailable < amount) {
       return false; // Not enough quota
     }
-    
+
     let baseDeduction = 0;
     let addOnDeduction = 0;
-    
+
     if (baseRemaining >= amount) {
       baseDeduction = amount;
     } else {
       baseDeduction = baseRemaining;
       addOnDeduction = amount - baseRemaining;
     }
-    
+
     const newBaseUsed = quota.monthly_base_used + baseDeduction;
     const newAddOnBalance = quota.purchased_add_on_balance - addOnDeduction;
-    
+
     const updateSql = `
       UPDATE user_export_quotas 
       SET monthly_base_used = ?, purchased_add_on_balance = ?, updated_at = CURRENT_TIMESTAMP
       WHERE user_email = ?
     `;
-    
+
     if (DATABASE_URL) {
       const pool = getPGPool();
       await pool.query(convertSqlForPG(updateSql), [newBaseUsed, newAddOnBalance, email]);
@@ -3038,7 +2951,7 @@ export async function deductUserQuota(email: string, amount: number): Promise<bo
       const stmt = db.prepare(updateSql);
       stmt.run(newBaseUsed, newAddOnBalance, email);
     }
-    
+
     return true;
   } catch (error) {
     console.error(`Error in deductUserQuota(${email}, ${amount}):`, error);
@@ -3054,16 +2967,16 @@ export async function addUserAddOnBalance(email: string, amount: number): Promis
   try {
     const quota = await getUserQuota(email);
     const newAddOn = quota.purchased_add_on_balance + amount;
-    
+
     const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' });
     const currentJstDate = formatter.format(new Date()); // YYYY-MM-DD
-    
+
     const updateSql = `
       UPDATE user_export_quotas
       SET purchased_add_on_balance = ?, updated_at = CURRENT_TIMESTAMP
       WHERE user_email = ?
     `;
-    
+
     if (DATABASE_URL) {
       const pool = getPGPool();
       await pool.query(convertSqlForPG(updateSql), [newAddOn, email]);
@@ -3081,9 +2994,9 @@ export async function addUserAddOnBalance(email: string, amount: number): Promis
  * Create a new background export job
  */
 export async function createExportJob(
-  id: string, 
-  email: string, 
-  filtersJson: string | null, 
+  id: string,
+  email: string,
+  filtersJson: string | null,
   recordsCount: number,
   ipAddress?: string | null,
   userAgent?: string | null
@@ -3097,11 +3010,11 @@ export async function createExportJob(
     if (DATABASE_URL) {
       const pool = getPGPool();
       await pool.query(convertSqlForPG(insertSql), [
-        id, 
-        email, 
-        filtersJson, 
-        recordsCount, 
-        ipAddress || null, 
+        id,
+        email,
+        filtersJson,
+        recordsCount,
+        ipAddress || null,
         userAgent || null
       ]);
     } else {
@@ -3118,9 +3031,9 @@ export async function createExportJob(
  * Update the status and properties of an export job
  */
 export async function updateExportJobStatus(
-  id: string, 
-  status: 'pending' | 'processing' | 'completed' | 'failed', 
-  filePath: string | null, 
+  id: string,
+  status: 'pending' | 'processing' | 'completed' | 'failed',
+  filePath: string | null,
   errorMessage: string | null
 ): Promise<void> {
   await initQuotaTables();
@@ -3180,7 +3093,7 @@ export async function getExportJobById(id: string): Promise<ExportJob | null> {
     const sql = 'SELECT * FROM export_jobs WHERE id = ? LIMIT 1';
     const r = await runGetQuery(sql, [id]);
     if (!r) return null;
-    
+
     // Lazy check: if file is older than 7 days and file_path is not null
     const now = new Date();
     if (r.file_path) {
@@ -3239,7 +3152,7 @@ export async function lazyCleanupJobs(rows: any[]): Promise<any[]> {
         const key = r.file_path.replace(/^(r2:\/\/|local:\/\/)/, "");
         // Delete from storage (either R2 or local fallback is handled by deleteFileFromR2)
         deleteFileFromR2(key).catch(err => console.error("Lazy cleanup storage delete error:", err));
-        
+
         // Update database record
         const updateSql = 'UPDATE export_jobs SET file_path = NULL WHERE id = ?';
         if (DATABASE_URL) {
@@ -3469,7 +3382,7 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
     filters = parsed.parsedFilters;
 
     const filtersCopy = { ...filters, cursor_emp: undefined, cursor_corp: undefined };
-    
+
     // Count how many search criteria / filters are active to determine if we should force the index
     const activeFiltersList: string[] = [];
     if (keyword) activeFiltersList.push('keyword');
@@ -3496,7 +3409,7 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
     const useForcedIndex = !keyword && activeFiltersList.length <= 1;
     const dataQuery = buildSearchQuery(keyword, filtersCopy, false, useForcedIndex);
     let sql = dataQuery.sql;
-    
+
     // Same sort order as searchCompanies: has_financials first, then capital DESC
     const isPG_all = !!DATABASE_URL;
     if (isPG_all) {
@@ -3504,12 +3417,12 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
     } else {
       sql += ' ORDER BY (CASE WHEN cfs.corporate_number IS NOT NULL THEN 1 ELSE 0 END) DESC, c.capital_amount DESC, c.corporate_number ASC';
     }
-    
+
     // Enforce strict limit if requested (saves database memory and ensures exact count)
     if (limit !== undefined && limit > 0) {
       sql += ` LIMIT ${Math.floor(limit)}`;
     }
-    
+
     const results = await runQueryLongRunning(sql, dataQuery.params);
     return results.map(mapCompanyRow);
   } catch (error) {
@@ -3523,8 +3436,8 @@ export async function searchCompaniesAll(keyword: string, filters: SearchFilters
  * Used when the user opens the CSV Export modal to select export quantity.
  */
 export async function countCompaniesForExport(
-  keyword: string, 
-  filters: SearchFilters, 
+  keyword: string,
+  filters: SearchFilters,
   maxCap: number = 100000
 ): Promise<{ total: number; isCapped: boolean }> {
   try {
@@ -3535,10 +3448,10 @@ export async function countCompaniesForExport(
     const countQuery = buildSearchQuery(parsedKeyword, parsedFilters, true);
     const innerSql = countQuery.sql.replace('SELECT COUNT(*) as count', 'SELECT 1');
     const boundedCountSql = `SELECT COUNT(*) as count FROM (${innerSql} LIMIT ${Math.floor(maxCap)}) as subquery`;
-    
+
     const countResult = await runGetQuery(boundedCountSql, countQuery.params);
     const count = countResult ? Number(countResult.count) : 0;
-    
+
     return {
       total: count,
       isCapped: count >= maxCap
@@ -3553,9 +3466,9 @@ export async function countCompaniesForExport(
  * Update the user's monthly quota and reset used balance when upgrading/downgrading plans.
  */
 export async function updateUserPlanQuota(
-  email: string, 
-  allowance: number, 
-  plan: string, 
+  email: string,
+  allowance: number,
+  plan: string,
   expiresAt?: string | null
 ): Promise<boolean> {
   await initQuotaTables();
@@ -3682,25 +3595,25 @@ export async function updateUserSubscription(
     if (DATABASE_URL) {
       const pool = getPGPool();
       await pool.query(convertSqlForPG(updateSql), [
-        stripeCustomerId, 
-        stripeSubscriptionId, 
-        plan, 
-        allowance, 
+        stripeCustomerId,
+        stripeSubscriptionId,
+        plan,
+        allowance,
         newAddOn,
-        status, 
-        currentJstDate, 
+        status,
+        currentJstDate,
         email
       ]);
     } else {
       const db = getSQLiteDB();
       db.prepare(updateSql).run(
-        stripeCustomerId, 
-        stripeSubscriptionId, 
-        plan, 
-        allowance, 
+        stripeCustomerId,
+        stripeSubscriptionId,
+        plan,
+        allowance,
         newAddOn,
-        status, 
-        currentJstDate, 
+        status,
+        currentJstDate,
         email
       );
     }
@@ -3885,7 +3798,7 @@ export async function runCleanupCron(): Promise<{ success: boolean; affectedRows
         // Delete from R2 storage
         await deleteFileFromR2(key).catch(err => console.error(`[Cron Cleanup] R2 deletion error for job ${r.id}:`, err));
       }
-      
+
       // Update database record to NULL
       const updateSql = "UPDATE export_jobs SET file_path = NULL WHERE id = ?";
       if (DATABASE_URL) {
@@ -3934,7 +3847,7 @@ let couponTablesInitialized = false;
  */
 export async function initCouponTables(): Promise<void> {
   if (couponTablesInitialized) return;
-  
+
   const isPG = !!DATABASE_URL;
   if (isPG) {
     const pool = getPGPool();
@@ -3993,7 +3906,7 @@ export async function initCouponTables(): Promise<void> {
       console.error('Error initializing SQLite coupon tables:', e);
     }
   }
-  
+
   couponTablesInitialized = true;
 }
 
@@ -4034,10 +3947,10 @@ export async function createCoupon(code: string, discountPercent: number = 60, m
       INSERT INTO coupons (code, discount_percent, expires_at, max_uses, used_count, is_active)
       VALUES (?, ?, ?, ?, 0, true)
     `;
-    
+
     // Convert boolean true to 1 for SQLite
     const isActiveVal = DATABASE_URL ? true : 1;
-    
+
     const sqlWithCorrectBool = insertSql.replace('true', '?');
 
     if (DATABASE_URL) {
@@ -4083,7 +3996,7 @@ export async function verifyCoupon(code: string, userEmail: string): Promise<{ v
     // Check if user already used this code
     const redemptionSql = 'SELECT * FROM coupon_redemptions WHERE code = ? AND user_email = ?';
     const redemptionRow = await runGetQuery(redemptionSql, [code, userEmail]);
-    
+
     if (redemptionRow) {
       return { valid: false, error: 'このクーポンコードは既に利用済みです。' };
     }
@@ -4113,17 +4026,17 @@ export async function redeemCoupon(code: string, userEmail: string): Promise<boo
       const client = await pool.connect();
       try {
         await client.query('BEGIN');
-        
+
         await client.query(
           `INSERT INTO coupon_redemptions (id, code, user_email) VALUES ($1, $2, $3)`,
           [id, code, userEmail]
         );
-        
+
         await client.query(
           `UPDATE coupons SET used_count = used_count + 1 WHERE code = $1`,
           [code]
         );
-        
+
         await client.query('COMMIT');
       } catch (e) {
         await client.query('ROLLBACK');
@@ -4138,10 +4051,10 @@ export async function redeemCoupon(code: string, userEmail: string): Promise<boo
       try {
         const stmt1 = db.prepare(`INSERT INTO coupon_redemptions (id, code, user_email) VALUES (?, ?, ?)`);
         stmt1.run(id, code, userEmail);
-        
+
         const stmt2 = db.prepare(`UPDATE coupons SET used_count = used_count + 1 WHERE code = ?`);
         stmt2.run(code);
-        
+
         db.exec('COMMIT');
       } catch (e) {
         db.exec('ROLLBACK');
@@ -4218,14 +4131,14 @@ export async function initAdminTables(): Promise<void> {
       // Attempt to alter table if it already exists (Postgres)
       try {
         await client.query(`ALTER TABLE inquiries ADD COLUMN ip_address VARCHAR(50);`);
-      } catch {}
+      } catch { }
       try {
         await client.query(`ALTER TABLE inquiries ADD COLUMN person_in_charge VARCHAR(255);`);
-      } catch {}
+      } catch { }
       try {
         await client.query(`ALTER TABLE inquiries ADD COLUMN mobile_number VARCHAR(50);`);
-      } catch {}
-      
+      } catch { }
+
       await client.query(`
         CREATE TABLE IF NOT EXISTS hidden_companies (
           corporate_number VARCHAR(50) PRIMARY KEY,
@@ -4278,14 +4191,14 @@ export async function initAdminTables(): Promise<void> {
       // Attempt to alter table if it already exists (SQLite)
       try {
         db.exec(`ALTER TABLE inquiries ADD COLUMN ip_address TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE inquiries ADD COLUMN person_in_charge TEXT;`);
-      } catch {}
+      } catch { }
       try {
         db.exec(`ALTER TABLE inquiries ADD COLUMN mobile_number TEXT;`);
-      } catch {}
-      
+      } catch { }
+
       db.exec(`
         CREATE TABLE IF NOT EXISTS hidden_companies (
           corporate_number TEXT PRIMARY KEY,
@@ -4463,7 +4376,7 @@ export async function syncUserWatchlist(email: string, clientList: string[]): Pr
           ).run(email, corpNo);
         }
         existingSet.add(corpNo);
-      } catch {}
+      } catch { }
     }
 
     // 2. Return full merged list
@@ -4614,11 +4527,11 @@ export async function checkRateLimit(ip: string): Promise<boolean> {
   try {
     const isPG = !!DATABASE_URL;
     let count = 0;
-    
+
     if (isPG) {
       const pool = getPGPool();
       const res = await pool.query(
-        "SELECT COUNT(*) as cnt FROM inquiries WHERE ip_address = $1 AND created_at > NOW() - INTERVAL '24 HOURS'", 
+        "SELECT COUNT(*) as cnt FROM inquiries WHERE ip_address = $1 AND created_at > NOW() - INTERVAL '24 HOURS'",
         [ip]
       );
       count = parseInt(res.rows[0].cnt, 10);
@@ -4627,7 +4540,7 @@ export async function checkRateLimit(ip: string): Promise<boolean> {
       const row = db.prepare("SELECT COUNT(*) as cnt FROM inquiries WHERE ip_address = ? AND created_at > datetime('now', '-24 hours')").get(ip) as any;
       count = row ? row.cnt : 0;
     }
-    
+
     // Allow up to 20 requests per 24 hours per external IP
     return count < 20;
   } catch (error) {
@@ -4637,10 +4550,10 @@ export async function checkRateLimit(ip: string): Promise<boolean> {
 }
 
 export async function createInquiry(
-  corporate_number: string, 
-  company_name: string, 
-  type: string, 
-  requester_email: string, 
+  corporate_number: string,
+  company_name: string,
+  type: string,
+  requester_email: string,
   person_in_charge: string,
   mobile_number: string,
   message: string,
@@ -4815,11 +4728,11 @@ export async function verifyOtp(email: string, otp: string): Promise<boolean> {
 }
 
 export const ALLOWED_EDIT_FIELDS = [
-  'phone_number', 
-  'website_url', 
-  'email_address', 
-  'fax_number', 
-  'representative_name', 
+  'phone_number',
+  'website_url',
+  'email_address',
+  'fax_number',
+  'representative_name',
   'representative_position',
   'jigyo_shumoku',
   'business_summary',
@@ -4941,7 +4854,7 @@ export async function updateCompanyField(corporate_number: string, field_name: s
                     `UPDATE companies SET primary_industry_code = $1 WHERE corporate_number = $2`,
                     [primaryMediumCode, corporate_number]
                   );
-                } catch {}
+                } catch { }
               }
             }
           }
@@ -5218,7 +5131,7 @@ export async function saveUserBillingInfo(info: UserBillingInfo): Promise<boolea
   try {
     const exists = await runGetQuery('SELECT 1 FROM user_billing_info WHERE user_email = ?', [info.user_email]);
     const isFeaturedVal = info.is_featured_partner ? (DATABASE_URL ? true : 1) : (DATABASE_URL ? false : 0);
-    
+
     if (exists) {
       const updateSql = 'UPDATE user_billing_info SET billing_name = ?, billing_address = ?, billing_tax_id = ?, billing_phone = ?, logo_url = ?, is_featured_partner = ?, contact_person = ?, contact_phone = ?, updated_at = CURRENT_TIMESTAMP WHERE user_email = ?';
       if (DATABASE_URL) {
@@ -5308,7 +5221,7 @@ export async function updatePartnerFeaturedStatus(email: string, isFeatured: boo
     const isPG = !!DATABASE_URL;
     const sql = "UPDATE user_billing_info SET is_featured_partner = ?, updated_at = CURRENT_TIMESTAMP WHERE user_email = ?";
     const isFeaturedVal = isPG ? isFeatured : (isFeatured ? 1 : 0);
-    
+
     if (isPG) {
       const pool = getPGPool();
       await pool.query(convertSqlForPG(sql), [isFeaturedVal, email]);
@@ -5423,7 +5336,7 @@ export async function logAdminAction(
       INSERT INTO admin_action_logs (id, admin_email, action_type, target_identifier, details_json, ip_address, user_agent)
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `;
-    
+
     if (DATABASE_URL) {
       const pool = getPGPool();
       await pool.query(convertSqlForPG(sql), [
@@ -5756,8 +5669,8 @@ export async function getAllApiKeysAdmin(): Promise<(UserApiKey & { plan: string
  * Admin: Update API key status (revoke, suspend, or activate).
  */
 export async function adminUpdateApiKeyStatus(
-  keyId: string, 
-  status: 'active' | 'revoked' | 'suspended', 
+  keyId: string,
+  status: 'active' | 'revoked' | 'suspended',
   reason?: string
 ): Promise<boolean> {
   await initQuotaTables();
@@ -5830,7 +5743,7 @@ export async function getBusinessSignalsGlobal(
       LEFT JOIN companies c ON ts.corporate_number = c.corporate_number
       ORDER BY ts.signal_date DESC, ts.id DESC
     `;
-    
+
     const queryParams = [...params, limit, offset];
     const rows = await runQuery(sql, queryParams);
     return {
@@ -6075,8 +5988,8 @@ export async function getBlogPostsCount(locale = 'ja'): Promise<number> {
 
 export async function getBlogPostBySlug(slug: string, locale?: string): Promise<BlogPost | null> {
   try {
-    const query = locale 
-      ? 'SELECT * FROM blog_posts WHERE slug = ? AND locale = ?' 
+    const query = locale
+      ? 'SELECT * FROM blog_posts WHERE slug = ? AND locale = ?'
       : 'SELECT * FROM blog_posts WHERE slug = ?';
     const params = locale ? [slug, locale] : [slug];
     const row = await runGetQuery(query, params);
@@ -6873,7 +6786,7 @@ export async function getCompaniesByBuildingSlug(
 
     const isPG = !!DATABASE_URL;
     const tableName = (isPG && building.prefecture_code) ? `companies_p${building.prefecture_code}` : 'companies';
-    
+
     const sqlList = `SELECT * FROM ${tableName} WHERE building_slug = ? ORDER BY (capital_amount + 0) DESC NULLS LAST, corporate_number ASC LIMIT ? OFFSET ?`;
     const sqlCount = `SELECT COUNT(*) as total FROM ${tableName} WHERE building_slug = ?`;
 
