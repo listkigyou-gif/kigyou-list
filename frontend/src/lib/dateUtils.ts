@@ -54,11 +54,14 @@ export function formatJapaneseDate(dateStr: string | null | undefined): string {
  */
 export function formatShortDate(dateStr: string | null | undefined): string {
   if (!dateStr) return '—';
+  if (typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    return dateStr.slice(0, 10).replace(/-/g, '/');
+  }
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return '—';
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
   return `${y}/${m}/${d}`;
 }
 

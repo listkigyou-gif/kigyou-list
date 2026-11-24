@@ -1643,12 +1643,28 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                 key={company.corporate_number}
                 itemScope
                 itemType="https://schema.org/Organization"
-                className="b2b-card bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-4 sm:p-5 shadow-2xs hover:border-slate-350 dark:hover:border-slate-700 transition-all"
+                onClick={(e) => {
+                  const target = e.target as HTMLElement;
+                  if (target.closest('button') || target.closest('input')) {
+                    return;
+                  }
+                  const closestAnchor = target.closest('a');
+                  if (closestAnchor) {
+                    const href = closestAnchor.getAttribute('href') || '';
+                    if (closestAnchor.target === '_blank' || href.includes('/industry/')) {
+                      return;
+                    }
+                  }
+                  e.preventDefault();
+                  window.location.href = `/${locale}/company/${company.corporate_number}`;
+                }}
+                className="b2b-card bg-white border border-slate-200/90 dark:bg-[#161B22] dark:border-slate-800 rounded-xl p-4 sm:p-5 shadow-2xs hover:border-[#1B4F8A]/60 dark:hover:border-blue-500/60 hover:shadow-md transition-all cursor-pointer group"
               >
                 {/* 1. Header: Logo + (Tags, Meta, and Company Name) */}
                 <div className="flex flex-row gap-3.5 sm:gap-4 items-start min-w-0 mb-3">
                   <Link 
                     href={`/${locale}/company/${company.corporate_number}`}
+                    prefetch={false}
                     className="shrink-0 block mt-0.5"
                     tabIndex={-1}
                     aria-hidden="true"
@@ -1720,7 +1736,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                                 : "Updated today"}
                             </span>
                           )}
-                        <span>{formatShortDate(company.updated_at)}</span>
+                        <span suppressHydrationWarning>{formatShortDate(company.updated_at)}</span>
                         <span className="text-slate-300 dark:text-slate-700">|</span>
                         <div className="inline-flex items-center gap-1 font-mono">
                           <span>{company.corporate_number}</span>
@@ -1730,9 +1746,10 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
                     </div>
 
                     {/* Company Name */}
-                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white hover:text-[#1B4F8A] dark:hover:text-blue-400 transition-colors break-words leading-snug">
+                    <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white group-hover:text-[#1B4F8A] dark:group-hover:text-blue-400 transition-colors break-words leading-snug">
                       <Link 
                         href={`/${locale}/company/${company.corporate_number}`}
+                        prefetch={false}
                         rel="bookmark"
                         itemProp="url"
                       >
@@ -1897,6 +1914,7 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
 
                     <Link 
                       href={`/${locale}/company/${company.corporate_number}`}
+                      prefetch={false}
                       className="inline-flex items-center gap-1 px-3.5 py-1.5 text-xs font-semibold text-white bg-[#1B4F8A] hover:bg-[#153e6d] rounded-lg shadow-2xs transition-colors shrink-0"
                     >
                       <span>{locale === 'vi' ? 'Xem chi tiết' : locale === 'en' ? 'Company Details' : '詳細プロフィール'}</span>

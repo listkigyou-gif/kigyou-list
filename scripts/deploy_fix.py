@@ -21,6 +21,7 @@ REMOTE_BASE = "/var/www/kigyou-list"
 FILES_TO_SYNC = [
     "frontend/src/components/CompanyActions.tsx",
     "frontend/src/components/SearchClientContainer.tsx",
+    "frontend/src/lib/dateUtils.ts",
 ]
 
 def main():
