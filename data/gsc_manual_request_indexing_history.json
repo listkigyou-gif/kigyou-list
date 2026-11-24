@@ -158,17 +158,29 @@
       ]
     },
     {
-      "batch_id": "BATCH-07-20261124-QUEUED",
+      "batch_id": "BATCH-07-20261124",
       "date": "2026-11-24",
-      "status": "QUEUED_FOR_NEXT_QUOTA_WINDOW",
-      "notes": "Priority URLs for tomorrow's quota window (all verified HTTP 200 OK in sitemap/core.xml with 0 <div hidden>). Note: use /ja/directory (not /ja/industry or /ja/Area-index) and /ja/license/takken (not /ja/license/real-estate).",
+      "status": "SUBMITTED_BY_USER",
+      "notes": "Verified in VPS Nginx logs: 15:09..15:15 JST (13:09..13:15 VN). Google-InspectionTool hit all 5 priority targets with HTTP 200 OK. GSC Inspection API confirms lastCrawlTime 2026-11-24T06:11:35Z..06:15:35Z across /ja/area/13, /ja/area/27, /ja/directory, /ja/pricing, and /ja/licenses (previously unknown). Googlebot also followed an internal link to /ja/company/1010001014427.",
       "urls": [
+        "https://kigyoulist.com/ja/area/13",
+        "https://kigyoulist.com/ja/area/27",
         "https://kigyoulist.com/ja/directory",
         "https://kigyoulist.com/ja/pricing",
-        "https://kigyoulist.com/ja/licenses",
+        "https://kigyoulist.com/ja/licenses"
+      ]
+    },
+    {
+      "batch_id": "BATCH-08-20261125-QUEUED",
+      "date": "2026-11-25",
+      "status": "QUEUED_FOR_NEXT_QUOTA_WINDOW",
+      "notes": "Remaining priority targets for next quota window: core statutory license hubs (takken, kensetsu, tokutei) + key area hubs (aichi, kanagawa) + high authority B2B guides.",
+      "urls": [
         "https://kigyoulist.com/ja/license/takken",
         "https://kigyoulist.com/ja/license/kensetsu",
         "https://kigyoulist.com/ja/license/tokutei",
+        "https://kigyoulist.com/ja/area/23",
+        "https://kigyoulist.com/ja/area/14",
         "https://kigyoulist.com/ja/guide/ai-sales-list",
         "https://kigyoulist.com/ja/guide/bankruptcy-signs-check",
         "https://kigyoulist.com/ja/guide/corporate-number-search-api-guide",
