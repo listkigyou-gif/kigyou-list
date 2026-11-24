@@ -1,7 +1,7 @@
 {
   "system": "Kigyou-list 5-Stage Compounding Ratchet Scorecard (Cross-Layer Non-Regression Gate)",
   "version": "1.0.0",
-  "updated_at": "2026-11-24T13:17:38+07:00",
+  "updated_at": "2026-11-24T13:36:36+07:00",
   "invariants": {
     "robots_txt_disallow_en": true,
     "robots_txt_disallow_vi": true,

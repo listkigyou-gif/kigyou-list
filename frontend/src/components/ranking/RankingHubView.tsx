@@ -275,6 +275,14 @@ export function RankingHubView({ items, activeType, locale, prefectureCode }: Pr
                   </span>
                 )}
               </div>
+
+              <Link
+                href={`/${locale}/company/${item.corporate_number}`}
+                className="w-8 h-8 rounded-lg bg-slate-50 hover:bg-[#1B4F8A] text-slate-400 hover:text-white dark:bg-slate-800 dark:hover:bg-blue-600 flex items-center justify-center transition-colors"
+                title="企業詳細を見る"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         ))}

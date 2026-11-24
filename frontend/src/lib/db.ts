@@ -528,7 +528,7 @@ function mapCompanyRow(row: any): Company {
     fax_number: row.fax_number || null,
     website_url: row.website_url || null,
     email_address: row.email_address || null,
-    business_summary: row.business_summary || null,
+    business_summary: row.business_summary ? String(row.business_summary).slice(0, 3000) : null,
     jigyo_shumoku: row.jigyo_shumoku || null,
     branch_phone_numbers: row.branch_phone_numbers || null,
     status: row.status || '活動中',
