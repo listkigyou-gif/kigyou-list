@@ -78,6 +78,7 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
   const isVi = locale === "vi";
   const isUserAdmin = Boolean(user?.email && isAdminEmail(user.email));
   const [mounted, setMounted] = useState(false);
+  const [claimToken, setClaimToken] = useState<string | null>(null);
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [manageModalOpen, setManageModalOpen] = useState(false);
   const [modalGuestMode, setModalGuestMode] = useState(false);
@@ -85,21 +86,24 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
 
   useEffect(() => {
     setMounted(true);
-    const sp = new URLSearchParams(window.location.search);
-    // Auto-open claim modal if action=claim or claim=1 in query params
-    const action = sp.get("action");
-    const isClaimAction = action === "claim" || sp.get("claim") === "1" || sp.get("claim") === "true";
-    if (isClaimAction) {
-      setModalGuestMode(false);
-      setManageModalOpen(true);
-    }
+    if (typeof window !== "undefined") {
+      const sp = new URLSearchParams(window.location.search);
+      setClaimToken(sp.get("claim_token") || null);
+      // Auto-open claim modal if action=claim or claim=1 in query params
+      const action = sp.get("action");
+      const isClaimAction = action === "claim" || sp.get("claim") === "1" || sp.get("claim") === "true";
+      if (isClaimAction) {
+        setModalGuestMode(false);
+        setManageModalOpen(true);
+      }
 
-    // Auto-open unified portal if manage/edit/correction in query params
-    const isCorrection = sp.get("correction") === "1" || sp.get("correction") === "true";
-    const openParam = sp.get("manage") || sp.get("edit");
-    if (openParam === "1" || openParam === "true" || isCorrection) {
-      setModalGuestMode(isCorrection);
-      setManageModalOpen(true);
+      // Auto-open unified portal if manage/edit/correction in query params
+      const isCorrection = sp.get("correction") === "1" || sp.get("correction") === "true";
+      const openParam = sp.get("manage") || sp.get("edit");
+      if (openParam === "1" || openParam === "true" || isCorrection) {
+        setModalGuestMode(isCorrection);
+        setManageModalOpen(true);
+      }
     }
 
     const handleOpenClaim = () => {
@@ -219,7 +223,7 @@ export const CompanyActions: React.FC<CompanyActionsProps> = ({
         companyName={companyName}
         websiteUrl={websiteUrl}
         phone={phone}
-        claimToken={searchParams?.get("claim_token") || null}
+        claimToken={claimToken}
         onSuccess={() => {
           // Success handled in modal
         }}

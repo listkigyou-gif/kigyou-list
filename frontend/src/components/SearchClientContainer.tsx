@@ -1647,14 +1647,21 @@ export const SearchClientContainer: React.FC<SearchClientContainerProps> = ({
               >
                 {/* 1. Header: Logo + (Tags, Meta, and Company Name) */}
                 <div className="flex flex-row gap-3.5 sm:gap-4 items-start min-w-0 mb-3">
-                  <CompanyLogo
-                    websiteUrl={company.website_url}
-                    logoUrl={company.logo_url}
-                    companyName={company.company_name}
-                    corporateNumber={company.corporate_number}
-                    className="w-11 h-11 sm:w-12 sm:h-12 shrink-0 mt-0.5 rounded-lg border border-slate-200/60 dark:border-slate-700/60"
-                    size={128}
-                  />
+                  <Link 
+                    href={`/${locale}/company/${company.corporate_number}`}
+                    className="shrink-0 block mt-0.5"
+                    tabIndex={-1}
+                    aria-hidden="true"
+                  >
+                    <CompanyLogo
+                      websiteUrl={company.website_url}
+                      logoUrl={company.logo_url}
+                      companyName={company.company_name}
+                      corporateNumber={company.corporate_number}
+                      className="w-11 h-11 sm:w-12 sm:h-12 rounded-lg border border-slate-200/60 dark:border-slate-700/60 hover:opacity-90 transition-opacity"
+                      size={128}
+                    />
+                  </Link>
 
                   <div className="flex-1 min-w-0">
                     {/* Top Row: Status, Prefecture, Primary Industry & Corporate Number */}
