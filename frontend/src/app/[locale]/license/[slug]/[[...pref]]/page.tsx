@@ -112,10 +112,10 @@ export default async function LicenseHubPage({ params }: PageProps) {
 
   const prefName = prefObj ? getPrefectureName(prefObj.name, locale) : undefined;
 
-  // 1. Fetch Stats & Companies
+  // 1. Fetch Stats & Companies (30 representative companies with single clean link per card)
   const [stats, companyResult] = await Promise.all([
     getLicenseHubStats(slug, prefCode),
-    getLicenseHubCompanies(slug, prefCode, 50, 0)
+    getLicenseHubCompanies(slug, prefCode, 30, 0)
   ]);
 
   const { totalCount, nationalCount, prefCounts } = stats;
@@ -537,13 +537,9 @@ export default async function LicenseHubPage({ params }: PageProps) {
                       </div>
 
                       <div className="shrink-0 flex items-center gap-2">
-                        <Link
-                          href={`/${locale}/company/${c.corporate_number}`}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded-lg transition-colors"
-                        >
-                          <span>{d.viewDetail}</span>
-                          <ChevronRight className="w-3.5 h-3.5" />
-                        </Link>
+                        <span className="text-[11px] font-mono text-slate-400 dark:text-slate-500">
+                          法人番号: {c.corporate_number}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -552,6 +548,50 @@ export default async function LicenseHubPage({ params }: PageProps) {
             </div>
           )}
         </div>
+
+        {/* REGIONAL DISTRIBUTION TABLE FOR LICENSE HUB */}
+        {prefCounts.length > 0 && (
+          <div className="bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xs mb-10">
+            <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-white mb-2">
+              {locale === 'ja'
+                ? `${config.shortName.ja}の都道府県別 登録法人数ランキング（上位10都道府県）`
+                : locale === 'vi'
+                ? `Thống kê Top 10 Tỉnh/Thành phố có nhiều ${config.shortName[lang] || config.shortName.ja} nhất`
+                : `Top 10 Prefectures by Registered ${config.shortName[lang] || config.shortName.ja} Count`}
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+              {locale === 'ja'
+                ? `全国${nationalCount.toLocaleString()}社の${config.shortName.ja}保有法人を都道府県別に集計した上位地域データです。地域別の許認可取得企業の分布と全国シェアを比較できます。`
+                : locale === 'vi'
+                ? `Bảng phân bổ ${nationalCount.toLocaleString()} pháp nhân có giấy phép ${config.shortName[lang] || config.shortName.ja} theo từng địa phương tại Nhật Bản.`
+                : `Regional breakdown of ${nationalCount.toLocaleString()} licensed ${config.shortName[lang] || config.shortName.ja} entities across Japan's top prefectures.`}
+            </p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 text-slate-600 dark:text-slate-300">
+                    <th className="py-2 px-3 font-bold w-16">{locale === 'ja' ? '順位' : 'Rank'}</th>
+                    <th className="py-2 px-3 font-bold">{locale === 'ja' ? '都道府県' : 'Prefecture'}</th>
+                    <th className="py-2 px-3 font-bold text-right">{locale === 'ja' ? '登録法人数' : 'Licensed Companies'}</th>
+                    <th className="py-2 px-3 font-bold text-right">{locale === 'ja' ? '全国シェア' : 'National Share'}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
+                  {[...prefCounts].sort((a, b) => b.count - a.count).slice(0, 10).map((p, idx) => (
+                    <tr key={p.code} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30">
+                      <td className="py-2 px-3 font-mono font-bold text-slate-500">#{idx + 1}</td>
+                      <td className="py-2 px-3 font-semibold text-slate-900 dark:text-slate-100">{getPrefectureName(p.name, locale)}</td>
+                      <td className="py-2 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200">{p.count.toLocaleString()} {d.corps}</td>
+                      <td className="py-2 px-3 text-right font-mono font-semibold text-blue-600 dark:text-blue-400">
+                        {nationalCount > 0 ? ((p.count / nationalCount) * 100).toFixed(1) : '0.0'}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
         {/* FAQ ACCORDION SECTION (Schema.org FAQPage) */}
         <div className="bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-6 sm:p-8 shadow-xs mb-10">

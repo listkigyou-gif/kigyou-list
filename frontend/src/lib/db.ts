@@ -1048,6 +1048,100 @@ export async function getCitiesWithCounts(prefectureCode: string): Promise<{ cit
   }
 }
 
+export interface PrefectureAreaInsights {
+  totalCompanies: number;
+  nationalTotal: number;
+  nationalRank: number;
+  nationalSharePct: number;
+  totalCitiesCount: number;
+  topCities: { cityName: string; count: number; sharePct: number }[];
+  hiringCount: number;
+  licenseCount: number;
+  constructionLicCount: number;
+  realEstateLicCount: number;
+  invoiceCount: number;
+  listedCount: number;
+}
+
+/**
+ * Fetch pre-aggregated & partial-indexed regional intelligence for Prefecture Area Hub (/area/[prefectureCode]).
+ * Provides real municipality distribution, national share/rank, and B2B signal counts with 6-hour LRU cache.
+ */
+export async function getPrefectureAreaInsights(prefectureCode: string): Promise<PrefectureAreaInsights> {
+  const padded = String(prefectureCode || '').trim().padStart(2, '0');
+  const cacheKey = `pref_area_insights:${padded}`;
+  const cached = getCachedData<PrefectureAreaInsights>(cacheKey);
+  if (cached) return cached;
+
+  const isPG = !!DATABASE_URL;
+  try {
+    const [allPrefs, cities, signalRow] = await Promise.all([
+      getPrefecturesWithCounts(),
+      getCitiesWithCounts(padded),
+      isPG
+        ? runGetQuery(
+            `SELECT
+              (SELECT COUNT(*) FROM companies WHERE prefecture_code = ? AND has_hiring = true) AS hiring_count,
+              (SELECT COUNT(*) FROM companies WHERE prefecture_code = ? AND has_license = true) AS license_count,
+              (SELECT COUNT(*) FROM companies WHERE prefecture_code = ? AND has_construction_lic = true) AS construction_lic_count,
+              (SELECT COUNT(*) FROM companies WHERE prefecture_code = ? AND has_real_estate_lic = true) AS real_estate_lic_count,
+              (SELECT COUNT(*) FROM companies WHERE prefecture_code = ? AND has_invoice = true) AS invoice_count,
+              (SELECT COUNT(*) FROM companies WHERE prefecture_code = ? AND is_listed = true) AS listed_count`,
+            [padded, padded, padded, padded, padded, padded]
+          )
+        : Promise.resolve(null),
+    ]);
+
+    const sortedPrefs = [...allPrefs].sort((a, b) => b.count - a.count);
+    const nationalTotal = sortedPrefs.reduce((acc, p) => acc + (p.count || 0), 0) || 5070092;
+    const rankIdx = sortedPrefs.findIndex(p => p.code === padded);
+    const nationalRank = rankIdx >= 0 ? rankIdx + 1 : 1;
+    const totalCompanies = rankIdx >= 0 ? sortedPrefs[rankIdx].count : 0;
+    const nationalSharePct = nationalTotal > 0 ? Number(((totalCompanies / nationalTotal) * 100).toFixed(2)) : 0;
+
+    const validCities = cities.filter(c => c.cityName && c.cityName.trim().length > 0);
+    const topCities = validCities.slice(0, 15).map(c => ({
+      cityName: c.cityName,
+      count: c.count,
+      sharePct: totalCompanies > 0 ? Number(((c.count / totalCompanies) * 100).toFixed(1)) : 0,
+    }));
+
+    const result: PrefectureAreaInsights = {
+      totalCompanies,
+      nationalTotal,
+      nationalRank,
+      nationalSharePct,
+      totalCitiesCount: validCities.length,
+      topCities,
+      hiringCount: signalRow ? Number(signalRow.hiring_count || 0) : 0,
+      licenseCount: signalRow ? Number(signalRow.license_count || 0) : 0,
+      constructionLicCount: signalRow ? Number(signalRow.construction_lic_count || 0) : 0,
+      realEstateLicCount: signalRow ? Number(signalRow.real_estate_lic_count || 0) : 0,
+      invoiceCount: signalRow ? Number(signalRow.invoice_count || 0) : 0,
+      listedCount: signalRow ? Number(signalRow.listed_count || 0) : 0,
+    };
+
+    setCachedData(cacheKey, result, 6 * 60 * 60 * 1000);
+    return result;
+  } catch (error) {
+    console.error(`Error in getPrefectureAreaInsights(${padded}):`, error);
+    return {
+      totalCompanies: 0,
+      nationalTotal: 5070092,
+      nationalRank: 1,
+      nationalSharePct: 0,
+      totalCitiesCount: 0,
+      topCities: [],
+      hiringCount: 0,
+      licenseCount: 0,
+      constructionLicCount: 0,
+      realEstateLicCount: 0,
+      invoiceCount: 0,
+      listedCount: 0,
+    };
+  }
+}
+
 /**
  * Fetch all industries with company counts for search sidebar
  */

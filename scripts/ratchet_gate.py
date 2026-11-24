@@ -72,12 +72,17 @@ out = {{
     "public_hubs_missing_canonical_list": [],
     "public_hubs_hidden_div_leaks": [],
     "public_hubs_duplicate_main_leaks": [],
+    "public_hubs_thin_prose_leaks": [],
+    "public_hubs_link_farm_leaks": [],
     "soft_404_regressions": [],
     "en_vi_hreflang_leaks": [],
     "entity_assertion_failures": [],
     "directory_static_area_links": 0,
     "directory_static_ind_loc_links": 0,
     "area_13_static_company_links": 0,
+    "area_13_h2_count": 0,
+    "area_13_prose_p_count": 0,
+    "area_13_table_count": 0,
     "guide_published_articles": 0,
     "max_pairwise_similarity_pct": 0.0,
     "pairwise_details": {{}},
@@ -135,6 +140,21 @@ for path in hubs:
     mains = soup.find_all("main")
     if len(mains) != 1 or len(mains[0].get_text(strip=True)) == 0:
         out["public_hubs_duplicate_main_leaks"].append(f"{{path}}:mains={{len(mains)}}")
+    else:
+        m_tag = mains[0]
+        h2_c = len(m_tag.find_all("h2"))
+        p_c = len([p for p in m_tag.find_all("p") if len(p.get_text(strip=True)) > 20])
+        a_c = len(m_tag.find_all("a"))
+        t_c = len(m_tag.find_all("table"))
+        if path == "/ja/area/13":
+            out["area_13_h2_count"] = h2_c
+            out["area_13_prose_p_count"] = p_c
+            out["area_13_table_count"] = t_c
+        if path in ("/ja/area/13", "/ja/area/27", "/ja/directory", "/ja/industry/39/location/13"):
+            if h2_c < 3 or p_c < 3 or t_c < 1:
+                out["public_hubs_thin_prose_leaks"].append(f"{{path}}:h2={{h2_c}},p={{p_c}},table={{t_c}}")
+        if a_c > 220:
+            out["public_hubs_link_farm_leaks"].append(f"{{path}}:links={{a_c}}")
 
     rmetas = [m.get("content", "") for m in soup.find_all("meta", attrs={{"name": re.compile(r"^(robots|googlebot)$", re.I)}})]
     if any("noindex" in r.lower() for r in rmetas):
@@ -288,6 +308,10 @@ def main():
         failures.append(f"SSR <div hidden> streaming skeleton trap detected: {v['public_hubs_hidden_div_leaks']}")
     if v.get("public_hubs_duplicate_main_leaks"):
         failures.append(f"Duplicate or empty <main> tag detected: {v['public_hubs_duplicate_main_leaks']}")
+    if v.get("public_hubs_thin_prose_leaks"):
+        failures.append(f"Thin directory hub missing H2/Prose/Table detected: {v['public_hubs_thin_prose_leaks']}")
+    if v.get("public_hubs_link_farm_leaks"):
+        failures.append(f"Link-Farm dilution (>220 links in <main>) detected: {v['public_hubs_link_farm_leaks']}")
     if v.get("soft_404_regressions"):
         failures.append(f"Soft-404 regression (expected HTTP 404): {v['soft_404_regressions']}")
     if v["entity_assertion_failures"]:

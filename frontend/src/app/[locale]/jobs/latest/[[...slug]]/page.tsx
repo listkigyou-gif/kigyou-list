@@ -648,13 +648,9 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
                     <span className="text-slate-400 text-[11px]">
                       {isVi ? `Xác nhận: ${ev.event_date}` : isEn ? `Verified: ${ev.event_date}` : `確認日：${ev.event_date}`}
                     </span>
-                    <Link
-                      href={`/${locale}/company/${ev.corporate_number}`}
-                      className="inline-flex items-center gap-1 font-semibold text-[#1B4F8A] dark:text-blue-400 hover:underline"
-                    >
-                      {isVi ? 'Xem chi tiết & Liên hệ' : isEn ? 'View Profile & Contacts' : '企業詳細・連絡先を見る'}
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </Link>
+                    <span className="text-[11px] font-medium text-slate-500 dark:text-slate-400">
+                      {ev.prefecture_name || ''} {ev.city_name || ''}
+                    </span>
                   </div>
                 </article>
               ))}
@@ -688,6 +684,80 @@ export default async function LatestJobsHubPage({ params, searchParams }: PagePr
             </div>
           )}
         </section>
+
+        {/* Regional Hiring Distribution Table & FAQ Section */}
+        {prefCounts.length > 0 && (
+          <section className="bg-white dark:bg-[#151B22] rounded-xl border border-slate-200/90 dark:border-slate-800 p-6 sm:p-8 mb-8 shadow-sm">
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-2">
+              {isVi
+                ? 'Thống kê Phân bổ Doanh nghiệp Đang tuyển dụng theo Tỉnh/Thành phố (Top 10)'
+                : isEn
+                ? 'Top 10 Prefectures by Actively Hiring Companies Count'
+                : '都道府県別の求人募集・積極採用企業数ランキング（上位10地域）'}
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mb-4 leading-relaxed">
+              {isVi
+                ? 'Bảng tổng hợp các địa phương có hoạt động tuyển dụng nhân sự sôi động nhất trên Kigyou-list. Doanh nghiệp có tín hiệu tuyển dụng là nhóm khách hàng có nhu cầu cao về dịch vụ nhân sự, phần mềm SaaS và mở rộng văn phòng.'
+                : isEn
+                ? 'Regional distribution of companies with verified open job positions. High hiring activity correlates strongly with corporate expansion and B2B software/service adoption.'
+                : 'Kigyou-listが毎日自動検知している求人公開・採用活動中シグナルの都道府県別集計データです。採用活動が活発な地域および企業の傾向を把握し、エリア別のB2B営業・人材提案にご活用いただけます。'}
+            </p>
+            <div className="overflow-x-auto mb-6">
+              <table className="w-full text-left border-collapse text-xs sm:text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 text-slate-600 dark:text-slate-300">
+                    <th className="py-2 px-3 font-bold w-16">{isVi ? 'Hạng' : isEn ? 'Rank' : '順位'}</th>
+                    <th className="py-2 px-3 font-bold">{isVi ? 'Tỉnh / Thành phố' : isEn ? 'Prefecture' : '都道府県'}</th>
+                    <th className="py-2 px-3 font-bold text-right">{isVi ? 'Số công ty tuyển dụng' : isEn ? 'Hiring Companies' : '求人企業数'}</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
+                  {[...prefCounts].sort((a, b) => b.count - a.count).slice(0, 10).map((pc, idx) => {
+                    const pMeta = PREFECTURES.find(p => p.code === pc.prefecture_code);
+                    return (
+                      <tr key={pc.prefecture_code} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30">
+                        <td className="py-2 px-3 font-mono font-bold text-slate-500">#{idx + 1}</td>
+                        <td className="py-2 px-3 font-semibold text-slate-900 dark:text-slate-100">
+                          {pMeta ? (isVi || isEn ? pMeta.nameEn : pMeta.nameJa) : pc.prefecture_code}
+                        </td>
+                        <td className="py-2 px-3 text-right font-mono font-bold text-emerald-600 dark:text-emerald-400">
+                          {pc.count.toLocaleString()} {isVi ? 'cty' : isEn ? '' : '社'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm">
+              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-200/70 dark:border-slate-800">
+                <h3 className="font-bold text-slate-900 dark:text-white mb-1.5">
+                  {isVi ? 'Q1. Tín hiệu tuyển dụng trên Kigyou-list được thu thập từ đâu?' : isEn ? 'Q1. How are hiring signals detected on Kigyou-list?' : 'Q1. 求人募集中シグナルはどのような情報源から検知していますか？'}
+                </h3>
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {isVi
+                    ? 'Hệ thống tự động đối chiếu thông tin tuyển dụng công khai và trang tuyển dụng chính thức của doanh nghiệp với Mã số pháp nhân 13 chữ số của Quốc thuế NTA hàng ngày.'
+                    : isEn
+                    ? 'Our engine cross-references official corporate career pages and public job disclosures against 13-digit NTA corporate numbers daily.'
+                    : '公的求人データおよび各企業の公式採用ページ（リクルートサイト）の公開情報を国税庁の13桁法人番号と毎日自動照合し、現在進行形で採用募集を行っている企業のみを抽出しています。'}
+                </p>
+              </div>
+              <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-200/70 dark:border-slate-800">
+                <h3 className="font-bold text-slate-900 dark:text-white mb-1.5">
+                  {isVi ? 'Q2. Làm sao để xuất danh sách công ty đang tuyển dụng theo ngành nghề?' : isEn ? 'Q2. Can I filter hiring companies by JSIC industry and export to CSV?' : 'Q2. 求人募集中の企業を業種や従業員規模で絞り込んでCSV出力できますか？'}
+                </h3>
+                <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {isVi
+                    ? 'Bạn có thể mở Bộ lọc Tìm kiếm nâng cao, bật tiêu chí "Đang tuyển dụng", chọn thêm ngành nghề hoặc quy mô vốn và tải xuống file CSV.'
+                    : isEn
+                    ? 'Yes. Use the Advanced Search with the "Hiring Signal" filter enabled alongside JSIC industry or capital range filters to download clean CSV lead lists.'
+                    : 'はい。詳細検索画面にて「求人募集中」フィルターをONにし、さらにJSIC業種分類・資本金・電話番号やフォームの有無を組み合わせてCSVリストを一括出力できます。'}
+                </p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* HR & B2B Sales Call to Action Banner */}
         <section className="bg-gradient-to-r from-slate-900 to-[#1B4F8A] text-white rounded-xl p-8 mb-8 shadow-sm">

@@ -478,52 +478,26 @@ export default async function DirectoryPage({ params }: PageProps) {
                         .filter((child) => child.count > 0)
                         .map((child) => {
                           const localizedChildName = getIndustryName(child.name, locale);
-                          const hubLocations = [
-                            { code: "13", label: locale === "ja" ? "東京" : "Tokyo" },
-                            { code: "27", label: locale === "ja" ? "大阪" : "Osaka" },
-                            { code: "23", label: locale === "ja" ? "愛知" : "Aichi" },
-                            { code: "14", label: locale === "ja" ? "神奈川" : "Kanagawa" },
-                            { code: "40", label: locale === "ja" ? "福岡" : "Fukuoka" },
-                          ];
 
                           return (
                             <div
                               key={child.code}
-                              className="flex flex-col gap-1.5 px-4 py-2.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
+                              className="flex items-center justify-between gap-2 px-4 py-2.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/40 transition-colors"
                             >
-                              <div className="flex items-center justify-between gap-2">
-                                <Link
-                                  href={`/${locale}/industry/${child.code}/location/13`}
-                                  className="flex items-center gap-2 min-w-0 pr-2 group/child"
-                                >
-                                  <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-sm shrink-0 font-mono">
-                                    {child.code}
-                                  </span>
-                                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 group-hover/child:text-[#1B4F8A] dark:group-hover/child:text-blue-400 truncate transition-colors">
-                                    {localizedChildName}
-                                  </span>
-                                </Link>
-                                <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap shrink-0">
-                                  {d.childIndexLabel.replace("{count}", formatCount(child.count))}
+                              <Link
+                                href={`/${locale}/industry/${child.code}/location/13`}
+                                className="flex items-center gap-2 min-w-0 pr-2 group/child"
+                              >
+                                <span className="text-[10px] font-semibold text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded-sm shrink-0 font-mono">
+                                  {child.code}
                                 </span>
-                              </div>
-                              <div className="flex items-center flex-wrap gap-1.5 pl-7">
-                                {hubLocations.map((loc) => (
-                                  <Link
-                                    key={loc.code}
-                                    href={`/${locale}/industry/${child.code}/location/${loc.code}`}
-                                    className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-50 hover:bg-blue-50/80 text-slate-600 hover:text-[#1B4F8A] border border-slate-200/80 hover:border-[#1B4F8A]/40 dark:bg-slate-800/60 dark:hover:bg-blue-950/40 dark:text-slate-400 dark:hover:text-blue-400 dark:border-slate-700/80 transition-colors"
-                                  >
-                                    {loc.label}
-                                  </Link>
-                                ))}
-                                <Link
-                                  href={`/${locale}/search?industry=${child.code}`}
-                                  className="px-2 py-0.5 rounded text-[10px] font-medium bg-white hover:bg-slate-100 text-[#1B4F8A] border border-slate-200/80 dark:bg-[#161B22] dark:hover:bg-slate-800 dark:text-blue-400 dark:border-slate-700/80 transition-colors"
-                                >
-                                  {locale === "vi" ? "Toàn quốc" : locale === "en" ? "All Japan" : "全国検索"}
-                                </Link>
-                              </div>
+                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300 group-hover/child:text-[#1B4F8A] dark:group-hover/child:text-blue-400 truncate transition-colors">
+                                  {localizedChildName}
+                                </span>
+                              </Link>
+                              <span className="text-[11px] font-medium text-slate-400 dark:text-slate-500 whitespace-nowrap shrink-0 font-mono">
+                                {d.childIndexLabel.replace("{count}", formatCount(child.count))}
+                              </span>
                             </div>
                           );
                         })}
@@ -532,6 +506,79 @@ export default async function DirectoryPage({ params }: PageProps) {
                 </details>
               );
             })}
+          </div>
+        </section>
+
+        {/* SECTION 3: National Database Overview Table & FAQ */}
+        <section className="bg-white dark:bg-[#161B22] border border-slate-200/90 dark:border-slate-800 rounded-xl p-5 sm:p-7 shadow-2xs">
+          <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mb-2">
+            {locale === 'vi'
+              ? 'Thống kê Phân bổ Pháp nhân theo 7 Vùng Kinh tế & 19 Đại ngành JSIC'
+              : locale === 'en'
+              ? 'Corporate Registry Breakdown Across 7 Regional Blocks & 19 JSIC Major Divisions'
+              : '全国7地方区分・JSIC19大分類別 収録法人データベース統計サマリー'}
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+            {locale === 'vi'
+              ? `Kigyou-list tổng hợp và chuẩn hóa dữ liệu của ${formatCount(totalCompaniesCount)} pháp nhân trên toàn lãnh thổ Nhật Bản dựa trên dữ liệu công bố của Cục Quốc thuế (NTA) và Hệ thống Phân loại Ngành Công nghiệp Tiêu chuẩn Nhật Bản (JSIC).`
+              : locale === 'en'
+              ? `Kigyou-list aggregates and standardizes ${formatCount(totalCompaniesCount)} active Japanese corporations based on National Tax Agency (NTA) registries and the Japan Standard Industrial Classification (JSIC).`
+              : `Kigyou-listは国税庁法人番号公表データおよび総務省の日本標準産業分類（JSIC）に基づき、全国${formatCount(totalCompaniesCount)}社の法人情報を地域別・業種別に体系化しています。以下は全国7地方ブロックごとの収録法人数および構成比の集計表です。`}
+          </p>
+
+          <div className="overflow-x-auto mb-6">
+            <table className="w-full text-left border-collapse text-xs sm:text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/40 text-slate-600 dark:text-slate-300">
+                  <th className="py-2.5 px-3 font-bold">{locale === 'vi' ? 'Vùng kinh tế' : locale === 'en' ? 'Region' : '地方ブロック'}</th>
+                  <th className="py-2.5 px-3 font-bold">{locale === 'vi' ? 'Các tỉnh thành trực thuộc' : locale === 'en' ? 'Prefectures' : '対象都道府県'}</th>
+                  <th className="py-2.5 px-3 font-bold text-right">{locale === 'vi' ? 'Tổng số pháp nhân' : locale === 'en' ? 'Registered Entities' : '収録法人数'}</th>
+                  <th className="py-2.5 px-3 font-bold text-right">{locale === 'vi' ? 'Tỷ trọng' : locale === 'en' ? 'National Share' : '全国シェア'}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/70">
+                {REGIONS.map((region) => {
+                  const regionSum = region.prefectures.reduce((acc, pName) => acc + (prefMap.get(pName)?.count || 0), 0);
+                  const share = totalCompaniesCount > 0 ? ((regionSum / totalCompaniesCount) * 100).toFixed(1) : '0.0';
+                  const localizedRegionName = t.regions[region.name as keyof typeof t.regions] || region.name;
+                  return (
+                    <tr key={region.name} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/30">
+                      <td className="py-2.5 px-3 font-bold text-slate-900 dark:text-slate-100">{localizedRegionName}</td>
+                      <td className="py-2.5 px-3 text-slate-600 dark:text-slate-400">{region.prefectures.join('・')}</td>
+                      <td className="py-2.5 px-3 text-right font-mono font-bold text-slate-800 dark:text-slate-200">{formatCount(regionSum)}{d.companySuffix}</td>
+                      <td className="py-2.5 px-3 text-right font-mono font-semibold text-[#1B4F8A] dark:text-blue-400">{share}%</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs sm:text-sm">
+            <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-200/70 dark:border-slate-800">
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1.5">
+                {locale === 'vi' ? '1. Cách tra cứu theo Khu vực & Quận/Huyện' : locale === 'en' ? '1. Regional & Municipality Drill-Down' : '1. 都道府県・市区町村単位での企業リスト抽出'}
+              </h3>
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                {locale === 'vi'
+                  ? 'Bấm vào bất kỳ tỉnh thành nào trong 47 tỉnh để xem báo cáo phân bổ doanh nghiệp theo từng quận/huyện/thành phố, thống kê giấy phép hành nghề và danh sách doanh nghiệp tiêu biểu.'
+                  : locale === 'en'
+                  ? 'Select any of the 47 prefectures above to view municipality-level corporate distribution tables, statutory license counts, and leading local enterprises.'
+                  : '上記47都道府県の各リンクから、都道府県別の市区町村ランキング表、公的許認可（建設業・宅建業等）の登録統計、および地域内の主要法人リストを閲覧できます。'}
+              </p>
+            </div>
+            <div className="p-4 rounded-lg bg-slate-50 dark:bg-slate-800/30 border border-slate-200/70 dark:border-slate-800">
+              <h3 className="font-bold text-slate-900 dark:text-white mb-1.5">
+                {locale === 'vi' ? '2. Cách kết hợp Ngành nghề JSIC & Tín hiệu B2B' : locale === 'en' ? '2. Combining JSIC Industries & B2B Intent Signals' : '2. JSIC産業分類と営業シグナルのクロス検索'}
+              </h3>
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
+                {locale === 'vi'
+                  ? 'Mỗi phân ngành JSIC đều được liên kết với bộ lọc tín hiệu tuyển dụng, trợ cấp, trúng thầu công và đăng ký hóa đơn Invoice để phục vụ xuất danh sách khách hàng tiềm năng B2B ra CSV.'
+                  : locale === 'en'
+                  ? 'Every JSIC industry division integrates with hiring signals, public tenders, subsidies, and Qualified Invoice Issuer status for instant CSV lead generation.'
+                  : '日本標準産業分類（大分類19種・中分類99種）と「求人採用中」「適格請求書（インボイス）登録」「お問い合わせフォームあり」を掛け合わせ、精度の高い営業リストをCSV出力できます。'}
+              </p>
+            </div>
           </div>
         </section>
 
